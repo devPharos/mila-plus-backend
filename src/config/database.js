@@ -1,7 +1,7 @@
 module.exports = {
   dialect: 'postgres',
-  host: '195.35.17.27',
-  port: 32770,
+  host: 'milaplus-tst-postgres',
+  port: 5432,
   username: 'root',
   password: 'SenhA018172a12',
   database: 'postgres',

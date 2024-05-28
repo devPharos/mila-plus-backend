@@ -1,9 +1,9 @@
 {
   "development": {
-    "username": "postgres",
-    "password": "0241",
-    "database": "mila-plus-dev",
-    "host": "127.0.0.1",
+    "username": "root",
+    "password": "SenhA018172a12",
+    "database": "postgres",
+    "host": "milaplus-tst-postgres",
     "dialect": "postgres"
   }
 }
