@@ -9,7 +9,7 @@ class UserGroupController {
     const userGroupExists = await UserGroup.findOne({
       where: {
         name,
-        company_id: req.companyId,
+        // company_id: req.companyId,
         canceled_at: null,
       },
     });
