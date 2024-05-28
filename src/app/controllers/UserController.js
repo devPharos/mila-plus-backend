@@ -2,7 +2,7 @@ import Sequelize from 'sequelize';
 import User from '../models/User';
 import Filial from '../models/Filial';
 import UserGroupXUser from '../models/UserGroupXUser';
-import UserGroup from '../models/Usergroup';
+import UserGroup from '../models/UserGroup';
 import UserXFilial from '../models/UserXFilial';
 
 const { Op } = Sequelize;
