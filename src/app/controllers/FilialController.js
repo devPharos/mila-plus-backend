@@ -50,7 +50,7 @@ class FilialController {
     const filials = await Filial.findAll({
       where: {
         canceled_at: null,
-        company_id: req.companyId,
+        // company_id: req.companyId,
         [Op.not]: { alias: 'AAA' }
       },
       order: [['name']]
