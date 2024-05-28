@@ -3,9 +3,9 @@ import Sequelize from 'sequelize';
 
 import databaseConfig from '../config/database';
 import Filial from '../app/models/Filial';
-import File from '../app/models/file';
+import File from '../app/models/File';
 import User from '../app/models/User';
-import UserGroup from '../app/models/Usergroup';
+import UserGroup from '../app/models/UserGroup';
 import UserGroupXUser from '../app/models/UserGroupXUser';
 import UserXFilial from '../app/models/UserXFilial';
 import MenuHierarchy from '../app/models/MenuHierarchy';
