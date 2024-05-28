@@ -49,43 +49,7 @@ class SessionController {
     } = user;
 
     const userData = await User.findByPk(id, {
-      attributes: ['company_id', 'id', 'name', 'email'],
-      where: { canceled_at: null },
-      include: [
-        {
-          model: UserXFilial,
-          as: 'filials',
-          attributes: ['id'],
-          where: {
-            canceled_at: null,
-          },
-          include: [
-            {
-              model: Filial,
-              as: 'filial',
-              attributes: ['id', 'alias', 'name'],
-            }
-          ]
-        },
-        {
-          model: UserGroupXUser,
-          as: 'groups',
-          attributes: ['id'],
-          where: {
-            canceled_at: null,
-          },
-          include: [
-            {
-              model: UserGroup,
-              as: 'group',
-              attributes: ['id', 'name'],
-              where: {
-                canceled_at: null,
-              },
-            }
-          ]
-        }
-      ],
+      attributes: ['company_id', 'id', 'name', 'email']
     })
 
     // console.log(userData)
