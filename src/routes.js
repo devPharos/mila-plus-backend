@@ -17,8 +17,8 @@ import FilialValidation from './app/validators/FilialValidation';
 import CompanyController from './app/controllers/CompanyController';
 import UserGroupController from './app/controllers/UserGroupController';
 
-const routes = new Router();
 
+const routes = new Router();
 routes.post('/sessions', SessionController.store);
 // routes.post('/forgot_password', ForgotPasswordController.store);
 routes.put('/reset_password', SessionController.resetpw);
@@ -33,6 +33,7 @@ routes.get('/filials/:filial_id', FilialController.show);
 
 routes.get('/users', UserController.index);
 routes.get('/users/:user_id', UserController.show);
+routes.get('/users_short_info/:user_id', UserController.shortInfo);
 
 // routes.get('/groups/:user_id', UserGroupController.show);
 

@@ -38,6 +38,7 @@ class Filial extends Model {
         sendmail_password: Sequelize.STRING,
         sendmail_name: Sequelize.STRING,
 
+        active: Sequelize.BOOLEAN,
         created_at: Sequelize.DATE,
         created_by: Sequelize.INTEGER,
         updated_at: Sequelize.DATE,
@@ -46,7 +47,7 @@ class Filial extends Model {
         canceled_by: Sequelize.INTEGER,
       },
       {
-        sequelize,
+        sequelize
       }
     );
 
@@ -54,8 +55,27 @@ class Filial extends Model {
   }
 
   static associate(models) {
-    this.belongsTo(models.Company);
     this.belongsTo(models.Company, { foreignKey: 'company_id', as: 'filials' });
+    this.hasMany(models.FilialPriceList, {
+      foreignKey: 'filial_id',
+      as: 'pricelists',
+    });
+    this.hasMany(models.FilialDiscountList, {
+      foreignKey: 'filial_id',
+      as: 'discountlists',
+    });
+    this.hasOne(models.User, {
+      sourceKey: 'created_by',
+      as: 'created',
+    });
+    this.hasOne(models.User, {
+      sourceKey: 'updated_by',
+      as: 'updated',
+    });
+    this.hasOne(models.User, {
+      sourceKey: 'canceled_by',
+      as: 'canceled',
+    });
   }
 }
 

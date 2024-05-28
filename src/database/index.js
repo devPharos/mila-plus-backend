@@ -12,9 +12,11 @@ import MenuHierarchy from '../app/models/MenuHierarchy';
 import Student from '../app/models/Student';
 import MenuHierarchyXGroups from '../app/models/MenuHierarchyXGroups';
 import Company from '../app/models/Company';
+import FilialPriceList from '../app/models/FilialPriceList';
+import FilialDiscountList from '../app/models/FilialDiscountList';
 // import UserGroup from '../app/models/usergroup'
 
-const models = [User, Company, File, Filial, UserGroup, UserGroupXUser, UserXFilial, MenuHierarchy, MenuHierarchyXGroups, Student];
+const models = [User, Company, File, Filial, FilialPriceList, FilialDiscountList, UserGroup, UserGroupXUser, UserXFilial, MenuHierarchy, MenuHierarchyXGroups, Student];
 
 class Database {
   constructor() {

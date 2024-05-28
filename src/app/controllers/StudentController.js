@@ -9,36 +9,36 @@ class StudentController {
     const { student_id } = req.params;
 
     const { userId } = req.body;
-  
-      const prospectExists = await Student.findByPk(student_id);
 
-      if(!prospectExists) {
-        return res.status(400).json({
-          error: 'Prospect not found.',
-        });
-      }
+    const prospectExists = await Student.findByPk(student_id);
 
-      if(!userId) {
-        return res.status(400).json({
-          error: 'Who is updating this prospect?',
-        });
-      }
+    if (!prospectExists) {
+      return res.status(400).json({
+        error: 'Prospect not found.',
+      });
+    }
 
-      const student = await prospectExists.update({
-        category: "Student",
-        status: "Waiting List",
-        sub_status: "Initial",
-        updated_at: new Date(),
-        updated_by: userId
-      })
+    if (!userId) {
+      return res.status(400).json({
+        error: 'Who is updating this prospect?',
+      });
+    }
 
-      if(!student) {
-        return res.status(400).json({
-          error: 'It was not possible to update this prospect status, review your information.',
-        });
-      }
+    const student = await prospectExists.update({
+      category: "Student",
+      status: "Waiting List",
+      sub_status: "Initial",
+      updated_at: new Date(),
+      updated_by: userId
+    })
 
-      return res.json(student);
+    if (!student) {
+      return res.status(400).json({
+        error: 'It was not possible to update this prospect status, review your information.',
+      });
+    }
+
+    return res.json(student);
   }
 
   async show(req, res) {

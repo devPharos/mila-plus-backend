@@ -18,7 +18,7 @@ class MenuHierarchyController {
     const { group_id } = req.params;
     const MenuHierarchy = await UserGroup.findOne({
       where: { canceled_at: null, id: group_id },
-      attributes: ['id', 'name' ],
+      attributes: ['id', 'name'],
       include: [
         {
           required: false,
@@ -82,47 +82,47 @@ class MenuHierarchyController {
     const { user_id } = req.params;
 
     const groups = await UserGroupXUser.findAll({
-        attributes: ['group_id'],
-        where: {
-            user_id,
-            canceled_at: null
-        },
-        include: [
-            {
-                model: UserGroup,
-                as: 'group',
-                attributes: ['name']
-            }
-        ],
-        raw: true
-        
+      attributes: ['group_id'],
+      where: {
+        user_id,
+        canceled_at: null
+      },
+      include: [
+        {
+          model: UserGroup,
+          as: 'group',
+          attributes: ['name']
+        }
+      ],
+      raw: true
+
     })
 
     const promises = groups.map((group) => {
-        return group.group_id
+      return group.group_id
     })
     Promise.all(promises).then(async groupIds => {
-        const hierarchy = await MenuHierarchy.findAll({
-          include: [
-            {
-              model: MenuHierarchyXGroups,
-              as: 'access',
-              attributes: ['id'],
-              where: {
-                group_id: {
-                    [Op.in]: groupIds
-                },
-                canceled_at: null
-              }
-            },
-          ],
+      const hierarchy = await MenuHierarchy.findAll({
+        include: [
+          {
+            model: MenuHierarchyXGroups,
+            as: 'access',
+            attributes: ['id'],
             where: {
-                canceled_at: null
-            },
-            attributes: ['alias','name']
-        })
+              group_id: {
+                [Op.in]: groupIds
+              },
+              canceled_at: null
+            }
+          },
+        ],
+        where: {
+          canceled_at: null
+        },
+        attributes: ['alias', 'name']
+      })
 
-        return res.json({ hierarchy, groups });
+      return res.json({ hierarchy, groups });
     })
   }
 

@@ -1,4 +1,5 @@
 'use strict';
+
 /** @type {import('sequelize-cli').Migration} */
 
 module.exports = {
@@ -17,7 +18,7 @@ module.exports = {
         onUpdate: 'CASCADE',
       },
       type: {
-        type:Sequelize.STRING,
+        type: Sequelize.STRING,
         allowNull: false
       },
       alias: {
@@ -76,7 +77,7 @@ module.exports = {
         type: Sequelize.STRING
       },
       observations: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT
       },
       allow_on_hold_f1: {
         type: Sequelize.BOOLEAN,
@@ -123,30 +124,40 @@ module.exports = {
       sendmail_name: {
         type: Sequelize.STRING
       },
+      active: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true
+      },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE
       },
       created_by: {
+        type: Sequelize.INTEGER,
         allowNull: false,
-        type: Sequelize.INTEGER
+        references: { model: 'users', key: 'id' },
+        onUpdate: 'SET NULL',
       },
       updated_at: {
         allowNull: true,
         type: Sequelize.DATE
       },
       updated_by: {
+        type: Sequelize.INTEGER,
         allowNull: true,
-        type: Sequelize.INTEGER
+        references: { model: 'users', key: 'id' },
+        onUpdate: 'SET NULL',
       },
       canceled_at: {
         allowNull: true,
         type: Sequelize.DATE,
       },
       canceled_by: {
-        allowNull: true,
         type: Sequelize.INTEGER,
-      },
+        allowNull: true,
+        references: { model: 'users', key: 'id' },
+        onUpdate: 'SET NULL',
+      }
     });
   },
   async down(queryInterface, Sequelize) {

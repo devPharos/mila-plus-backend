@@ -32,7 +32,8 @@ class SessionController {
     const { email, password } = req.body;
 
     const user = await User.findOne({
-      where: { email, canceled_at: null }
+      where: { email, canceled_at: null },
+      attributes: ['id', 'password_hash']
     });
 
     if (!user) {
@@ -48,7 +49,7 @@ class SessionController {
     } = user;
 
     const userData = await User.findByPk(id, {
-      attributes: [ 'company_id', 'id', 'name', 'email'],
+      attributes: ['company_id', 'id', 'name', 'email'],
       where: { canceled_at: null },
       include: [
         {
@@ -62,7 +63,7 @@ class SessionController {
             {
               model: Filial,
               as: 'filial',
-              attributes: ['id','alias','name'],
+              attributes: ['id', 'alias', 'name'],
             }
           ]
         },
@@ -77,7 +78,7 @@ class SessionController {
             {
               model: UserGroup,
               as: 'group',
-              attributes: ['id','name'],
+              attributes: ['id', 'name'],
               where: {
                 canceled_at: null,
               },

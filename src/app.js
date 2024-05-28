@@ -16,17 +16,14 @@ class App {
   }
 
   middlewares() {
-    // this.server.use(
-    // cors({ origin: [process.env.FRONTEND_URL, process.env.PHAROS_URL] })
-    // );
     this.server.use(cors());
     this.server.use(express.json());
     this.server.use(
-      cors([
-        {
-          origin: 'http://localhost:3000',
-        },
-      ])
+      cors({
+        origin: ['http://localhost:3000', 'https://milaplus.netlify.app'],
+        methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+        credentials: true, // This option is important for handling cookies and authentication headers
+      })
     );
   }
 

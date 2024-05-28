@@ -139,6 +139,33 @@ class UserController {
     return res.json(userExists);
   }
 
+  async shortInfo(req, res) {
+    const { user_id } = req.params;
+
+    if (!user_id || user_id === null) {
+      // console.log({ user_id })
+      return res.status(400).json({
+        error: 'User not found.',
+      });
+    }
+
+    const user = await User.findByPk(user_id, {
+      attributes: ['id', 'name'],
+      where: {
+        company_id: req.companyId,
+        canceled_at: null,
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        error: 'User not found.',
+      });
+    }
+
+    return res.json(user);
+  }
+
   async show(req, res) {
     const { user_id } = req.params;
     const userExists = await User.findByPk(user_id, {

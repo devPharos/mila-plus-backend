@@ -25,7 +25,6 @@ class Company extends Model {
       foreignKey: 'company_id',
       as: 'filials',
     });
-    
   }
 }
 

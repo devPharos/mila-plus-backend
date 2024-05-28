@@ -1,34 +1,46 @@
 'use strict';
 /** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('files', {
+    await queryInterface.createTable('filial_price_lists', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      company_id: {
+      filial_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: { model: 'companies', key: 'id' },
-        onUpdate: 'NO ACTION',
+        references: { model: 'filials', key: 'id' },
+        onUpdate: 'CASCADE',
       },
       name: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      size: {
-        type: Sequelize.FLOAT
+      installment: {
+        type: Sequelize.FLOAT,
       },
-      key: {
-        type: Sequelize.STRING,
-        allowNull: false
+      installment_f1: {
+        type: Sequelize.FLOAT,
       },
-      url: {
-        type: Sequelize.STRING,
-        allowNull: false
+      mailling: {
+        type: Sequelize.FLOAT,
+      },
+      private: {
+        type: Sequelize.FLOAT,
+      },
+      book: {
+        type: Sequelize.FLOAT,
+      },
+      registration_fee: {
+        type: Sequelize.FLOAT,
+      },
+      active: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true
       },
       created_at: {
         allowNull: false,
@@ -57,6 +69,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('files');
+    await queryInterface.dropTable('filial_price_lists');
   }
 };

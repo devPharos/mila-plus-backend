@@ -1,34 +1,49 @@
 'use strict';
 /** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('files', {
+    await queryInterface.createTable('filial_discount_lists', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      company_id: {
+      filial_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: { model: 'companies', key: 'id' },
-        onUpdate: 'NO ACTION',
+        references: { model: 'filials', key: 'id' },
+        onUpdate: 'CASCADE',
       },
       name: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      size: {
-        type: Sequelize.FLOAT
-      },
-      key: {
+      type: {
         type: Sequelize.STRING,
-        allowNull: false
       },
-      url: {
-        type: Sequelize.STRING,
-        allowNull: false
+      value: {
+        type: Sequelize.FLOAT,
+      },
+      percent: {
+        type: Sequelize.BOOLEAN,
+      },
+      punctuality_discount: {
+        type: Sequelize.BOOLEAN,
+      },
+      all_installments: {
+        type: Sequelize.BOOLEAN,
+      },
+      free_vacation: {
+        type: Sequelize.BOOLEAN,
+      },
+      special_discount: {
+        type: Sequelize.BOOLEAN,
+      },
+      active: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true
       },
       created_at: {
         allowNull: false,
@@ -57,6 +72,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('files');
+    await queryInterface.dropTable('filial_discount_lists');
   }
 };
