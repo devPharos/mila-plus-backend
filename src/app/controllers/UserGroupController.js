@@ -88,7 +88,7 @@ class UserGroupController {
   async index(req, res) {
     const groups = await UserGroup.findAll({
       where: {
-        company_id: req.companyId,
+        // company_id: req.companyId,
         canceled_at: null,
       },
     });
