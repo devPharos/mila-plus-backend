@@ -1,5 +1,5 @@
 import Sequelize from 'sequelize';
-import UserGroup from '../models/Usergroup';
+import UserGroup from '../models/UserGroup';
 
 const { Op } = Sequelize;
 

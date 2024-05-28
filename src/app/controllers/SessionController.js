@@ -4,7 +4,7 @@ import * as Yup from 'yup';
 import authConfig from '../../config/auth';
 import User from '../models/User';
 import Filial from '../models/Filial';
-import UserGroup from '../models/Usergroup';
+import UserGroup from '../models/UserGroup';
 import UserGroupXUser from '../models/UserGroupXUser';
 import UserXFilial from '../models/UserXFilial';
 // import UserGroup from '../models/UserGroup';

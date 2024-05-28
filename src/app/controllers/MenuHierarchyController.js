@@ -3,7 +3,7 @@
 import { Op } from 'sequelize';
 import MenuHierarchy from '../models/MenuHierarchy';
 import UserGroupXUser from '../models/UserGroupXUser';
-import UserGroup from '../models/Usergroup';
+import UserGroup from '../models/UserGroup';
 import MenuHierarchyXGroups from '../models/MenuHierarchyXGroups';
 
 class MenuHierarchyController {
