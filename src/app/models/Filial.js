@@ -5,10 +5,9 @@ class Filial extends Model {
     super.init(
       {
         company_id: Sequelize.INTEGER,
-        type: Sequelize.STRING,
+        filial_type_id: Sequelize.INTEGER,
         alias: Sequelize.STRING,
         name: Sequelize.STRING,
-
         avatar_id: Sequelize.INTEGER,
         ein: Sequelize.STRING,
         country: Sequelize.STRING,
@@ -39,12 +38,12 @@ class Filial extends Model {
         sendmail_name: Sequelize.STRING,
 
         active: Sequelize.BOOLEAN,
-        created_at: Sequelize.DATE,
         created_by: Sequelize.INTEGER,
-        updated_at: Sequelize.DATE,
+        created_at: Sequelize.DATE,
         updated_by: Sequelize.INTEGER,
-        canceled_at: Sequelize.STRING,
+        updated_at: Sequelize.DATE,
         canceled_by: Sequelize.INTEGER,
+        canceled_at: Sequelize.DATE,
       },
       {
         sequelize
@@ -56,6 +55,7 @@ class Filial extends Model {
 
   static associate(models) {
     this.belongsTo(models.Company, { foreignKey: 'company_id', as: 'filials' });
+    this.belongsTo(models.Filialtype, { foreignKey: 'filial_type_id', as: 'types' });
     this.hasMany(models.FilialPriceList, {
       foreignKey: 'filial_id',
       as: 'pricelists',

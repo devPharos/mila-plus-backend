@@ -1,4 +1,6 @@
 import Sequelize from 'sequelize';
+import MailLog from '../../Mails/MailLog';
+import databaseConfig from '../../config/database';
 import Company from '../models/Company';
 import Filial from '../models/Filial';
 const { Op } = Sequelize;

@@ -17,9 +17,11 @@ module.exports = {
         references: { model: 'companies', key: 'id' },
         onUpdate: 'CASCADE',
       },
-      type: {
-        type: Sequelize.STRING,
-        allowNull: false
+      filial_type_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: { model: 'filialtypes', key: 'id' },
+        onUpdate: 'CASCADE',
       },
       alias: {
         type: Sequelize.STRING,

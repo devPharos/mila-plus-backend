@@ -5,23 +5,88 @@ module.exports = {
       [
         {
           father_id: null,
-          alias: 'holding-config',
-          name: 'Holding Config',
+          alias: 'administrative',
+          name: 'Administrative',
+        },
+        {
+          father_id: null,
+          alias: 'academic',
+          name: 'Academic',
+        },
+        {
+          father_id: null,
+          alias: 'commercial',
+          name: 'Commercial',
+        },
+        {
+          father_id: null,
+          alias: 'financial',
+          name: 'Financial',
         },
         {
           father_id: 1,
-          alias: 'holding-filials',
+          alias: 'administrative-dashboard',
+          name: 'Dashboard',
+        },
+        {
+          father_id: 2,
+          alias: 'academic-dashboard',
+          name: 'Dashboard',
+        },
+        {
+          father_id: 1,
+          alias: 'filials',
           name: 'Filials',
         },
         {
           father_id: 1,
-          alias: 'holding-groups',
+          alias: 'groups',
           name: 'User Groups',
         },
         {
           father_id: 1,
-          alias: 'holding-users',
+          alias: 'users',
           name: 'Users',
+        },
+        {
+          father_id: 1,
+          alias: 'filial-types',
+          name: 'Filial Types',
+        },
+        {
+          father_id: 1,
+          alias: 'parameters',
+          name: 'Parameters',
+        },
+        {
+          father_id: 1,
+          alias: 'chart-of-accounts',
+          name: 'Chart of Accounts',
+        },
+        {
+          father_id: 2,
+          alias: 'languages',
+          name: 'Languages',
+        },
+        {
+          father_id: 2,
+          alias: 'study-programs',
+          name: 'Study Programs',
+        },
+        {
+          father_id: 2,
+          alias: 'levels',
+          name: 'Levels',
+        },
+        {
+          father_id: 2,
+          alias: 'language-modes',
+          name: 'Language Modes',
+        },
+        {
+          father_id: 2,
+          alias: 'workloads',
+          name: 'Workloads',
         },
       ],
       {}

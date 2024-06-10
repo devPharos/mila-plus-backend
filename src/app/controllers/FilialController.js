@@ -1,71 +1,94 @@
 import Sequelize from 'sequelize';
+import MailLog from '../../Mails/MailLog';
+import databaseConfig from '../../config/database';
 import Filial from '../models/Filial';
 import FilialPriceList from '../models/FilialPriceList';
 import FilialDiscountList from '../models/FilialDiscountList';
-import User from '../models/User';
-import databaseConfig from '../../config/database';
-import { mailer } from '../../config/mailer';
-
+import Filialtype from '../models/Filialtype';
 const { Op } = Sequelize;
 
 class FilialController {
 
   async show(req, res) {
-    const { filial_id } = req.params;
+    try {
+      const { filial_id } = req.params;
 
-    const filial = await Filial.findByPk(filial_id, {
-      include: [
-        {
-          model: FilialPriceList,
-          as: 'pricelists',
-          required: false,
-          where: {
-            canceled_at: null
+      const filial = await Filial.findByPk(filial_id, {
+        include: [
+          {
+            model: FilialPriceList,
+            as: 'pricelists',
+            required: false,
+            where: {
+              canceled_at: null
+            },
+            order: ['name']
           },
-          order: ['name']
-        },
-        {
-          model: FilialDiscountList,
-          as: 'discountlists',
-          required: false,
-          where: {
-            canceled_at: null
+          {
+            model: FilialDiscountList,
+            as: 'discountlists',
+            required: false,
+            where: {
+              canceled_at: null
+            },
+            order: ['name']
           },
-          order: ['name']
-        },
-      ]
-    })
+          {
+            model: Filialtype,
+            as: 'types',
+            attributes: ['id', 'name']
+          }
+        ]
+      })
 
-    if (!filial) {
-      return res.status(400).json({
-        error: 'Filial not found',
+      if (!filial) {
+        return res.status(400).json({
+          error: 'Filial not found',
+        });
+      }
+
+      return res.json(filial);
+    } catch (err) {
+      const className = 'FilialController';
+      const functionName = 'show';
+      MailLog({ className, functionName, req, err })
+      return res.status(500).json({
+        error: err,
       });
     }
-
-    return res.json(filial);
   }
 
   async index(req, res) {
+    try {
+      const filials = await Filial.findAll({
+        where: {
+          canceled_at: null,
+          // company_id: req.companyId,
+          [Op.not]: { alias: 'AAA' }
+        },
+        include: [
+          {
+            model: Filialtype,
+            as: 'types'
+          }
+        ],
+        order: [['name']]
+      })
 
-    const filials = await Filial.findAll({
-      where: {
-        canceled_at: null,
-        // company_id: req.companyId,
-        [Op.not]: { alias: 'AAA' }
-      },
-      order: [['name']]
-    })
-
-    if (!filials.length) {
-      return res.status(400).json({
-        error: 'None filial was founded.',
+      return res.json(filials);
+    } catch (err) {
+      const className = 'FilialController';
+      const functionName = 'index';
+      MailLog({ className, functionName, req, err })
+      return res.status(500).json({
+        error: err,
       });
     }
-
-    return res.json(filials);
   }
 
   async store(req, res) {
+    const connection = new Sequelize(databaseConfig)
+    const t = await connection.transaction();
     try {
       const filialExist = await Filial.findOne({
         where: {
@@ -83,12 +106,19 @@ class FilialController {
 
       const newFilial = await Filial.create({
         company_id: req.companyId, ...req.body, created_by: req.userId, created_at: new Date()
+      }, {
+        transaction: t
       })
+
+      t.commit();
 
       return res.json(newFilial);
 
     } catch (err) {
-
+      await t.rollback();
+      const className = 'FilialController';
+      const functionName = 'store';
+      MailLog({ className, functionName, req, err })
       return res.status(500).json({
         error: err,
       });
@@ -97,9 +127,9 @@ class FilialController {
 
   async update(req, res) {
     const connection = new Sequelize(databaseConfig)
-    const { filial_id } = req.params;
     const t = await connection.transaction();
     try {
+      const { filial_id } = req.params;
       const filialExist = await Filial.findByPk(filial_id)
 
       if (!filialExist) {
@@ -164,13 +194,9 @@ class FilialController {
 
     } catch (err) {
       await t.rollback();
-      // mailer.sendMail({
-      //   from: '"Denis 👻" <denis@pharosit.com.br>',
-      //   to: "denis@pharosit.com.br",
-      //   subject: "❌ Error @ FilialController - update",
-      //   html: "<p>User: " + req.userId + "<br/>filial_id: " + filial_id + "</p><p>" + JSON.stringify(req.body) + "</p>"
-      // })
-      // console.log(err)
+      const className = 'FilialController';
+      const functionName = 'update';
+      MailLog({ className, functionName, req, err })
       return res.status(500).json({
         error: err,
       });

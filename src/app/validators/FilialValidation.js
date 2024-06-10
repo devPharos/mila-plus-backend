@@ -1,17 +1,18 @@
 import Filial from '../models/Filial';
 
 export default async (req, res, next) => {
+  console.log('Filial Validation')
   try {
     const { filial_id } = req.body;
 
     const filial = await Filial.findByPk(filial_id)
-    if(!filial) {
+    if (!filial) {
       return res.status(400).json({
         error: 'Filial is required.',
       });
     }
 
-    if(filial.dataValues.canceled_at !== null) {
+    if (filial.dataValues.canceled_at !== null) {
       return res.status(400).json({
         error: 'Filial is canceled.',
       });

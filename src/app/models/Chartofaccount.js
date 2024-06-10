@@ -1,18 +1,13 @@
 import Sequelize, { Model } from 'sequelize';
 
-class FilialPriceList extends Model {
+class Chartofaccount extends Model {
     static init(sequelize) {
         super.init(
             {
-                filial_id: Sequelize.INTEGER,
+                company_id: Sequelize.INTEGER,
+                code: Sequelize.STRING,
                 name: Sequelize.STRING,
-                installment: Sequelize.FLOAT,
-                installment_f1: Sequelize.FLOAT,
-                mailling: Sequelize.FLOAT,
-                private: Sequelize.FLOAT,
-                book: Sequelize.FLOAT,
-                registration_fee: Sequelize.FLOAT,
-                active: Sequelize.BOOLEAN,
+                father_id: Sequelize.INTEGER,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -21,16 +16,20 @@ class FilialPriceList extends Model {
                 canceled_at: Sequelize.DATE,
             },
             {
-                sequelize,
+                sequelize
             }
         );
 
         return this;
     }
-
     static associate(models) {
-        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filials' });
+
+        this.hasOne(models.Chartofaccount, {
+            sourceKey: 'father_id',
+            as: 'father',
+        });
+
     }
 }
 
-export default FilialPriceList;
+export default Chartofaccount;

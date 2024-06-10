@@ -14,9 +14,15 @@ import MenuHierarchyXGroups from '../app/models/MenuHierarchyXGroups';
 import Company from '../app/models/Company';
 import FilialPriceList from '../app/models/FilialPriceList';
 import FilialDiscountList from '../app/models/FilialDiscountList';
+import Filialtype from '../app/models/Filialtype';
+import Parameter from '../app/models/Parameter';
+import Chartofaccount from '../app/models/Chartofaccount';
+import Language from '../app/models/Language';
+import Studyprogram from '../app/models/Studyprogram';
+import Level from '../app/models/Level';
 // import UserGroup from '../app/models/usergroup'
 
-const models = [User, Company, File, Filial, FilialPriceList, FilialDiscountList, UserGroup, UserGroupXUser, UserXFilial, MenuHierarchy, MenuHierarchyXGroups, Student];
+const models = [User, Company, Chartofaccount, File, Filial, Filialtype, FilialPriceList, FilialDiscountList, Parameter, Language, Level, Studyprogram, UserGroup, UserGroupXUser, UserXFilial, MenuHierarchy, MenuHierarchyXGroups, Student];
 
 class Database {
   constructor() {

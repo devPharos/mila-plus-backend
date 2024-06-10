@@ -6,12 +6,12 @@ class MenuHierarchyXGroups extends Model {
       {
         access_id: Sequelize.INTEGER,
         group_id: Sequelize.INTEGER,
-        created_at: Sequelize.DATE,
         created_by: Sequelize.INTEGER,
-        updated_at: Sequelize.DATE,
+        created_at: Sequelize.DATE,
         updated_by: Sequelize.INTEGER,
-        canceled_at: Sequelize.STRING,
+        updated_at: Sequelize.DATE,
         canceled_by: Sequelize.INTEGER,
+        canceled_at: Sequelize.DATE,
       },
       {
         sequelize,
