@@ -1,4 +1,5 @@
 import Sequelize from 'sequelize';
+import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
 import Parameter from '../models/Parameter';
 

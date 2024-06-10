@@ -1,6 +1,6 @@
 import Sequelize from 'sequelize';
-import databaseConfig from '../../config/database';
 import MailLog from '../../Mails/MailLog';
+import databaseConfig from '../../config/database';
 import Level from '../models/Level';
 import Studyprogram from '../models/Studyprogram';
 

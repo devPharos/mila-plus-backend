@@ -1,7 +1,7 @@
 import Sequelize from 'sequelize';
+import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
 import Language from '../models/Language';
-import MailLog from '../../Mails/MailLog';
 
 const { Op } = Sequelize;
 

@@ -1,6 +1,8 @@
 /* eslint-disable no-unused-expressions */
 /* eslint-disable array-callback-return */
 import { Op } from 'sequelize';
+import MailLog from '../../Mails/MailLog';
+import databaseConfig from '../../config/database';
 import MenuHierarchy from '../models/MenuHierarchy';
 import UserGroupXUser from '../models/UserGroupXUser';
 import UserGroup from '../models/UserGroup';
