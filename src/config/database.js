@@ -1,14 +1,31 @@
+require('dotenv').config();
 module.exports = {
-  dialect: 'postgres',
-  host: process.env.NODE_ENV === 'production' ? process.env.DB_HOSTNAME : 'localhost',
-  port: process.env.NODE_ENV === 'production' ? process.env.DB_PORT : 5432,
-  username: process.env.NODE_ENV === 'production' ? process.env.DB_USERNAME : 'postgres',
-  password: process.env.NODE_ENV === 'production' ? process.env.DB_PASSWORD : '0241',
-  database: process.env.NODE_ENV === 'production' ? process.env.DB_DATABASE : 'mila-plus-dev',
-  define: {
-    timestamps: false,
-    underscored: true,
-    underscoredAll: true,
+  "development": {
+    dialect: 'postgres',
+    host: 'localhost',
+    port: 5432,
+    username: 'postgres',
+    password: '0241',
+    database: 'mila-plus-dev',
+    define: {
+      timestamps: false,
+      underscored: true,
+      underscoredAll: true,
+    },
+    logging: false,
   },
-  logging: false,
+  "production": {
+    dialect: 'postgres',
+    host: process.env.DB_HOSTNAME,
+    port: process.env.DB_PORT,
+    username: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DATABASE,
+    define: {
+      timestamps: false,
+      underscored: true,
+      underscoredAll: true,
+    },
+    logging: false,
+  }
 };
