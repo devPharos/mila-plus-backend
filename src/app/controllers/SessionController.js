@@ -88,8 +88,6 @@ class SessionController {
       ],
     })
 
-    // console.log(userData)
-
     return res.json({
       user: userData,
       token: jwt.sign({ id, company_id: userData.company_id }, authConfig.secret, {

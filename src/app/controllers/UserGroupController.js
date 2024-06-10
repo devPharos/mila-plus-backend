@@ -1,6 +1,7 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
+import UserGroup from '../models/UserGroup';
 
 const { Op } = Sequelize;
 
