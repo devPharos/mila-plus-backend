@@ -5,7 +5,7 @@ class Filial extends Model {
     super.init(
       {
         company_id: Sequelize.INTEGER,
-        filial_type_id: Sequelize.INTEGER,
+        filialtype_id: Sequelize.INTEGER,
         alias: Sequelize.STRING,
         name: Sequelize.STRING,
         avatar_id: Sequelize.INTEGER,
@@ -55,7 +55,7 @@ class Filial extends Model {
 
   static associate(models) {
     this.belongsTo(models.Company, { foreignKey: 'company_id', as: 'filials' });
-    this.belongsTo(models.Filialtype, { foreignKey: 'filial_type_id', as: 'types' });
+    this.belongsTo(models.Filialtype, { foreignKey: 'filialtype_id' });
     this.hasMany(models.FilialPriceList, {
       foreignKey: 'filial_id',
       as: 'pricelists',

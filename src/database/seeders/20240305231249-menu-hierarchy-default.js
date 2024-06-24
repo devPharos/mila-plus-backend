@@ -70,8 +70,8 @@ module.exports = {
         },
         {
           father_id: 2,
-          alias: 'study-programs',
-          name: 'Study Programs',
+          alias: 'program-categories',
+          name: 'Program Categories',
         },
         {
           father_id: 2,

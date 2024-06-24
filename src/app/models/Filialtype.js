@@ -23,8 +23,7 @@ class Filialtype extends Model {
 
     static associate(models) {
         this.hasMany(models.Filial, {
-            foreignKey: 'filial_type_id',
-            as: 'types',
+            foreignKey: 'filialtype_id'
         });
     }
 }

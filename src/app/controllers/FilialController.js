@@ -35,7 +35,6 @@ class FilialController {
           },
           {
             model: Filialtype,
-            as: 'types',
             attributes: ['id', 'name']
           }
         ]
@@ -69,7 +68,6 @@ class FilialController {
         include: [
           {
             model: Filialtype,
-            as: 'types'
           }
         ],
         order: [['name']]

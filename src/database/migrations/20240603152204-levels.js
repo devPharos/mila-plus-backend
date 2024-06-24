@@ -17,11 +17,15 @@ module.exports = {
                 references: { model: 'companies', key: 'id' },
                 onUpdate: 'CASCADE',
             },
-            studyprogram_id: {
+            programcategory_id: {
                 type: Sequelize.INTEGER,
                 allowNull: true,
-                references: { model: 'studyprograms', key: 'id' },
+                references: { model: 'programcategories', key: 'id' },
                 onUpdate: 'CASCADE',
+            },
+            total_hours: {
+                type: Sequelize.INTEGER,
+                defaultValue: 0,
             },
             name: {
                 type: Sequelize.STRING,

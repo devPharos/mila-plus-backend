@@ -17,7 +17,7 @@ module.exports = {
         references: { model: 'companies', key: 'id' },
         onUpdate: 'CASCADE',
       },
-      filial_type_id: {
+      filialtype_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: { model: 'filialtypes', key: 'id' },

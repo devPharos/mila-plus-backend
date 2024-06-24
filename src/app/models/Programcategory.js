@@ -1,6 +1,6 @@
 import Sequelize, { Model } from 'sequelize';
 
-class Studyprogram extends Model {
+class Programcategory extends Model {
     static init(sequelize) {
         super.init(
             {
@@ -24,10 +24,9 @@ class Studyprogram extends Model {
 
     static associate(models) {
         this.belongsTo(models.Language, {
-            sourceKey: 'language_id',
-            as: 'language'
+            sourceKey: 'language_id'
         });
     }
 }
 
-export default Studyprogram;
+export default Programcategory;

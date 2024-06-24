@@ -1,13 +1,11 @@
 import Sequelize, { Model } from 'sequelize';
 
-class Level extends Model {
+class Languagemode extends Model {
     static init(sequelize) {
         super.init(
             {
                 company_id: Sequelize.INTEGER,
                 name: Sequelize.STRING,
-                programcategory_id: Sequelize.INTEGER,
-                total_hours: Sequelize.INTEGER,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -22,12 +20,6 @@ class Level extends Model {
 
         return this;
     }
-
-    static associate(models) {
-        this.belongsTo(models.Programcategory, {
-            sourceKey: { name: 'programcategory_id' }
-        });
-    }
 }
 
-export default Level;
+export default Languagemode;

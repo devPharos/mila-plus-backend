@@ -18,8 +18,10 @@ import UserGroupController from './app/controllers/UserGroupController';
 import ParameterController from './app/controllers/ParameterController';
 import ChartOfAccountsController from './app/controllers/ChartOfAccountsController';
 import LanguageController from './app/controllers/LanguageController';
-import StudyProgramController from './app/controllers/StudyProgramController';
+import ProgramCategoryController from './app/controllers/ProgramCategoryController';
 import LevelController from './app/controllers/LevelController';
+import LanguageModeController from './app/controllers/LanguageModeController';
+import WorkloadController from './app/controllers/WorkloadController';
 
 
 const routes = new Router();
@@ -73,20 +75,31 @@ routes.get('/languages/:language_id', LanguageController.show);
 routes.post('/languages', LanguageController.store);
 routes.put('/languages/:language_id', LanguageController.update);
 
-routes.get('/studyprograms', StudyProgramController.index);
-routes.get('/studyprograms/:studyprogram_id', StudyProgramController.show);
-routes.post('/studyprograms', StudyProgramController.store);
-routes.put('/studyprograms/:studyprogram_id', StudyProgramController.update);
+routes.get('/programcategories', ProgramCategoryController.index);
+routes.get('/programcategories/:programcategory_id', ProgramCategoryController.show);
+routes.post('/programcategories', ProgramCategoryController.store);
+routes.put('/programcategories/:programcategory_id', ProgramCategoryController.update);
 
 routes.get('/levels', LevelController.index);
 routes.get('/levels/:level_id', LevelController.show);
 routes.post('/levels', LevelController.store);
 routes.put('/levels/:level_id', LevelController.update);
 
+routes.get('/languagemodes', LanguageModeController.index);
+routes.get('/languagemodes/:languagemode_id', LanguageModeController.show);
+routes.post('/languagemodes', LanguageModeController.store);
+routes.put('/languagemodes/:languagemode_id', LanguageModeController.update);
+
+routes.get('/workloads', WorkloadController.index);
+routes.get('/workloads/:workload_id', WorkloadController.show);
+routes.post('/workloads', WorkloadController.store);
+routes.put('/workloads/:workload_id', WorkloadController.update);
+
 routes.get('/groups', UserGroupController.index);
 routes.get('/groups/:group_id', UserGroupController.show);
 routes.post('/groups', UserGroupController.store);
 routes.put('/groups/:group_id', UserGroupController.update);
+routes.delete('/groups/:group_id', UserGroupController.inactivate);
 
 // routes.use(FilialValidation);
 

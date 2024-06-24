@@ -11,7 +11,29 @@ class ChartOfAccountsController {
         try {
             const { chartofaccount_id } = req.params;
 
-            const chartofaccounts = await Chartofaccount.findByPk(chartofaccount_id)
+            const chartofaccounts = await Chartofaccount.findByPk(chartofaccount_id, {
+                include: [
+                    {
+                        model: Chartofaccount,
+                        as: 'Father',
+                        required: false,
+                        include: [
+                            {
+                                model: Chartofaccount,
+                                as: 'Father',
+                                required: false,
+                                include: [
+                                    {
+                                        model: Chartofaccount,
+                                        as: 'Father',
+                                        required: false,
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            })
 
             if (!chartofaccounts) {
                 return res.status(400).json({
@@ -36,8 +58,32 @@ class ChartOfAccountsController {
             const chartofaccounts = await Chartofaccount.findAll({
                 where: {
                     canceled_at: null,
-                    company_id: req.companyId
+                    company_id: req.companyId,
+                    code: {
+                        [Op.notIn]: ['01', '02']
+                    }
                 },
+                include: [
+                    {
+                        model: Chartofaccount,
+                        as: 'Father',
+                        required: false,
+                        include: [
+                            {
+                                model: Chartofaccount,
+                                as: 'Father',
+                                required: false,
+                                include: [
+                                    {
+                                        model: Chartofaccount,
+                                        as: 'Father',
+                                        required: false,
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
                 order: [['code']]
             })
 
@@ -60,7 +106,8 @@ class ChartOfAccountsController {
             const chartofaccountExist = await Chartofaccount.findOne({
                 where: {
                     company_id: req.companyId,
-                    code: req.body.code,
+                    father_id: req.body.father_id,
+                    name: req.body.name,
                     canceled_at: null,
                 }
             })
@@ -71,8 +118,34 @@ class ChartOfAccountsController {
                 });
             }
 
+            const father = await Chartofaccount.findByPk(req.body.father_id)
+
+            if (!father) {
+                return res.status(400).json({
+                    error: 'Father Account is required.',
+                });
+            }
+
+            const lastCodeFromFather = await Chartofaccount.findOne({
+                where: {
+                    father_id: father.id,
+                },
+                order: [['code', 'desc']],
+                attributes: ['code']
+            })
+
+            let nextCode = father.code + '.001';
+            if (lastCodeFromFather) {
+                const substrCode = lastCodeFromFather.dataValues.code.substring(lastCodeFromFather.dataValues.code.length - 3);
+                const numberCode = Number(substrCode) + 1;
+                const padStartCode = numberCode.toString().padStart(3, "0");
+
+                nextCode = father.code + '.' + padStartCode;
+                // nextCode = (Number(lastCodeFromFather.dataValues.code) + 1).toString();
+            }
+
             const newChartofaccount = await Chartofaccount.create({
-                company_id: req.companyId, ...req.body, created_by: req.userId, created_at: new Date()
+                company_id: req.companyId, code: nextCode, ...req.body, created_by: req.userId, created_at: new Date()
             },
                 {
                     transaction: t

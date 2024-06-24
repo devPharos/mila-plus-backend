@@ -5,7 +5,7 @@ class UserGroup extends Model {
     super.init(
       {
         company_id: Sequelize.INTEGER,
-        filial_type: Sequelize.STRING,
+        filialtype_id: Sequelize.INTEGER,
         name: Sequelize.STRING,
         created_by: Sequelize.INTEGER,
         created_at: Sequelize.DATE,
@@ -23,7 +23,7 @@ class UserGroup extends Model {
   }
 
   static associate(models) {
-    // this.belongsTo(models.Menu, { foreignKey: 'menu_id', as: 'menu' });
+    this.belongsTo(models.Filialtype, { foreignKey: 'filialtype_id' });
     this.hasMany(models.UserGroupXUser, { foreignKey: 'group_id', as: 'groupxuser' });
     this.hasMany(models.MenuHierarchy, {
       foreignKey: 'group_id',

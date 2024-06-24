@@ -1,13 +1,15 @@
 import Sequelize, { Model } from 'sequelize';
 
-class Level extends Model {
+class Workload extends Model {
     static init(sequelize) {
         super.init(
             {
                 company_id: Sequelize.INTEGER,
                 name: Sequelize.STRING,
-                programcategory_id: Sequelize.INTEGER,
-                total_hours: Sequelize.INTEGER,
+                level_id: Sequelize.INTEGER,
+                languagemode_id: Sequelize.INTEGER,
+                days_per_week: Sequelize.FLOAT,
+                hours_per_day: Sequelize.FLOAT,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -24,10 +26,13 @@ class Level extends Model {
     }
 
     static associate(models) {
-        this.belongsTo(models.Programcategory, {
-            sourceKey: { name: 'programcategory_id' }
+        this.belongsTo(models.Level, {
+            sourceKey: { name: 'level_id' }
+        });
+        this.belongsTo(models.Languagemode, {
+            sourceKey: { name: 'languagemode_id' }
         });
     }
 }
 
-export default Level;
+export default Workload;

@@ -1,34 +1,27 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
-import Level from '../models/Level';
-import Programcategory from '../models/Programcategory';
+import Languagemode from '../models/Languagemode';
 
 const { Op } = Sequelize;
 
-class LevelController {
+class LanguageModeController {
 
     async show(req, res) {
         try {
-            const { level_id } = req.params;
+            const { languagemode_id } = req.params;
 
-            const levels = await Level.findByPk(level_id, {
-                include: [
-                    {
-                        model: Programcategory
-                    }
-                ],
-            })
+            const languagemodes = await Languagemode.findByPk(languagemode_id)
 
-            if (!levels) {
+            if (!languagemodes) {
                 return res.status(400).json({
-                    error: 'Level not found',
+                    error: 'Language Mode not found',
                 });
             }
 
-            return res.json(levels);
+            return res.json(languagemodes);
         } catch (err) {
-            const className = 'LevelController';
+            const className = 'LanguageModeController';
             const functionName = 'show';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -39,22 +32,17 @@ class LevelController {
 
     async index(req, res) {
         try {
-            const levels = await Level.findAll({
+            const languagemodes = await Languagemode.findAll({
                 where: {
                     canceled_at: null,
                     company_id: req.companyId
                 },
-                include: [
-                    {
-                        model: Programcategory
-                    }
-                ],
-                order: [[Programcategory, 'name'], ['name']]
+                order: [['name']]
             })
 
-            return res.json(levels);
+            return res.json(languagemodes);
         } catch (err) {
-            const className = 'LevelController';
+            const className = 'LanguageModeController';
             const functionName = 'index';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -67,7 +55,7 @@ class LevelController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction();
         try {
-            const levelExist = await Level.findOne({
+            const languageModeExist = await Languagemode.findOne({
                 where: {
                     company_id: req.companyId,
                     name: req.body.name,
@@ -75,24 +63,24 @@ class LevelController {
                 }
             })
 
-            if (levelExist) {
+            if (languageModeExist) {
                 return res.status(400).json({
-                    error: 'Level already exists.',
+                    error: 'Language Mode already exists.',
                 });
             }
 
-            const newlevel = await Level.create({
+            const newLanguageMode = await Languagemode.create({
                 company_id: req.companyId, ...req.body, created_by: req.userId, created_at: new Date()
             }, {
                 transaction: t
             })
             t.commit();
 
-            return res.json(newlevel);
+            return res.json(newLanguageMode);
 
         } catch (err) {
             await t.rollback();
-            const className = 'LevelController';
+            const className = 'LanguageModeController';
             const functionName = 'store';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -102,20 +90,19 @@ class LevelController {
     }
 
     async update(req, res) {
-        // console.log(...req.body)
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction();
         try {
-            const { level_id } = req.params;
-            const levelExist = await Level.findByPk(level_id)
+            const { languagemode_id } = req.params;
+            const languageModeExist = await Languagemode.findByPk(languagemode_id)
 
-            if (!levelExist) {
+            if (!languageModeExist) {
                 return res.status(400).json({
-                    error: 'Level doesn`t exists.',
+                    error: 'Language Mode doesn`t exists.',
                 });
             }
 
-            const level = await levelExist.update({
+            const languageMode = await languageModeExist.update({
                 ...req.body,
                 updated_by: req.userId,
                 updated_at: new Date()
@@ -124,11 +111,11 @@ class LevelController {
             })
             t.commit();
 
-            return res.json(level);
+            return res.json(languageMode);
 
         } catch (err) {
             await t.rollback();
-            const className = 'LevelController';
+            const className = 'LanguageModeController';
             const functionName = 'update';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -138,4 +125,4 @@ class LevelController {
     }
 }
 
-export default new LevelController();
+export default new LanguageModeController();

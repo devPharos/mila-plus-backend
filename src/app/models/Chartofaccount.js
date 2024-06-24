@@ -26,7 +26,8 @@ class Chartofaccount extends Model {
 
         this.hasOne(models.Chartofaccount, {
             sourceKey: 'father_id',
-            as: 'father',
+            foreignKey: 'id',
+            as: 'Father',
         });
 
     }

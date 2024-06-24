@@ -1,34 +1,35 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
-import Level from '../models/Level';
 import Programcategory from '../models/Programcategory';
+import Language from '../models/Language';
 
 const { Op } = Sequelize;
 
-class LevelController {
+class ProgramCategoryController {
 
     async show(req, res) {
         try {
-            const { level_id } = req.params;
+            const { programcategory_id } = req.params;
 
-            const levels = await Level.findByPk(level_id, {
+            const programCategorys = await Programcategory.findByPk(programcategory_id, {
                 include: [
                     {
-                        model: Programcategory
+                        model: Language,
+                        attributes: ['id', 'name']
                     }
                 ],
             })
 
-            if (!levels) {
+            if (!programCategorys) {
                 return res.status(400).json({
-                    error: 'Level not found',
+                    error: 'Program Category not found',
                 });
             }
 
-            return res.json(levels);
+            return res.json(programCategorys);
         } catch (err) {
-            const className = 'LevelController';
+            const className = 'ProgramCategoryController';
             const functionName = 'show';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -39,22 +40,23 @@ class LevelController {
 
     async index(req, res) {
         try {
-            const levels = await Level.findAll({
+            const programCategories = await Programcategory.findAll({
                 where: {
                     canceled_at: null,
                     company_id: req.companyId
                 },
                 include: [
                     {
-                        model: Programcategory
+                        model: Language,
+                        attributes: ['id', 'name']
                     }
                 ],
-                order: [[Programcategory, 'name'], ['name']]
+                order: [['name']]
             })
 
-            return res.json(levels);
+            return res.json(programCategories);
         } catch (err) {
-            const className = 'LevelController';
+            const className = 'ProgramCategoryController';
             const functionName = 'index';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -67,32 +69,34 @@ class LevelController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction();
         try {
-            const levelExist = await Level.findOne({
+            const programCategoryExist = await Programcategory.findOne({
                 where: {
                     company_id: req.companyId,
+                    language_id: req.body.language_id,
                     name: req.body.name,
                     canceled_at: null,
                 }
             })
 
-            if (levelExist) {
+            if (programCategoryExist) {
                 return res.status(400).json({
-                    error: 'Level already exists.',
+                    error: 'Program Category already exists.',
                 });
             }
 
-            const newlevel = await Level.create({
+            const newProgramCategory = await Programcategory.create({
                 company_id: req.companyId, ...req.body, created_by: req.userId, created_at: new Date()
             }, {
                 transaction: t
             })
+
             t.commit();
 
-            return res.json(newlevel);
+            return res.json(newProgramCategory);
 
         } catch (err) {
             await t.rollback();
-            const className = 'LevelController';
+            const className = 'ProgramCategoryController';
             const functionName = 'store';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -102,33 +106,33 @@ class LevelController {
     }
 
     async update(req, res) {
-        // console.log(...req.body)
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction();
         try {
-            const { level_id } = req.params;
-            const levelExist = await Level.findByPk(level_id)
+            const { programcategory_id } = req.params;
+            const programCategoryExist = await Programcategory.findByPk(programcategory_id)
 
-            if (!levelExist) {
+            if (!programCategoryExist) {
                 return res.status(400).json({
-                    error: 'Level doesn`t exists.',
+                    error: 'Program Category doesn`t exists.',
                 });
             }
 
-            const level = await levelExist.update({
+            const programCategory = await programCategoryExist.update({
                 ...req.body,
                 updated_by: req.userId,
                 updated_at: new Date()
             }, {
                 transaction: t
             })
+
             t.commit();
 
-            return res.json(level);
+            return res.json(programCategory);
 
         } catch (err) {
             await t.rollback();
-            const className = 'LevelController';
+            const className = 'ProgramCategoryController';
             const functionName = 'update';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -138,4 +142,4 @@ class LevelController {
     }
 }
 
-export default new LevelController();
+export default new ProgramCategoryController();

@@ -21,12 +21,6 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: false
             },
-            language_id: {
-                type: Sequelize.INTEGER,
-                allowNull: true,
-                references: { model: 'languages', key: 'id' },
-                onUpdate: 'CASCADE',
-            },
             created_at: {
                 allowNull: false,
                 type: Sequelize.DATE

@@ -19,7 +19,7 @@ module.exports = {
             },
             name: {
                 type: Sequelize.STRING,
-                allowNull: false
+                allowNull: true
             },
             level_id: {
                 type: Sequelize.INTEGER,
@@ -27,7 +27,7 @@ module.exports = {
                 references: { model: 'levels', key: 'id' },
                 onUpdate: 'CASCADE',
             },
-            language_mode_id: {
+            languagemode_id: {
                 type: Sequelize.INTEGER,
                 allowNull: true,
                 references: { model: 'languagemodes', key: 'id' },

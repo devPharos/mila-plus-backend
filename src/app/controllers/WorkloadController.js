@@ -1,36 +1,44 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
-import Studyprogram from '../models/Studyprogram';
-import Language from '../models/Language';
+import Workload from '../models/Workload';
+import Level from '../models/Level';
+import Languagemode from '../models/Languagemode';
+import Programcategory from '../models/Programcategory';
 
 const { Op } = Sequelize;
 
-class StudyProgramController {
+class WorkloadController {
 
     async show(req, res) {
         try {
-            const { studyprogram_id } = req.params;
+            const { workload_id } = req.params;
 
-            const studyprograms = await Studyprogram.findByPk(studyprogram_id, {
+            const workloads = await Workload.findByPk(workload_id, {
                 include: [
                     {
-                        model: Language,
-                        as: 'language',
-                        attributes: ['id', 'name']
+                        model: Level,
+                        include: [
+                            {
+                                model: Programcategory
+                            }
+                        ]
+                    },
+                    {
+                        model: Languagemode,
                     }
                 ],
             })
 
-            if (!studyprograms) {
+            if (!workloads) {
                 return res.status(400).json({
-                    error: 'Study Program not found',
+                    error: 'Workload not found',
                 });
             }
 
-            return res.json(studyprograms);
+            return res.json(workloads);
         } catch (err) {
-            const className = 'StudyProgramController';
+            const className = 'WorkloadController';
             const functionName = 'show';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -41,26 +49,30 @@ class StudyProgramController {
 
     async index(req, res) {
         try {
-            const studyprograms = await Studyprogram.findAll({
+            const workloads = await Workload.findAll({
                 where: {
                     canceled_at: null,
                     company_id: req.companyId
                 },
                 include: [
                     {
-                        model: Language,
-                        as: 'language',
-                        attributes: ['id', 'name']
+                        model: Level,
+                        include: [
+                            {
+                                model: Programcategory
+                            }
+                        ],
+                    },
+                    {
+                        model: Languagemode,
                     }
                 ],
-                order: [['name']]
+                order: [[Level, Programcategory, 'name'], [Level, 'name'], ['name']]
             })
 
-            // console.log(studyprograms[0].dataValues)
-
-            return res.json(studyprograms);
+            return res.json(workloads);
         } catch (err) {
-            const className = 'StudyProgramController';
+            const className = 'WorkloadController';
             const functionName = 'index';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -73,34 +85,32 @@ class StudyProgramController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction();
         try {
-            const studyProgramExist = await Studyprogram.findOne({
+            const workloadExist = await Workload.findOne({
                 where: {
                     company_id: req.companyId,
-                    language_id: req.body.language_id,
                     name: req.body.name,
                     canceled_at: null,
                 }
             })
 
-            if (studyProgramExist) {
+            if (workloadExist) {
                 return res.status(400).json({
-                    error: 'StudyProgram already exists.',
+                    error: 'Workload already exists.',
                 });
             }
 
-            const newstudyProgram = await Studyprogram.create({
+            const newWorkload = await Workload.create({
                 company_id: req.companyId, ...req.body, created_by: req.userId, created_at: new Date()
             }, {
                 transaction: t
             })
-
             t.commit();
 
-            return res.json(newstudyProgram);
+            return res.json(newWorkload);
 
         } catch (err) {
             await t.rollback();
-            const className = 'StudyProgramController';
+            const className = 'WorkloadController';
             const functionName = 'store';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -113,30 +123,29 @@ class StudyProgramController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction();
         try {
-            const { studyprogram_id } = req.params;
-            const studyProgramExist = await Studyprogram.findByPk(studyprogram_id)
+            const { workload_id } = req.params;
+            const workloadExist = await Workload.findByPk(workload_id)
 
-            if (!studyProgramExist) {
+            if (!workloadExist) {
                 return res.status(400).json({
-                    error: 'StudyProgram doesn`t exists.',
+                    error: 'Workload doesn`t exists.',
                 });
             }
 
-            const studyProgram = await studyProgramExist.update({
+            const workload = await workloadExist.update({
                 ...req.body,
                 updated_by: req.userId,
                 updated_at: new Date()
             }, {
                 transaction: t
             })
-
             t.commit();
 
-            return res.json(studyProgram);
+            return res.json(workload);
 
         } catch (err) {
             await t.rollback();
-            const className = 'StudyProgramController';
+            const className = 'WorkloadController';
             const functionName = 'update';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -146,4 +155,4 @@ class StudyProgramController {
     }
 }
 
-export default new StudyProgramController();
+export default new WorkloadController();

@@ -15,8 +15,8 @@ module.exports = {
         references: { model: 'companies', key: 'id' },
         onUpdate: 'CASCADE',
       },
-      filial_type: {
-        type: Sequelize.STRING,
+      filialtype_id: {
+        type: Sequelize.INTEGER,
         allowNull: false
       },
       name: {

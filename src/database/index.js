@@ -18,11 +18,13 @@ import Filialtype from '../app/models/Filialtype';
 import Parameter from '../app/models/Parameter';
 import Chartofaccount from '../app/models/Chartofaccount';
 import Language from '../app/models/Language';
-import Studyprogram from '../app/models/Studyprogram';
+import Programcategory from '../app/models/Programcategory';
 import Level from '../app/models/Level';
+import Languagemode from '../app/models/Languagemode';
+import Workload from '../app/models/Workload';
 // import UserGroup from '../app/models/usergroup'
 
-const models = [User, Company, Chartofaccount, File, Filial, Filialtype, FilialPriceList, FilialDiscountList, Parameter, Language, Level, Studyprogram, UserGroup, UserGroupXUser, UserXFilial, MenuHierarchy, MenuHierarchyXGroups, Student];
+const models = [User, Company, Chartofaccount, File, Filial, Filialtype, FilialPriceList, FilialDiscountList, Parameter, Language, Languagemode, Level, Workload, Programcategory, UserGroup, UserGroupXUser, UserXFilial, MenuHierarchy, MenuHierarchyXGroups, Student];
 
 class Database {
   constructor() {
