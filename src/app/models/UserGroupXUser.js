@@ -24,6 +24,7 @@ class UserGroupXUser extends Model {
   static associate(models) {
     this.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
     this.belongsTo(models.UserGroup, { foreignKey: 'group_id', as: 'group' });
+    this.hasMany(models.MenuHierarchyXGroups, { foreignKey: 'group_id' });
   }
 }
 

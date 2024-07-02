@@ -16,6 +16,22 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: true,
       },
+      view: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
+      edit: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
+      create: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
+      inactivate: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
       canceled_at: {
         type: Sequelize.STRING,
         allowNull: true,

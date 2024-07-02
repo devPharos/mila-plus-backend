@@ -7,7 +7,6 @@ class MenuHierarchy extends Model {
         father_id: Sequelize.INTEGER,
         alias: Sequelize.STRING,
         name: Sequelize.STRING,
-        allow: Sequelize.BOOLEAN,
         description: Sequelize.STRING,
         created_by: Sequelize.INTEGER,
         created_at: Sequelize.DATE,
@@ -25,11 +24,10 @@ class MenuHierarchy extends Model {
 
   static associate(models) {
     this.hasMany(models.MenuHierarchy, {
-      sourceKey: 'id',
       foreignKey: 'father_id',
-      as: 'subGroup',
     });
-    this.belongsTo(models.MenuHierarchyXGroups, { foreignKey: 'id', as: 'access' });
+    this.hasOne(models.MenuHierarchyXGroups, { foreignKey: 'access_id' });
+    this.belongsTo(models.UserGroup)
   }
 }
 

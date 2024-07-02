@@ -6,42 +6,82 @@ module.exports = {
         {
           access_id: 1,
           group_id: 1,
+          view: true,
+          edit: true,
+          create: true,
+          inactivate: true
         },
         {
           access_id: 2,
           group_id: 1,
+          view: true,
+          edit: true,
+          create: true,
+          inactivate: true
         },
         {
           access_id: 3,
           group_id: 1,
+          view: true,
+          edit: true,
+          create: true,
+          inactivate: true
         },
         {
           access_id: 4,
           group_id: 1,
+          view: true,
+          edit: true,
+          create: true,
+          inactivate: true
         },
         {
           access_id: 5,
           group_id: 1,
+          view: true,
+          edit: true,
+          create: true,
+          inactivate: true
         },
         {
           access_id: 6,
           group_id: 1,
+          view: true,
+          edit: true,
+          create: true,
+          inactivate: true
         },
         {
           access_id: 7,
           group_id: 1,
+          view: true,
+          edit: true,
+          create: true,
+          inactivate: true
         },
         {
           access_id: 8,
           group_id: 1,
+          view: true,
+          edit: true,
+          create: true,
+          inactivate: true
         },
         {
           access_id: 9,
           group_id: 1,
+          view: true,
+          edit: true,
+          create: true,
+          inactivate: true
         },
         {
           access_id: 10,
           group_id: 1,
+          view: true,
+          edit: true,
+          create: true,
+          inactivate: true
         },
         {
           access_id: 11,

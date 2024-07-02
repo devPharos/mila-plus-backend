@@ -23,12 +23,12 @@ import LanguageModeController from './app/controllers/LanguageModeController';
 import WorkloadController from './app/controllers/WorkloadController';
 import PaceGuideController from './app/controllers/PaceGuideController';
 
-
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
 // routes.post('/forgot_password', ForgotPasswordController.store);
 routes.put('/reset_password', SessionController.resetpw);
 // routes.put('/forgot_password', ForgotPasswordController.update);
+
 
 // A partir daqui precisa de autentiação
 routes.use(authMiddleware);
@@ -116,7 +116,5 @@ routes.post('/prospects', ProspectController.store);
 routes.post('/prospects/:prospect_id', ProspectController.update);
 
 routes.post('/userxfilial', validateFilialAssociate, UserController.filialAssociate)
-
-routes.post('/MenuHierarchy/group/:group_id', MenuHierarchyController.update);
 
 export default routes;

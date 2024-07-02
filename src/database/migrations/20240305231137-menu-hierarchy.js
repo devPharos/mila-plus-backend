@@ -24,10 +24,6 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
-      allow: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false,
-      },
       canceled_at: {
         type: Sequelize.STRING,
         allowNull: true,

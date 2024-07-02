@@ -3,6 +3,7 @@ import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
 import UserGroup from '../models/UserGroup';
 import Filialtype from '../models/Filialtype';
+import MenuHierarchyXGroups from '../models/MenuHierarchyXGroups';
 
 const { Op } = Sequelize;
 
@@ -62,18 +63,41 @@ class UserGroupController {
       const { group_id } = req.params;
       const {
         name,
-        filialtype_id
+        filialtype_id,
+        modules
       } = req.body;
 
       const userGroupExists = await UserGroup.findByPk(group_id);
 
       if (!userGroupExists) {
-        return res.status(401).json({ error: 'user-does-not-exist' });
+        return res.status(401).json({ error: 'User Group does not exist.' });
       }
 
-      await userGroupExists.update({ name, filialtype_id, updated_by: req.userId, updated_at: new Date() }, {
-        transaction: t
+      modules.map((module) => {
+        module.menus.map((menu) => {
+          const { view, edit, create, inactivate } = menu;
+          MenuHierarchyXGroups.findByPk(menu.id)
+            .then((findMenu) => {
+              findMenu.update({
+                view, edit, create, inactivate,
+                updated_at: new Date(),
+                updated_by: req.userId
+              })
+            }).catch(() => {
+              MenuHierarchyXGroups.create({
+                group_id,
+                access_id: menu.menuId,
+                view, edit, create, inactivate,
+                created_at: new Date(),
+                created_by: req.userId
+              })
+            })
+        })
       })
+
+      // await userGroupExists.update({ name, filialtype_id, updated_by: req.userId, updated_at: new Date() }, {
+      //   transaction: t
+      // })
       t.commit();
 
       return res.status(200).json(userGroupExists);

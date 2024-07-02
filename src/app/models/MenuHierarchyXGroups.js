@@ -6,6 +6,10 @@ class MenuHierarchyXGroups extends Model {
       {
         access_id: Sequelize.INTEGER,
         group_id: Sequelize.INTEGER,
+        view: Sequelize.BOOLEAN,
+        edit: Sequelize.BOOLEAN,
+        create: Sequelize.BOOLEAN,
+        inactivate: Sequelize.BOOLEAN,
         created_by: Sequelize.INTEGER,
         created_at: Sequelize.DATE,
         updated_by: Sequelize.INTEGER,
@@ -22,8 +26,8 @@ class MenuHierarchyXGroups extends Model {
   }
 
   static associate(models) {
-    this.belongsTo(models.MenuHierarchy, { foreignKey: 'access_id', as: 'access' });
-    this.belongsTo(models.UserGroup, { foreignKey: 'group_id', as: 'group' });
+    // this.hasOne(models.MenuHierarchy, { foreignKey: 'access_id' });
+    this.belongsTo(models.UserGroupXUser, { foreignKey: 'group_id' });
   }
 }
 
