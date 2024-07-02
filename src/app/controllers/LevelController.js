@@ -3,6 +3,7 @@ import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
 import Level from '../models/Level';
 import Programcategory from '../models/Programcategory';
+import Workload from '../models/Workload';
 
 const { Op } = Sequelize;
 
@@ -112,6 +113,20 @@ class LevelController {
             if (!levelExist) {
                 return res.status(400).json({
                     error: 'Level doesn`t exists.',
+                });
+            }
+
+            const workloadExist = await Workload.findOne({
+                where: {
+                    company_id: req.companyId,
+                    level_id,
+                    canceled_at: null
+                }
+            })
+
+            if (workloadExist) {
+                return res.status(400).json({
+                    error: 'There are active workloads on this level.',
                 });
             }
 

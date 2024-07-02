@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import UserController from './app/controllers/UserController';
-// import bodyParser from 'body-parser';
 
 import authMiddleware from './app/middlewares/auth'
 
@@ -22,6 +21,7 @@ import ProgramCategoryController from './app/controllers/ProgramCategoryControll
 import LevelController from './app/controllers/LevelController';
 import LanguageModeController from './app/controllers/LanguageModeController';
 import WorkloadController from './app/controllers/WorkloadController';
+import PaceGuideController from './app/controllers/PaceGuideController';
 
 
 const routes = new Router();
@@ -94,6 +94,12 @@ routes.get('/workloads', WorkloadController.index);
 routes.get('/workloads/:workload_id', WorkloadController.show);
 routes.post('/workloads', WorkloadController.store);
 routes.put('/workloads/:workload_id', WorkloadController.update);
+
+routes.get('/paceguides', PaceGuideController.index);
+routes.get('/paceguides/:paceguide_id', PaceGuideController.show);
+routes.post('/paceguides', PaceGuideController.store);
+routes.put('/paceguides/:paceguide_id', PaceGuideController.update);
+routes.get('/paceguides_by_workload/:workload_id', PaceGuideController.listByWorkload);
 
 routes.get('/groups', UserGroupController.index);
 routes.get('/groups/:group_id', UserGroupController.show);

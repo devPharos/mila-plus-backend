@@ -22,9 +22,10 @@ import Programcategory from '../app/models/Programcategory';
 import Level from '../app/models/Level';
 import Languagemode from '../app/models/Languagemode';
 import Workload from '../app/models/Workload';
+import Paceguide from '../app/models/Paceguide';
 // import UserGroup from '../app/models/usergroup'
 
-const models = [User, Company, Chartofaccount, File, Filial, Filialtype, FilialPriceList, FilialDiscountList, Parameter, Language, Languagemode, Level, Workload, Programcategory, UserGroup, UserGroupXUser, UserXFilial, MenuHierarchy, MenuHierarchyXGroups, Student];
+const models = [User, Company, Chartofaccount, File, Filial, Filialtype, FilialPriceList, FilialDiscountList, Parameter, Language, Languagemode, Level, Workload, Paceguide, Programcategory, UserGroup, UserGroupXUser, UserXFilial, MenuHierarchy, MenuHierarchyXGroups, Student];
 
 class Database {
   constructor() {

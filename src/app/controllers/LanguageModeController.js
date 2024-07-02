@@ -70,7 +70,7 @@ class LanguageModeController {
             }
 
             const newLanguageMode = await Languagemode.create({
-                company_id: req.companyId, ...req.body, created_by: req.userId, created_at: new Date()
+                company_id: req.companyId, name: req.body.name, created_by: req.userId, created_at: new Date()
             }, {
                 transaction: t
             })
@@ -101,9 +101,22 @@ class LanguageModeController {
                     error: 'Language Mode doesn`t exists.',
                 });
             }
+            const languageModeExistByName = await Languagemode.findOne({
+                where: {
+                    company_id: req.companyId,
+                    name: req.body.name.trim(),
+                    canceled_at: null,
+                }
+            })
+
+            if (languageModeExistByName) {
+                return res.status(400).json({
+                    error: 'Language Mode already exists with that name.',
+                });
+            }
 
             const languageMode = await languageModeExist.update({
-                ...req.body,
+                name: req.body.name.trim(),
                 updated_by: req.userId,
                 updated_at: new Date()
             }, {

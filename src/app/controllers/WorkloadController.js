@@ -5,6 +5,7 @@ import Workload from '../models/Workload';
 import Level from '../models/Level';
 import Languagemode from '../models/Languagemode';
 import Programcategory from '../models/Programcategory';
+import Paceguide from '../models/Paceguide';
 
 const { Op } = Sequelize;
 
@@ -88,7 +89,10 @@ class WorkloadController {
             const workloadExist = await Workload.findOne({
                 where: {
                     company_id: req.companyId,
-                    name: req.body.name,
+                    level_id: req.body.level_id,
+                    languagemode_id: req.body.languagemode_id,
+                    days_per_week: req.body.days_per_week,
+                    hours_per_day: req.body.hours_per_day,
                     canceled_at: null,
                 }
             })
@@ -98,9 +102,16 @@ class WorkloadController {
                     error: 'Workload already exists.',
                 });
             }
+            const { days_per_week, hours_per_day, languagemode_id, level_id, paceGuides } = req.body;
 
             const newWorkload = await Workload.create({
-                company_id: req.companyId, ...req.body, created_by: req.userId, created_at: new Date()
+                company_id: req.companyId,
+                name: `${days_per_week.toString()} day(s) per week, ${hours_per_day.toString()} hour(s) per day.`,
+                days_per_week,
+                hours_per_day,
+                languagemode_id,
+                level_id,
+                created_by: req.userId, created_at: new Date()
             }, {
                 transaction: t
             })
@@ -132,6 +143,8 @@ class WorkloadController {
                 });
             }
 
+            const { days_per_week, hours_per_day, paceGuides } = req.body;
+
             const workload = await workloadExist.update({
                 ...req.body,
                 updated_by: req.userId,
@@ -139,6 +152,54 @@ class WorkloadController {
             }, {
                 transaction: t
             })
+
+
+            if (days_per_week || hours_per_day || (paceGuides && paceGuides.length > 0)) {
+                Paceguide.findAll({
+                    where: {
+                        workload_id,
+                        canceled_at: null
+                    }
+                }).then((paces) => {
+                    // Criar versão nova
+                    paces.forEach(pace => {
+                        Paceguide.update({
+                            canceled_at: new Date(),
+                            canceled_by: req.userId
+                        }, {
+                            where:
+                            {
+                                company_id: req.companyId,
+                                id: pace.dataValues.id
+                            }
+                        })
+                    })
+                })
+
+            }
+
+            if (!days_per_week && !hours_per_day && paceGuides.length > 0) {
+
+                paceGuides.map((paces) => {
+                    if (paces.data && paces.data.length > 0) {
+                        paces.data.map(pace => {
+                            if (pace.type && pace.description && paces.day) {
+                                Paceguide.create({
+                                    company_id: req.companyId,
+                                    workload_id,
+                                    day: paces.day,
+                                    ...pace,
+                                    created_by: req.userId,
+                                    created_at: new Date()
+                                })
+                            }
+                        })
+                    }
+                })
+
+            }
+
+
             t.commit();
 
             return res.json(workload);

@@ -88,6 +88,11 @@ module.exports = {
           alias: 'workloads',
           name: 'Workloads',
         },
+        {
+          father_id: 2,
+          alias: 'paceguides',
+          name: 'Pace Guides',
+        },
       ],
       {}
     );

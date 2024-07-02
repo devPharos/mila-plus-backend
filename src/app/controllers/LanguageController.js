@@ -58,7 +58,7 @@ class LanguageController {
             const languageExist = await Language.findOne({
                 where: {
                     company_id: req.companyId,
-                    name: req.body.name,
+                    name: req.body.name.trim(),
                     canceled_at: null,
                 }
             })
@@ -99,6 +99,19 @@ class LanguageController {
             if (!languageExist) {
                 return res.status(400).json({
                     error: 'Language doesn`t exists.',
+                });
+            }
+            const languageExistByName = await Language.findOne({
+                where: {
+                    company_id: req.companyId,
+                    name: req.body.name.trim(),
+                    canceled_at: null,
+                }
+            })
+
+            if (languageExistByName) {
+                return res.status(400).json({
+                    error: 'Language already exists with that name.',
                 });
             }
 
