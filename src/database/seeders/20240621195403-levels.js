@@ -6,85 +6,57 @@ module.exports = {
         await queryInterface.bulkInsert('levels', [{
             company_id: 1,
             name: 'Basic',
-            total_hours: 240,
+            total_hours: 288,
             programcategory_id: 1,
             created_at: new Date(),
             created_by: 1
         }, {
             company_id: 1,
             name: 'Pre-Intermediate',
-            total_hours: 240,
+            total_hours: 288,
             programcategory_id: 1,
             created_at: new Date(),
             created_by: 1
         }, {
             company_id: 1,
             name: 'Intermediate',
-            total_hours: 240,
+            total_hours: 288,
             programcategory_id: 1,
             created_at: new Date(),
             created_by: 1
         }, {
             company_id: 1,
             name: 'Pre-Advanced',
-            total_hours: 240,
+            total_hours: 288,
             programcategory_id: 1,
             created_at: new Date(),
             created_by: 1
         }, {
             company_id: 1,
             name: 'Advanced',
-            total_hours: 240,
+            total_hours: 288,
             programcategory_id: 1,
             created_at: new Date(),
             created_by: 1
         }, {
             company_id: 1,
             name: 'Proficient',
-            total_hours: 240,
+            total_hours: 288,
             programcategory_id: 1,
             created_at: new Date(),
             created_by: 1
         },
         {
             company_id: 1,
-            name: 'Basic',
-            total_hours: 120,
+            name: 'MBE1',
+            total_hours: 288,
             programcategory_id: 2,
             created_at: new Date(),
             created_by: 1
         }, {
             company_id: 1,
-            name: 'Pre-Intermediate',
-            total_hours: 120,
-            programcategory_id: 2,
-            created_at: new Date(),
-            created_by: 1
-        }, {
-            company_id: 1,
-            name: 'Intermediate',
-            total_hours: 120,
-            programcategory_id: 2,
-            created_at: new Date(),
-            created_by: 1
-        }, {
-            company_id: 1,
-            name: 'Pre-Advanced',
-            total_hours: 120,
-            programcategory_id: 2,
-            created_at: new Date(),
-            created_by: 1
-        }, {
-            company_id: 1,
-            name: 'Advanced',
-            total_hours: 120,
-            programcategory_id: 2,
-            created_at: new Date(),
-            created_by: 1
-        }, {
-            company_id: 1,
-            name: 'Proficient',
-            total_hours: 120,
+            name: 'MBE2',
+            total_hours: 288,
             programcategory_id: 2,
             created_at: new Date(),
             created_by: 1
