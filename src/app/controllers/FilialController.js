@@ -118,6 +118,75 @@ class FilialController {
         transaction: t
       })
 
+
+      if (!req.body.administrator.id) {
+        const { name, email } = req.body.administrator;
+        if (name && email) {
+          const userExists = await Milauser.findOne({
+            where: {
+              email,
+              canceled_at: null,
+            },
+            attributes: ['id']
+          });
+
+          if (userExists) {
+            return res.status(400).json({
+              error: 'User e-mail already exist.',
+            });
+          }
+
+          function randomString(length, chars) {
+            var result = '';
+            for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+            return result;
+          }
+
+          const password = randomString(10, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+
+          await Milauser.create({
+            company_id: req.companyId,
+            name,
+            email,
+            password,
+            force_password_change: true,
+            created_at: new Date(),
+            created_by: req.userId,
+          }).then(async (newUser) => {
+
+            filialExist.update({
+              administrator_id: newUser.id,
+              updated_by: req.userId,
+              updated_at: new Date()
+            })
+
+            await UserXFilial.create({ user_id: newUser.id, filial_id: newFilial.id, created_at: new Date, created_by: req.userId }, {
+              transaction: t
+            });
+            await UserGroupXUser.create({ user_id: newUser.id, group_id: 2, created_at: new Date(), created_by: req.userId }, {
+              transaction: t
+            })
+          }).finally(() => {
+
+            mailer.sendMail({
+              from: '"Mila Plus" <admin@pharosit.com.br>',
+              to: email,
+              subject: `Mila Plus - Account created`,
+              html: `<p>Hello, ${name}</p><p>Now you have access to Mila Plus system, please use these information on your first access:<br>
+              E-mail: ${email}<br>
+              Password: ${password}</p>`
+            })
+          }).catch(err => {
+            console.log(err)
+            t.rollback()
+            return res.status(400).json({
+              error: 'An error has ocourred.',
+            });
+          })
+        }
+
+      }
+
       t.commit();
 
       return res.json(newFilial);
