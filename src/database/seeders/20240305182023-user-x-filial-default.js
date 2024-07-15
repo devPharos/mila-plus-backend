@@ -18,6 +18,26 @@ module.exports = {
       user_id: 1,
       created_at: new Date(),
       created_by: 1
+    }, {
+      filial_id: 4,
+      user_id: 1,
+      created_at: new Date(),
+      created_by: 1
+    }, {
+      filial_id: 5,
+      user_id: 1,
+      created_at: new Date(),
+      created_by: 1
+    }, {
+      filial_id: 6,
+      user_id: 1,
+      created_at: new Date(),
+      created_by: 1
+    }, {
+      filial_id: 7,
+      user_id: 1,
+      created_at: new Date(),
+      created_by: 1
     }], {});
   },
 

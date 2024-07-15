@@ -37,6 +37,7 @@ class Filial extends Model {
         sendmail_password: Sequelize.STRING,
         sendmail_name: Sequelize.STRING,
 
+        administrator_id: Sequelize.INTEGER,
         active: Sequelize.BOOLEAN,
         created_by: Sequelize.INTEGER,
         created_at: Sequelize.DATE,
@@ -64,15 +65,19 @@ class Filial extends Model {
       foreignKey: 'filial_id',
       as: 'discountlists',
     });
-    this.hasOne(models.User, {
+    this.belongsTo(models.Milauser, {
+      foreignKey: 'administrator_id',
+      as: 'administrator',
+    });
+    this.hasOne(models.Milauser, {
       sourceKey: 'created_by',
       as: 'created',
     });
-    this.hasOne(models.User, {
+    this.hasOne(models.Milauser, {
       sourceKey: 'updated_by',
       as: 'updated',
     });
-    this.hasOne(models.User, {
+    this.hasOne(models.Milauser, {
       sourceKey: 'canceled_by',
       as: 'canceled',
     });

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import UserController from './app/controllers/UserController';
+import MilaUserController from './app/controllers/MilaUserController';
 
 import authMiddleware from './app/middlewares/auth'
 
@@ -22,13 +22,13 @@ import LevelController from './app/controllers/LevelController';
 import LanguageModeController from './app/controllers/LanguageModeController';
 import WorkloadController from './app/controllers/WorkloadController';
 import PaceGuideController from './app/controllers/PaceGuideController';
+import MilaUserController from './app/controllers/MilaUserController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
 // routes.post('/forgot_password', ForgotPasswordController.store);
 routes.put('/reset_password', SessionController.resetpw);
 // routes.put('/forgot_password', ForgotPasswordController.update);
-
 
 // A partir daqui precisa de autentiação
 routes.use(authMiddleware);
@@ -37,9 +37,9 @@ routes.get('/companies', CompanyController.index);
 routes.get('/filials', FilialController.index);
 routes.get('/filials/:filial_id', FilialController.show);
 
-routes.get('/users', UserController.index);
-routes.get('/users/:user_id', UserController.show);
-routes.get('/users_short_info/:user_id', UserController.shortInfo);
+routes.get('/users', MilaUserController.index);
+routes.get('/users/:user_id', MilaUserController.show);
+routes.get('/users_short_info/:user_id', MilaUserController.shortInfo);
 
 // routes.get('/groups/:user_id', UserGroupController.show);
 
@@ -109,12 +109,14 @@ routes.delete('/groups/:group_id', UserGroupController.inactivate);
 
 // routes.use(FilialValidation);
 
-routes.post('/users', validateUserStore, UserController.store);
-routes.put('/users', validateUserUpdate, UserController.update);
+routes.post('/users', validateUserStore, MilaUserController.store);
+routes.post('/users/filial', MilaUserController.createUserToFilial);
+
+routes.put('/users/:user_id', MilaUserController.update);
 
 routes.post('/prospects', ProspectController.store);
 routes.post('/prospects/:prospect_id', ProspectController.update);
 
-routes.post('/userxfilial', validateFilialAssociate, UserController.filialAssociate)
+routes.post('/userxfilial', validateFilialAssociate, MilaUserController.filialAssociate)
 
 export default routes;

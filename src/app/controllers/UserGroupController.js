@@ -117,7 +117,10 @@ class UserGroupController {
     try {
       const groups = await UserGroup.findAll({
         where: {
-          company_id: req.companyId
+          company_id: req.companyId,
+          [Op.not]: {
+            filialtype_id: req.headers.filial != 1 ? 1 : 0
+          },
         },
         include: [
           {
@@ -125,7 +128,7 @@ class UserGroupController {
           }
         ],
         order: [[Filialtype, 'name'], ['name']]
-      });
+      })
 
       return res.json(groups);
     } catch (err) {

@@ -12,6 +12,12 @@ module.exports = {
     }, {
       company_id: 1,
       filialtype_id: 2,
+      name: 'Filial Administrator',
+      created_at: new Date(),
+      created_by: 1
+    }, {
+      company_id: 1,
+      filialtype_id: 2,
       name: 'Commercial',
       created_at: new Date(),
       created_by: 1

@@ -2,18 +2,11 @@ import Sequelize from 'sequelize';
 import jwt from 'jsonwebtoken';
 import * as Yup from 'yup';
 import authConfig from '../../config/auth';
-import User from '../models/User';
+import Milauser from '../models/Milauser';
 import Filial from '../models/Filial';
 import UserGroup from '../models/UserGroup';
 import UserGroupXUser from '../models/UserGroupXUser';
 import UserXFilial from '../models/UserXFilial';
-// import UserGroup from '../models/UserGroup';
-// import S3File from '../models/S3File';
-// import Filial from '../models/Filial';
-// import Balance from '../models/Balance';
-// import Country from '../models/Country';
-// import UserFilial from '../models/UserFilial';
-// import Mail from '../../lib/Mail';
 
 const { Op } = Sequelize;
 
@@ -31,7 +24,7 @@ class SessionController {
     }
     const { email, password } = req.body;
 
-    const user = await User.findOne({
+    const user = await Milauser.findOne({
       where: { email, canceled_at: null },
       attributes: ['id', 'password_hash']
     });
@@ -48,8 +41,8 @@ class SessionController {
       id,
     } = user;
 
-    const userData = await User.findByPk(id, {
-      attributes: ['company_id', 'id', 'name', 'email'],
+    const userData = await Milauser.findByPk(id, {
+      attributes: ['company_id', 'id', 'name', 'email', 'force_password_change'],
       where: { canceled_at: null },
       include: [
         {
@@ -99,13 +92,13 @@ class SessionController {
   async resetpw(req, res) {
     const { id } = req.body;
     try {
-      const user = await User.findByPk(id);
+      const user = await Milauser.findByPk(id);
       if (user) {
-        user.update({
+        Milauser.update({
           password: 'Mila@123',
         });
       }
-      return res.json({ nome: user.nome, email: user.email });
+      return res.json({ nome: Milauser.nome, email: Milauser.email });
     } catch (err) {
       return res.status(401).json({ error: 'user-not-found' });
     }

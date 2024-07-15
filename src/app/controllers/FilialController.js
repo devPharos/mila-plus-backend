@@ -5,6 +5,10 @@ import Filial from '../models/Filial';
 import FilialPriceList from '../models/FilialPriceList';
 import FilialDiscountList from '../models/FilialDiscountList';
 import Filialtype from '../models/Filialtype';
+import Milauser from '../models/Milauser';
+import UserGroupXUser from '../models/UserGroupXUser';
+import UserXFilial from '../models/UserXFilial';
+import { mailer } from '../../config/mailer';
 const { Op } = Sequelize;
 
 class FilialController {
@@ -36,6 +40,12 @@ class FilialController {
           {
             model: Filialtype,
             attributes: ['id', 'name']
+          },
+          {
+            model: Milauser,
+            as: 'administrator',
+            required: false,
+            attributes: ['id', 'name', 'email']
           }
         ]
       })
@@ -145,27 +155,6 @@ class FilialController {
           transaction: t
         })
 
-      filial = await Filial.findByPk(filial.id, {
-        include: [
-          {
-            model: FilialPriceList,
-            as: 'pricelists',
-            required: false,
-            where: {
-              canceled_at: null
-            }
-          },
-          {
-            model: FilialDiscountList,
-            as: 'discountlists',
-            required: false,
-            where: {
-              canceled_at: null
-            }
-          },
-        ]
-      })
-
       if (req.body.pricelists) {
 
         const pricesToCreate = req.body.pricelists.filter(pricelist => !pricelist.id)
@@ -186,7 +175,132 @@ class FilialController {
           })
         })
       }
+
+      if (!req.body.administrator.id) {
+        const { name, email } = req.body.administrator;
+        if (name && email) {
+          const userExists = await Milauser.findOne({
+            where: {
+              email,
+              canceled_at: null,
+            },
+            attributes: ['id']
+          });
+
+          if (userExists) {
+            return res.status(400).json({
+              error: 'User e-mail already exist.',
+            });
+          }
+
+          function randomString(length, chars) {
+            var result = '';
+            for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+            return result;
+          }
+
+          const password = randomString(10, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+
+          await Milauser.create({
+            company_id: req.companyId,
+            name,
+            email,
+            password,
+            force_password_change: true,
+            created_at: new Date(),
+            created_by: req.userId,
+          }).then(async (newUser) => {
+
+            filialExist.update({
+              administrator_id: newUser.id,
+              updated_by: req.userId,
+              updated_at: new Date()
+            })
+
+            await UserXFilial.create({ user_id: newUser.id, filial_id, created_at: new Date, created_by: req.userId }, {
+              transaction: t
+            });
+            await UserGroupXUser.create({ user_id: newUser.id, group_id: 2, created_at: new Date(), created_by: req.userId }, {
+              transaction: t
+            })
+          }).finally(() => {
+
+            mailer.sendMail({
+              from: '"Mila Plus" <admin@pharosit.com.br>',
+              to: email,
+              subject: `Mila Plus - Account created`,
+              html: `<p>Hello, ${name}</p><p>Now you have access to Mila Plus system, please use these information on your first access:<br>
+              E-mail: ${email}<br>
+              Password: ${password}</p>`
+            })
+          }).catch(err => {
+            console.log(err)
+            t.rollback()
+            return res.status(400).json({
+              error: 'An error has ocourred.',
+            });
+          })
+        }
+
+      }
+
+      if (req.body.administrator.id) {
+        const { name, email } = req.body.administrator;
+        if (name && email) {
+          const userExists = await Milauser.findByPk(req.body.administrator.id);
+
+          function randomString(length, chars) {
+            var result = '';
+            for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+            return result;
+          }
+
+          const password = randomString(10, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+
+          await userExists.update({
+            name,
+            email,
+            password,
+            force_password_change: true,
+            updated_at: new Date(),
+            updated_by: req.userId,
+          })
+        }
+
+      }
       t.commit();
+
+      console.log('7')
+
+
+      filial = await Filial.findByPk(filial.id, {
+        include: [
+          {
+            model: FilialPriceList,
+            as: 'pricelists',
+            required: false,
+            where: {
+              canceled_at: null
+            }
+          },
+          {
+            model: FilialDiscountList,
+            as: 'discountlists',
+            required: false,
+            where: {
+              canceled_at: null
+            }
+          },
+          {
+            model: Milauser,
+            as: 'administrator',
+            required: false,
+            where: {
+              canceled_at: null
+            }
+          },
+        ]
+      })
 
       return res.json(filial);
 

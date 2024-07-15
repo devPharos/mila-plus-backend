@@ -130,6 +130,10 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: true
       },
+      administrator_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true
+      },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE
@@ -137,8 +141,6 @@ module.exports = {
       created_by: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: { model: 'users', key: 'id' },
-        onUpdate: 'SET NULL',
       },
       updated_at: {
         allowNull: true,
@@ -147,8 +149,6 @@ module.exports = {
       updated_by: {
         type: Sequelize.INTEGER,
         allowNull: true,
-        references: { model: 'users', key: 'id' },
-        onUpdate: 'SET NULL',
       },
       canceled_at: {
         allowNull: true,
@@ -157,8 +157,6 @@ module.exports = {
       canceled_by: {
         type: Sequelize.INTEGER,
         allowNull: true,
-        references: { model: 'users', key: 'id' },
-        onUpdate: 'SET NULL',
       }
     });
   },

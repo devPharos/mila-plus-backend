@@ -4,7 +4,7 @@ import Sequelize from 'sequelize';
 import databaseConfig from '../config/database';
 import Filial from '../app/models/Filial';
 import File from '../app/models/File';
-import User from '../app/models/User';
+import Milauser from '../app/models/Milauser';
 import UserGroup from '../app/models/UserGroup';
 import UserGroupXUser from '../app/models/UserGroupXUser';
 import UserXFilial from '../app/models/UserXFilial';
@@ -25,7 +25,7 @@ import Workload from '../app/models/Workload';
 import Paceguide from '../app/models/Paceguide';
 // import UserGroup from '../app/models/usergroup'
 
-const models = [User, Company, Chartofaccount, File, Filial, Filialtype, FilialPriceList, FilialDiscountList, Parameter, Language, Languagemode, Level, Workload, Paceguide, Programcategory, UserGroup, UserGroupXUser, UserXFilial, MenuHierarchy, MenuHierarchyXGroups, Student];
+const models = [Milauser, Company, Chartofaccount, File, Filial, Filialtype, FilialPriceList, FilialDiscountList, Parameter, Language, Languagemode, Level, Workload, Paceguide, Programcategory, UserGroup, UserGroupXUser, UserXFilial, MenuHierarchy, MenuHierarchyXGroups, Student];
 
 class Database {
   constructor() {

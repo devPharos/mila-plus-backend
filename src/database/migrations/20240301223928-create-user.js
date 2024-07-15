@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('users', {
+    await queryInterface.createTable('milausers', {
       id: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -36,6 +36,10 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: true
       },
+      force_password_change: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
+      },
       avatar_id: {
         type: Sequelize.INTEGER,
         allowNull: true,
@@ -66,17 +70,21 @@ module.exports = {
         allowNull: true,
         type: Sequelize.INTEGER,
       },
-    }, {
-      indexes: [
-        // Create a unique index on email
-        {
-          unique: true,
-          fields: ['email']
-        },
-      ]
+      created_id: {
+        allowNull: true,
+        type: Sequelize.INTEGER
+      },
+      updated_id: {
+        allowNull: true,
+        type: Sequelize.INTEGER
+      },
+      canceled_id: {
+        allowNull: true,
+        type: Sequelize.INTEGER
+      },
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('users');
+    await queryInterface.dropTable('milausers');
   }
 };
