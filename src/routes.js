@@ -41,10 +41,6 @@ routes.get('/users', MilaUserController.index);
 routes.get('/users/:user_id', MilaUserController.show);
 routes.get('/users_short_info/:user_id', MilaUserController.shortInfo);
 
-// routes.get('/groups/:user_id', UserGroupController.show);
-
-routes.get('/students/:id', StudentController.show);
-
 routes.get('/prospects/:prospect_id', ProspectController.show);
 routes.get('/prospects', ProspectController.index);
 
@@ -106,6 +102,12 @@ routes.get('/groups/:group_id', UserGroupController.show);
 routes.post('/groups', UserGroupController.store);
 routes.put('/groups/:group_id', UserGroupController.update);
 routes.delete('/groups/:group_id', UserGroupController.inactivate);
+
+routes.get('/students', StudentController.index);
+routes.get('/students/:student_id', StudentController.show);
+routes.post('/students', StudentController.store);
+routes.put('/students/:student_id', StudentController.update);
+routes.delete('/students/:student_id', StudentController.inactivate);
 
 // routes.use(FilialValidation);
 

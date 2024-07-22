@@ -93,6 +93,21 @@ module.exports = {
           alias: 'paceguides',
           name: 'Pace Guides',
         },
+        {
+          father_id: 2,
+          alias: 'students',
+          name: 'Students',
+        },
+        {
+          father_id: 3,
+          alias: 'commercial-dashboard',
+          name: 'Dashboard',
+        },
+        {
+          father_id: 3,
+          alias: 'prospects',
+          name: 'Prospects',
+        },
       ],
       {}
     );
