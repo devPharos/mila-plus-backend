@@ -60,6 +60,10 @@ class Student extends Model {
 
     return this;
   }
+
+  static associate(models) {
+    this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' });
+  }
 }
 
 export default Student;

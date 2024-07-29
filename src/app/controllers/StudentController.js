@@ -4,6 +4,7 @@ import databaseConfig from '../../config/database';
 import Student from '../models/Student';
 import Filialtype from '../models/Filialtype';
 import MenuHierarchyXGroups from '../models/MenuHierarchyXGroups';
+import Filial from '../models/Filial';
 
 const { Op } = Sequelize;
 
@@ -14,9 +15,9 @@ class StudentController {
     try {
 
       const newStudent = await Student.create({
+        filial_id: req.headers.filial,
         ...req.body,
         company_id: req.companyId,
-        filial_id: req.headers.filial,
         created_at: new Date(),
         created_by: req.userId,
       }, {
@@ -69,9 +70,22 @@ class StudentController {
   async index(req, res) {
     try {
       const students = await Student.findAll({
+        include: [
+          {
+            model: Filial,
+            as: 'filial',
+          }
+        ],
         where: {
           company_id: req.companyId,
-          filial_id: req.headers.filial
+          [Op.or]: [
+            {
+              filial_id: {
+                [Op.gte]: req.headers.filial == 1 ? 1 : 999
+              }
+            },
+            { filial_id: req.headers.filial != 1 ? req.headers.filial : 0 },
+          ],
         },
         order: [['name']]
       })

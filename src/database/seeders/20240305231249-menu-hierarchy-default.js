@@ -24,6 +24,16 @@ module.exports = {
           name: 'Financial',
         },
         {
+          father_id: null,
+          alias: 'operational',
+          name: 'Operational',
+        },
+        {
+          father_id: null,
+          alias: 'settings',
+          name: 'Settings',
+        },
+        {
           father_id: 1,
           alias: 'administrative-dashboard',
           name: 'Dashboard',
@@ -31,6 +41,26 @@ module.exports = {
         {
           father_id: 2,
           alias: 'academic-dashboard',
+          name: 'Dashboard',
+        },
+        {
+          father_id: 3,
+          alias: 'commercial-dashboard',
+          name: 'Dashboard',
+        },
+        {
+          father_id: 4,
+          alias: 'financial-dashboard',
+          name: 'Dashboard',
+        },
+        {
+          father_id: 5,
+          alias: 'operational-dashboard',
+          name: 'Dashboard',
+        },
+        {
+          father_id: 6,
+          alias: 'settings-dashboard',
           name: 'Dashboard',
         },
         {
@@ -97,11 +127,6 @@ module.exports = {
           father_id: 2,
           alias: 'students',
           name: 'Students',
-        },
-        {
-          father_id: 3,
-          alias: 'commercial-dashboard',
-          name: 'Dashboard',
         },
         {
           father_id: 3,
