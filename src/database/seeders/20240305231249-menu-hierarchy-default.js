@@ -133,6 +133,26 @@ module.exports = {
           alias: 'prospects',
           name: 'Prospects',
         },
+        {
+          father_id: 2,
+          alias: 'staffs',
+          name: 'Staffs',
+        },
+        {
+          father_id: 2,
+          alias: 'agents',
+          name: 'Agents',
+        },
+        {
+          father_id: 2,
+          alias: 'calendar',
+          name: 'Calendar',
+        },
+        {
+          father_id: 3,
+          alias: 'calendar',
+          name: 'Calendar',
+        },
       ],
       {}
     );

@@ -23,9 +23,37 @@ import Level from '../app/models/Level';
 import Languagemode from '../app/models/Languagemode';
 import Workload from '../app/models/Workload';
 import Paceguide from '../app/models/Paceguide';
+import Staff from '../app/models/Staff';
+import Agent from '../app/models/Agent';
+import Calendarday from '../app/models/Calendarday';
 // import UserGroup from '../app/models/usergroup'
 
-const models = [Milauser, Company, Chartofaccount, File, Filial, Filialtype, FilialPriceList, FilialDiscountList, Parameter, Language, Languagemode, Level, Workload, Paceguide, Programcategory, UserGroup, UserGroupXUser, UserXFilial, MenuHierarchy, MenuHierarchyXGroups, Student];
+const models = [
+  Agent,
+  Calendarday,
+  Milauser,
+  Company,
+  Chartofaccount,
+  File,
+  Filial,
+  Filialtype,
+  FilialPriceList,
+  FilialDiscountList,
+  Parameter,
+  Language,
+  Languagemode,
+  Level,
+  Workload,
+  Paceguide,
+  Programcategory,
+  UserGroup,
+  UserGroupXUser,
+  UserXFilial,
+  MenuHierarchy,
+  MenuHierarchyXGroups,
+  Student,
+  Staff
+];
 
 class Database {
   constructor() {

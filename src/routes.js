@@ -23,6 +23,9 @@ import LanguageModeController from './app/controllers/LanguageModeController';
 import WorkloadController from './app/controllers/WorkloadController';
 import PaceGuideController from './app/controllers/PaceGuideController';
 import MilaUserController from './app/controllers/MilaUserController';
+import StaffController from './app/controllers/StaffController';
+import AgentController from './app/controllers/AgentController';
+import CalendarDayController from './app/controllers/CalendarDayController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
@@ -108,6 +111,24 @@ routes.get('/students/:student_id', StudentController.show);
 routes.post('/students', StudentController.store);
 routes.put('/students/:student_id', StudentController.update);
 routes.delete('/students/:student_id', StudentController.inactivate);
+
+routes.get('/agents', AgentController.index);
+routes.get('/agents/:agent_id', AgentController.show);
+routes.post('/agents', AgentController.store);
+routes.put('/agents/:agent_id', AgentController.update);
+routes.delete('/agents/:agent_id', AgentController.inactivate);
+
+routes.get('/staffs', StaffController.index);
+routes.get('/staffs/:staff_id', StaffController.show);
+routes.post('/staffs', StaffController.store);
+routes.put('/staffs/:staff_id', StaffController.update);
+routes.delete('/staffs/:staff_id', StaffController.inactivate);
+
+routes.get('/calendar-days', CalendarDayController.index);
+routes.get('/calendar-days/:calendarDay_id', CalendarDayController.show);
+routes.post('/calendar-days', CalendarDayController.store);
+routes.put('/calendar-days/:calendarDay_id', CalendarDayController.update);
+routes.delete('/calendar-days/:calendarDay_id', CalendarDayController.inactivate);
 
 // routes.use(FilialValidation);
 

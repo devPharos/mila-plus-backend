@@ -2,8 +2,6 @@ import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
 import Student from '../models/Student';
-import Filialtype from '../models/Filialtype';
-import MenuHierarchyXGroups from '../models/MenuHierarchyXGroups';
 import Filial from '../models/Filial';
 
 const { Op } = Sequelize;
