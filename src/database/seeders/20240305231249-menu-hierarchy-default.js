@@ -153,6 +153,11 @@ module.exports = {
           alias: 'calendar',
           name: 'Calendar',
         },
+        {
+          father_id: 1,
+          alias: 'documents',
+          name: 'Documents',
+        },
       ],
       {}
     );

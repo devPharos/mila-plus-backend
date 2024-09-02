@@ -15,6 +15,20 @@ module.exports = {
         references: { model: 'companies', key: 'id' },
         onUpdate: 'NO ACTION',
       },
+      document_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: { model: 'documents', key: 'id' },
+        onUpdate: 'NO ACTION',
+      },
+      registry_type: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      registry_key: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+      },
       name: {
         type: Sequelize.STRING,
         allowNull: false
@@ -24,11 +38,11 @@ module.exports = {
       },
       key: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: true
       },
       url: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: true
       },
       created_at: {
         allowNull: false,

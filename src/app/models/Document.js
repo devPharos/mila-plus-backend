@@ -1,13 +1,18 @@
 import Sequelize, { Model } from 'sequelize';
 
-class Programcategory extends Model {
+class Document extends Model {
     static init(sequelize) {
         super.init(
             {
                 company_id: Sequelize.INTEGER,
-                language_id: Sequelize.INTEGER,
-                name: Sequelize.STRING,
-                description: Sequelize.STRING,
+                origin: Sequelize.STRING,
+                type: Sequelize.STRING,
+                subtype: Sequelize.STRING,
+                title: Sequelize.STRING,
+                multiple: Sequelize.BOOLEAN,
+                required: Sequelize.BOOLEAN,
+                formats: Sequelize.STRING,
+                sizelimit: Sequelize.NUMBER,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -16,18 +21,12 @@ class Programcategory extends Model {
                 canceled_at: Sequelize.DATE,
             },
             {
-                sequelize
+                sequelize,
             }
         );
 
         return this;
     }
-
-    static associate(models) {
-        this.belongsTo(models.Language, {
-            sourceKey: 'language_id'
-        });
-    }
 }
 
-export default Programcategory;
+export default Document;

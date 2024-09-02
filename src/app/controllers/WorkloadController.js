@@ -6,6 +6,9 @@ import Level from '../models/Level';
 import Languagemode from '../models/Languagemode';
 import Programcategory from '../models/Programcategory';
 import Paceguide from '../models/Paceguide';
+import File from '../models/File';
+import { app } from '../../config/firebase';
+import { deleteObject, getStorage, ref } from "firebase/storage";
 
 const { Op } = Sequelize;
 
@@ -27,6 +30,9 @@ class WorkloadController {
                     },
                     {
                         model: Languagemode,
+                    },
+                    {
+                        model: File,
                     }
                 ],
             })
@@ -102,12 +108,31 @@ class WorkloadController {
                     error: 'Workload already exists.',
                 });
             }
-            const { days_per_week, hours_per_day, languagemode_id, level_id, paceGuides } = req.body;
+            const { days_per_week, hours_per_day, languagemode_id, level_id, file_id } = req.body;
+
+            let myFile = null;
+            if (file_id) {
+                myFile = await File.create({
+                    company_id: req.companyId,
+                    name: file_id.name,
+                    size: file_id.size || 0,
+                    url: file_id.url,
+                    registry_type: 'Workload',
+                    registry_key: workloadExist.id,
+                    created_by: req.userId,
+                    created_at: new Date()
+                }), {
+                    transaction: t
+                }
+
+                delete req.body.file_id;
+            }
 
             const newWorkload = await Workload.create({
                 company_id: req.companyId,
                 name: `${days_per_week.toString()} day(s) per week, ${hours_per_day.toString()} hour(s) per day.`,
                 days_per_week,
+                file_id: myFile,
                 hours_per_day,
                 languagemode_id,
                 level_id,
@@ -143,10 +168,44 @@ class WorkloadController {
                 });
             }
 
-            const { days_per_week, hours_per_day, paceGuides } = req.body;
+            const { days_per_week, hours_per_day, paceGuides, file_id } = req.body;
+            let myFile = null;
+
+            if (file_id) {
+                workloadExist.file_id
+                if (workloadExist.file_id) {
+                    const fileExist = await File.findByPk(workloadExist.file_id)
+                    if (fileExist) {
+                        const storage = getStorage(app);
+                        const fileRef = ref(storage, 'Scope and Sequence/' + fileExist.dataValues.name);
+
+                        deleteObject(fileRef).then(() => {
+                            console.log('removeu')
+                        }).catch((error) => {
+                            console.log(error)
+                        });
+                    }
+                }
+
+                myFile = await File.create({
+                    company_id: req.companyId,
+                    name: file_id.name,
+                    size: file_id.size || 0,
+                    url: file_id.url,
+                    registry_type: 'Workload',
+                    registry_key: workloadExist.id,
+                    created_by: req.userId,
+                    created_at: new Date()
+                }), {
+                    transaction: t
+                }
+
+                delete req.body.file_id;
+            }
 
             const workload = await workloadExist.update({
                 ...req.body,
+                file_id: myFile ? myFile.id : workloadExist.file_id,
                 updated_by: req.userId,
                 updated_at: new Date()
             }, {

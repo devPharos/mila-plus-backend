@@ -26,12 +26,20 @@ import MilaUserController from './app/controllers/MilaUserController';
 import StaffController from './app/controllers/StaffController';
 import AgentController from './app/controllers/AgentController';
 import CalendarDayController from './app/controllers/CalendarDayController';
+import DocumentController from './app/controllers/DocumentController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
 // routes.post('/forgot_password', ForgotPasswordController.store);
 routes.put('/reset_password', SessionController.resetpw);
 // routes.put('/forgot_password', ForgotPasswordController.update);
+
+routes.get('/outside/filials/:filial_id', FilialController.show);
+
+routes.get('/outside/staffs/:staff_id', StaffController.show);
+routes.put('/outside/staffs/:staff_id', StaffController.updateOutside);
+
+routes.get('/users_short_info/:user_id', MilaUserController.shortInfo);
 
 // A partir daqui precisa de autentiação
 routes.use(authMiddleware);
@@ -42,7 +50,6 @@ routes.get('/filials/:filial_id', FilialController.show);
 
 routes.get('/users', MilaUserController.index);
 routes.get('/users/:user_id', MilaUserController.show);
-routes.get('/users_short_info/:user_id', MilaUserController.shortInfo);
 
 routes.get('/prospects/:prospect_id', ProspectController.show);
 routes.get('/prospects', ProspectController.index);
@@ -123,6 +130,13 @@ routes.get('/staffs/:staff_id', StaffController.show);
 routes.post('/staffs', StaffController.store);
 routes.put('/staffs/:staff_id', StaffController.update);
 routes.delete('/staffs/:staff_id', StaffController.inactivate);
+routes.post('/staffs/formMail', StaffController.formMail);
+
+routes.get('/documents', DocumentController.index);
+routes.get('/documents/:origin/:type/:subtype', DocumentController.show);
+routes.post('/documents', DocumentController.store);
+routes.put('/documents/:document_id', DocumentController.update);
+routes.delete('/documents/:document_id', DocumentController.inactivate);
 
 routes.get('/calendar-days', CalendarDayController.index);
 routes.get('/calendar-days/:calendarDay_id', CalendarDayController.show);

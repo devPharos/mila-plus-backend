@@ -85,6 +85,10 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: true
             },
+            employee_subtype: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
             admission_date: {
                 type: Sequelize.STRING,
                 allowNull: true

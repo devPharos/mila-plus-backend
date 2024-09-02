@@ -244,6 +244,14 @@ module.exports = {
           inactivate: true
         },
         {
+          access_id: 31,
+          group_id: 1,
+          view: true,
+          edit: true,
+          create: true,
+          inactivate: true
+        },
+        {
           access_id: 1,
           group_id: 2,
           view: true,

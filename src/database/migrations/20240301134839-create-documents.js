@@ -1,67 +1,79 @@
 'use strict';
-
 /** @type {import('sequelize-cli').Migration} */
-
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('chartofaccounts', {
+        await queryInterface.createTable('documents', {
             id: {
+                type: Sequelize.INTEGER,
                 allowNull: false,
                 autoIncrement: true,
-                primaryKey: true,
-                type: Sequelize.INTEGER
+                primaryKey: true
             },
             company_id: {
                 type: Sequelize.INTEGER,
-                allowNull: true,
+                allowNull: false,
                 references: { model: 'companies', key: 'id' },
-                onUpdate: 'CASCADE',
+                onUpdate: 'NO ACTION',
             },
-            code: {
-                type: Sequelize.STRING,
-                unique: true,
-            },
-            name: {
+            origin: {
                 type: Sequelize.STRING,
                 allowNull: false
             },
-            visibility: {
+            type: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            subtype: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            title: {
                 type: Sequelize.STRING,
                 allowNull: false
             },
-            father_id: {
-                type: Sequelize.INTEGER,
-                allowNull: true,
-                references: { model: 'chartofaccounts', key: 'id' },
-                onUpdate: 'SET NULL',
+            multiple: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: true
+            },
+            required: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false
+            },
+            formats: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            sizelimit: {
+                type: Sequelize.FLOAT,
+                defaultValue: 0
             },
             created_at: {
-                allowNull: true,
+                allowNull: false,
                 type: Sequelize.DATE
             },
             created_by: {
-                type: Sequelize.INTEGER,
-                allowNull: true,
+                allowNull: false,
+                type: Sequelize.INTEGER
             },
             updated_at: {
                 allowNull: true,
                 type: Sequelize.DATE
             },
             updated_by: {
-                type: Sequelize.INTEGER,
                 allowNull: true,
+                type: Sequelize.INTEGER
             },
             canceled_at: {
                 allowNull: true,
                 type: Sequelize.DATE,
             },
             canceled_by: {
-                type: Sequelize.INTEGER,
                 allowNull: true,
-            }
+                type: Sequelize.INTEGER,
+            },
         });
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('chartofaccounts');
+        await queryInterface.dropTable('documents');
     }
 };

@@ -6,12 +6,20 @@ module.exports = {
         await queryInterface.bulkInsert('programcategories', [{
             company_id: 1,
             name: 'ESL',
+            description: 'English as a Second Language',
             language_id: 1,
             created_at: new Date(),
             created_by: 1
         }, {
             company_id: 1,
             name: 'Business',
+            language_id: 1,
+            created_at: new Date(),
+            created_by: 1
+        }, {
+            company_id: 1,
+            name: 'ESP',
+            description: 'English for Specific Purposes',
             language_id: 1,
             created_at: new Date(),
             created_by: 1

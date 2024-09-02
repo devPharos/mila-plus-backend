@@ -26,6 +26,7 @@ import Paceguide from '../app/models/Paceguide';
 import Staff from '../app/models/Staff';
 import Agent from '../app/models/Agent';
 import Calendarday from '../app/models/Calendarday';
+import Document from '../app/models/Document';
 // import UserGroup from '../app/models/usergroup'
 
 const models = [
@@ -34,6 +35,7 @@ const models = [
   Milauser,
   Company,
   Chartofaccount,
+  Document,
   File,
   Filial,
   Filialtype,

@@ -5,8 +5,11 @@ class File extends Model {
     super.init(
       {
         company_id: Sequelize.INTEGER,
+        document_id: Sequelize.INTEGER,
+        registry_type: Sequelize.STRING,
+        registry_key: Sequelize.INTEGER,
         name: Sequelize.STRING,
-        size: Sequelize.NUMBER,
+        size: Sequelize.INTEGER,
         key: Sequelize.STRING,
         url: Sequelize.STRING,
         created_by: Sequelize.INTEGER,

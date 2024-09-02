@@ -22,6 +22,7 @@ class Staff extends Model {
                 date_of_birth: Sequelize.STRING,
                 academic_formation: Sequelize.STRING,
                 employee_type: Sequelize.STRING,
+                employee_subtype: Sequelize.STRING,
                 admission_date: Sequelize.STRING,
                 resignation_date: Sequelize.STRING,
                 wage_type: Sequelize.STRING,

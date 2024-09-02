@@ -41,6 +41,12 @@ module.exports = {
                 type: Sequelize.FLOAT,
                 defaultValue: 0
             },
+            file_id: {
+                type: Sequelize.INTEGER,
+                allowNull: true,
+                references: { model: 'files', key: 'id' },
+                onUpdate: 'CASCADE',
+            },
             created_at: {
                 allowNull: false,
                 type: Sequelize.DATE

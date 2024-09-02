@@ -10,6 +10,7 @@ class Workload extends Model {
                 languagemode_id: Sequelize.INTEGER,
                 days_per_week: Sequelize.FLOAT,
                 hours_per_day: Sequelize.FLOAT,
+                file_id: Sequelize.INTEGER,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -31,6 +32,9 @@ class Workload extends Model {
         });
         this.belongsTo(models.Languagemode, {
             sourceKey: { name: 'languagemode_id' }
+        });
+        this.belongsTo(models.File, {
+            sourceKey: { name: 'file_id' }
         });
     }
 }

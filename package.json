@@ -14,11 +14,13 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "firebase": "^10.13.0",
     "https": "^1.0.0",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.14",
     "pg": "^8.12.0",
     "pg-hstore": "^2.3.4",
+    "react-firebase-hooks": "^5.1.1",
     "sequelize": "^6.37.3",
     "youch": "^3.3.3",
     "yup": "^1.4.0"
