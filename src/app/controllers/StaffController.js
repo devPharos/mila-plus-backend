@@ -4,6 +4,8 @@ import databaseConfig from '../../config/database';
 import Staff from '../models/Staff';
 import Filial from '../models/Filial';
 import { mailer } from '../../config/mailer';
+import File from '../models/File';
+import Staffdocument from '../models/StaffDocument';
 
 const { Op } = Sequelize;
 
@@ -46,6 +48,41 @@ class StaffController {
 
             if (!staffExists) {
                 return res.status(401).json({ error: 'staff does not exist.' });
+            }
+
+            if (req.body.files) {
+                const { files } = req.body;
+                if (files) {
+                    const fileCreated = await File.create({
+                        company_id: req.companyId,
+                        name: files.name,
+                        size: files.size || 0,
+                        url: files.url,
+                        registry_type: 'Staff',
+                        registry_key: staff_id,
+                        document_id: files.document_id,
+                        created_by: req.userId,
+                        created_at: new Date(),
+                        updated_by: req.userId,
+                        updated_at: new Date(),
+                    }, { transaction: t })
+
+                    if (fileCreated) {
+
+                        await Staffdocument.create({
+                            company_id: req.companyId,
+                            staff_id,
+                            file_id: fileCreated.id,
+                            document_id: files.document_id,
+                            created_by: req.userId,
+                            created_at: new Date()
+                        }, { transaction: t })
+                        t.commit();
+                    }
+                }
+
+                return res.status(201).json(staffExists);
+
             }
 
             await staffExists.update({ ...req.body, updated_by: req.userId, updated_at: new Date() }, {
@@ -105,6 +142,22 @@ class StaffController {
             const { staff_id } = req.params;
             const staff = await Staff.findByPk(staff_id, {
                 where: { canceled_at: null },
+                include: [
+                    {
+                        model: Staffdocument,
+                        as: 'staffdocuments',
+                        include: [
+                            {
+                                model: File,
+                                as: 'file',
+                                where: {
+                                    canceled_at: null,
+                                    registry_type: 'Staff',
+                                }
+                            }
+                        ]
+                    }
+                ]
             });
 
             if (!staff) {

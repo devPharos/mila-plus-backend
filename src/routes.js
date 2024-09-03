@@ -27,6 +27,7 @@ import StaffController from './app/controllers/StaffController';
 import AgentController from './app/controllers/AgentController';
 import CalendarDayController from './app/controllers/CalendarDayController';
 import DocumentController from './app/controllers/DocumentController';
+import StaffDocumentController from './app/controllers/StaffDocumentController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
@@ -40,6 +41,9 @@ routes.get('/outside/staffs/:staff_id', StaffController.show);
 routes.put('/outside/staffs/:staff_id', StaffController.updateOutside);
 
 routes.get('/users_short_info/:user_id', MilaUserController.shortInfo);
+
+routes.get('/documentsByOrigin', DocumentController.showByOriginTypeSubtype);
+routes.post('/staffdocuments', StaffDocumentController.store);
 
 // A partir daqui precisa de autentiação
 routes.use(authMiddleware);
@@ -132,8 +136,10 @@ routes.put('/staffs/:staff_id', StaffController.update);
 routes.delete('/staffs/:staff_id', StaffController.inactivate);
 routes.post('/staffs/formMail', StaffController.formMail);
 
+routes.delete('/staffdocuments/:staffDocument_id', StaffDocumentController.inactivate);
+
 routes.get('/documents', DocumentController.index);
-routes.get('/documents/:origin/:type/:subtype', DocumentController.show);
+routes.get('/documents/:document_id', DocumentController.show);
 routes.post('/documents', DocumentController.store);
 routes.put('/documents/:document_id', DocumentController.update);
 routes.delete('/documents/:document_id', DocumentController.inactivate);

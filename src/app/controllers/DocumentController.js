@@ -85,7 +85,30 @@ class DocumentController {
 
     async show(req, res) {
         try {
-            const { origin, type, subtype } = req.params;
+            const { document_id } = req.params;
+            const documents = await Document.findByPk(document_id);
+
+            if (!documents) {
+                return res.status(400).json({
+                    error: 'documents not found.',
+                });
+            }
+
+            return res.json(documents);
+        } catch (err) {
+            const className = 'DocumentController';
+            const functionName = 'show';
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            });
+        }
+    }
+
+    async showByOriginTypeSubtype(req, res) {
+        try {
+            const { origin, type, subtype } = req.query;
+            console.log({ origin, type, subtype })
             const documents = await Document.findAll({
                 where: { origin, type, subtype, canceled_at: null },
             });

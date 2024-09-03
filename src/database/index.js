@@ -27,6 +27,7 @@ import Staff from '../app/models/Staff';
 import Agent from '../app/models/Agent';
 import Calendarday from '../app/models/Calendarday';
 import Document from '../app/models/Document';
+import Staffdocument from '../app/models/StaffDocument';
 // import UserGroup from '../app/models/usergroup'
 
 const models = [
@@ -54,7 +55,8 @@ const models = [
   MenuHierarchy,
   MenuHierarchyXGroups,
   Student,
-  Staff
+  Staff,
+  Staffdocument
 ];
 
 class Database {

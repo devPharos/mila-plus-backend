@@ -74,6 +74,7 @@ class Staff extends Model {
 
     static associate(models) {
         this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' });
+        this.hasMany(models.Staffdocument, { foreignKey: 'staff_id', as: 'staffdocuments' });
     }
 }
 
