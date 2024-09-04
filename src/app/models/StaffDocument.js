@@ -4,9 +4,14 @@ class Staffdocument extends Model {
     static init(sequelize) {
         super.init(
             {
+                id: {
+                    type: Sequelize.UUID,
+                    defaultValue: Sequelize.UUIDV4,
+                    primaryKey: true
+                },
                 company_id: Sequelize.INTEGER,
-                file_id: Sequelize.INTEGER,
-                staff_id: Sequelize.INTEGER,
+                file_id: Sequelize.UUID,
+                staff_id: Sequelize.UUID,
                 document_id: Sequelize.INTEGER,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,

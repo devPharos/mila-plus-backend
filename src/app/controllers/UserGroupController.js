@@ -64,7 +64,7 @@ class UserGroupController {
       const {
         name,
         filialtype_id,
-        modules
+        groupAccess
       } = req.body;
 
       const userGroupExists = await UserGroup.findByPk(group_id);
@@ -73,7 +73,7 @@ class UserGroupController {
         return res.status(401).json({ error: 'User Group does not exist.' });
       }
 
-      modules.map((module) => {
+      groupAccess.map((module) => {
         module.menus.map((menu) => {
           const { view, edit, create, inactivate } = menu;
           MenuHierarchyXGroups.findByPk(menu.id)
@@ -119,7 +119,7 @@ class UserGroupController {
         where: {
           company_id: req.companyId,
           [Op.not]: {
-            filialtype_id: req.headers.filial != 1 ? 1 : 0
+            filialtype_id: req.headers.filial != '4592e8ca-64b6-4bc2-8375-9fae78abc519' ? '4592e8ca-64b6-4bc2-8375-9fae78abc519' : null
           },
         },
         include: [

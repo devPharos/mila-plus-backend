@@ -1,146 +1,66 @@
-import Sequelize, { UUIDV4 } from 'sequelize';
+import Sequelize from 'sequelize';
+import MailLog from '../../Mails/MailLog';
+import databaseConfig from '../../config/database';
 import Student from '../models/Student';
 import * as Yup from 'yup';
+import Enrollment from '../models/Enrollment';
+import Enrollmenttimeline from '../models/EnrollmentTimeline';
 
 const { Op } = Sequelize;
 
 class ProspectController {
 
   async store(req, res) {
-    const schema = Yup.object().shape({
-      email: Yup.string()
-        .email()
-        .required(),
-      first_name: Yup.string().required(),
-      last_name: Yup.string(),
-      gender: Yup.string(),
-      birth_country: Yup.string(),
-      birth_state: Yup.string(),
-      birth_city: Yup.string(),
-      state: Yup.string(),
-      city: Yup.string(),
-      zip: Yup.string(),
-      address: Yup.string(),
-      foreign_address: Yup.string(),
-      phone: Yup.string(),
-      home_country_phone: Yup.string(),
-      whatsapp: Yup.string(),
-      date_of_birth: Yup.string(),
-      preferred_contact_form: Yup.string(),
-      passport_number: Yup.string(),
-      visa_number: Yup.string(),
-      visa_expiration: Yup.string(),
-      nsevis: Yup.string(),
-      how_did_you_hear_about_us: Yup.string(),
-    });
+    const connection = new Sequelize(databaseConfig)
+    const t = await connection.transaction();
+    try {
 
-    if (!(await schema.isValid(req.body))) {
-      return res.status(400).json({ error: 'Erro de validação! ' });
-    }
-    const {
-      filial_id,
-      email,
-      first_name,
-      last_name,
-      gender,
-      birth_country,
-      birth_state,
-      birth_city,
-      state,
-      city,
-      zip,
-      address,
-      foreign_address,
-      phone,
-      home_country_phone,
-      whatsapp,
-      date_of_birth,
-      responsible_agent_id,
-      preferred_contact_form,
-      passport_number,
-      visa_number,
-      visa_expiration,
-      nsevis,
-      how_did_you_hear_about_us,
-      category,
-      status,
-      sub_status,
-      type,
-      userId
-    } = req.body;
+      const newProspect = await Student.create({
+        filial_id: req.headers.filial,
+        ...req.body,
+        company_id: req.companyId,
+        created_at: new Date(),
+        created_by: req.userId,
+      }, {
+        transaction: t
+      })
 
-    const student = await Student.findOne({
-      where: { email, canceled_at: null }
-    });
+      await Enrollment.create({
+        filial_id: req.headers.filial,
+        company_id: req.companyId,
+        student_id: newProspect.id,
+        agent_id: null,
+        created_at: new Date(),
+        created_by: req.userId,
+      }, {
+        transaction: t
+      }).then(async (enrollment) => {
+        await Enrollmenttimeline.create({
+          enrollment_id: enrollment.id,
+          substatus: 'Initial',
+          phase: 'Form Filling',
+          phase_step: 'Form link not sent',
+          step_status: 'Link has not been sent to the student yet.',
+          expected_date: null,
+          created_at: new Date(),
+          created_by: req.userId,
+        }, {
+          transaction: t
+        }).then(async (enrollmentTimeline) => {
+          t.commit();
+        })
+      })
 
-    if (student) {
-      return res.status(400).json({
-        error: 'Prospect already registered.',
+      return res.json(newProspect);
+    } catch (err) {
+      await t.rollback();
+      const className = 'StudentController';
+      const functionName = 'store';
+      MailLog({ className, functionName, req, err })
+      return res.status(500).json({
+        error: err,
       });
     }
-
-    if (!userId) {
-      return res.status(400).json({
-        error: 'Who is registering this prospect?',
-      });
-    }
-
-    const lastRegistrationNumberUser = await Student.findOne({
-      where: { registration_number: { [Op.startsWith]: 'PRP' } },
-      order: [['createdAt', 'DESC']],
-      attributes: ['registration_number']
-    });
-
-    let lastRegistrationNumber = 'PRP000000';
-
-    if (lastRegistrationNumberUser) {
-      lastRegistrationNumber = lastRegistrationNumberUser.dataValues.registration_number;
-    }
-
-
-    const nextRegistrationNumber = 'PRP' + (parseInt(lastRegistrationNumber.substr(3, 6)) + 1).toString().padStart(6, "0")
-
-    const newProspect = await Student.create({
-      filial_id,
-      registration_number: nextRegistrationNumber,
-      email,
-      first_name,
-      last_name,
-      gender,
-      birth_country,
-      birth_state,
-      birth_city,
-      state,
-      city,
-      zip,
-      address,
-      foreign_address,
-      phone,
-      home_country_phone,
-      whatsapp,
-      date_of_birth,
-      responsible_agent_id,
-      preferred_contact_form,
-      passport_number,
-      visa_number,
-      visa_expiration,
-      nsevis,
-      how_did_you_hear_about_us,
-      category,
-      status,
-      sub_status,
-      type,
-      created_at: new Date(),
-      created_by: userId
-    })
-
-    if (!newProspect) {
-      return res.status(400).json({
-        error: 'It was not possible to register this prospect, review your information.',
-      });
-    }
-
-    return res.json(newProspect);
   }
 
   async update(req, res) {

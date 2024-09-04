@@ -4,8 +4,13 @@ class Programcategory extends Model {
     static init(sequelize) {
         super.init(
             {
+                id: {
+                    type: Sequelize.UUID,
+                    defaultValue: Sequelize.UUIDV4,
+                    primaryKey: true
+                },
                 company_id: Sequelize.INTEGER,
-                language_id: Sequelize.INTEGER,
+                language_id: Sequelize.UUID,
                 name: Sequelize.STRING,
                 description: Sequelize.STRING,
                 created_by: Sequelize.INTEGER,

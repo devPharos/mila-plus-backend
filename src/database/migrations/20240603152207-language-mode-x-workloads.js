@@ -6,19 +6,18 @@ module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable('languagemodexworkloads', {
             id: {
-                allowNull: false,
-                autoIncrement: true,
-                primaryKey: true,
-                type: Sequelize.INTEGER
+                type: Sequelize.UUID,
+                defaultValue: Sequelize.UUIDV4,
+                primaryKey: true
             },
             language_mode_id: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.UUID,
                 allowNull: true,
                 references: { model: 'languagemodes', key: 'id' },
                 onUpdate: 'CASCADE',
             },
             workload_id: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.UUID,
                 allowNull: true,
                 references: { model: 'workloads', key: 'id' },
                 onUpdate: 'CASCADE',

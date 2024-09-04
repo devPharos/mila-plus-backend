@@ -6,10 +6,9 @@ module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable('languages', {
             id: {
-                allowNull: false,
-                autoIncrement: true,
-                primaryKey: true,
-                type: Sequelize.INTEGER
+                type: Sequelize.UUID,
+                defaultValue: Sequelize.UUIDV4,
+                primaryKey: true
             },
             company_id: {
                 type: Sequelize.INTEGER,

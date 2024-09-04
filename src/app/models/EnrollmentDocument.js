@@ -1,6 +1,6 @@
 import Sequelize, { Model } from 'sequelize';
 
-class Filialtype extends Model {
+class Enrollmentdocument extends Model {
     static init(sequelize) {
         super.init(
             {
@@ -9,8 +9,9 @@ class Filialtype extends Model {
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true
                 },
-                company_id: Sequelize.INTEGER,
-                name: Sequelize.STRING,
+                enrollment_id: Sequelize.UUID,
+                file_id: Sequelize.INTEGER,
+                document_id: Sequelize.INTEGER,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -19,7 +20,7 @@ class Filialtype extends Model {
                 canceled_at: Sequelize.DATE,
             },
             {
-                sequelize
+                sequelize,
             }
         );
 
@@ -27,10 +28,11 @@ class Filialtype extends Model {
     }
 
     static associate(models) {
-        this.hasMany(models.Filial, {
-            foreignKey: 'filialtype_id'
+        this.belongsTo(models.Enrollment, {
+            foreignKey: 'enrollment_id',
+            as: 'enrollments',
         });
     }
 }
 
-export default Filialtype;
+export default Enrollmentdocument;

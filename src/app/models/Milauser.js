@@ -12,7 +12,7 @@ class Milauser extends Model {
         password_hash: Sequelize.STRING,
         password_reset_token: Sequelize.TEXT,
         password_reset_expire: Sequelize.DATE,
-        avatar_id: Sequelize.INTEGER,
+        avatar_id: Sequelize.UUID,
         force_password_change: Sequelize.BOOLEAN,
         created_by: Sequelize.INTEGER,
         created_at: Sequelize.DATE,

@@ -4,6 +4,11 @@ class Workload extends Model {
     static init(sequelize) {
         super.init(
             {
+                id: {
+                    type: Sequelize.UUID,
+                    defaultValue: Sequelize.UUIDV4,
+                    primaryKey: true
+                },
                 company_id: Sequelize.INTEGER,
                 name: Sequelize.STRING,
                 level_id: Sequelize.INTEGER,

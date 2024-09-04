@@ -28,6 +28,7 @@ import AgentController from './app/controllers/AgentController';
 import CalendarDayController from './app/controllers/CalendarDayController';
 import DocumentController from './app/controllers/DocumentController';
 import StaffDocumentController from './app/controllers/StaffDocumentController';
+import EnrollmentController from './app/controllers/EnrollmentController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
@@ -40,7 +41,12 @@ routes.get('/outside/filials/:filial_id', FilialController.show);
 routes.get('/outside/staffs/:staff_id', StaffController.show);
 routes.put('/outside/staffs/:staff_id', StaffController.updateOutside);
 
+routes.get('/outside/enrollments/:enrollment_id', EnrollmentController.show);
+routes.put('/outside/enrollments/:enrollment_id', EnrollmentController.update);
+
 routes.get('/users_short_info/:user_id', MilaUserController.shortInfo);
+
+routes.get('/agents', AgentController.index);
 
 routes.get('/documentsByOrigin', DocumentController.showByOriginTypeSubtype);
 routes.post('/staffdocuments', StaffDocumentController.store);
@@ -123,7 +129,6 @@ routes.post('/students', StudentController.store);
 routes.put('/students/:student_id', StudentController.update);
 routes.delete('/students/:student_id', StudentController.inactivate);
 
-routes.get('/agents', AgentController.index);
 routes.get('/agents/:agent_id', AgentController.show);
 routes.post('/agents', AgentController.store);
 routes.put('/agents/:agent_id', AgentController.update);
@@ -143,6 +148,12 @@ routes.get('/documents/:document_id', DocumentController.show);
 routes.post('/documents', DocumentController.store);
 routes.put('/documents/:document_id', DocumentController.update);
 routes.delete('/documents/:document_id', DocumentController.inactivate);
+
+routes.get('/enrollments', EnrollmentController.index);
+routes.get('/enrollments/:enrollment_id', EnrollmentController.show);
+routes.post('/enrollments', EnrollmentController.store);
+routes.put('/enrollments/:enrollment_id', EnrollmentController.update);
+routes.delete('/enrollments/:enrollment_id', EnrollmentController.inactivate);
 
 routes.get('/calendar-days', CalendarDayController.index);
 routes.get('/calendar-days/:calendarDay_id', CalendarDayController.show);

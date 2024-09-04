@@ -2,28 +2,30 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('agents', {
+        await queryInterface.createTable('enrollmentdocuments', {
             id: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.UUID,
+                defaultValue: Sequelize.UUIDV4,
                 allowNull: false,
-                autoIncrement: true,
                 primaryKey: true
             },
-            company_id: {
-                type: Sequelize.INTEGER,
+            file_id: {
+                type: Sequelize.UUID,
                 allowNull: false,
-                references: { model: 'companies', key: 'id' },
+                references: { model: 'files', key: 'id' },
                 onUpdate: 'NO ACTION',
             },
-            filial_id: {
-                type: Sequelize.INTEGER,
+            enrollment_id: {
+                type: Sequelize.UUID,
                 allowNull: false,
-                references: { model: 'filials', key: 'id' },
+                references: { model: 'enrollments', key: 'id' },
                 onUpdate: 'NO ACTION',
             },
-            name: {
-                type: Sequelize.STRING,
-                allowNull: false
+            document_id: {
+                type: Sequelize.UUID,
+                allowNull: false,
+                references: { model: 'documents', key: 'id' },
+                onUpdate: 'NO ACTION',
             },
             created_at: {
                 allowNull: false,
@@ -52,6 +54,6 @@ module.exports = {
         });
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('agents');
+        await queryInterface.dropTable('enrollmentdocuments');
     }
 };

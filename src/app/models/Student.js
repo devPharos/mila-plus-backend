@@ -5,6 +5,11 @@ class Student extends Model {
   static init(sequelize) {
     super.init(
       {
+        id: {
+          type: Sequelize.UUID,
+          defaultValue: Sequelize.UUIDV4,
+          primaryKey: true
+        },
         company_id: Sequelize.INTEGER,
         filial_id: Sequelize.INTEGER,
         registration_number: Sequelize.STRING,
@@ -32,7 +37,7 @@ class Student extends Model {
         type: Sequelize.STRING,
         status: Sequelize.STRING,
         sub_status: Sequelize.STRING,
-        salesagent_id: Sequelize.INTEGER,
+        agent_id: Sequelize.UUID,
         preferred_contact_form: Sequelize.STRING,
         passport_number: Sequelize.STRING,
         visa_number: Sequelize.STRING,

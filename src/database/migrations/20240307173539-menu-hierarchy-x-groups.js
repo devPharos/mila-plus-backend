@@ -13,7 +13,7 @@ module.exports = {
         allowNull: true,
       },
       group_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: true,
       },
       view: {

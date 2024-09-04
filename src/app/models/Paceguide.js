@@ -4,8 +4,13 @@ class Paceguide extends Model {
     static init(sequelize) {
         super.init(
             {
+                id: {
+                    type: Sequelize.UUID,
+                    defaultValue: Sequelize.UUIDV4,
+                    primaryKey: true
+                },
                 company_id: Sequelize.INTEGER,
-                workload_id: Sequelize.INTEGER,
+                workload_id: Sequelize.UUID,
                 day: Sequelize.INTEGER,
                 type: Sequelize.STRING,
                 description: Sequelize.STRING,

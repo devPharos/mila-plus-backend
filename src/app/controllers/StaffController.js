@@ -59,7 +59,7 @@ class StaffController {
                         size: files.size || 0,
                         url: files.url,
                         registry_type: 'Staff',
-                        registry_key: staff_id,
+                        registry_uuidkey: staff_id,
                         document_id: files.document_id,
                         created_by: req.userId,
                         created_at: new Date(),
@@ -258,9 +258,7 @@ class StaffController {
 
     async formMail(req, res) {
         const { crypt } = req.body;
-        const params = atob(crypt).split('-');
-        const id = atob(params[0]);
-        const filial_id = atob(params[1]);
+        const id = atob(crypt);
 
         const staff = await Staff.findByPk(id)
         try {

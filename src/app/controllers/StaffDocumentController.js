@@ -29,7 +29,7 @@ class StaffDocumentController {
                     url: files.url,
                     key: files.key,
                     registry_type: 'Staff',
-                    registry_key: staff_id,
+                    registry_uuidkey: staff_id,
                     document_id: files.document_id,
                     created_by: req.userId || 2,
                     created_at: new Date(),

@@ -145,8 +145,8 @@ class DocumentController {
                 });
             }
 
-            if (Document.canceled_at) {
-                await Document.update({
+            if (document.canceled_at) {
+                await document.update({
                     canceled_at: null,
                     canceled_by: null,
                     updated_at: new Date(),
@@ -155,7 +155,7 @@ class DocumentController {
                     transaction: t
                 })
             } else {
-                await Document.update({
+                await document.update({
                     canceled_at: new Date(),
                     canceled_by: req.userId
                 }, {

@@ -4,9 +4,8 @@ module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable('staffdocuments', {
             id: {
-                type: Sequelize.INTEGER,
-                allowNull: false,
-                autoIncrement: true,
+                type: Sequelize.UUID,
+                defaultValue: Sequelize.UUIDV4,
                 primaryKey: true
             },
             company_id: {
@@ -16,19 +15,19 @@ module.exports = {
                 onUpdate: 'NO ACTION',
             },
             file_id: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.UUID,
                 allowNull: false,
                 references: { model: 'files', key: 'id' },
                 onUpdate: 'NO ACTION',
             },
             staff_id: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.UUID,
                 allowNull: false,
                 references: { model: 'staffs', key: 'id' },
-                onUpdate: 'NO ACTION',
+                onUpdate: 'CASCADE',
             },
             document_id: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.UUID,
                 allowNull: false,
                 references: { model: 'documents', key: 'id' },
                 onUpdate: 'NO ACTION',

@@ -16,7 +16,7 @@ module.exports = {
         onUpdate: 'CASCADE',
       },
       group_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: false,
         references: { model: 'user_groups', key: 'id' },
         onUpdate: 'CASCADE',

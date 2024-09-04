@@ -41,7 +41,7 @@ module.exports = {
         defaultValue: false
       },
       avatar_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: true,
         references: { model: 'files', key: 'id' },
         onUpdate: 'SET NULL',

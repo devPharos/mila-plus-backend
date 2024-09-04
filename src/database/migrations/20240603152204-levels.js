@@ -6,10 +6,9 @@ module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable('levels', {
             id: {
-                allowNull: false,
-                autoIncrement: true,
-                primaryKey: true,
-                type: Sequelize.INTEGER
+                type: Sequelize.UUID,
+                defaultValue: Sequelize.UUIDV4,
+                primaryKey: true
             },
             company_id: {
                 type: Sequelize.INTEGER,
@@ -18,7 +17,7 @@ module.exports = {
                 onUpdate: 'CASCADE',
             },
             programcategory_id: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.UUID,
                 allowNull: true,
                 references: { model: 'programcategories', key: 'id' },
                 onUpdate: 'CASCADE',

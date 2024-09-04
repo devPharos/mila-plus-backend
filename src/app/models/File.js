@@ -4,10 +4,16 @@ class File extends Model {
   static init(sequelize) {
     super.init(
       {
+        id: {
+          type: Sequelize.UUID,
+          defaultValue: Sequelize.UUIDV4,
+          primaryKey: true
+        },
         company_id: Sequelize.INTEGER,
-        document_id: Sequelize.INTEGER,
+        document_id: Sequelize.UUID,
         registry_type: Sequelize.STRING,
-        registry_key: Sequelize.INTEGER,
+        registry_idkey: Sequelize.INTEGER,
+        registry_uuidkey: Sequelize.UUID,
         name: Sequelize.STRING,
         size: Sequelize.INTEGER,
         key: Sequelize.STRING,

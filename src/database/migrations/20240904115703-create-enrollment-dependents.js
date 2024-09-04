@@ -2,49 +2,42 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('documents', {
+        await queryInterface.createTable('enrollmentdependents', {
             id: {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
+                allowNull: false,
                 primaryKey: true
             },
-            company_id: {
-                type: Sequelize.INTEGER,
+            enrollment_id: {
+                type: Sequelize.UUID,
                 allowNull: false,
-                references: { model: 'companies', key: 'id' },
-                onUpdate: 'NO ACTION',
+                references: { model: 'enrollments', key: 'id' },
+                onUpdate: 'CASCADE',
             },
-            origin: {
-                type: Sequelize.STRING,
-                allowNull: false
-            },
-            type: {
+            name: {
                 type: Sequelize.STRING,
                 allowNull: true
             },
-            subtype: {
+            gender: {
                 type: Sequelize.STRING,
                 allowNull: true
             },
-            title: {
-                type: Sequelize.STRING,
-                allowNull: false
-            },
-            multiple: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: true
-            },
-            required: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false
-            },
-            formats: {
+            dept1_type: {
                 type: Sequelize.STRING,
                 allowNull: true
             },
-            sizelimit: {
-                type: Sequelize.FLOAT,
-                defaultValue: 0
+            relationship_type: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            email: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            phone: {
+                type: Sequelize.STRING,
+                allowNull: true
             },
             created_at: {
                 allowNull: false,
@@ -73,6 +66,6 @@ module.exports = {
         });
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('documents');
+        await queryInterface.dropTable('enrollmentdependents');
     }
 };

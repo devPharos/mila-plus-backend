@@ -28,6 +28,12 @@ import Agent from '../app/models/Agent';
 import Calendarday from '../app/models/Calendarday';
 import Document from '../app/models/Document';
 import Staffdocument from '../app/models/StaffDocument';
+import Enrollment from '../app/models/Enrollment';
+import Enrollmentdocument from '../app/models/EnrollmentDocument';
+import Enrollmentdependent from '../app/models/EnrollmentDependent';
+import Enrollmentsponsor from '../app/models/EnrollmentSponsor';
+import Enrollmentemergency from '../app/models/EnrollmentEmergency';
+import Enrollmenttimeline from '../app/models/EnrollmentTimeline';
 // import UserGroup from '../app/models/usergroup'
 
 const models = [
@@ -37,6 +43,12 @@ const models = [
   Company,
   Chartofaccount,
   Document,
+  Enrollment,
+  Enrollmentdocument,
+  Enrollmentdependent,
+  Enrollmentsponsor,
+  Enrollmentemergency,
+  Enrollmenttimeline,
   File,
   Filial,
   Filialtype,

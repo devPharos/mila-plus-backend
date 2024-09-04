@@ -18,7 +18,7 @@ module.exports = {
         onUpdate: 'CASCADE',
       },
       filialtype_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: false,
         references: { model: 'filialtypes', key: 'id' },
         onUpdate: 'CASCADE',
@@ -33,7 +33,7 @@ module.exports = {
         allowNull: false
       },
       avatar_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: true,
         references: { model: 'files', key: 'id' },
         onUpdate: 'SET NULL',

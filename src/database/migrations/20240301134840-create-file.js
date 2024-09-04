@@ -4,10 +4,9 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('files', {
       id: {
-        allowNull: false,
-        autoIncrement: true,
-        primaryKey: true,
-        type: Sequelize.INTEGER
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
+        primaryKey: true
       },
       company_id: {
         type: Sequelize.INTEGER,
@@ -16,25 +15,30 @@ module.exports = {
         onUpdate: 'NO ACTION',
       },
       document_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: true,
         references: { model: 'documents', key: 'id' },
         onUpdate: 'NO ACTION',
       },
       registry_type: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: true
       },
-      registry_key: {
+      registry_idkey: {
         type: Sequelize.INTEGER,
-        allowNull: false
+        allowNull: true
+      },
+      registry_uuidkey: {
+        type: Sequelize.UUID,
+        allowNull: true
       },
       name: {
         type: Sequelize.STRING,
         allowNull: false
       },
       size: {
-        type: Sequelize.FLOAT
+        type: Sequelize.FLOAT,
+        defaultValue: 0
       },
       key: {
         type: Sequelize.STRING,

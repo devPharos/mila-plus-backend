@@ -158,6 +158,11 @@ module.exports = {
           alias: 'documents',
           name: 'Documents',
         },
+        {
+          father_id: 3,
+          alias: 'enrollments',
+          name: 'Enrollments',
+        },
       ],
       {}
     );

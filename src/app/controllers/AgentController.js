@@ -75,7 +75,6 @@ class AgentController {
                     }
                 ],
                 where: {
-                    company_id: req.companyId,
                     [Op.or]: [
                         {
                             filial_id: {
@@ -87,6 +86,12 @@ class AgentController {
                 },
                 order: [['name']]
             })
+
+            if (!agents) {
+                return res.status(400).json({
+                    error: 'Agents not found.',
+                });
+            }
 
             return res.json(agents);
         } catch (err) {

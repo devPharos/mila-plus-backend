@@ -5,10 +5,10 @@ class Filial extends Model {
     super.init(
       {
         company_id: Sequelize.INTEGER,
-        filialtype_id: Sequelize.INTEGER,
+        filialtype_id: Sequelize.UUID,
         alias: Sequelize.STRING,
         name: Sequelize.STRING,
-        avatar_id: Sequelize.INTEGER,
+        avatar_id: Sequelize.UUID,
         ein: Sequelize.STRING,
         country: Sequelize.STRING,
         state: Sequelize.STRING,
@@ -36,7 +36,6 @@ class Filial extends Model {
         sendmail_port: Sequelize.STRING,
         sendmail_password: Sequelize.STRING,
         sendmail_name: Sequelize.STRING,
-
         administrator_id: Sequelize.INTEGER,
         active: Sequelize.BOOLEAN,
         created_by: Sequelize.INTEGER,

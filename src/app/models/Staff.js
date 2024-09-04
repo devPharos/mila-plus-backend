@@ -4,6 +4,11 @@ class Staff extends Model {
     static init(sequelize) {
         super.init(
             {
+                id: {
+                    type: Sequelize.UUID,
+                    defaultValue: Sequelize.UUIDV4,
+                    primaryKey: true
+                },
                 company_id: Sequelize.INTEGER,
                 filial_id: Sequelize.INTEGER,
                 name: Sequelize.STRING,
@@ -56,7 +61,7 @@ class Staff extends Model {
                 saturday_morning: Sequelize.BOOLEAN,
                 saturday_afternoon: Sequelize.BOOLEAN,
                 saturday_evening: Sequelize.BOOLEAN,
-                user_id: Sequelize.INTEGER,
+                user_id: Sequelize.UUID,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,

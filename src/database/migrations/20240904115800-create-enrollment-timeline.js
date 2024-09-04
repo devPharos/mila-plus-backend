@@ -2,49 +2,38 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('documents', {
+        await queryInterface.createTable('enrollmenttimelines', {
             id: {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
+                allowNull: false,
                 primaryKey: true
             },
-            company_id: {
-                type: Sequelize.INTEGER,
+            enrollment_id: {
+                type: Sequelize.UUID,
                 allowNull: false,
-                references: { model: 'companies', key: 'id' },
+                references: { model: 'enrollments', key: 'id' },
                 onUpdate: 'NO ACTION',
             },
-            origin: {
-                type: Sequelize.STRING,
-                allowNull: false
-            },
-            type: {
+            substatus: {
                 type: Sequelize.STRING,
                 allowNull: true
             },
-            subtype: {
+            phase: {
                 type: Sequelize.STRING,
                 allowNull: true
             },
-            title: {
-                type: Sequelize.STRING,
-                allowNull: false
-            },
-            multiple: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: true
-            },
-            required: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false
-            },
-            formats: {
+            phase_step: {
                 type: Sequelize.STRING,
                 allowNull: true
             },
-            sizelimit: {
-                type: Sequelize.FLOAT,
-                defaultValue: 0
+            step_status: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            expected_date: {
+                type: Sequelize.STRING,
+                allowNull: true
             },
             created_at: {
                 allowNull: false,
@@ -73,6 +62,6 @@ module.exports = {
         });
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('documents');
+        await queryInterface.dropTable('enrollmenttimelines');
     }
 };

@@ -229,7 +229,7 @@ class MilaUserController {
         transaction: t
       });
 
-      if (email.trim() !== userExists.email) {
+      if (email && email.trim() !== userExists.email) {
         mailer.sendMail({
           from: '"Mila Plus" <admin@pharosit.com.br>',
           to: email,
@@ -340,7 +340,7 @@ class MilaUserController {
               attributes: ['id', 'name'],
               where: {
                 [Op.not]: {
-                  filialtype_id: req.headers.filial != 1 ? 1 : 0
+                  filialtype_id: req.headers.filial != '4592e8ca-64b6-4bc2-8375-9fae78abc519' ? '4592e8ca-64b6-4bc2-8375-9fae78abc519' : null
                 },
                 canceled_at: null,
               },

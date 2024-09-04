@@ -115,10 +115,9 @@ class WorkloadController {
                 myFile = await File.create({
                     company_id: req.companyId,
                     name: file_id.name,
-                    size: file_id.size || 0,
+                    size: file_id.size,
                     url: file_id.url,
                     registry_type: 'Workload',
-                    registry_key: workloadExist.id,
                     created_by: req.userId,
                     created_at: new Date()
                 }), {
@@ -132,15 +131,26 @@ class WorkloadController {
                 company_id: req.companyId,
                 name: `${days_per_week.toString()} day(s) per week, ${hours_per_day.toString()} hour(s) per day.`,
                 days_per_week,
-                file_id: myFile,
+                file_id: myFile ? myFile.id : null,
                 hours_per_day,
                 languagemode_id,
                 level_id,
                 created_by: req.userId, created_at: new Date()
             }, {
                 transaction: t
+            }).then((workload) => {
+                if (myFile) {
+                    myFile.update({
+                        registry_uuidkey: workload.id
+                    }, {
+                        transaction: t
+                    }).then(() => {
+                        t.commit();
+                    })
+                } else {
+                    t.commit();
+                }
             })
-            t.commit();
 
             return res.json(newWorkload);
 
@@ -193,7 +203,7 @@ class WorkloadController {
                     size: file_id.size || 0,
                     url: file_id.url,
                     registry_type: 'Workload',
-                    registry_key: workloadExist.id,
+                    registry_uuidkey: workloadExist.id,
                     created_by: req.userId,
                     created_at: new Date()
                 }), {
