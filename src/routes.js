@@ -41,8 +41,8 @@ routes.get('/outside/filials/:filial_id', FilialController.show);
 routes.get('/outside/staffs/:staff_id', StaffController.show);
 routes.put('/outside/staffs/:staff_id', StaffController.updateOutside);
 
-routes.get('/outside/enrollments/:enrollment_id', EnrollmentController.show);
-routes.put('/outside/enrollments/:enrollment_id', EnrollmentController.update);
+routes.get('/outside/enrollments/:enrollment_id', EnrollmentController.outsideShow);
+routes.put('/outside/enrollments/:enrollment_id', EnrollmentController.outsideUpdate);
 
 routes.get('/users_short_info/:user_id', MilaUserController.shortInfo);
 
@@ -169,7 +169,8 @@ routes.post('/users/filial', MilaUserController.createUserToFilial);
 routes.put('/users/:user_id', MilaUserController.update);
 
 routes.post('/prospects', ProspectController.store);
-routes.post('/prospects/:prospect_id', ProspectController.update);
+routes.put('/prospects/:prospect_id', ProspectController.update);
+routes.post('/prospects/formMail', ProspectController.formMail);
 
 routes.post('/userxfilial', validateFilialAssociate, MilaUserController.filialAssociate)
 

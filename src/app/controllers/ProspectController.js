@@ -5,6 +5,8 @@ import Student from '../models/Student';
 import * as Yup from 'yup';
 import Enrollment from '../models/Enrollment';
 import Enrollmenttimeline from '../models/EnrollmentTimeline';
+import { mailer } from '../../config/mailer';
+import { addDays, format, parseISO } from 'date-fns';
 
 const { Op } = Sequelize;
 
@@ -29,7 +31,8 @@ class ProspectController {
         filial_id: req.headers.filial,
         company_id: req.companyId,
         student_id: newProspect.id,
-        agent_id: null,
+        form_step: 'student-information',
+        agent_id: newProspect.agent_id,
         created_at: new Date(),
         created_by: req.userId,
       }, {
@@ -37,10 +40,12 @@ class ProspectController {
       }).then(async (enrollment) => {
         await Enrollmenttimeline.create({
           enrollment_id: enrollment.id,
-          substatus: 'Initial',
-          phase: 'Form Filling',
-          phase_step: 'Form link not sent',
-          step_status: 'Link has not been sent to the student yet.',
+          type: newProspect.type,
+          status: 'Waiting',
+          substatus: newProspect.sub_status,
+          phase: 'Prospect',
+          phase_step: 'Admission Information',
+          step_status: `Waiting for prospect's response. `,
           expected_date: null,
           created_at: new Date(),
           created_by: req.userId,
@@ -64,132 +69,159 @@ class ProspectController {
   }
 
   async update(req, res) {
-    const { prospect_id } = req.params;
-    const schema = Yup.object().shape({
-      email: Yup.string()
-        .email(),
-      first_name: Yup.string(),
-      last_name: Yup.string(),
-      gender: Yup.string(),
-      birth_country: Yup.string(),
-      birth_state: Yup.string(),
-      birth_city: Yup.string(),
-      state: Yup.string(),
-      city: Yup.string(),
-      zip: Yup.string(),
-      address: Yup.string(),
-      foreign_address: Yup.string(),
-      phone: Yup.string(),
-      home_country_phone: Yup.string(),
-      whatsapp: Yup.string(),
-      date_of_birth: Yup.string(),
-      preferred_contact_form: Yup.string(),
-      passport_number: Yup.string(),
-      visa_number: Yup.string(),
-      visa_expiration: Yup.string(),
-      nsevis: Yup.string(),
-      how_did_you_hear_about_us: Yup.string(),
-    });
-
-    if (!(await schema.isValid(req.body))) {
-      return res.status(400).json({ error: 'Erro de validação! ' });
-    }
-    const {
-      filial_id,
-      email,
-      first_name,
-      last_name,
-      gender,
-      birth_country,
-      birth_state,
-      birth_city,
-      state,
-      city,
-      zip,
-      address,
-      foreign_address,
-      phone,
-      home_country_phone,
-      whatsapp,
-      date_of_birth,
-      responsible_agent_id,
-      preferred_contact_form,
-      passport_number,
-      visa_number,
-      visa_expiration,
-      nsevis,
-      how_did_you_hear_about_us,
-      category,
-      status,
-      sub_status,
-      type,
-      userId
-    } = req.body;
-
-    const prospectExists = await Student.findByPk(prospect_id);
-
-    if (!prospectExists) {
-      return res.status(400).json({
-        error: 'Prospect not found.',
-      });
-    }
-
-    if (email && email.trim() != prospectExists.email.trim()) {
-
-      const studentByEmail = await Student.findOne({
-        where: { email, canceled_at: null }
+    const connection = new Sequelize(databaseConfig)
+    const t = await connection.transaction();
+    try {
+      const { prospect_id } = req.params;
+      const schema = Yup.object().shape({
+        email: Yup.string()
+          .email(),
+        first_name: Yup.string(),
+        last_name: Yup.string(),
+        gender: Yup.string(),
+        birth_country: Yup.string(),
+        birth_state: Yup.string(),
+        birth_city: Yup.string(),
+        state: Yup.string(),
+        city: Yup.string(),
+        zip: Yup.string(),
+        address: Yup.string(),
+        foreign_address: Yup.string(),
+        phone: Yup.string(),
+        home_country_phone: Yup.string(),
+        whatsapp: Yup.string(),
+        date_of_birth: Yup.string(),
+        preferred_contact_form: Yup.string(),
+        passport_number: Yup.string(),
+        visa_number: Yup.string(),
+        visa_expiration: Yup.string(),
+        nsevis: Yup.string(),
+        how_did_you_hear_about_us: Yup.string(),
       });
 
-      if (studentByEmail) {
+      if (!(await schema.isValid(req.body))) {
+        return res.status(400).json({ error: 'Erro de validação! ' });
+      }
+      const {
+        filial_id,
+        email,
+        first_name,
+        last_name,
+        gender,
+        birth_country,
+        birth_state,
+        birth_city,
+        state,
+        city,
+        zip,
+        address,
+        foreign_address,
+        phone,
+        home_country_phone,
+        whatsapp,
+        date_of_birth,
+        responsible_agent_id,
+        preferred_contact_form,
+        passport_number,
+        visa_number,
+        visa_expiration,
+        nsevis,
+        how_did_you_hear_about_us,
+        category,
+        status,
+        sub_status,
+        type,
+        userId
+      } = req.body;
+
+      const prospectExists = await Student.findByPk(prospect_id);
+
+      if (!prospectExists) {
         return res.status(400).json({
-          error: 'Email already used to another student.',
+          error: 'Prospect not found.',
         });
       }
-    }
 
-    if (!userId) {
-      return res.status(400).json({
-        error: 'Who is updating this prospect?',
-      });
-    }
+      if (email && email.trim() != prospectExists.email.trim()) {
 
-    const changedProspect = await prospectExists.update({
-      ...prospectExists.dataValues,
-      filial_id,
-      email,
-      first_name,
-      last_name,
-      gender,
-      birth_country,
-      birth_state,
-      birth_city,
-      state,
-      city,
-      zip,
-      address,
-      foreign_address,
-      phone,
-      home_country_phone,
-      whatsapp,
-      date_of_birth,
-      responsible_agent_id,
-      preferred_contact_form,
-      passport_number,
-      visa_number,
-      visa_expiration,
-      nsevis,
-      how_did_you_hear_about_us,
-      category,
-      status,
-      sub_status,
-      type,
-      updated_at: new Date(),
-      updated_by: userId
-    })
+        const studentByEmail = await Student.findOne({
+          where: { email, canceled_at: null }
+        });
 
-    if (!changedProspect) {
-      return res.status(400).json({
-        error: 'It was not possible to update this prospect, review your information.',
+        if (studentByEmail) {
+          return res.status(400).json({
+            error: 'Email already used to another student.',
+          });
+        }
+      }
+
+      if (!userId) {
+        return res.status(400).json({
+          error: 'Who is updating this prospect?',
+        });
+      }
+
+      const changedProspect = await prospectExists.update({
+        ...prospectExists.dataValues,
+        filial_id,
+        email,
+        first_name,
+        last_name,
+        gender,
+        birth_country,
+        birth_state,
+        birth_city,
+        state,
+        city,
+        zip,
+        address,
+        foreign_address,
+        phone,
+        home_country_phone,
+        whatsapp,
+        date_of_birth,
+        responsible_agent_id,
+        preferred_contact_form,
+        passport_number,
+        visa_number,
+        visa_expiration,
+        nsevis,
+        how_did_you_hear_about_us,
+        category,
+        status,
+        sub_status,
+        type,
+        updated_at: new Date(),
+        updated_by: userId
+      }, {
+        transaction: t
+      })
+
+      await Enrollment.update({
+        agent_id: newProspect.agent_id,
+        type: newProspect.type,
+        substatus: newProspect.sub_status,
+        updated_at: new Date(),
+        updated_by: req.userId,
+      }, {
+        where: {
+          student_id: prospectExists.id
+        },
+        transaction: t
+      })
+
+      if (!changedProspect) {
+        return res.status(400).json({
+          error: 'It was not possible to update this prospect, review your information.',
+        });
+      }
+    } catch (err) {
+      await t.rollback();
+      const className = 'ProspectController';
+      const functionName = 'update';
+      MailLog({ className, functionName, req, err })
+      return res.status(500).json({
+        error: err,
       });
     }
 
@@ -294,6 +326,62 @@ class ProspectController {
     }
 
     return res.json(prospects);
+  }
+
+  async formMail(req, res) {
+    const connection = new Sequelize(databaseConfig)
+    const t = await connection.transaction();
+    try {
+      const { crypt } = req.body;
+
+      const student = await Student.findByPk(crypt)
+      const enrollment = await Enrollment.findOne({
+        where: {
+          student_id: student.id,
+          canceled_at: null
+        }
+      })
+
+      if (!enrollment) {
+        return res.status(400).json({
+          error: 'Enrollment not found.',
+        });
+      }
+
+      await Enrollmenttimeline.create({
+        enrollment_id: enrollment.id,
+        type: student.type,
+        substatus: student.sub_status,
+        phase: 'Student Application',
+        phase_step: 'Form link has sent to Student',
+        step_status: `Form filling has not been started yet.`,
+        expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+        created_at: new Date(),
+        created_by: req.userId,
+      }, {
+        transaction: t
+      }).then(async () => {
+        await mailer.sendMail({
+          from: '"Mila Plus" <admin@pharosit.com.br>',
+          to: student.dataValues.email,
+          subject: `Mila Plus - Please fill your form.`,
+          html: `<p>Hello, ${student.dataValues.name}</p>
+                <p>Please fill your form <a href="https://milaplus.netlify.app/fill-form/Enrollment?crypt=${enrollment.id}">here</a></p>`
+        })
+        t.commit();
+      })
+
+
+    } catch (err) {
+      console.log(err)
+      return res.status(400).json({
+        error: 'An error has ocourred.',
+      });
+    }
+
+    return res.status(200).json({
+      ok: 'ok'
+    });
   }
 }
 

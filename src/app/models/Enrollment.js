@@ -12,6 +12,7 @@ class Enrollment extends Model {
                 company_id: Sequelize.INTEGER,
                 filial_id: Sequelize.INTEGER,
                 student_id: Sequelize.UUID,
+                form_step: Sequelize.STRING,
                 application: Sequelize.STRING,
                 previous_school: Sequelize.STRING,
                 agent_id: Sequelize.UUID,

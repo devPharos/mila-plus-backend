@@ -29,6 +29,11 @@ module.exports = {
                 references: { model: 'students', key: 'id' },
                 onUpdate: 'NO ACTION',
             },
+            form_step: {
+                type: Sequelize.STRING,
+                defaultValue: 'student-information',
+                allowNull: false
+            },
             application: {
                 type: Sequelize.STRING,
                 allowNull: true
@@ -157,11 +162,11 @@ module.exports = {
             },
             has_dependents: {
                 type: Sequelize.BOOLEAN,
-                defaultValue: true,
+                defaultValue: false,
             },
             need_sponsorship: {
                 type: Sequelize.BOOLEAN,
-                defaultValue: true,
+                defaultValue: false,
             },
             terms_agreement: {
                 type: Sequelize.BOOLEAN,

@@ -10,6 +10,8 @@ class Enrollmenttimeline extends Model {
                     primaryKey: true
                 },
                 enrollment_id: Sequelize.UUID,
+                type: Sequelize.STRING,
+                status: Sequelize.STRING,
                 substatus: Sequelize.STRING,
                 phase: Sequelize.STRING,
                 phase_step: Sequelize.STRING,

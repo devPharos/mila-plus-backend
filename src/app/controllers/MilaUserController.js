@@ -113,26 +113,32 @@ class MilaUserController {
         transaction: t
       })
 
-      mailer.sendMail({
-        from: '"Mila Plus" <admin@pharosit.com.br>',
-        to: email,
-        subject: `Mila Plus - Account created`,
-        html: `<p>Hello, ${name}</p><p>Now you have access to Mila Plus system, please use these information on your first access:<br>
-        E-mail: ${email}<br>
-        Password: ${password}</p>`
-      })
-
-      t.commit();
-
+      const promises = [];
       if (req.body.filials.length > 0) {
         const addedFilials = [];
         req.body.filials.map((filial) => {
           if (!addedFilials.includes(filial.filial_id)) {
-            UserXFilial.create({ user_id: newUser.id, filial_id: filial.filial_id, created_at: new Date, created_by: req.userId });
+            promises.push(UserXFilial.create({ user_id: newUser.id, filial_id: filial.filial_id, created_at: new Date, created_by: req.userId }, {
+              transaction: t
+            }));
             addedFilials.push(filial.filial_id)
           }
         })
       }
+
+      Promise.all(promises).then(async (filials) => {
+        t.commit();
+
+        mailer.sendMail({
+          from: '"Mila Plus" <admin@pharosit.com.br>',
+          to: email,
+          subject: `Mila Plus - Account created`,
+          html: `<p>Hello, ${name}</p><p>Now you have access to Mila Plus system, please use these information on your first access:<br>
+          E-mail: ${email}<br>
+          Password: ${password}</p>`
+        })
+
+      })
 
       const { id } = newUser;
 

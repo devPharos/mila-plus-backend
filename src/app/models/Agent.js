@@ -12,6 +12,8 @@ class Agent extends Model {
                 company_id: Sequelize.INTEGER,
                 filial_id: Sequelize.INTEGER,
                 name: Sequelize.STRING,
+                email: Sequelize.STRING,
+                user_id: Sequelize.INTEGER,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,

@@ -15,6 +15,14 @@ module.exports = {
                 references: { model: 'enrollments', key: 'id' },
                 onUpdate: 'NO ACTION',
             },
+            type: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            status: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
             substatus: {
                 type: Sequelize.STRING,
                 allowNull: true
