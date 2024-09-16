@@ -72,9 +72,21 @@ class AgentController {
                     {
                         model: Filial,
                         as: 'filial',
+                        where: {
+                            canceled_at: null
+                        }
                     }
                 ],
                 where: {
+                    [Op.or]: [
+                        {
+                            filial_id: {
+                                [Op.gte]: req.headers.filial == 1 ? 1 : 999
+                            }
+                        },
+                        { filial_id: req.headers.filial != 1 ? req.headers.filial : 0 },
+                    ],
+                    canceled_at: null
                 },
                 order: [['name']]
             })

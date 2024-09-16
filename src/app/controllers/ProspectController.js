@@ -7,6 +7,7 @@ import Enrollment from '../models/Enrollment';
 import Enrollmenttimeline from '../models/EnrollmentTimeline';
 import { mailer } from '../../config/mailer';
 import { addDays, format, parseISO } from 'date-fns';
+import { Agent } from 'https';
 
 const { Op } = Sequelize;
 
@@ -237,7 +238,15 @@ class ProspectController {
       });
     }
 
-    const prospect = await Student.findByPk(prospect_id)
+    const prospect = await Student.findByPk(prospect_id, {
+      include: [
+        {
+          model: Agent,
+          as: 'agent',
+          attributes: ['name']
+        }
+      ]
+    })
 
     if (!prospect) {
       return res.status(400).json({
