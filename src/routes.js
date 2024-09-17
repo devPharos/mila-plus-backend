@@ -52,8 +52,14 @@ routes.get('/users_short_info/:user_id', MilaUserController.shortInfo);
 routes.get('/agents', AgentController.index);
 
 routes.get('/documentsByOrigin', DocumentController.showByOriginTypeSubtype);
+
 routes.post('/staffdocuments', StaffDocumentController.store);
+routes.delete('/staffdocuments/:staffDocument_id', StaffDocumentController.inactivate);
+
 routes.post('/enrollmentdocuments', EnrollmentDocumentController.store);
+routes.delete('/enrollmentdocuments/:enrollmentDocument_id', EnrollmentDocumentController.inactivate);
+
+routes.post('/enrollmentstudentsignature', EnrollmentController.studentsignature);
 
 // A partir daqui precisa de autentiação
 routes.use(authMiddleware);
@@ -154,10 +160,6 @@ routes.post('/staffs', StaffController.store);
 routes.put('/staffs/:staff_id', StaffController.update);
 routes.delete('/staffs/:staff_id', StaffController.inactivate);
 routes.post('/staffs/formMail', StaffController.formMail);
-
-routes.delete('/staffdocuments/:staffDocument_id', StaffDocumentController.inactivate);
-routes.delete('/enrollmentdocuments/:enrollmentDocument_id', EnrollmentDocumentController.inactivate);
-routes.post('/enrollmentstudentsignature', EnrollmentController.studentsignature);
 
 routes.get('/documents', DocumentController.index);
 routes.get('/documents/:document_id', DocumentController.show);
