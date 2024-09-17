@@ -40,6 +40,10 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: true
             },
+            marital_status: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
             birth_country: {
                 type: Sequelize.STRING,
                 allowNull: true
@@ -49,6 +53,14 @@ module.exports = {
                 allowNull: true
             },
             birth_city: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            native_language: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            citizen_country: {
                 type: Sequelize.STRING,
                 allowNull: true
             },
@@ -88,6 +100,26 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: true
             },
+            home_country_address: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            home_country_zip: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            home_country_city: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            home_country_state: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            home_country_country: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
             whatsapp_ddi: {
                 type: Sequelize.STRING,
                 allowNull: true
@@ -109,17 +141,21 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: true
             },
-            type: {
-                type: Sequelize.STRING,
-                allowNull: true
+            processtype_id: {
+                type: Sequelize.INTEGER,
+                allowNull: true,
+                references: { model: 'processtypes', key: 'id' },
+                onUpdate: 'SET NULL',
             },
             status: {
                 type: Sequelize.STRING,
                 allowNull: true
             },
-            sub_status: {
-                type: Sequelize.STRING,
-                allowNull: true
+            processsubstatus_id: {
+                type: Sequelize.INTEGER,
+                allowNull: true,
+                references: { model: 'processsubstatuses', key: 'id' },
+                onUpdate: 'SET NULL',
             },
             agent_id: {
                 type: Sequelize.UUID,
@@ -132,6 +168,14 @@ module.exports = {
                 allowNull: true
             },
             passport_number: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            passport_expiration_date: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            i94_expiration_date: {
                 type: Sequelize.STRING,
                 allowNull: true
             },

@@ -17,9 +17,11 @@ class Student extends Model {
         middle_name: Sequelize.STRING,
         last_name: Sequelize.STRING,
         gender: Sequelize.STRING,
+        marital_status: Sequelize.STRING,
         birth_country: Sequelize.STRING,
         birth_state: Sequelize.STRING,
         birth_city: Sequelize.STRING,
+        citizen_country: Sequelize.STRING,
         state: Sequelize.STRING,
         city: Sequelize.STRING,
         zip: Sequelize.STRING,
@@ -27,19 +29,27 @@ class Student extends Model {
         foreign_address: Sequelize.TEXT,
         phone_ddi: Sequelize.STRING,
         phone: Sequelize.STRING,
+        native_language: Sequelize.STRING,
         home_country_phone_ddi: Sequelize.STRING,
         home_country_phone: Sequelize.STRING,
+        home_country_address: Sequelize.STRING,
+        home_country_zip: Sequelize.STRING,
+        home_country_city: Sequelize.STRING,
+        home_country_state: Sequelize.STRING,
+        home_country_country: Sequelize.STRING,
         whatsapp_ddi: Sequelize.STRING,
         whatsapp: Sequelize.STRING,
         email: Sequelize.STRING,
         date_of_birth: Sequelize.STRING,
         category: Sequelize.STRING,
-        type: Sequelize.STRING,
+        processtype_id: Sequelize.INTEGER,
         status: Sequelize.STRING,
-        sub_status: Sequelize.STRING,
+        processsubstatus_id: Sequelize.INTEGER,
         agent_id: Sequelize.UUID,
         preferred_contact_form: Sequelize.STRING,
         passport_number: Sequelize.STRING,
+        passport_expiration_date: Sequelize.STRING,
+        i94_expiration_date: Sequelize.STRING,
         visa_number: Sequelize.STRING,
         visa_expiration: Sequelize.STRING,
         nsevis: Sequelize.STRING,
@@ -68,6 +78,8 @@ class Student extends Model {
 
   static associate(models) {
     this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' });
+    this.belongsTo(models.Processtype, { foreignKey: 'processtype_id', as: 'processtypes' });
+    this.belongsTo(models.Processsubstatus, { foreignKey: 'processsubstatus_id', as: 'processsubstatuses' });
   }
 }
 

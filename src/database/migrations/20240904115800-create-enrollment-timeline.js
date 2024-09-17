@@ -15,17 +15,21 @@ module.exports = {
                 references: { model: 'enrollments', key: 'id' },
                 onUpdate: 'NO ACTION',
             },
-            type: {
-                type: Sequelize.STRING,
-                allowNull: true
+            processtype_id: {
+                type: Sequelize.INTEGER,
+                allowNull: true,
+                references: { model: 'processtypes', key: 'id' },
+                onUpdate: 'SET NULL',
             },
             status: {
                 type: Sequelize.STRING,
                 allowNull: true
             },
-            substatus: {
-                type: Sequelize.STRING,
-                allowNull: true
+            processsubstatus_id: {
+                type: Sequelize.INTEGER,
+                allowNull: true,
+                references: { model: 'processsubstatuses', key: 'id' },
+                onUpdate: 'SET NULL',
             },
             phase: {
                 type: Sequelize.STRING,

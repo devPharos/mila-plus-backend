@@ -2,13 +2,16 @@ import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
 import Enrollment from '../models/Enrollment';
-import Enrollmentdocument from '../models/EnrollmentDocument';
+import Enrollmentdocument from '../models/Enrollmentdocument';
 import Enrollmentdependent from '../models/EnrollmentDependent';
 import Enrollmenttimeline from '../models/EnrollmentTimeline';
 import Enrollmentemergency from '../models/EnrollmentEmergency';
 import Enrollmentsponsor from '../models/EnrollmentSponsor';
 import Student from '../models/Student';
 import { addDays, format, set } from 'date-fns';
+import Processtype from '../models/ProcessType';
+import Processsubstatus from '../models/Processsubstatus';
+import File from '../models/File';
 
 const { Op } = Sequelize;
 
@@ -169,6 +172,22 @@ class EnrollmentController {
                 }
             }
 
+            if (req.body.students) {
+                const studentExists = await Student.findByPk(enrollmentExists.student_id);
+                if (!studentExists) {
+                    return res.status(401).json({ error: 'student does not exist.' });
+                }
+                promises.push(await studentExists.update({
+                    ...req.body.students,
+                    updated_by: req.userId,
+                    updated_at: new Date()
+                }, {
+                    transaction: t
+                }));
+
+                delete req.body.students;
+            }
+
             promises.push(enrollmentExists.update({ ...req.body, form_step: nextStep, updated_by: req.userId, updated_at: new Date() }, {
                 transaction: t
             }));
@@ -195,11 +214,30 @@ class EnrollmentController {
             const enrollments = await Enrollment.findAll({
                 where: {
                     // company_id: req.companyId,
+                    [Op.or]: [
+                        {
+                            filial_id: {
+                                [Op.gte]: req.headers.filial == 1 ? 1 : 999
+                            }
+                        },
+                        { filial_id: req.headers.filial != 1 ? req.headers.filial : 0 },
+                    ],
+                    canceled_at: null
                 },
                 include: [
                     {
                         model: Student,
                         as: 'students',
+                        include: [
+                            {
+                                model: Processtype,
+                                as: 'processtypes',
+                            },
+                            {
+                                model: Processsubstatus,
+                                as: 'processsubstatuses',
+                            }
+                        ]
                     },
                     {
                         model: Enrollmentdocument,
@@ -251,11 +289,31 @@ class EnrollmentController {
                     {
                         model: Student,
                         as: 'students',
+                        include: [
+                            {
+                                model: Processtype,
+                                as: 'processtypes',
+                            },
+                            {
+                                model: Processsubstatus,
+                                as: 'processsubstatuses',
+                            }
+                        ]
                     },
                     {
                         model: Enrollmentdocument,
                         as: 'enrollmentdocuments',
                         required: false,
+                        include: [
+                            {
+                                model: File,
+                                as: 'file',
+                                where: {
+                                    canceled_at: null,
+                                    registry_type: 'Enrollment',
+                                }
+                            }
+                        ]
                     },
                     {
                         model: Enrollmentdependent,
@@ -324,11 +382,31 @@ class EnrollmentController {
                     {
                         model: Student,
                         as: 'students',
+                        include: [
+                            {
+                                model: Processtype,
+                                as: 'processtypes',
+                            },
+                            {
+                                model: Processsubstatus,
+                                as: 'processsubstatuses',
+                            }
+                        ]
                     },
                     {
                         model: Enrollmentdocument,
                         as: 'enrollmentdocuments',
                         required: false,
+                        include: [
+                            {
+                                model: File,
+                                as: 'file',
+                                where: {
+                                    canceled_at: null,
+                                    registry_type: 'Enrollment',
+                                }
+                            }
+                        ]
                     },
                     {
                         model: Enrollmentdependent,
@@ -442,6 +520,61 @@ class EnrollmentController {
             });
         }
 
+    }
+
+    async studentsignature(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction();
+        try {
+            const { enrollment_id } = req.body;
+            const enrollment = await Enrollment.findByPk(enrollment_id, {
+                where: { canceled_at: null },
+            });
+
+            if (!enrollment) {
+                return res.status(400).json({
+                    error: 'enrollment was not found.',
+                });
+            }
+
+            const signatureFile = await File.create({
+                company_id: req.companyId || 1,
+                name: req.body.files.name,
+                size: req.body.files.size,
+                url: req.body.files.url,
+                key: req.body.files.key,
+                registry_type: 'Student Signature',
+                registry_uuidkey: enrollment_id,
+                document_id: req.body.files.document_id,
+                created_by: req.userId || 2,
+                created_at: new Date(),
+                updated_by: req.userId || 2,
+                updated_at: new Date(),
+            }, { transaction: t })
+
+            if (signatureFile) {
+
+                await enrollment.update({
+                    student_signature: signatureFile.id,
+                    updated_by: req.userId,
+                    updated_at: new Date()
+                }, {
+                    transaction: t
+                })
+            }
+            t.commit();
+
+            return res.status(200).json(enrollment);
+
+        } catch (err) {
+            await t.rollback();
+            const className = 'EnrollmentController';
+            const functionName = 'studentsignature';
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            });
+        }
     }
 }
 

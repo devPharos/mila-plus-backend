@@ -29,7 +29,7 @@ class ProspectController {
       })
 
       await Enrollment.create({
-        filial_id: req.headers.filial,
+        filial_id: newProspect.filial_id,
         company_id: req.companyId,
         student_id: newProspect.id,
         form_step: 'student-information',
@@ -41,9 +41,9 @@ class ProspectController {
       }).then(async (enrollment) => {
         await Enrollmenttimeline.create({
           enrollment_id: enrollment.id,
-          type: newProspect.type,
+          processtype_id: newProspect.processtype_id,
           status: 'Waiting',
-          substatus: newProspect.sub_status,
+          processsubstatus_id: newProspect.processsubstatus_id,
           phase: 'Prospect',
           phase_step: 'Admission Information',
           step_status: `Waiting for prospect's response. `,
@@ -321,6 +321,14 @@ class ProspectController {
         [Op.or]: [{ status: { [Op.startsWith]: status } }, { status: null }],
         [Op.or]: [{ sub_status: { [Op.startsWith]: sub_status } }, { sub_status: null }],
         [Op.or]: [{ type: { [Op.startsWith]: type } }, { type: null }],
+        [Op.or]: [
+          {
+            filial_id: {
+              [Op.gte]: req.headers.filial == 1 ? 1 : 999
+            }
+          },
+          { filial_id: req.headers.filial != 1 ? req.headers.filial : 0 },
+        ],
         canceled_at: null,
         filial_id
       },

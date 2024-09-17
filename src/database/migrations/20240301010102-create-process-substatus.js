@@ -2,28 +2,21 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('enrollmentdocuments', {
+        await queryInterface.createTable('processsubstatuses', {
             id: {
-                type: Sequelize.UUID,
-                defaultValue: Sequelize.UUIDV4,
-                primaryKey: true
-            },
-            file_id: {
-                type: Sequelize.UUID,
                 allowNull: false,
-                references: { model: 'files', key: 'id' },
-                onUpdate: 'NO ACTION',
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER
             },
-            enrollment_id: {
-                type: Sequelize.UUID,
-                allowNull: false,
-                references: { model: 'enrollments', key: 'id' },
-                onUpdate: 'NO ACTION',
+            name: {
+                type: Sequelize.STRING,
+                allowNull: false
             },
-            document_id: {
-                type: Sequelize.UUID,
+            processtype_id: {
+                type: Sequelize.INTEGER,
                 allowNull: false,
-                references: { model: 'documents', key: 'id' },
+                references: { model: 'processtypes', key: 'id' },
                 onUpdate: 'NO ACTION',
             },
             created_at: {
@@ -53,6 +46,6 @@ module.exports = {
         });
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('enrollmentdocuments');
+        await queryInterface.dropTable('processsubstatuses');
     }
 };

@@ -24,7 +24,7 @@ class Enrollmentsponsor extends Model {
                 birth_state: Sequelize.STRING,
                 birth_country: Sequelize.STRING,
                 responsible_checkbox: Sequelize.BOOLEAN,
-                signature: Sequelize.TEXT,
+                signature: Sequelize.UUID,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,

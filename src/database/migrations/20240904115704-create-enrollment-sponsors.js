@@ -72,7 +72,7 @@ module.exports = {
                 defaultValue: false
             },
             signature: {
-                type: Sequelize.TEXT,
+                type: Sequelize.UUID,
                 allowNull: true
             },
             created_at: {

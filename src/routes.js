@@ -29,6 +29,9 @@ import CalendarDayController from './app/controllers/CalendarDayController';
 import DocumentController from './app/controllers/DocumentController';
 import StaffDocumentController from './app/controllers/StaffDocumentController';
 import EnrollmentController from './app/controllers/EnrollmentController';
+import ProcessTypeController from './app/controllers/ProcessTypeController';
+import ProcessSubstatusController from './app/controllers/ProcessSubstatusController';
+import EnrollmentDocumentController from './app/controllers/EnrollmentDocumentController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
@@ -50,9 +53,20 @@ routes.get('/agents', AgentController.index);
 
 routes.get('/documentsByOrigin', DocumentController.showByOriginTypeSubtype);
 routes.post('/staffdocuments', StaffDocumentController.store);
+routes.post('/enrollmentdocuments', EnrollmentDocumentController.store);
 
 // A partir daqui precisa de autentiação
 routes.use(authMiddleware);
+
+routes.get('/processtypes', ProcessTypeController.index);
+routes.get('/processtypes/:processtype_id', ProcessTypeController.show);
+routes.post('/processtypes', ProcessTypeController.store);
+routes.put('/processtypes/:processtype_id', ProcessTypeController.update);
+
+routes.get('/processsubstatuses', ProcessSubstatusController.index);
+routes.get('/processsubstatuses/:processsubstatus_id', ProcessSubstatusController.show);
+routes.post('/processsubstatuses', ProcessSubstatusController.store);
+routes.put('/processsubstatuses/:processsubstatus_id', ProcessSubstatusController.update);
 
 routes.get('/companies', CompanyController.index);
 routes.get('/filials', FilialController.index);
@@ -142,6 +156,8 @@ routes.delete('/staffs/:staff_id', StaffController.inactivate);
 routes.post('/staffs/formMail', StaffController.formMail);
 
 routes.delete('/staffdocuments/:staffDocument_id', StaffDocumentController.inactivate);
+routes.delete('/enrollmentdocuments/:enrollmentDocument_id', EnrollmentDocumentController.inactivate);
+routes.post('/enrollmentstudentsignature', EnrollmentController.studentsignature);
 
 routes.get('/documents', DocumentController.index);
 routes.get('/documents/:document_id', DocumentController.show);

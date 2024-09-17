@@ -10,9 +10,9 @@ class Enrollmenttimeline extends Model {
                     primaryKey: true
                 },
                 enrollment_id: Sequelize.UUID,
-                type: Sequelize.STRING,
+                processtype_id: Sequelize.INTEGER,
                 status: Sequelize.STRING,
-                substatus: Sequelize.STRING,
+                processsubstatus_id: Sequelize.INTEGER,
                 phase: Sequelize.STRING,
                 phase_step: Sequelize.STRING,
                 step_status: Sequelize.STRING,
@@ -36,6 +36,14 @@ class Enrollmenttimeline extends Model {
         this.belongsTo(models.Enrollment, {
             foreignKey: 'enrollment_id',
             as: 'enrollments',
+        });
+        this.belongsTo(models.Processtype, {
+            foreignKey: 'processtype_id',
+            as: 'processtypes',
+        });
+        this.belongsTo(models.Processsubstatus, {
+            foreignKey: 'processsubstatus_id',
+            as: 'processsubstatuses',
         });
     }
 }

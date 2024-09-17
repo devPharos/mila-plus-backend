@@ -163,6 +163,16 @@ module.exports = {
           alias: 'enrollments',
           name: 'Enrollments',
         },
+        {
+          father_id: 6,
+          alias: 'processtypes',
+          name: 'ProcessTypes',
+        },
+        {
+          father_id: 6,
+          alias: 'processsubstatuses',
+          name: 'ProcessSubstatuses',
+        },
       ],
       {}
     );

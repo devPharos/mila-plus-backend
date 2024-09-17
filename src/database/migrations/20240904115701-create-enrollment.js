@@ -52,98 +52,6 @@ module.exports = {
                 type: Sequelize.TEXT,
                 allowNull: true
             },
-            legal_name: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            gender: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            birth_date: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            passport_number: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            passport_expiration_date: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            i94_expiration_date: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            marital_status: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            birth_city: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            birth_state: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            birth_country: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            citizen_country: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            native_language: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            usa_address: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            usa_zip_code: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            usa_city: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            usa_state: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            usa_phone_number: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            home_address: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            home_zip_code: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            home_city: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            home_state: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            home_country: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            home_phone_number: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
             admission_correspondence_address: {
                 type: Sequelize.STRING,
                 allowNull: true
@@ -173,7 +81,7 @@ module.exports = {
                 defaultValue: false,
             },
             student_signature: {
-                type: Sequelize.TEXT,
+                type: Sequelize.UUID,
                 allowNull: true
             },
             guardian_name: {
@@ -181,7 +89,7 @@ module.exports = {
                 allowNull: true
             },
             guardian_signature: {
-                type: Sequelize.TEXT,
+                type: Sequelize.UUID,
                 allowNull: true
             },
             created_at: {
