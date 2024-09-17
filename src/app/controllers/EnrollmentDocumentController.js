@@ -1,7 +1,7 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
-import Enrollmentdocument from '../models/Enrollmentdocument';
+import Enrollmentdocument from '../models/EnrollmentDocument';
 import File from '../models/File';
 import Enrollment from '../models/Enrollment';
 
