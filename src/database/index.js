@@ -29,13 +29,13 @@ import Calendarday from '../app/models/Calendarday';
 import Document from '../app/models/Document';
 import Staffdocument from '../app/models/StaffDocument';
 import Enrollment from '../app/models/Enrollment';
-import Enrollmentdocument from '../app/models/Enrollmentdocument';
+import Enrollmentdocument from '../app/models/EnrollmentDocument';
 import Enrollmentdependent from '../app/models/EnrollmentDependent';
 import Enrollmentsponsor from '../app/models/EnrollmentSponsor';
 import Enrollmentemergency from '../app/models/EnrollmentEmergency';
 import Enrollmenttimeline from '../app/models/EnrollmentTimeline';
 import Processtype from '../app/models/ProcessType';
-import Processsubstatus from '../app/models/Processsubstatus';
+import Processsubstatus from '../app/models/ProcessSubstatus';
 // import UserGroup from '../app/models/usergroup'
 
 const models = [
