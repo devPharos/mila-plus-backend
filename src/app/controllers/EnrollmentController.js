@@ -10,7 +10,7 @@ import Enrollmentsponsor from '../models/EnrollmentSponsor';
 import Student from '../models/Student';
 import { addDays, format, set } from 'date-fns';
 import Processtype from '../models/ProcessType';
-import Processsubstatus from '../models/Processsubstatus';
+import Processsubstatus from '../models/ProcessSubstatus';
 import File from '../models/File';
 
 const { Op } = Sequelize;
