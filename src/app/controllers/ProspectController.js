@@ -378,6 +378,7 @@ class ProspectController {
       }, {
         transaction: t
       }).then(async () => {
+        t.commit();
         await mailer.sendMail({
           from: '"Mila Plus" <admin@pharosit.com.br>',
           to: student.dataValues.email,
@@ -385,7 +386,6 @@ class ProspectController {
           html: `<p>Hello, ${student.dataValues.name}</p>
                 <p>Please fill your form <a href="https://milaplus.netlify.app/fill-form/Enrollment?crypt=${enrollment.id}">here</a></p>`
         })
-        t.commit();
       })
 
 

@@ -4,17 +4,20 @@ class FilialDiscountList extends Model {
     static init(sequelize) {
         super.init(
             {
+                id: {
+                    type: Sequelize.UUID,
+                    defaultValue: Sequelize.UUIDV4,
+                    primaryKey: true
+                },
                 filial_id: Sequelize.INTEGER,
                 name: Sequelize.STRING,
                 type: Sequelize.STRING,
-
                 value: Sequelize.FLOAT,
                 percent: Sequelize.BOOLEAN,
                 punctuality_discount: Sequelize.BOOLEAN,
                 all_installments: Sequelize.BOOLEAN,
                 free_vacation: Sequelize.BOOLEAN,
                 special_discount: Sequelize.BOOLEAN,
-
                 active: Sequelize.BOOLEAN,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,

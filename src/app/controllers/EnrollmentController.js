@@ -12,6 +12,8 @@ import { addDays, format, set } from 'date-fns';
 import Processtype from '../models/ProcessType';
 import Processsubstatus from '../models/ProcessSubstatus';
 import File from '../models/File';
+import { mailer } from '../../config/mailer';
+import Filial from '../models/Filial';
 
 const { Op } = Sequelize;
 
@@ -76,8 +78,10 @@ class EnrollmentController {
     async outsideUpdate(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction();
+        let nextTimeline = null;
         try {
             const { enrollment_id } = req.params;
+            const { activeMenu, lastActiveMenu } = req.body;
 
             const enrollmentExists = await Enrollment.findByPk(enrollment_id);
 
@@ -87,21 +91,59 @@ class EnrollmentController {
                 return res.status(401).json({ error: 'enrollment does not exist.' });
             }
 
-            let nextStep = 'student-information';
-            if (enrollmentExists.form_step === 'student-information') {
+            const lastTimeline = await Enrollmenttimeline.findOne({
+                where: {
+                    enrollment_id: enrollmentExists.id,
+                    canceled_at: null
+                },
+                order: [['id', 'DESC']]
+            })
+
+            const existingSponsors = await Enrollmentsponsor.findAll({
+                where: {
+                    enrollment_id: enrollmentExists.id,
+                    canceled_at: null
+                }
+            })
+            let nextStep = lastActiveMenu.name;
+            if (activeMenu === 'student-information' && lastActiveMenu.name === 'student-information') {
                 nextStep = 'emergency-contact';
-            } else if (enrollmentExists.form_step === 'emergency-contact') {
+            } else if (activeMenu === 'emergency-contact' && lastActiveMenu.name === 'emergency-contact') {
                 nextStep = 'enrollment-information';
-            } else if (enrollmentExists.form_step === 'enrollment-information') {
+            } else if (activeMenu === 'enrollment-information' && lastActiveMenu.name === 'enrollment-information') {
                 nextStep = 'dependent-information';
-            } else if (enrollmentExists.form_step === 'dependent-information') {
+            } else if (activeMenu === 'dependent-information' && lastActiveMenu.name === 'dependent-information') {
                 nextStep = 'affidavit-of-support';
-            } else if (enrollmentExists.form_step === 'affidavit-of-support') {
+            } else if (activeMenu === 'affidavit-of-support' && lastActiveMenu.name === 'affidavit-of-support') {
                 nextStep = 'documents-upload';
-            } else if (enrollmentExists.form_step === 'documents-upload') {
+            } else if (activeMenu === 'documents-upload' && lastActiveMenu.name === 'documents-upload') {
                 nextStep = 'student-signature';
-            } else if (enrollmentExists.form_step === 'student-signature') {
-                nextStep = 'sponsor-signature';
+            } else if (activeMenu === 'student-signature' && lastActiveMenu.name === 'student-signature') {
+                if (existingSponsors.length > 0) {
+                    nextStep = 'sponsor-signature';
+                    nextTimeline = {
+                        phase: 'Student Application',
+                        phase_step: 'Form link has been sent to Sponsor',
+                        step_status: `Form filling has not yet started.`,
+                        expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+                        created_at: new Date(),
+                        created_by: 2
+                    }
+                } else {
+                    nextStep = 'payment';
+                    nextTimeline = {
+                        phase: 'Student Application',
+                        phase_step: 'Payment Process',
+                        step_status: `Payment pending.`,
+                        expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+                        created_at: new Date(),
+                        created_by: 2
+                    }
+                }
+            } else {
+                return res.status(400).json({
+                    error: 'activeMenu not valid.'
+                });
             }
 
             if (req.body.enrollmentemergencies && req.body.enrollmentemergencies.length > 0) {
@@ -149,11 +191,6 @@ class EnrollmentController {
 
             if (req.body.enrollmentsponsors && req.body.enrollmentsponsors.length > 0) {
                 const { enrollmentsponsors } = req.body;
-                const existingSponsors = await Enrollmentsponsor.findAll({
-                    where: {
-                        enrollment_id: enrollmentExists.id,
-                    }
-                })
                 if (existingSponsors) {
                     existingSponsors.map((sponsor) => {
                         promises.push(sponsor.update({ canceled_at: new Date(), canceled_by: 2 }, {
@@ -188,12 +225,39 @@ class EnrollmentController {
                 delete req.body.students;
             }
 
+            if (nextTimeline && lastTimeline) {
+                await Enrollmenttimeline.create({
+                    enrollment_id: enrollmentExists.id,
+                    processtype_id: lastTimeline.processtype_id,
+                    status: 'Waiting',
+                    processsubstatus_id: lastTimeline.processsubstatus_id,
+                    ...nextTimeline,
+                }, {
+                    transaction: t
+                })
+            }
+
+            delete req.body.form_step;
+
             promises.push(enrollmentExists.update({ ...req.body, form_step: nextStep, updated_by: req.userId, updated_at: new Date() }, {
                 transaction: t
             }));
 
             Promise.all(promises).then(() => {
                 t.commit();
+                if (nextStep === 'sponsor-signature') {
+                    existingSponsors.map((sponsor) => {
+                        if (sponsor.dataValues.canceled_at === null) {
+                            mailer.sendMail({
+                                from: '"Mila Plus" <admin@pharosit.com.br>',
+                                to: sponsor.dataValues.email,
+                                subject: `Mila Plus - Sponsor form`,
+                                html: `<p>Hello, ${sponsor.dataValues.name}</p>
+                                <p>Please fill your form <a href="https://milaplus.netlify.app/fill-form/Sponsor?crypt=${sponsor.id}">here</a></p>`
+                            })
+                        }
+                    })
+                }
                 return res.status(200).json(enrollmentExists);
             })
 
@@ -243,26 +307,41 @@ class EnrollmentController {
                         model: Enrollmentdocument,
                         as: 'enrollmentdocuments',
                         required: false,
+                        where: {
+                            canceled_at: null
+                        }
                     },
                     {
                         model: Enrollmentdependent,
                         as: 'enrollmentdependents',
                         required: false,
+                        where: {
+                            canceled_at: null
+                        }
                     },
                     {
                         model: Enrollmentemergency,
                         as: 'enrollmentemergencies',
                         required: false,
+                        where: {
+                            canceled_at: null
+                        }
                     },
                     {
                         model: Enrollmentsponsor,
                         as: 'enrollmentsponsors',
                         required: false,
+                        where: {
+                            canceled_at: null
+                        }
                     },
                     {
                         model: Enrollmenttimeline,
                         as: 'enrollmenttimelines',
                         required: false,
+                        where: {
+                            canceled_at: null
+                        }
                     },
                 ]
             })
@@ -301,39 +380,55 @@ class EnrollmentController {
                         ]
                     },
                     {
+                        model: Filial,
+                        as: 'filial',
+                        attributes: ['id', 'alias', 'name', 'financial_support_student_amount', 'financial_support_dependent_amount'],
+                    },
+                    {
                         model: Enrollmentdocument,
                         as: 'enrollmentdocuments',
                         required: false,
                         include: [
                             {
                                 model: File,
-                                as: 'file',
-                                where: {
-                                    canceled_at: null,
-                                    registry_type: 'Enrollment',
-                                }
+                                as: 'file'
                             }
-                        ]
+                        ],
+                        where: {
+                            canceled_at: null,
+                        }
                     },
                     {
                         model: Enrollmentdependent,
                         as: 'enrollmentdependents',
                         required: false,
+                        where: {
+                            canceled_at: null,
+                        }
                     },
                     {
                         model: Enrollmentemergency,
                         as: 'enrollmentemergencies',
                         required: false,
+                        where: {
+                            canceled_at: null,
+                        }
                     },
                     {
                         model: Enrollmentsponsor,
                         as: 'enrollmentsponsors',
                         required: false,
+                        where: {
+                            canceled_at: null,
+                        }
                     },
                     {
                         model: Enrollmenttimeline,
                         as: 'enrollmenttimelines',
                         required: false,
+                        where: {
+                            canceled_at: null,
+                        }
                     },
                 ]
             });
@@ -346,7 +441,7 @@ class EnrollmentController {
 
             const timeline = enrollments.dataValues.enrollmenttimelines;
 
-            if (timeline[timeline.length - 1].dataValues.step_status === 'Form filling has not been started yet.') {
+            if (timeline[timeline.length - 1].dataValues.step_status === 'Form filling has not yet started.') {
                 const enrollment = enrollments.dataValues;
                 const student = enrollments.dataValues.students.dataValues;
                 await Enrollmenttimeline.create({
@@ -354,8 +449,8 @@ class EnrollmentController {
                     type: student.type,
                     substatus: student.sub_status,
                     phase: 'Student Application',
-                    phase_step: 'Form link has sent to Student',
-                    step_status: `Form filling has been started by the Student.`,
+                    phase_step: 'Form link has been sent to student',
+                    step_status: `Form filling was started by the student.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
                     created_at: new Date(),
                     created_by: 2, // Not Authentiticated User
@@ -403,7 +498,6 @@ class EnrollmentController {
                                 as: 'file',
                                 where: {
                                     canceled_at: null,
-                                    registry_type: 'Enrollment',
                                 }
                             }
                         ]
@@ -570,6 +664,61 @@ class EnrollmentController {
             await t.rollback();
             const className = 'EnrollmentController';
             const functionName = 'studentsignature';
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            });
+        }
+    }
+
+    async sponsorsignature(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction();
+        try {
+            const { sponsor_id } = req.body;
+            const sponsor = await Enrollmentsponsor.findByPk(sponsor_id, {
+                where: { canceled_at: null },
+            });
+
+            if (!sponsor) {
+                return res.status(400).json({
+                    error: 'sponsor was not found.',
+                });
+            }
+
+            const signatureFile = await File.create({
+                company_id: req.companyId || 1,
+                name: req.body.files.name,
+                size: req.body.files.size,
+                url: req.body.files.url,
+                key: req.body.files.key,
+                registry_type: 'Sponsor Signature',
+                registry_uuidkey: sponsor_id,
+                document_id: req.body.files.document_id,
+                created_by: req.userId || 2,
+                created_at: new Date(),
+                updated_by: req.userId || 2,
+                updated_at: new Date(),
+            }, { transaction: t })
+
+            if (signatureFile) {
+
+                await sponsor.update({
+                    signature: signatureFile.id,
+                    updated_by: req.userId,
+                    updated_at: new Date()
+                }, {
+                    transaction: t
+                })
+            }
+            t.commit();
+
+            return res.status(200).json(sponsor);
+
+        } catch (err) {
+            await t.rollback();
+            const className = 'EnrollmentController';
+            const functionName = 'sponsorsignature';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

@@ -8,7 +8,9 @@ import Filialtype from '../models/Filialtype';
 import Milauser from '../models/Milauser';
 import UserGroupXUser from '../models/UserGroupXUser';
 import UserXFilial from '../models/UserXFilial';
+import Processsubstatus from '../models/ProcessSubstatus';
 import { mailer } from '../../config/mailer';
+import { randomString } from '../functions';
 const { Op } = Sequelize;
 
 class FilialController {
@@ -23,10 +25,19 @@ class FilialController {
             model: FilialPriceList,
             as: 'pricelists',
             required: false,
+            include: [
+              {
+                model: Processsubstatus,
+                as: 'processsubstatuses',
+                where: {
+                  canceled_at: null
+                }
+              }
+            ],
             where: {
               canceled_at: null
             },
-            order: ['name']
+            order: [Processsubstatus, 'name']
           },
           {
             model: FilialDiscountList,
@@ -136,12 +147,6 @@ class FilialController {
             });
           }
 
-          function randomString(length, chars) {
-            var result = '';
-            for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
-            return result;
-          }
-
           const password = randomString(10, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
 
           await Milauser.create({
@@ -232,15 +237,15 @@ class FilialController {
         const pricesToUpdate = req.body.pricelists.filter(pricelist => pricelist.id)
 
         pricesToCreate.map((newPrice) => {
-          const { name, installment, installment_f1, mailling, private: privateValue, book, registration_fee, active } = newPrice;
-          promises.push(FilialPriceList.create({ filial_id: filial.id, name, installment, installment_f1, mailling, private: privateValue, book, registration_fee, active, created_by: req.userId, created_at: new Date() }, {
+          const { processsubstatus_id, tuition, book, registration_fee, active } = newPrice;
+          promises.push(FilialPriceList.create({ filial_id: filial.id, processsubstatus_id, tuition, book, registration_fee, active, created_by: req.userId, created_at: new Date() }, {
             transaction: t
           }))
         })
 
         pricesToUpdate.map((updPrice) => {
-          const { name, installment, installment_f1, mailling, private: privateValue, book, registration_fee, active } = updPrice;
-          promises.push(FilialPriceList.update({ filial_id: filial.id, name, installment, installment_f1, mailling, private: privateValue, book, registration_fee, active, updated_by: req.userId, updated_at: new Date() }, {
+          const { processsubstatus_id, tuition, book, registration_fee, active } = updPrice;
+          promises.push(FilialPriceList.update({ filial_id: filial.id, processsubstatus_id, tuition, book, registration_fee, active, updated_by: req.userId, updated_at: new Date() }, {
             where: {
               id: updPrice.id
             },
@@ -249,7 +254,30 @@ class FilialController {
           }))
         })
       }
-      console.log(1)
+
+      if (req.body.discountlists) {
+        const discountsToCreate = req.body.discountlists.filter(discount => !discount.id)
+        const discountsToUpdate = req.body.discountlists.filter(discount => discount.id)
+
+        discountsToCreate.map((newDiscount) => {
+          const { type, name, value, percent, all_installments, free_vacation, special_discount, active } = newDiscount;
+          promises.push(FilialDiscountList.create({ filial_id: filial.id, type, name, value, percent, all_installments, free_vacation, special_discount, active, created_by: req.userId, created_at: new Date() }, {
+            transaction: t
+          }))
+        })
+
+        discountsToUpdate.map((updDiscount) => {
+          const { type, name, value, percent, all_installments, free_vacation, special_discount, active } = updDiscount;
+          promises.push(FilialDiscountList.update({ filial_id: filial.id, type, name, value, percent, all_installments, free_vacation, special_discount, active, updated_by: req.userId, updated_at: new Date() }, {
+            where: {
+              id: updDiscount.id
+            },
+            transaction: t
+
+          }))
+        })
+      }
+
       Promise.all(promises).then(async () => {
 
         console.log(2)
@@ -268,12 +296,6 @@ class FilialController {
               return res.status(400).json({
                 error: 'User e-mail already exist.',
               });
-            }
-
-            function randomString(length, chars) {
-              var result = '';
-              for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
-              return result;
             }
 
             const password = randomString(10, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
@@ -334,12 +356,6 @@ class FilialController {
           const { name, email } = req.body.administrator;
           if (name && email) {
             const userExists = await Milauser.findByPk(req.body.administrator.id);
-
-            function randomString(length, chars) {
-              var result = '';
-              for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
-              return result;
-            }
 
             const password = randomString(10, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
 

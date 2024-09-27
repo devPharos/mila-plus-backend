@@ -4,12 +4,14 @@ class FilialPriceList extends Model {
     static init(sequelize) {
         super.init(
             {
+                id: {
+                    type: Sequelize.UUID,
+                    defaultValue: Sequelize.UUIDV4,
+                    primaryKey: true
+                },
                 filial_id: Sequelize.INTEGER,
-                name: Sequelize.STRING,
-                installment: Sequelize.FLOAT,
-                installment_f1: Sequelize.FLOAT,
-                mailling: Sequelize.FLOAT,
-                private: Sequelize.FLOAT,
+                processsubstatus_id: Sequelize.INTEGER,
+                tuition: Sequelize.FLOAT,
                 book: Sequelize.FLOAT,
                 registration_fee: Sequelize.FLOAT,
                 active: Sequelize.BOOLEAN,
@@ -30,6 +32,7 @@ class FilialPriceList extends Model {
 
     static associate(models) {
         this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filials' });
+        this.belongsTo(models.Processsubstatus, { foreignKey: 'processsubstatus_id', as: 'processsubstatuses' });
     }
 }
 

@@ -38,6 +38,8 @@ class Filial extends Model {
         sendmail_name: Sequelize.STRING,
         administrator_id: Sequelize.INTEGER,
         active: Sequelize.BOOLEAN,
+        financial_support_student_amount: Sequelize.FLOAT,
+        financial_support_dependent_amount: Sequelize.FLOAT,
         created_by: Sequelize.INTEGER,
         created_at: Sequelize.DATE,
         updated_by: Sequelize.INTEGER,

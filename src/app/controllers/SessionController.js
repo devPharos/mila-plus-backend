@@ -81,11 +81,18 @@ class SessionController {
       ],
     })
 
+    const accessToken = jwt.sign({ id, company_id: userData.company_id }, authConfig.secret, {
+      expiresIn: authConfig.expiresIn,
+    });
+
+    // const refreshToken = jwt.sign({ id, company_id: userData.company_id }, authConfig.secret, {
+    //   expiresIn: authConfig.expiresInRefresh,
+    // });
+
     return res.json({
       user: userData,
-      token: jwt.sign({ id, company_id: userData.company_id }, authConfig.secret, {
-        expiresIn: authConfig.expiresIn,
-      }),
+      token: accessToken,
+      // refreshToken: refreshToken
     });
   }
 

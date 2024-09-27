@@ -15,20 +15,13 @@ module.exports = {
         references: { model: 'filials', key: 'id' },
         onUpdate: 'CASCADE',
       },
-      name: {
-        type: Sequelize.STRING,
-        allowNull: false
+      processsubstatus_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: { model: 'processsubstatuses', key: 'id' },
+        onUpdate: 'CASCADE',
       },
-      installment: {
-        type: Sequelize.FLOAT,
-      },
-      installment_f1: {
-        type: Sequelize.FLOAT,
-      },
-      mailling: {
-        type: Sequelize.FLOAT,
-      },
-      private: {
+      tuition: {
         type: Sequelize.FLOAT,
       },
       book: {

@@ -47,6 +47,10 @@ class Enrollment extends Model {
             foreignKey: 'student_id',
             as: 'students',
         });
+        this.belongsTo(models.Filial, {
+            foreignKey: 'filial_id',
+            as: 'filial',
+        });
         this.hasMany(models.Enrollmentdocument, {
             foreignKey: 'enrollment_id',
             as: 'enrollmentdocuments',

@@ -126,6 +126,14 @@ module.exports = {
       sendmail_name: {
         type: Sequelize.STRING
       },
+      financial_support_student_amount: {
+        type: Sequelize.FLOAT,
+        defaultValue: 0,
+      },
+      financial_support_dependent_amount: {
+        type: Sequelize.FLOAT,
+        defaultValue: 0,
+      },
       active: {
         type: Sequelize.BOOLEAN,
         defaultValue: true

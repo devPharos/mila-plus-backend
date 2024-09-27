@@ -17,7 +17,7 @@ class EnrollmentDocumentController {
 
             const enrollmentExists = await Enrollment.findByPk(enrollment_id);
             if (!enrollmentExists) {
-                return res.status(401).json({ error: 'Enrollment Document does not exist.' });
+                return res.status(400).json({ error: 'Enrollment Document does not exist.' });
             }
             if (files) {
                 const fileCreated = await File.create({
