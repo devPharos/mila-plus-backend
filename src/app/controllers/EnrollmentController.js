@@ -9,6 +9,7 @@ import Enrollmentemergency from '../models/EnrollmentEmergency';
 import Enrollmentsponsor from '../models/EnrollmentSponsor';
 import Enrollmenttransfers from '../models/EnrollmentTransfer';
 import Student from '../models/Student';
+import Agent from '../models/Agent';
 import { addDays, format, set } from 'date-fns';
 import Processtype from '../models/ProcessType';
 import Processsubstatus from '../models/ProcessSubstatus';
@@ -96,6 +97,8 @@ class EnrollmentController {
                 return res.status(401).json({ error: 'enrollment does not exist.' });
             }
 
+            const agent = await Agent.findByPk(enrollmentExists.agent_id);
+
             const lastTimeline = await Enrollmenttimeline.findOne({
                 where: {
                     enrollment_id: enrollmentExists.id,
@@ -113,6 +116,8 @@ class EnrollmentController {
             let nextStep = lastActiveMenu.name;
             if (activeMenu === 'transfer-request' && lastActiveMenu.name === 'transfer-request') {
                 nextStep = 'transfer-dso';
+            } else if (activeMenu === 'transfer-dso' && lastActiveMenu.name === 'transfer-dso') {
+                nextStep = 'transfer-agent';
             } else if (activeMenu === 'student-information' && lastActiveMenu.name === 'student-information') {
                 nextStep = 'emergency-contact';
             } else if (activeMenu === 'emergency-contact' && lastActiveMenu.name === 'emergency-contact') {
@@ -216,7 +221,7 @@ class EnrollmentController {
                 }
             }
 
-            if (req.body.enrollmenttransfers && req.body.enrollmentsponsors.previous_school_name) {
+            if (req.body.enrollmenttransfers && req.body.enrollmenttransfers.previous_school_name) {
                 const existingTransfers = await Enrollmenttransfers.findOne({
                     where: {
                         enrollment_id: enrollmentExists.id
@@ -242,8 +247,9 @@ class EnrollmentController {
                 }
             }
 
+            const studentExists = await Student.findByPk(enrollmentExists.student_id);
+
             if (req.body.students) {
-                const studentExists = await Student.findByPk(enrollmentExists.student_id);
                 if (!studentExists) {
                     return res.status(401).json({ error: 'student does not exist.' });
                 }
@@ -298,15 +304,28 @@ class EnrollmentController {
                 } else if (activeMenu === 'transfer-request') {
 
                     const title = `Transfer Eligibility Form - DSO`;
-                    const content = `<p>Dear ${req.body.previous_school_dso_name},</p>
-                                    <p>You have been asked to please complete the <strong>Transfer Eligibility Form - DSO</strong>, related to the student <strong>Test Denis</strong>, Sevis ID no.: <strong>01234567891</strong>.</p>
+                    const content = `<p>Dear ${req.body.enrollmenttransfers.previous_school_dso_name},</p>
+                                    <p>You have been asked to please complete the <strong>Transfer Eligibility Form - DSO</strong>, related to the student <strong>${studentExists.dataValues.name}</strong>, Sevis ID no.: <strong>${studentExists.dataValues.nsevis}</strong>.</p>
                                     <br/>
                                     <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/fill-form/TransferDSO?crypt=${enrollmentExists.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
                     mailer.sendMail({
                         from: '"Mila Plus" <admin@pharosit.com.br>',
-                        to: req.body.previous_school_dso_email,
-                        subject: `Mila Plus - ${title}.`,
+                        to: req.body.enrollmenttransfers.previous_school_dso_email,
+                        subject: `Mila Plus - ${title}`,
                         html: MailLayout({ title, content, filial: filial.name }),
+                    })
+                } else if (activeMenu === 'transfer-dso') {
+
+                    const title = `Transfer Eligibility Form - DSO`;
+                    const content = `<p>Dear ${agent.dataValues.name},</p>
+                                    <p>The DSO of the student: ${studentExists.dataValues.name} with NSEVIS ${studentExists.dataValues.nsevis}, completed the transfer form.</p>
+                                    <br/>
+                                    <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/fill-form/TransferDSO?crypt=${enrollmentExists.id}&activeMenu=transfer-dso" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
+                    mailer.sendMail({
+                        from: '"Mila Plus" <admin@pharosit.com.br>',
+                        to: agent.dataValues.email,
+                        subject: `Mila Plus - ${title}`,
+                        html: MailLayout({ title, content, filial: filial.dataValues.name }),
                     })
                 }
                 t.commit();
@@ -414,6 +433,7 @@ class EnrollmentController {
         const t = await connection.transaction();
         try {
             const { enrollment_id } = req.params;
+            console.log(enrollment_id)
             const enrollments = await Enrollment.findByPk(enrollment_id, {
 
                 include: [
@@ -531,6 +551,7 @@ class EnrollmentController {
     async show(req, res) {
         try {
             const { enrollment_id } = req.params;
+            console.log(enrollment_id)
             const enrollments = await Enrollment.findByPk(enrollment_id, {
 
                 include: [
@@ -779,6 +800,79 @@ class EnrollmentController {
             await t.rollback();
             const className = 'EnrollmentController';
             const functionName = 'sponsorsignature';
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            });
+        }
+    }
+
+    async dsosignature(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction();
+        try {
+            const { enrollment_id } = req.body;
+            const enrollment = await Enrollment.findByPk(enrollment_id, {
+                where: { canceled_at: null },
+            });
+
+            if (!enrollment) {
+                return res.status(400).json({
+                    error: 'enrollment was not found.',
+                });
+            }
+
+            const enrollmentTransfer = await Enrollmenttransfer.findOne({
+                where: {
+                    enrollment_id,
+                    canceled_at: null,
+                    dso_signature: null
+                }
+            })
+
+            if (!enrollmentTransfer) {
+                return res.status(400).json({
+                    error: 'Enrollment Transfer not found.',
+                });
+            }
+
+            const signatureFile = await File.create({
+                company_id: req.companyId || 1,
+                name: req.body.files.name,
+                size: req.body.files.size,
+                url: req.body.files.url,
+                key: req.body.files.key,
+                registry_type: 'DSO Signature',
+                registry_uuidkey: enrollment_id,
+                document_id: req.body.files.document_id,
+                created_by: req.userId || 2,
+                created_at: new Date(),
+                updated_by: req.userId || 2,
+                updated_at: new Date(),
+            }, { transaction: t })
+
+            if (signatureFile) {
+
+                await enrollmentTransfer.update({
+                    dso_signature: signatureFile.id,
+                    updated_by: req.userId || 2,
+                    updated_at: new Date(),
+                }, {
+                    where: {
+                        enrollment_id: enrollment_id,
+                        canceled_at: null
+                    },
+                    transaction: t
+                })
+            }
+            t.commit();
+
+            return res.status(200).json(enrollment);
+
+        } catch (err) {
+            await t.rollback();
+            const className = 'EnrollmentController';
+            const functionName = 'dsosignature';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

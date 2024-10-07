@@ -9,7 +9,7 @@ import Enrollment from '../models/Enrollment';
 const { Op } = Sequelize;
 
 class EnrollmentTransferController {
-    async store(req, res) {
+    async update(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction();
         try {

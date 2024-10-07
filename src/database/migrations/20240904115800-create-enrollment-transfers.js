@@ -35,7 +35,7 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: true
             },
-            previous_scholl_address: {
+            previous_school_address: {
                 type: Sequelize.STRING,
                 allowNull: true
             },
@@ -56,11 +56,11 @@ module.exports = {
                 defaultValue: false,
             },
             attendance_date_from: {
-                type: Sequelize.DATE,
+                type: Sequelize.STRING,
                 allowNull: true
             },
             attendance_date_to: {
-                type: Sequelize.DATE,
+                type: Sequelize.STRING,
                 allowNull: true
             },
             has_student_maintained_full_time_studies: {
@@ -72,7 +72,7 @@ module.exports = {
                 defaultValue: false,
             },
             transfer_release_date: {
-                type: Sequelize.DATE,
+                type: Sequelize.STRING,
                 allowNull: true
             },
             uppon_acceptance: {
