@@ -6,6 +6,7 @@ import Filial from '../models/Filial';
 import { mailer } from '../../config/mailer';
 import File from '../models/File';
 import Staffdocument from '../models/StaffDocument';
+import MailLayout from '../../Mails/MailLayout';
 
 const { Op } = Sequelize;
 
@@ -260,13 +261,18 @@ class StaffController {
         const { crypt } = req.body;
 
         const staff = await Staff.findByPk(crypt)
+        const filial = await Filial.findByPk(staff.filial_id);
         try {
+            const title = `Staff Registration`;
+            const content = `<p>Dear ${staff.dataValues.name},</p>
+                            <p>To complete your registration, please fill out the form below:</p>
+                            <br/>
+                            <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/fill-form/Staff?crypt=${crypt}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
             mailer.sendMail({
                 from: '"Mila Plus" <admin@pharosit.com.br>',
                 to: staff.dataValues.email,
-                subject: `Mila Plus - Please fill your form.`,
-                html: `<p>Hello, ${staff.dataValues.name}</p>
-                <p>Please fill your form <a href="https://milaplus.netlify.app/fill-form/Staff?crypt=${crypt}">here</a></p>`
+                subject: `Mila Plus - ${title}`,
+                html: MailLayout({ title, content, filial: filial.dataValues.name }),
             })
         } catch (err) {
             console.log(err)

@@ -15,8 +15,8 @@ import Processsubstatus from '../models/ProcessSubstatus';
 import File from '../models/File';
 import { mailer } from '../../config/mailer';
 import Filial from '../models/Filial';
-import e from 'cors';
 import Enrollmenttransfer from '../models/EnrollmentTransfer';
+import MailLayout from '../../Mails/MailLayout';
 
 const { Op } = Sequelize;
 

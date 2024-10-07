@@ -7,6 +7,7 @@ import UserGroupXUser from '../models/UserGroupXUser';
 import UserGroup from '../models/UserGroup';
 import UserXFilial from '../models/UserXFilial';
 import { mailer } from '../../config/mailer';
+import MailLayout from '../../Mails/MailLayout';
 
 const { Op } = Sequelize;
 
@@ -129,13 +130,18 @@ class MilaUserController {
       Promise.all(promises).then(async (filials) => {
         t.commit();
 
+        const title = `Account created`;
+        const content = `<p>Dear ${name},</p>
+                        <p>Now you have access to Mila Plus system, please use these information on your first access:<br/>
+                        E-mail: ${email}</br>
+                        Password: ${password}</p>
+                        <br/>
+                        <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
         mailer.sendMail({
           from: '"Mila Plus" <admin@pharosit.com.br>',
-          to: email,
-          subject: `Mila Plus - Account created`,
-          html: `<p>Hello, ${name}</p><p>Now you have access to Mila Plus system, please use these information on your first access:<br>
-          E-mail: ${email}<br>
-          Password: ${password}</p>`
+          to: sponsor.dataValues.email,
+          subject: `Mila Plus - ${title}`,
+          html: MailLayout({ title, content, filial: '' }),
         })
 
       })
@@ -236,13 +242,18 @@ class MilaUserController {
       });
 
       if (email && email.trim() !== userExists.email) {
+        const title = `Account created`;
+        const content = `<p>Dear ${name},</p>
+                        <p>Now you have access to Mila Plus system, please use these information on your first access:<br/>
+                        E-mail: ${email}</br>
+                        Password: ${password}</p>
+                        <br/>
+                        <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
         mailer.sendMail({
           from: '"Mila Plus" <admin@pharosit.com.br>',
-          to: email,
-          subject: `Mila Plus - Account created`,
-          html: `<p>Hello, ${name}</p><p>Now you have access to Mila Plus system, please use these information on your first access:<br>
-          E-mail: ${email}<br>
-          Password: ${password}</p>`
+          to: sponsor.dataValues.email,
+          subject: `Mila Plus - ${title}`,
+          html: MailLayout({ title, content, filial: '' }),
         })
       }
 

@@ -15,6 +15,7 @@ import File from '../models/File';
 import { mailer } from '../../config/mailer';
 import Filial from '../models/Filial';
 import Agent from '../models/Agent';
+import MailLayout from '../../Mails/MailLayout';
 
 const { Op } = Sequelize;
 
@@ -131,15 +132,21 @@ class EnrollmentSponsorController {
                 })
             }
 
+            const filial = await Filial.findByPk(enrollmentExists.filial_id);
+
             Promise.all(promises).then(() => {
                 t.commit();
                 if (notifyAgent) {
+                    const title = `Enrollment Form - Sponsor`;
+                    const content = `<p>Dear ${enrollmentExists.agents.name},</p>
+                        <p>You have been asked to please complete the <strong>Enrollment Form - Sponsor</strong>, related to the student <strong>${enrollmentExists.students.name} ${enrollmentExists.students.last_name}</strong>.</p>
+                        <br/>
+                        <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/fill-form/Sponsor?crypt=${sponsor.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
                     mailer.sendMail({
                         from: '"Mila Plus" <admin@pharosit.com.br>',
                         to: enrollmentExists.agents.email,
-                        subject: `Mila Plus - Sponsor form`,
-                        html: `<p>Hello, ${enrollmentExists.agents.name}</p>
-                                <p>All sponsors have signed for student ${enrollmentExists.students.name}.</p>`
+                        subject: `Mila Plus - ${title}`,
+                        html: MailLayout({ title, content, filial: filial.dataValues.name }),
                     })
                 }
                 return res.status(200).json(enrollmentExists);

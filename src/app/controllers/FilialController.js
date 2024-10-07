@@ -11,6 +11,7 @@ import UserXFilial from '../models/UserXFilial';
 import Processsubstatus from '../models/ProcessSubstatus';
 import { mailer } from '../../config/mailer';
 import { randomString } from '../functions';
+import MailLayout from '../../Mails/MailLayout';
 const { Op } = Sequelize;
 
 class FilialController {
@@ -159,7 +160,7 @@ class FilialController {
             created_by: req.userId,
           }).then(async (newUser) => {
 
-            filialExist.update({
+            newFilial.update({
               administrator_id: newUser.id,
               updated_by: req.userId,
               updated_at: new Date()
@@ -172,15 +173,20 @@ class FilialController {
               transaction: t
             })
           }).finally(() => {
-
+            const title = `Account created`;
+            const content = `<p>Dear ${name},</p>
+                            <p>Now you have access to Mila Plus system, please use these information on your first access:<br/>
+                            E-mail: ${email}</br>
+                            Password: ${password}</p>
+                            <br/>
+                            <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
             mailer.sendMail({
               from: '"Mila Plus" <admin@pharosit.com.br>',
-              to: email,
-              subject: `Mila Plus - Account created`,
-              html: `<p>Hello, ${name}</p><p>Now you have access to Mila Plus system, please use these information on your first access:<br>
-              E-mail: ${email}<br>
-              Password: ${password}</p>`
+              to: sponsor.dataValues.email,
+              subject: `Mila Plus - ${title}`,
+              html: MailLayout({ title, content, filial: newFilial.dataValues.name }),
             })
+
           }).catch(err => {
             console.log(err)
             t.rollback()
@@ -280,7 +286,6 @@ class FilialController {
 
       Promise.all(promises).then(async () => {
 
-        console.log(2)
         if (!req.body.administrator.id) {
           const { name, email } = req.body.administrator;
           if (name && email) {
@@ -319,26 +324,27 @@ class FilialController {
               }, {
                 transaction: t
               })
-              console.log(2.2)
 
               await UserXFilial.create({ user_id: newUser.id, filial_id, created_at: new Date, created_by: req.userId }, {
                 transaction: t
               });
-              console.log(2.3)
               await UserGroupXUser.create({ user_id: newUser.id, group_id: 'ae0453fd-b493-41ff-803b-9aea989a8567', created_at: new Date(), created_by: req.userId }, {
                 transaction: t
               })
-              console.log(2.4)
             }).finally(() => {
 
-              console.log(2.5)
+              const title = `Account created`;
+              const content = `<p>Dear ${name},</p>
+                              <p>Now you have access to Mila Plus system, please use these information on your first access:<br/>
+                              E-mail: ${email}</br>
+                              Password: ${password}</p>
+                              <br/>
+                              <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
               mailer.sendMail({
                 from: '"Mila Plus" <admin@pharosit.com.br>',
-                to: email,
-                subject: `Mila Plus - Account created`,
-                html: `<p>Hello, ${name}</p><p>Now you have access to Mila Plus system, please use these information on your first access:<br>
-              E-mail: ${email}<br>
-              Password: ${password}</p>`
+                to: sponsor.dataValues.email,
+                subject: `Mila Plus - ${title}`,
+                html: MailLayout({ title, content, filial: filial.name }),
               })
             }).catch(err => {
               console.log(err)

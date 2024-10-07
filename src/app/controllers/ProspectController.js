@@ -9,8 +9,7 @@ import ProcessSubstatus from '../models/ProcessSubstatus';
 import { mailer } from '../../config/mailer';
 import { addDays, format, parseISO } from 'date-fns';
 import { Agent } from 'https';
-import { header_logo } from '../../Mails/header_logo';
-import MailLayout from '../../Mails/mailLayout';
+import MailLayout from '../../Mails/MailLayout';
 import Filial from '../models/Filial';
 import Processsubstatus from '../models/ProcessSubstatus';
 
