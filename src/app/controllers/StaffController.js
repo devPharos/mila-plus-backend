@@ -258,9 +258,8 @@ class StaffController {
 
     async formMail(req, res) {
         const { crypt } = req.body;
-        const id = atob(crypt);
 
-        const staff = await Staff.findByPk(id)
+        const staff = await Staff.findByPk(crypt)
         try {
             mailer.sendMail({
                 from: '"Mila Plus" <admin@pharosit.com.br>',

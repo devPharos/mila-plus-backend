@@ -14,6 +14,7 @@ import Processsubstatus from '../models/ProcessSubstatus';
 import File from '../models/File';
 import { mailer } from '../../config/mailer';
 import Filial from '../models/Filial';
+import Agent from '../models/Agent';
 
 const { Op } = Sequelize;
 
@@ -23,12 +24,27 @@ class EnrollmentSponsorController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction();
         let nextTimeline = null;
+        let notifyAgent = false;
         try {
             const { sponsor_id } = req.params;
             const { activeMenu, lastActiveMenu } = req.body;
 
             const enrollmentExists = await Enrollment.findOne({
                 include: [
+                    {
+                        model: Student,
+                        as: 'students',
+                        where: {
+                            canceled_at: null
+                        }
+                    },
+                    {
+                        model: Agent,
+                        as: 'agents',
+                        where: {
+                            canceled_at: null
+                        }
+                    },
                     {
                         model: Enrollmentsponsor,
                         as: 'enrollmentsponsors',
@@ -74,16 +90,20 @@ class EnrollmentSponsorController {
                 const sponsorsNotSigned = existingSponsors.filter(sponsor => !sponsor.signature)
                 const sponsorsSigned = existingSponsors.filter(sponsor => sponsor.signature)
                 if (sponsorsNotSigned.length > 0) {
+                    const nextStepStatus = `${sponsorsSigned.length} of ${existingSponsors.length} sponsors have signed.`;
                     nextStep = 'sponsor-signature';
 
-                    nextTimeline = {
-                        phase: 'Student Application',
-                        phase_step: 'Form link has been sent to sponsor',
-                        step_status: `${sponsorsSigned.length} of ${sponsorsNotSigned.length} sponsors have signed.`,
-                        expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                        created_at: new Date(),
-                        created_by: 2
+                    if (lastTimeline.step_status !== nextStepStatus) {
+                        nextTimeline = {
+                            phase: 'Student Application',
+                            phase_step: 'Form link has been sent to sponsor',
+                            step_status: nextStepStatus,
+                            expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+                            created_at: new Date(),
+                            created_by: 2
+                        }
                     }
+
                 } else {
                     nextStep = 'finished';
                     nextTimeline = {
@@ -94,6 +114,8 @@ class EnrollmentSponsorController {
                         created_at: new Date(),
                         created_by: 2
                     }
+                    notifyAgent = true;
+
                 }
             }
 
@@ -111,6 +133,15 @@ class EnrollmentSponsorController {
 
             Promise.all(promises).then(() => {
                 t.commit();
+                if (notifyAgent) {
+                    mailer.sendMail({
+                        from: '"Mila Plus" <admin@pharosit.com.br>',
+                        to: enrollmentExists.agents.email,
+                        subject: `Mila Plus - Sponsor form`,
+                        html: `<p>Hello, ${enrollmentExists.agents.name}</p>
+                                <p>All sponsors have signed for student ${enrollmentExists.students.name}.</p>`
+                    })
+                }
                 return res.status(200).json(enrollmentExists);
             })
 

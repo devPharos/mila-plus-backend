@@ -14,7 +14,6 @@ class Enrollment extends Model {
                 student_id: Sequelize.UUID,
                 form_step: Sequelize.STRING,
                 application: Sequelize.STRING,
-                previous_school: Sequelize.STRING,
                 agent_id: Sequelize.UUID,
                 notes: Sequelize.TEXT,
                 admission_correspondence_address: Sequelize.STRING,
@@ -47,6 +46,10 @@ class Enrollment extends Model {
             foreignKey: 'student_id',
             as: 'students',
         });
+        this.belongsTo(models.Agent, {
+            foreignKey: 'agent_id',
+            as: 'agents',
+        });
         this.belongsTo(models.Filial, {
             foreignKey: 'filial_id',
             as: 'filial',
@@ -70,6 +73,10 @@ class Enrollment extends Model {
         this.hasMany(models.Enrollmenttimeline, {
             foreignKey: 'enrollment_id',
             as: 'enrollmenttimelines',
+        });
+        this.hasOne(models.Enrollmenttransfer, {
+            foreignKey: 'enrollment_id',
+            as: 'enrollmenttransfers',
         });
     }
 }

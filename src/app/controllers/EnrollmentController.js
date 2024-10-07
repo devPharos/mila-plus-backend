@@ -7,6 +7,7 @@ import Enrollmentdependent from '../models/EnrollmentDependent';
 import Enrollmenttimeline from '../models/EnrollmentTimeline';
 import Enrollmentemergency from '../models/EnrollmentEmergency';
 import Enrollmentsponsor from '../models/EnrollmentSponsor';
+import Enrollmenttransfers from '../models/EnrollmentTransfer';
 import Student from '../models/Student';
 import { addDays, format, set } from 'date-fns';
 import Processtype from '../models/ProcessType';
@@ -14,6 +15,8 @@ import Processsubstatus from '../models/ProcessSubstatus';
 import File from '../models/File';
 import { mailer } from '../../config/mailer';
 import Filial from '../models/Filial';
+import e from 'cors';
+import Enrollmenttransfer from '../models/EnrollmentTransfer';
 
 const { Op } = Sequelize;
 
@@ -85,6 +88,8 @@ class EnrollmentController {
 
             const enrollmentExists = await Enrollment.findByPk(enrollment_id);
 
+            const filial = await Filial.findByPk(enrollmentExists.filial_id);
+
             const promises = [];
 
             if (!enrollmentExists) {
@@ -106,7 +111,9 @@ class EnrollmentController {
                 }
             })
             let nextStep = lastActiveMenu.name;
-            if (activeMenu === 'student-information' && lastActiveMenu.name === 'student-information') {
+            if (activeMenu === 'transfer-request' && lastActiveMenu.name === 'transfer-request') {
+                nextStep = 'transfer-dso';
+            } else if (activeMenu === 'student-information' && lastActiveMenu.name === 'student-information') {
                 nextStep = 'emergency-contact';
             } else if (activeMenu === 'emergency-contact' && lastActiveMenu.name === 'emergency-contact') {
                 nextStep = 'enrollment-information';
@@ -209,6 +216,32 @@ class EnrollmentController {
                 }
             }
 
+            if (req.body.enrollmenttransfers && req.body.enrollmentsponsors.previous_school_name) {
+                const existingTransfers = await Enrollmenttransfers.findOne({
+                    where: {
+                        enrollment_id: enrollmentExists.id
+                    }
+                })
+                if (existingTransfers) {
+                    promises.push(existingTransfers.update({
+                        ...req.body.enrollmenttransfers,
+                        updated_at: new Date(),
+                        updated_by: 2
+                    }, {
+                        transaction: t
+                    }));
+                } else {
+                    promises.push(await Enrollmenttransfers.create({
+                        ...req.body.enrollmenttransfers,
+                        enrollment_id: enrollmentExists.id,
+                        created_at: new Date(),
+                        created_by: 2
+                    }, {
+                        transaction: t
+                    }));
+                }
+            }
+
             if (req.body.students) {
                 const studentExists = await Student.findByPk(enrollmentExists.student_id);
                 if (!studentExists) {
@@ -244,20 +277,39 @@ class EnrollmentController {
             }));
 
             Promise.all(promises).then(() => {
-                t.commit();
                 if (nextStep === 'sponsor-signature') {
                     existingSponsors.map((sponsor) => {
                         if (sponsor.dataValues.canceled_at === null) {
+
+                            const title = `Transfer Eligibility Form - DSO`;
+                            const content = `<p>Dear ${sponsor.dataValues.name},</p>
+                                            <p>You have been asked to please complete the <strong>Enrollment Form - Sponsors</strong>, related to the student <strong>${enrollmentExists.students.name} ${enrollmentExists.students.last_name}</strong>.</p>
+                                            <br/>
+                                            <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/fill-form/Sponsor?crypt=${sponsor.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
                             mailer.sendMail({
                                 from: '"Mila Plus" <admin@pharosit.com.br>',
                                 to: sponsor.dataValues.email,
-                                subject: `Mila Plus - Sponsor form`,
-                                html: `<p>Hello, ${sponsor.dataValues.name}</p>
-                                <p>Please fill your form <a href="https://milaplus.netlify.app/fill-form/Sponsor?crypt=${sponsor.id}">here</a></p>`
+                                subject: `Mila Plus - ${title}`,
+                                html: MailLayout({ title, content, filial: filial.name }),
                             })
+
                         }
                     })
+                } else if (activeMenu === 'transfer-request') {
+
+                    const title = `Transfer Eligibility Form - DSO`;
+                    const content = `<p>Dear ${req.body.previous_school_dso_name},</p>
+                                    <p>You have been asked to please complete the <strong>Transfer Eligibility Form - DSO</strong>, related to the student <strong>Test Denis</strong>, Sevis ID no.: <strong>01234567891</strong>.</p>
+                                    <br/>
+                                    <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/fill-form/TransferDSO?crypt=${enrollmentExists.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
+                    mailer.sendMail({
+                        from: '"Mila Plus" <admin@pharosit.com.br>',
+                        to: req.body.previous_school_dso_email,
+                        subject: `Mila Plus - ${title}.`,
+                        html: MailLayout({ title, content, filial: filial.name }),
+                    })
                 }
+                t.commit();
                 return res.status(200).json(enrollmentExists);
             })
 
@@ -430,6 +482,14 @@ class EnrollmentController {
                             canceled_at: null,
                         }
                     },
+                    {
+                        model: Enrollmenttransfer,
+                        as: 'enrollmenttransfers',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        }
+                    }
                 ]
             });
 

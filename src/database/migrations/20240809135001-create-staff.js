@@ -108,119 +108,127 @@ module.exports = {
                 type: Sequelize.TEXT,
                 allowNull: true
             },
-            sunday_availability: {
+            is_student: {
                 type: Sequelize.BOOLEAN,
                 defaultValue: false,
             },
-            sunday_morning: {
+            is_us_citizen: {
                 type: Sequelize.BOOLEAN,
                 defaultValue: false,
             },
-            sunday_afternoon: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            sunday_evening: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            monday_availability: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            monday_morning: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            monday_afternoon: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            monday_evening: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            tuesday_availability: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            tuesday_morning: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            tuesday_afternoon: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            tuesday_evening: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
+            // sunday_availability: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // sunday_morning: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // sunday_afternoon: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // sunday_evening: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // monday_availability: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // monday_morning: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // monday_afternoon: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // monday_evening: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // tuesday_availability: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // tuesday_morning: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // tuesday_afternoon: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // tuesday_evening: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
 
-            wednesday_availability: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            wednesday_morning: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            wednesday_afternoon: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            wednesday_evening: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            thursday_availability: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            thursday_morning: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            thursday_afternoon: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            thursday_evening: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            friday_availability: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            friday_morning: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            friday_afternoon: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            friday_evening: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            saturday_availability: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            saturday_morning: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            saturday_afternoon: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            saturday_evening: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
+            // wednesday_availability: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // wednesday_morning: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // wednesday_afternoon: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // wednesday_evening: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // thursday_availability: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // thursday_morning: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // thursday_afternoon: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // thursday_evening: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // friday_availability: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // friday_morning: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // friday_afternoon: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // friday_evening: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // saturday_availability: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // saturday_morning: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // saturday_afternoon: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
+            // saturday_evening: {
+            //     type: Sequelize.BOOLEAN,
+            //     defaultValue: false,
+            // },
             user_id: {
                 type: Sequelize.INTEGER,
                 allowNull: true,

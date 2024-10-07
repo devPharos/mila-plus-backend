@@ -1,92 +1,91 @@
 'use strict';
-
-const { DataTypes } = require('sequelize');
-
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('enrollments', {
+        await queryInterface.createTable('enrollmenttransfers', {
             id: {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
+                allowNull: false,
                 primaryKey: true
             },
-            company_id: {
-                type: Sequelize.INTEGER,
-                allowNull: false,
-                references: { model: 'companies', key: 'id' },
-                onUpdate: 'NO ACTION',
-            },
-            filial_id: {
-                type: Sequelize.INTEGER,
-                allowNull: false,
-                references: { model: 'filials', key: 'id' },
-                onUpdate: 'NO ACTION',
-            },
-            student_id: {
+            enrollment_id: {
                 type: Sequelize.UUID,
                 allowNull: false,
-                references: { model: 'students', key: 'id' },
-                onUpdate: 'NO ACTION',
+                references: { model: 'enrollments', key: 'id' },
+                onUpdate: 'CASCADE',
             },
-            form_step: {
-                type: Sequelize.STRING,
-                defaultValue: 'student-information',
-                allowNull: false
+            previous_school_id: {
+                type: Sequelize.INTEGER,
+                allowNull: true
             },
-            application: {
+            previous_school_name: {
                 type: Sequelize.STRING,
                 allowNull: true
             },
-            agent_id: {
-                type: Sequelize.UUID,
-                allowNull: true,
-                references: { model: 'agents', key: 'id' },
-                onUpdate: 'SET NULL',
+            previous_school_dso_name: {
+                type: Sequelize.STRING,
+                allowNull: true
             },
-            notes: {
+            previous_school_dso_email: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            previous_school_phone: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            previous_scholl_address: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            previous_school_zip: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            previous_school_city: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            previous_school_state: {
+                type: Sequelize.STRING,
+                allowNull: true
+            },
+            is_last_school: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false,
+            },
+            attendance_date_from: {
+                type: Sequelize.DATE,
+                allowNull: true
+            },
+            attendance_date_to: {
+                type: Sequelize.DATE,
+                allowNull: true
+            },
+            has_student_maintained_full_time_studies: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false,
+            },
+            is_student_eligible_to_transfer: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false,
+            },
+            transfer_release_date: {
+                type: Sequelize.DATE,
+                allowNull: true
+            },
+            uppon_acceptance: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false,
+            },
+            comments: {
                 type: Sequelize.TEXT,
                 allowNull: true
             },
-            admission_correspondence_address: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            plan_months: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            plan_schedule: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            plan_date: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            has_dependents: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            need_sponsorship: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            terms_agreement: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            student_signature: {
+            dso_signature: {
                 type: Sequelize.UUID,
-                allowNull: true
-            },
-            guardian_name: {
-                type: Sequelize.STRING,
-                allowNull: true
-            },
-            guardian_signature: {
-                type: Sequelize.UUID,
-                allowNull: true
+                allowNull: true,
             },
             created_at: {
                 allowNull: false,
@@ -115,6 +114,6 @@ module.exports = {
         });
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('enrollments');
+        await queryInterface.dropTable('enrollmenttransfers');
     }
 };

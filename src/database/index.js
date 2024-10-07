@@ -36,6 +36,7 @@ import Enrollmentemergency from '../app/models/EnrollmentEmergency';
 import Enrollmenttimeline from '../app/models/EnrollmentTimeline';
 import Processtype from '../app/models/ProcessType';
 import Processsubstatus from '../app/models/ProcessSubstatus';
+import Enrollmenttransfer from '../app/models/EnrollmentTransfer';
 // import UserGroup from '../app/models/usergroup'
 
 const models = [
@@ -53,6 +54,7 @@ const models = [
   Enrollmentsponsor,
   Enrollmentemergency,
   Enrollmenttimeline,
+  Enrollmenttransfer,
   File,
   Filial,
   Filialtype,

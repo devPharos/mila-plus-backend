@@ -5,9 +5,14 @@ import Student from '../models/Student';
 import * as Yup from 'yup';
 import Enrollment from '../models/Enrollment';
 import Enrollmenttimeline from '../models/EnrollmentTimeline';
+import ProcessSubstatus from '../models/ProcessSubstatus';
 import { mailer } from '../../config/mailer';
 import { addDays, format, parseISO } from 'date-fns';
 import { Agent } from 'https';
+import { header_logo } from '../../Mails/header_logo';
+import MailLayout from '../../Mails/mailLayout';
+import Filial from '../models/Filial';
+import Processsubstatus from '../models/ProcessSubstatus';
 
 const { Op } = Sequelize;
 
@@ -28,11 +33,20 @@ class ProspectController {
         transaction: t
       })
 
+      const { processsubstatus_id } = req.body;
+
+      const substatus = await ProcessSubstatus.findByPk(processsubstatus_id)
+      if (!substatus) {
+        return res.status(400).json({
+          error: 'Substatus not found.',
+        });
+      }
+
       await Enrollment.create({
         filial_id: newProspect.filial_id,
         company_id: req.companyId,
         student_id: newProspect.id,
-        form_step: 'student-information',
+        form_step: substatus.dataValues.name === 'Transfer' ? 'transfer-request' : 'student-information',
         agent_id: newProspect.agent_id,
         created_at: new Date(),
         created_by: req.userId,
@@ -352,6 +366,7 @@ class ProspectController {
       const { crypt } = req.body;
 
       const student = await Student.findByPk(crypt)
+      const sub_status = await Processsubstatus.findByPk(student.processsubstatus_id);
       const enrollment = await Enrollment.findOne({
         where: {
           student_id: student.id,
@@ -367,8 +382,8 @@ class ProspectController {
 
       await Enrollmenttimeline.create({
         enrollment_id: enrollment.id,
-        type: student.type,
-        substatus: student.sub_status,
+        type: student.dataValues.type,
+        substatus: student.dataValues.sub_status,
         phase: 'Student Application',
         phase_step: 'Form link has sent to Student',
         step_status: `Form filling has not been started yet.`,
@@ -378,14 +393,20 @@ class ProspectController {
       }, {
         transaction: t
       }).then(async () => {
-        t.commit();
+        const page = sub_status.name === 'Transfer' ? 'Transfer' : 'Enrollment';
+        const title = sub_status.name === 'Transfer' ? `Transfer Eligibility Form - Student` : `Enrollment Form - Student`;
+        const filial = await Filial.findByPk(enrollment.filial_id);
+        const content = `<p>Dear ${student.dataValues.name},</p>
+                        <p>You have been asked to please complete the <strong>Transfer Eligibility Form - Student</strong>.</p>
+                        <br/>
+                        <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/fill-form/${page}?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
         await mailer.sendMail({
           from: '"Mila Plus" <admin@pharosit.com.br>',
           to: student.dataValues.email,
-          subject: `Mila Plus - Please fill your form.`,
-          html: `<p>Hello, ${student.dataValues.name}</p>
-                <p>Please fill your form <a href="https://milaplus.netlify.app/fill-form/Enrollment?crypt=${enrollment.id}">here</a></p>`
+          subject: `Mila Plus - ${title}`,
+          html: MailLayout({ title, content, filial: filial.name }),
         })
+        t.commit();
       })
 
 
