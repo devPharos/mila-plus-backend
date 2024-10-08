@@ -7,6 +7,7 @@ import { mailer } from '../../config/mailer';
 import File from '../models/File';
 import Staffdocument from '../models/StaffDocument';
 import MailLayout from '../../Mails/MailLayout';
+import { BASEURL } from '../functions';
 
 const { Op } = Sequelize;
 
@@ -267,9 +268,9 @@ class StaffController {
             const content = `<p>Dear ${staff.dataValues.name},</p>
                             <p>To complete your registration, please fill out the form below:</p>
                             <br/>
-                            <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/fill-form/Staff?crypt=${crypt}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
+                            <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Staff?crypt=${crypt}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
             mailer.sendMail({
-                from: '"Mila Plus" <admin@pharosit.com.br>',
+                from: '"Mila Plus" <development@pharosit.com.br>',
                 to: staff.dataValues.email,
                 subject: `Mila Plus - ${title}`,
                 html: MailLayout({ title, content, filial: filial.dataValues.name }),

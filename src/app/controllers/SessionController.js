@@ -2,7 +2,7 @@ import Sequelize from 'sequelize';
 import jwt from 'jsonwebtoken';
 import * as Yup from 'yup';
 import authConfig from '../../config/auth';
-import Milauser from '../models/Milauser';
+import Milauser from '../models/MilaUser';
 import Filial from '../models/Filial';
 import UserGroup from '../models/UserGroup';
 import UserGroupXUser from '../models/UserGroupXUser';
@@ -111,13 +111,6 @@ class SessionController {
     }
   }
 
-  // async forgot(req, res) {
-  //   await Mail.sendmail({
-  //     to: 'denis.varella@newbridge.srv.br',
-  //     subject: 'Teste SIAF',
-  //     text: 'Olá!',
-  //   });
-  // }
 }
 
 export default new SessionController();

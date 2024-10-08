@@ -4,17 +4,17 @@ import MailLayout from "./MailLayout";
 export default function MailLog({ className, functionName, req, err }) {
 
     const title = `🛠️ Error @ ${className} - ${functionName}`;
-    const content = `<p>Method: ${req.method}<br/>
-        Route: ${req.route.path}<br/>
-        Company: ${req.companyId}<br/>
-        User: ${req.userId}</p>
-        <p>Query: ${JSON.stringify(req.query)}</p>
-        <p>Params: ${JSON.stringify(req.params)}</p>
-        <p>Body: ${JSON.stringify(req.body)}</p>
-        <p>Error: ${err}</p>`;
+    const content = `<p><strong>Method:</strong> ${req.method}<br/>
+        <strong>Route:</strong> ${req.route.path}<br/>
+        <strong>Company:</strong> ${req.companyId}<br/>
+        <strong>User:</strong> ${req.userId}</p>
+        <p><strong>Query:</strong> ${JSON.stringify(req.query)}</p>
+        <p><strong>Params:</strong> ${JSON.stringify(req.params)}</p>
+        <p><strong>Body:</strong> ${JSON.stringify(req.body)}</p>
+        <p><strong>Error:</strong> ${err}</p>`;
     mailer.sendMail({
-        from: '"Mila Plus" <admin@pharosit.com.br>',
-        to: "admin@pharosit.com.br",
+        from: '"Mila Plus" <development@pharosit.com.br>',
+        to: "development@pharosit.com.br",
         subject: `Mila Plus - ${title}`,
         html: MailLayout({ title, content, filial: '' }),
     })

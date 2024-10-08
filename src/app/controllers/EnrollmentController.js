@@ -10,7 +10,7 @@ import Enrollmentsponsor from '../models/EnrollmentSponsor';
 import Enrollmenttransfers from '../models/EnrollmentTransfer';
 import Student from '../models/Student';
 import Agent from '../models/Agent';
-import { addDays, format, set } from 'date-fns';
+import { addDays, addMinutes, addSeconds, format, isAfter, parseISO, set } from 'date-fns';
 import Processtype from '../models/ProcessType';
 import Processsubstatus from '../models/ProcessSubstatus';
 import File from '../models/File';
@@ -18,6 +18,7 @@ import { mailer } from '../../config/mailer';
 import Filial from '../models/Filial';
 import Enrollmenttransfer from '../models/EnrollmentTransfer';
 import MailLayout from '../../Mails/MailLayout';
+import { BASEURL } from '../functions';
 
 const { Op } = Sequelize;
 
@@ -119,7 +120,7 @@ class EnrollmentController {
                 nextTimeline = {
                     phase: 'Student Application',
                     phase_step: 'Transfer form link has Sent to the DSO',
-                    step_status: `Form filling has not yet been started by the DSO.`,
+                    step_status: `Form filling has not been started yet.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
                     created_at: new Date(),
                     created_by: 2
@@ -168,7 +169,7 @@ class EnrollmentController {
                     nextTimeline = {
                         phase: 'Student Application',
                         phase_step: 'Form link has been sent to the sponsor',
-                        step_status: `Form filling has not yet been started.`,
+                        step_status: `Form filling has not been started yet.`,
                         expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
                         created_at: new Date(),
                         created_by: 2
@@ -253,13 +254,18 @@ class EnrollmentController {
                 }
             }
 
+            console.log(0)
             if (req.body.enrollmenttransfers && req.body.enrollmenttransfers.previous_school_name) {
+                console.log(1)
                 const existingTransfers = await Enrollmenttransfers.findOne({
                     where: {
-                        enrollment_id: enrollmentExists.id
+                        enrollment_id: enrollmentExists.id,
+                        canceled_at: null
                     }
                 })
+                console.log(2)
                 if (existingTransfers) {
+                    console.log(req.body.enrollmenttransfers)
                     promises.push(existingTransfers.update({
                         ...req.body.enrollmenttransfers,
                         updated_at: new Date(),
@@ -323,9 +329,9 @@ class EnrollmentController {
                             const content = `<p>Dear ${sponsor.dataValues.name},</p>
                                             <p>You have been asked to please complete the <strong>Enrollment Form - Sponsors</strong>, related to the student <strong>${enrollmentExists.students.name} ${enrollmentExists.students.last_name}</strong>.</p>
                                             <br/>
-                                            <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/fill-form/Sponsor?crypt=${sponsor.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
+                                            <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Sponsor?crypt=${sponsor.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
                             mailer.sendMail({
-                                from: '"Mila Plus" <admin@pharosit.com.br>',
+                                from: '"Mila Plus" <development@pharosit.com.br>',
                                 to: sponsor.dataValues.email,
                                 subject: `Mila Plus - ${title}`,
                                 html: MailLayout({ title, content, filial: filial.name }),
@@ -335,26 +341,29 @@ class EnrollmentController {
                     })
                 } else if (activeMenu === 'transfer-request') {
 
-                    const title = `Transfer Eligibility Form - DSO`;
-                    const content = `<p>Dear ${req.body.enrollmenttransfers.previous_school_dso_name},</p>
+                    if (req.body.enrollmenttransfers && req.body.enrollmenttransfers.previous_school_dso_email) {
+                        const title = `Transfer Eligibility Form - DSO`;
+                        const content = `<p>Dear ${req.body.enrollmenttransfers.previous_school_dso_name},</p>
                                     <p>You have been asked to please complete the <strong>Transfer Eligibility Form - DSO</strong>, related to the student <strong>${studentExists.dataValues.name}</strong>, Sevis ID no.: <strong>${studentExists.dataValues.nsevis}</strong>.</p>
                                     <br/>
-                                    <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/fill-form/TransferDSO?crypt=${enrollmentExists.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
-                    mailer.sendMail({
-                        from: '"Mila Plus" <admin@pharosit.com.br>',
-                        to: req.body.enrollmenttransfers.previous_school_dso_email,
-                        subject: `Mila Plus - ${title}`,
-                        html: MailLayout({ title, content, filial: filial.name }),
-                    })
+                                    <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/TransferDSO?crypt=${enrollmentExists.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
+                        mailer.sendMail({
+                            from: '"Mila Plus" <development@pharosit.com.br>',
+                            to: req.body.enrollmenttransfers.previous_school_dso_email,
+                            subject: `Mila Plus - ${title}`,
+                            html: MailLayout({ title, content, filial: filial.name }),
+                        })
+                    }
+
                 } else if (activeMenu === 'transfer-dso') {
 
-                    const title = `Transfer Eligibility Form - DSO`;
+                    const title = `Transfer Eligibility Form - Agent`;
                     const content = `<p>Dear ${agent.dataValues.name},</p>
-                                    <p>The DSO of the student: ${studentExists.dataValues.name} with NSEVIS ${studentExists.dataValues.nsevis}, completed the transfer form.</p>
+                                    <p>The DSO of the student: ${studentExists.dataValues.name}, with NSEVIS ${studentExists.dataValues.nsevis}, has completed the transfer form.</p>
                                     <br/>
-                                    <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/fill-form/TransferDSO?crypt=${enrollmentExists.id}&activeMenu=transfer-dso" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
+                                    <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/TransferDSO?crypt=${enrollmentExists.id}&activeMenu=transfer-dso" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
                     mailer.sendMail({
-                        from: '"Mila Plus" <admin@pharosit.com.br>',
+                        from: '"Mila Plus" <development@pharosit.com.br>',
                         to: agent.dataValues.email,
                         subject: `Mila Plus - ${title}`,
                         html: MailLayout({ title, content, filial: filial.dataValues.name }),
@@ -465,7 +474,6 @@ class EnrollmentController {
         const t = await connection.transaction();
         try {
             const { enrollment_id } = req.params;
-            console.log(enrollment_id)
             const enrollments = await Enrollment.findByPk(enrollment_id, {
 
                 include: [
@@ -552,17 +560,21 @@ class EnrollmentController {
             }
 
             const timeline = enrollments.dataValues.enrollmenttimelines;
+            const lastTimeline = timeline[timeline.length - 1].dataValues;
 
-            if (timeline[timeline.length - 1].dataValues.step_status === 'Form filling has not yet started.') {
+            if (lastTimeline.step_status === 'Form filling has not been started yet.') {
                 const enrollment = enrollments.dataValues;
-                const student = enrollments.dataValues.students.dataValues;
+                const { type, substatus, phase, phase_step, status, processsubstatus_id, processtype_id } = lastTimeline;
                 await Enrollmenttimeline.create({
                     enrollment_id: enrollment.id,
-                    type: student.type,
-                    substatus: student.sub_status,
-                    phase: 'Student Application',
-                    phase_step: 'Form link has been sent to the student',
-                    step_status: `Form filling was started by the student.`,
+                    type,
+                    status,
+                    processsubstatus_id,
+                    processtype_id,
+                    substatus,
+                    phase,
+                    phase_step,
+                    step_status: `Form filling has been started.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
                     created_at: new Date(),
                     created_by: 2, // Not Authentiticated User

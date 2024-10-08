@@ -1,7 +1,7 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
-import Chartofaccount from '../models/Chartofaccount';
+import Chartofaccount from '../models/ChartOfAccount';
 
 const { Op } = Sequelize;
 

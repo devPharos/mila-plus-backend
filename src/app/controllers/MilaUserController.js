@@ -1,13 +1,14 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
-import Milauser from '../models/Milauser';
+import Milauser from '../models/MilaUser';
 import Filial from '../models/Filial';
 import UserGroupXUser from '../models/UserGroupXUser';
 import UserGroup from '../models/UserGroup';
 import UserXFilial from '../models/UserXFilial';
 import { mailer } from '../../config/mailer';
 import MailLayout from '../../Mails/MailLayout';
+import { BASEURL } from '../functions';
 
 const { Op } = Sequelize;
 
@@ -136,9 +137,9 @@ class MilaUserController {
                         E-mail: ${email}</br>
                         Password: ${password}</p>
                         <br/>
-                        <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
+                        <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
         mailer.sendMail({
-          from: '"Mila Plus" <admin@pharosit.com.br>',
+          from: '"Mila Plus" <development@pharosit.com.br>',
           to: sponsor.dataValues.email,
           subject: `Mila Plus - ${title}`,
           html: MailLayout({ title, content, filial: '' }),
@@ -248,9 +249,9 @@ class MilaUserController {
                         E-mail: ${email}</br>
                         Password: ${password}</p>
                         <br/>
-                        <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
+                        <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
         mailer.sendMail({
-          from: '"Mila Plus" <admin@pharosit.com.br>',
+          from: '"Mila Plus" <development@pharosit.com.br>',
           to: sponsor.dataValues.email,
           subject: `Mila Plus - ${title}`,
           html: MailLayout({ title, content, filial: '' }),

@@ -4,13 +4,13 @@ import databaseConfig from '../../config/database';
 import Filial from '../models/Filial';
 import FilialPriceList from '../models/FilialPriceList';
 import FilialDiscountList from '../models/FilialDiscountList';
-import Filialtype from '../models/Filialtype';
-import Milauser from '../models/Milauser';
+import Filialtype from '../models/FilialType';
+import Milauser from '../models/MilaUser';
 import UserGroupXUser from '../models/UserGroupXUser';
 import UserXFilial from '../models/UserXFilial';
 import Processsubstatus from '../models/ProcessSubstatus';
 import { mailer } from '../../config/mailer';
-import { randomString } from '../functions';
+import { BASEURL, randomString } from '../functions';
 import MailLayout from '../../Mails/MailLayout';
 const { Op } = Sequelize;
 
@@ -179,9 +179,9 @@ class FilialController {
                             E-mail: ${email}</br>
                             Password: ${password}</p>
                             <br/>
-                            <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
+                            <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
             mailer.sendMail({
-              from: '"Mila Plus" <admin@pharosit.com.br>',
+              from: '"Mila Plus" <development@pharosit.com.br>',
               to: sponsor.dataValues.email,
               subject: `Mila Plus - ${title}`,
               html: MailLayout({ title, content, filial: newFilial.dataValues.name }),
@@ -339,9 +339,9 @@ class FilialController {
                               E-mail: ${email}</br>
                               Password: ${password}</p>
                               <br/>
-                              <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
+                              <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
               mailer.sendMail({
-                from: '"Mila Plus" <admin@pharosit.com.br>',
+                from: '"Mila Plus" <development@pharosit.com.br>',
                 to: sponsor.dataValues.email,
                 subject: `Mila Plus - ${title}`,
                 html: MailLayout({ title, content, filial: filial.name }),

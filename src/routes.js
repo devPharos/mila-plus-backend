@@ -65,8 +65,9 @@ routes.delete('/enrollmentdocuments/:enrollmentDocument_id', EnrollmentDocumentC
 
 routes.post('/enrollmentstudentsignature', EnrollmentController.studentsignature);
 routes.post('/enrollmentsponsorsignature', EnrollmentController.sponsorsignature);
+routes.post('/enrollmentdsosignature', EnrollmentController.dsosignature);
 
-// A partir daqui precisa de autentiação
+// A partir daqui precisa de autenticação
 routes.use(authMiddleware);
 
 routes.get('/processtypes', ProcessTypeController.index);

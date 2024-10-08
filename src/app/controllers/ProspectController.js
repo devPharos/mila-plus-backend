@@ -12,6 +12,8 @@ import { mailer } from '../../config/mailer';
 import { addDays, format, parseISO } from 'date-fns';
 import MailLayout from '../../Mails/MailLayout';
 import Filial from '../models/Filial';
+import { BASEURL } from '../functions';
+import Enrollmenttransfer from '../models/EnrollmentTransfer';
 
 const { Op } = Sequelize;
 
@@ -40,8 +42,8 @@ class ProspectController {
           error: 'Substatus not found.',
         });
       }
-
-      await Enrollment.create({
+      let promises = [];
+      promises.push(await Enrollment.create({
         filial_id: newProspect.filial_id,
         company_id: req.companyId,
         student_id: newProspect.id,
@@ -65,9 +67,23 @@ class ProspectController {
           created_by: req.userId,
         }, {
           transaction: t
-        }).then(async (enrollmentTimeline) => {
-          t.commit();
+        }).then(async () => {
+          if (newProspect.processsubstatus_id === 4) {
+            promises.push(await Enrollmenttransfer.create({
+              enrollment_id: enrollment.id,
+              company_id: req.companyId,
+              created_at: new Date(),
+              created_by: req.userId,
+            }, {
+              transaction: t
+            }))
+          }
         })
+      }))
+
+
+      Promise.all(promises).then(async () => {
+        t.commit();
       })
 
       return res.json(newProspect);
@@ -382,69 +398,86 @@ class ProspectController {
         order: [['id', 'DESC']]
       })
 
-      const { processtype_id, status, processsubstatus_id, step_status } = lastTimeline.dataValues;
+      const { processtype_id, status, processsubstatus_id, step_status, phase_step } = lastTimeline.dataValues;
 
       let nextTimeline = null;
 
       let promise = [];
 
+      let page = null;
+      let title = null;
+
       if (student.processsubstatus_id === 1) { // Initial Visa
+        page = 'Enrollment';
+        title = 'Enrollment Form - Student';
         nextTimeline = {
           phase: 'Student Application',
-          phase_step: 'Form link has been sent to Student',
-          step_status: `Form filling has not yet been started.`,
+          phase_step: 'Form link has been sent to student',
+          step_status: `Form filling has not been started yet.`,
           expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
           created_at: new Date(),
           created_by: req.userId || 2
         }
       } else if (student.processsubstatus_id === 2) { // Change of Status
+        page = 'ChangeOfStatus';
+        title = 'Change of Status Form - Student';
         nextTimeline = {
           phase: 'Student Application',
-          phase_step: 'Form link has been sent to Student',
-          step_status: `Form filling has not yet been started.`,
+          phase_step: 'Form link has been sent to student',
+          step_status: `Form filling has not been started yet.`,
           expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
           created_at: new Date(),
           created_by: req.userId || 2
         }
       } else if (student.processsubstatus_id === 3) { // Reinstatement
+        page = 'Reinstatement';
+        title = 'Reinstatement Form - Student';
         nextTimeline = {
           phase: 'Student Application',
-          phase_step: 'Form link has been sent to Student',
-          step_status: `Form filling has not yet been started.`,
+          phase_step: 'Form link has been sent to student',
+          step_status: `Form filling has not been started yet.`,
           expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
           created_at: new Date(),
           created_by: req.userId || 2
         }
       } else if (student.processsubstatus_id === 4) { // Transfer
+        page = 'Transfer';
+        title = 'Transfer Form - Student';
+        if (phase_step === 'DSO Signature') {
+          page = 'Enrollment';
+          title = 'Enrollment Form - Student';
+        }
         nextTimeline = {
           phase: 'Student Application',
-          phase_step: 'Transfer form link has Sent to the Student',
-          step_status: `Form filling has not yet been started.`,
+          phase_step: phase_step === 'DSO Signature' ? 'Form link has been sent to student' : 'Transfer form link has been sent to Student',
+          step_status: `Form filling has not been started yet.`,
           expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
           created_at: new Date(),
           created_by: req.userId || 2
         }
       } else if (student.processsubstatus_id === 5) { // Private
+        page = 'Private';
+        title = 'Private Form - Student';
         nextTimeline = {
           phase: 'Student Application',
-          phase_step: 'Form link has been sent to Student',
-          step_status: `Form filling has not yet been started.`,
+          phase_step: 'Form link has been sent to student',
+          step_status: `Form filling has not been started yet.`,
           expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
           created_at: new Date(),
           created_by: req.userId || 2
         }
       } else if (student.processsubstatus_id === 6) { // Regular
+        page = 'Regular';
+        title = 'Regular Form - Student';
         nextTimeline = {
           phase: 'Student Application',
-          phase_step: 'Form link has been sent to Student',
-          step_status: `Form filling has not yet been started.`,
+          phase_step: 'Form link has been sent to student',
+          step_status: `Form filling has not been started yet.`,
           expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
           created_at: new Date(),
           created_by: req.userId || 2
         }
       }
-
-      console.log(nextTimeline)
 
       // Validar para não replicar a mesma timeline em caso de reenvio de e-mail
       if (step_status !== nextTimeline.step_status) {
@@ -460,15 +493,13 @@ class ProspectController {
         }))
       }
 
-      const page = sub_status.name === 'Transfer' ? 'Transfer' : 'Enrollment';
-      const title = sub_status.name === 'Transfer' ? `Transfer Eligibility Form - Student` : `Enrollment Form - Student`;
       const filial = await Filial.findByPk(enrollment.filial_id);
       const content = `<p>Dear ${student.dataValues.name},</p>
                       <p>You have been asked to please complete the <strong>${title}</strong>.</p>
                       <br/>
-                      <p style='margin: 12px 0;'><a href="https://milaplus.netlify.app/fill-form/${page}?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
+                      <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/${page}?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
       promise.push(await mailer.sendMail({
-        from: '"Mila Plus" <admin@pharosit.com.br>',
+        from: '"Mila Plus" <development@pharosit.com.br>',
         to: student.dataValues.email,
         subject: `Mila Plus - ${title}`,
         html: MailLayout({ title, content, filial: filial.name }),

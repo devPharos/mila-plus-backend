@@ -1,3 +1,4 @@
+require('dotenv').config();
 const nodemailer = require("nodemailer");
 
 export const mailer = nodemailer.createTransport({
@@ -5,7 +6,7 @@ export const mailer = nodemailer.createTransport({
     port: 587,
     secure: false, // Use `true` for port 465, `false` for all other ports
     auth: {
-        user: "denis@pharosit.com.br",
-        pass: "7Dgs2*25",
+        user: "development@pharosit.com.br",
+        pass: "M!173065434815ut",
     },
 });

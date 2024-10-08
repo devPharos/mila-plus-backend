@@ -2,7 +2,7 @@ import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
 import UserGroup from '../models/UserGroup';
-import Filialtype from '../models/Filialtype';
+import Filialtype from '../models/FilialType';
 import MenuHierarchyXGroups from '../models/MenuHierarchyXGroups';
 
 const { Op } = Sequelize;
