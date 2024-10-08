@@ -1,8 +1,8 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
-import Processtype from '../models/ProcessType';
-import Processsubstatus from '../models/ProcessSubstatus';
+import Processtype from '../models/Processtype';
+import Processsubstatus from '../models/Processsubstatus';
 
 const { Op } = Sequelize;
 

@@ -5,7 +5,7 @@ import Staff from '../models/Staff';
 import Filial from '../models/Filial';
 import { mailer } from '../../config/mailer';
 import File from '../models/File';
-import Staffdocument from '../models/StaffDocument';
+import Staffdocument from '../models/Staffdocument';
 import MailLayout from '../../Mails/MailLayout';
 import { BASEURL } from '../functions';
 
@@ -71,7 +71,7 @@ class StaffController {
 
                     if (fileCreated) {
 
-                        await Staffdocument.create({
+                        await StaffDocument.create({
                             company_id: req.companyId,
                             staff_id,
                             file_id: fileCreated.id,

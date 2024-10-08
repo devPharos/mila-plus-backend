@@ -2,7 +2,7 @@ import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
 import Level from '../models/Level';
-import Programcategory from '../models/ProgramCategory';
+import Programcategory from '../models/Programcategory';
 import Workload from '../models/Workload';
 
 const { Op } = Sequelize;

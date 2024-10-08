@@ -1,12 +1,12 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
-import Programcategory from '../models/ProgramCategory';
+import Programcategory from '../models/Programcategory';
 import Language from '../models/Language';
 
 const { Op } = Sequelize;
 
-class ProgramCategoryController {
+class ProgramcategoryController {
 
     async show(req, res) {
         try {
@@ -29,7 +29,7 @@ class ProgramCategoryController {
 
             return res.json(programCategorys);
         } catch (err) {
-            const className = 'ProgramCategoryController';
+            const className = 'ProgramcategoryController';
             const functionName = 'show';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -56,7 +56,7 @@ class ProgramCategoryController {
 
             return res.json(programCategories);
         } catch (err) {
-            const className = 'ProgramCategoryController';
+            const className = 'ProgramcategoryController';
             const functionName = 'index';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -84,7 +84,7 @@ class ProgramCategoryController {
                 });
             }
 
-            const newProgramCategory = await Programcategory.create({
+            const newProgramcategory = await Programcategory.create({
                 company_id: req.companyId, ...req.body, created_by: req.userId, created_at: new Date()
             }, {
                 transaction: t
@@ -92,11 +92,11 @@ class ProgramCategoryController {
 
             t.commit();
 
-            return res.json(newProgramCategory);
+            return res.json(newProgramcategory);
 
         } catch (err) {
             await t.rollback();
-            const className = 'ProgramCategoryController';
+            const className = 'ProgramcategoryController';
             const functionName = 'store';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -132,7 +132,7 @@ class ProgramCategoryController {
 
         } catch (err) {
             await t.rollback();
-            const className = 'ProgramCategoryController';
+            const className = 'ProgramcategoryController';
             const functionName = 'update';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -142,4 +142,4 @@ class ProgramCategoryController {
     }
 }
 
-export default new ProgramCategoryController();
+export default new ProgramcategoryController();

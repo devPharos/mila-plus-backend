@@ -4,16 +4,16 @@ import databaseConfig from '../../config/database';
 import Student from '../models/Student';
 import * as Yup from 'yup';
 import Enrollment from '../models/Enrollment';
-import Enrollmenttimeline from '../models/EnrollmentTimeline';
-import Processtype from '../models/ProcessType';
-import Processsubstatus from '../models/ProcessSubstatus';
+import Enrollmenttimeline from '../models/Enrollmenttimeline';
+import Processtype from '../models/Processtype';
+import Processsubstatus from '../models/Processsubstatus';
 import Agent from '../models/Agent';
 import { mailer } from '../../config/mailer';
 import { addDays, format, parseISO } from 'date-fns';
 import MailLayout from '../../Mails/MailLayout';
 import Filial from '../models/Filial';
 import { BASEURL } from '../functions';
-import Enrollmenttransfer from '../models/EnrollmentTransfer';
+import Enrollmenttransfer from '../models/Enrollmenttransfer';
 
 const { Op } = Sequelize;
 

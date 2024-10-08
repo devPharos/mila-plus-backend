@@ -1,13 +1,13 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
-import Enrollmentdocument from '../models/EnrollmentDocument';
+import Enrollmentdocument from '../models/Enrollmentdocument';
 import File from '../models/File';
 import Enrollment from '../models/Enrollment';
 
 const { Op } = Sequelize;
 
-class EnrollmentDocumentController {
+class EnrollmentdocumentController {
     async store(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction();
@@ -53,7 +53,7 @@ class EnrollmentDocumentController {
             });
         } catch (err) {
             console.log(err)
-            const className = 'EnrollmentDocumentController';
+            const className = 'EnrollmentdocumentController';
             const functionName = 'store';
             MailLog({ className, functionName, req, err })
             await t.rollback();
@@ -84,7 +84,7 @@ class EnrollmentDocumentController {
 
         } catch (err) {
             await t.rollback();
-            const className = 'EnrollmentDocumentController';
+            const className = 'EnrollmentdocumentController';
             const functionName = 'update';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -103,7 +103,7 @@ class EnrollmentDocumentController {
 
             return res.json(enrollmentDocuments);
         } catch (err) {
-            const className = 'EnrollmentDocumentController';
+            const className = 'EnrollmentdocumentController';
             const functionName = 'index';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -125,7 +125,7 @@ class EnrollmentDocumentController {
 
             return res.json(enrollmentDocuments);
         } catch (err) {
-            const className = 'EnrollmentDocumentController';
+            const className = 'EnrollmentdocumentController';
             const functionName = 'show';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -149,7 +149,7 @@ class EnrollmentDocumentController {
 
             return res.json(enrollmentDocuments);
         } catch (err) {
-            const className = 'EnrollmentDocumentController';
+            const className = 'EnrollmentdocumentController';
             const functionName = 'show';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -191,7 +191,7 @@ class EnrollmentDocumentController {
 
         } catch (err) {
             await t.rollback();
-            const className = 'EnrollmentDocumentController';
+            const className = 'EnrollmentdocumentController';
             const functionName = 'inactivate';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -202,4 +202,4 @@ class EnrollmentDocumentController {
     }
 }
 
-export default new EnrollmentDocumentController();
+export default new EnrollmentdocumentController();

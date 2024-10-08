@@ -2,15 +2,15 @@ import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
 import Enrollment from '../models/Enrollment';
-import Enrollmentdocument from '../models/EnrollmentDocument';
-import Enrollmentdependent from '../models/EnrollmentDependent';
-import Enrollmenttimeline from '../models/EnrollmentTimeline';
-import Enrollmentemergency from '../models/EnrollmentEmergency';
-import Enrollmentsponsor from '../models/EnrollmentSponsor';
+import Enrollmentdocument from '../models/Enrollmentdocument';
+import Enrollmentdependent from '../models/Enrollmentdependent';
+import Enrollmenttimeline from '../models/Enrollmenttimeline';
+import Enrollmentemergency from '../models/Enrollmentemergency';
+import Enrollmentsponsor from '../models/Enrollmentsponsor';
 import Student from '../models/Student';
 import { addDays, format, set } from 'date-fns';
-import Processtype from '../models/ProcessType';
-import Processsubstatus from '../models/ProcessSubstatus';
+import Processtype from '../models/Processtype';
+import Processsubstatus from '../models/Processsubstatus';
 import File from '../models/File';
 import { mailer } from '../../config/mailer';
 import Filial from '../models/Filial';
@@ -20,7 +20,7 @@ import { BASEURL } from '../functions';
 
 const { Op } = Sequelize;
 
-class EnrollmentSponsorController {
+class EnrollmentsponsorController {
 
     async outsideUpdate(req, res) {
         const connection = new Sequelize(databaseConfig)
@@ -156,7 +156,7 @@ class EnrollmentSponsorController {
 
         } catch (err) {
             await t.rollback();
-            const className = 'EnrollmentSponsorController';
+            const className = 'EnrollmentsponsorController';
             const functionName = 'update';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -277,4 +277,4 @@ class EnrollmentSponsorController {
     }
 }
 
-export default new EnrollmentSponsorController();
+export default new EnrollmentsponsorController();

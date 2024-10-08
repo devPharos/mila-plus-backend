@@ -1,11 +1,11 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
-import Languagemode from '../models/LanguageMode';
+import Languagemode from '../models/Languagemode';
 
 const { Op } = Sequelize;
 
-class LanguageModeController {
+class LanguagemodeController {
 
     async show(req, res) {
         try {
@@ -21,7 +21,7 @@ class LanguageModeController {
 
             return res.json(languagemodes);
         } catch (err) {
-            const className = 'LanguageModeController';
+            const className = 'LanguagemodeController';
             const functionName = 'show';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -42,7 +42,7 @@ class LanguageModeController {
 
             return res.json(languagemodes);
         } catch (err) {
-            const className = 'LanguageModeController';
+            const className = 'LanguagemodeController';
             const functionName = 'index';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -69,18 +69,18 @@ class LanguageModeController {
                 });
             }
 
-            const newLanguageMode = await Languagemode.create({
+            const newLanguagemode = await Languagemode.create({
                 company_id: req.companyId, name: req.body.name, created_by: req.userId, created_at: new Date()
             }, {
                 transaction: t
             })
             t.commit();
 
-            return res.json(newLanguageMode);
+            return res.json(newLanguagemode);
 
         } catch (err) {
             await t.rollback();
-            const className = 'LanguageModeController';
+            const className = 'LanguagemodeController';
             const functionName = 'store';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -128,7 +128,7 @@ class LanguageModeController {
 
         } catch (err) {
             await t.rollback();
-            const className = 'LanguageModeController';
+            const className = 'LanguagemodeController';
             const functionName = 'update';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -138,4 +138,4 @@ class LanguageModeController {
     }
 }
 
-export default new LanguageModeController();
+export default new LanguagemodeController();

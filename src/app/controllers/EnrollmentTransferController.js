@@ -1,14 +1,14 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
-import Enrollmenttimeline from '../models/EnrollmentTimeline';
-import Enrollmenttransfer from '../models/EnrollmentTransfer';
+import Enrollmenttimeline from '../models/Enrollmenttimeline';
+import Enrollmenttransfer from '../models/Enrollmenttransfer';
 import File from '../models/File';
 import Enrollment from '../models/Enrollment';
 
 const { Op } = Sequelize;
 
-class EnrollmentTransferController {
+class EnrollmenttransferController {
     async update(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction();
@@ -135,4 +135,4 @@ class EnrollmentTransferController {
     }
 }
 
-export default new EnrollmentTransferController();
+export default new EnrollmenttransferController();

@@ -2,7 +2,7 @@ import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
 import Document from '../models/Document';
-import Staffdocument from '../models/StaffDocument';
+import StaffDocument from '../models/Staffdocument';
 import File from '../models/File';
 import Staff from '../models/Staff';
 
@@ -39,7 +39,7 @@ class StaffDocumentController {
 
                 if (fileCreated) {
 
-                    await Staffdocument.create({
+                    await StaffDocument.create({
                         company_id: req.companyId || 1,
                         staff_id,
                         file_id: fileCreated.id,
@@ -73,7 +73,7 @@ class StaffDocumentController {
         try {
             const { staffDocument_id } = req.params;
 
-            const staffDocumentExists = await Staffdocument.findByPk(staffDocument_id);
+            const staffDocumentExists = await StaffDocument.findByPk(staffDocument_id);
 
             if (!staffDocumentExists) {
                 return res.status(401).json({ error: 'document does not exist.' });
@@ -99,7 +99,7 @@ class StaffDocumentController {
 
     async index(req, res) {
         try {
-            const staffDocuments = await Staffdocument.findAll({
+            const staffDocuments = await StaffDocument.findAll({
                 where: {
                     company_id: req.companyId,
                 },
@@ -119,7 +119,7 @@ class StaffDocumentController {
     async show(req, res) {
         try {
             const { staffDocument_id } = req.params;
-            const staffDocuments = await Staffdocument.findByPk(staffDocument_id);
+            const staffDocuments = await StaffDocument.findByPk(staffDocument_id);
 
             if (!staffDocuments) {
                 return res.status(400).json({
@@ -141,7 +141,7 @@ class StaffDocumentController {
     async showByOriginTypeSubtype(req, res) {
         try {
             const { origin, type, subtype } = req.params;
-            const staffDocuments = await Staffdocument.findAll({
+            const staffDocuments = await StaffDocument.findAll({
                 where: { origin, type, subtype, canceled_at: null },
             });
 
@@ -167,7 +167,7 @@ class StaffDocumentController {
         const t = await connection.transaction();
         try {
             const { staffDocument_id } = req.params;
-            const document = await Staffdocument.findByPk(staffDocument_id, {
+            const document = await StaffDocument.findByPk(staffDocument_id, {
                 where: { canceled_at: null },
             });
 

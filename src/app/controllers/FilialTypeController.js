@@ -1,7 +1,7 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
-import Filialtype from '../models/FilialType';
+import Filialtype from '../models/Filialtype';
 
 const { Op } = Sequelize;
 

@@ -4,7 +4,6 @@ import MilaUserController from './app/controllers/MilaUserController';
 import authMiddleware from './app/middlewares/auth'
 
 import validateUserStore from './app/validators/UserStore';
-import validateUserUpdate from './app/validators/UserUpdate';
 import validateFilialAssociate from './app/validators/FilialAssociate';
 import SessionController from './app/controllers/SessionController';
 import MenuHierarchyController from './app/controllers/MenuHierarchyController';
@@ -17,9 +16,9 @@ import UserGroupController from './app/controllers/UserGroupController';
 import ParameterController from './app/controllers/ParameterController';
 import ChartOfAccountsController from './app/controllers/ChartOfAccountsController';
 import LanguageController from './app/controllers/LanguageController';
-import ProgramCategoryController from './app/controllers/ProgramCategoryController';
+import ProgramcategoryController from './app/controllers/ProgramcategoryController';
 import LevelController from './app/controllers/LevelController';
-import LanguageModeController from './app/controllers/LanguageModeController';
+import LanguagemodeController from './app/controllers/LanguagemodeController';
 import WorkloadController from './app/controllers/WorkloadController';
 import PaceGuideController from './app/controllers/PaceGuideController';
 import MilaUserController from './app/controllers/MilaUserController';
@@ -31,8 +30,8 @@ import StaffDocumentController from './app/controllers/StaffDocumentController';
 import EnrollmentController from './app/controllers/EnrollmentController';
 import ProcessTypeController from './app/controllers/ProcessTypeController';
 import ProcessSubstatusController from './app/controllers/ProcessSubstatusController';
-import EnrollmentDocumentController from './app/controllers/EnrollmentDocumentController';
-import EnrollmentSponsorController from './app/controllers/EnrollmentSponsorController';
+import EnrollmentdocumentController from './app/controllers/EnrollmentdocumentController';
+import EnrollmentsponsorController from './app/controllers/EnrollmentsponsorController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
@@ -48,8 +47,8 @@ routes.put('/outside/staffs/:staff_id', StaffController.updateOutside);
 routes.get('/outside/enrollments/:enrollment_id', EnrollmentController.outsideShow);
 routes.put('/outside/enrollments/:enrollment_id', EnrollmentController.outsideUpdate);
 
-routes.get('/outside/sponsors/:sponsor_id', EnrollmentSponsorController.outsideShow);
-routes.put('/outside/sponsors/:sponsor_id', EnrollmentSponsorController.outsideUpdate);
+routes.get('/outside/sponsors/:sponsor_id', EnrollmentsponsorController.outsideShow);
+routes.put('/outside/sponsors/:sponsor_id', EnrollmentsponsorController.outsideUpdate);
 
 routes.get('/users_short_info/:user_id', MilaUserController.shortInfo);
 
@@ -60,8 +59,8 @@ routes.get('/documentsByOrigin', DocumentController.showByOriginTypeSubtype);
 routes.post('/staffdocuments', StaffDocumentController.store);
 routes.delete('/staffdocuments/:staffDocument_id', StaffDocumentController.inactivate);
 
-routes.post('/enrollmentdocuments', EnrollmentDocumentController.store);
-routes.delete('/enrollmentdocuments/:enrollmentDocument_id', EnrollmentDocumentController.inactivate);
+routes.post('/enrollmentdocuments', EnrollmentdocumentController.store);
+routes.delete('/enrollmentdocuments/:enrollmentDocument_id', EnrollmentdocumentController.inactivate);
 
 routes.post('/enrollmentstudentsignature', EnrollmentController.studentsignature);
 routes.post('/enrollmentsponsorsignature', EnrollmentController.sponsorsignature);
@@ -117,20 +116,20 @@ routes.get('/languages/:language_id', LanguageController.show);
 routes.post('/languages', LanguageController.store);
 routes.put('/languages/:language_id', LanguageController.update);
 
-routes.get('/programcategories', ProgramCategoryController.index);
-routes.get('/programcategories/:programcategory_id', ProgramCategoryController.show);
-routes.post('/programcategories', ProgramCategoryController.store);
-routes.put('/programcategories/:programcategory_id', ProgramCategoryController.update);
+routes.get('/programcategories', ProgramcategoryController.index);
+routes.get('/programcategories/:programcategory_id', ProgramcategoryController.show);
+routes.post('/programcategories', ProgramcategoryController.store);
+routes.put('/programcategories/:programcategory_id', ProgramcategoryController.update);
 
 routes.get('/levels', LevelController.index);
 routes.get('/levels/:level_id', LevelController.show);
 routes.post('/levels', LevelController.store);
 routes.put('/levels/:level_id', LevelController.update);
 
-routes.get('/languagemodes', LanguageModeController.index);
-routes.get('/languagemodes/:languagemode_id', LanguageModeController.show);
-routes.post('/languagemodes', LanguageModeController.store);
-routes.put('/languagemodes/:languagemode_id', LanguageModeController.update);
+routes.get('/languagemodes', LanguagemodeController.index);
+routes.get('/languagemodes/:languagemode_id', LanguagemodeController.show);
+routes.post('/languagemodes', LanguagemodeController.store);
+routes.put('/languagemodes/:languagemode_id', LanguagemodeController.update);
 
 routes.get('/workloads', WorkloadController.index);
 routes.get('/workloads/:workload_id', WorkloadController.show);

@@ -2,9 +2,9 @@ import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
 import Level from '../models/Level';
-import Languagemode from '../models/LanguageMode';
-import Programcategory from '../models/ProgramCategory';
-import Paceguide from '../models/PaceGuide';
+import Languagemode from '../models/Languagemode';
+import Programcategory from '../models/Programcategory';
+import Paceguide from '../models/Paceguide';
 import Workload from '../models/Workload';
 
 const { Op } = Sequelize;

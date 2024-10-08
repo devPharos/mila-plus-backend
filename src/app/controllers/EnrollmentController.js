@@ -2,21 +2,21 @@ import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
 import Enrollment from '../models/Enrollment';
-import Enrollmentdocument from '../models/EnrollmentDocument';
-import Enrollmentdependent from '../models/EnrollmentDependent';
-import Enrollmenttimeline from '../models/EnrollmentTimeline';
-import Enrollmentemergency from '../models/EnrollmentEmergency';
-import Enrollmentsponsor from '../models/EnrollmentSponsor';
-import Enrollmenttransfers from '../models/EnrollmentTransfer';
+import Enrollmentdocument from '../models/Enrollmentdocument';
+import Enrollmentdependent from '../models/Enrollmentdependent';
+import Enrollmenttimeline from '../models/Enrollmenttimeline';
+import Enrollmentemergency from '../models/Enrollmentemergency';
+import Enrollmentsponsor from '../models/Enrollmentsponsor';
+import Enrollmenttransfers from '../models/Enrollmenttransfer';
 import Student from '../models/Student';
 import Agent from '../models/Agent';
 import { addDays, addMinutes, addSeconds, format, isAfter, parseISO, set } from 'date-fns';
-import Processtype from '../models/ProcessType';
-import Processsubstatus from '../models/ProcessSubstatus';
+import Processtype from '../models/Processtype';
+import Processsubstatus from '../models/Processsubstatus';
 import File from '../models/File';
 import { mailer } from '../../config/mailer';
 import Filial from '../models/Filial';
-import Enrollmenttransfer from '../models/EnrollmentTransfer';
+import Enrollmenttransfer from '../models/Enrollmenttransfer';
 import MailLayout from '../../Mails/MailLayout';
 import { BASEURL } from '../functions';
 
@@ -203,7 +203,7 @@ class EnrollmentController {
                         transaction: t
                     }));
                 } else {
-                    promises.push(Enrollmentemergency.update({ enrollment_id: enrollmentExists.id, name: emergency.name, relationship_type: emergency.relationship_type, email: emergency.email, phone: emergency.phone, updated_at: new Date, updated_by: 2 }, {
+                    promises.push(existingEmergency.update({ enrollment_id: enrollmentExists.id, name: emergency.name, relationship_type: emergency.relationship_type, email: emergency.email, phone: emergency.phone, updated_at: new Date, updated_by: 2 }, {
                         where: {
                             id: existingEmergency.id
                         },
@@ -897,7 +897,7 @@ class EnrollmentController {
 
             if (signatureFile) {
 
-                await enrollmentTransfer.update({
+                await Enrollmenttransfer.update({
                     dso_signature: signatureFile.id,
                     updated_by: req.userId || 2,
                     updated_at: new Date(),
