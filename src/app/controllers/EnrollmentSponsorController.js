@@ -97,7 +97,7 @@ class EnrollmentSponsorController {
                     if (lastTimeline.step_status !== nextStepStatus) {
                         nextTimeline = {
                             phase: 'Student Application',
-                            phase_step: 'Form link has been sent to sponsor',
+                            phase_step: 'Form link has been sent to the sponsor',
                             step_status: nextStepStatus,
                             expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
                             created_at: new Date(),
@@ -109,7 +109,7 @@ class EnrollmentSponsorController {
                     nextStep = 'finished';
                     nextTimeline = {
                         phase: 'Student Application',
-                        phase_step: 'Form link has been sent to sponsor',
+                        phase_step: 'Form link has been sent to the sponsor',
                         step_status: `All sponsors have signed.`,
                         expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
                         created_at: new Date(),
@@ -250,13 +250,13 @@ class EnrollmentSponsorController {
 
             if (timeline[timeline.length - 1].dataValues.step_status === 'Form filling has not been started yet.') {
                 const enrollment = enrollments.dataValues;
-                const student = enrollments.dataValues.students.dataValues;
+                const { type, substatus, phase, phase_step } = timeline[timeline.length - 1].dataValues.step_status;
                 await Enrollmenttimeline.create({
                     enrollment_id: enrollment.id,
-                    type: student.type,
-                    substatus: student.sub_status,
-                    phase: 'Student Application',
-                    phase_step: 'Form link has sent to Student',
+                    type,
+                    substatus,
+                    phase,
+                    phase_step,
                     step_status: `Form filling has been started by the Student.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
                     created_at: new Date(),

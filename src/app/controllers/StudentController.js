@@ -72,9 +72,15 @@ class StudentController {
           {
             model: Filial,
             as: 'filial',
+            required: true,
+            where: {
+              company_id: req.companyId,
+              canceled_at: null
+            }
           }
         ],
         where: {
+          category: 'student',
           company_id: req.companyId,
           [Op.or]: [
             {

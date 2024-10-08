@@ -116,8 +116,24 @@ class EnrollmentController {
             let nextStep = lastActiveMenu.name;
             if (activeMenu === 'transfer-request' && lastActiveMenu.name === 'transfer-request') {
                 nextStep = 'transfer-dso';
+                nextTimeline = {
+                    phase: 'Student Application',
+                    phase_step: 'Transfer form link has Sent to the DSO',
+                    step_status: `Form filling has not yet been started by the DSO.`,
+                    expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+                    created_at: new Date(),
+                    created_by: 2
+                }
             } else if (activeMenu === 'transfer-dso' && lastActiveMenu.name === 'transfer-dso') {
                 nextStep = 'transfer-agent';
+                nextTimeline = {
+                    phase: 'Student Application',
+                    phase_step: 'DSO Signature',
+                    step_status: `Form filling has been finished by the DSO`,
+                    expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+                    created_at: new Date(),
+                    created_by: 2
+                }
             } else if (activeMenu === 'student-information' && lastActiveMenu.name === 'student-information') {
                 nextStep = 'emergency-contact';
             } else if (activeMenu === 'emergency-contact' && lastActiveMenu.name === 'emergency-contact') {
@@ -128,15 +144,31 @@ class EnrollmentController {
                 nextStep = 'affidavit-of-support';
             } else if (activeMenu === 'affidavit-of-support' && lastActiveMenu.name === 'affidavit-of-support') {
                 nextStep = 'documents-upload';
+                nextTimeline = {
+                    phase: 'Student Application',
+                    phase_step: 'Form link has been sent to the student',
+                    step_status: `Pending documents to be uploaded`,
+                    expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+                    created_at: new Date(),
+                    created_by: 2
+                }
             } else if (activeMenu === 'documents-upload' && lastActiveMenu.name === 'documents-upload') {
                 nextStep = 'student-signature';
+                nextTimeline = {
+                    phase: 'Student Application',
+                    phase_step: 'Student Signature',
+                    step_status: `Pending signature by the student`,
+                    expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+                    created_at: new Date(),
+                    created_by: 2
+                }
             } else if (activeMenu === 'student-signature' && lastActiveMenu.name === 'student-signature') {
                 if (existingSponsors.length > 0) {
                     nextStep = 'sponsor-signature';
                     nextTimeline = {
                         phase: 'Student Application',
-                        phase_step: 'Form link has been sent to Sponsor',
-                        step_status: `Form filling has not yet started.`,
+                        phase_step: 'Form link has been sent to the sponsor',
+                        step_status: `Form filling has not yet been started.`,
                         expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
                         created_at: new Date(),
                         created_by: 2
@@ -529,7 +561,7 @@ class EnrollmentController {
                     type: student.type,
                     substatus: student.sub_status,
                     phase: 'Student Application',
-                    phase_step: 'Form link has been sent to student',
+                    phase_step: 'Form link has been sent to the student',
                     step_status: `Form filling was started by the student.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
                     created_at: new Date(),

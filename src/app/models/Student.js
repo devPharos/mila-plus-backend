@@ -78,8 +78,10 @@ class Student extends Model {
 
   static associate(models) {
     this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' });
+    this.belongsTo(models.Agent, { foreignKey: 'agent_id', as: 'agent' });
     this.belongsTo(models.Processtype, { foreignKey: 'processtype_id', as: 'processtypes' });
     this.belongsTo(models.Processsubstatus, { foreignKey: 'processsubstatus_id', as: 'processsubstatuses' });
+    this.hasOne(models.Enrollment, { foreignKey: 'student_id', as: 'enrollments' });
   }
 }
 
