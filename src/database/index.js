@@ -4,7 +4,7 @@ import Sequelize from 'sequelize';
 import databaseConfig from '../config/database';
 import Filial from '../app/models/Filial';
 import File from '../app/models/File';
-import Milauser from '../app/models/MilaUser';
+import Milauser from '../app/models/Milauser';
 import UserGroup from '../app/models/UserGroup';
 import UserGroupXUser from '../app/models/UserGroupXUser';
 import UserXFilial from '../app/models/UserXFilial';
