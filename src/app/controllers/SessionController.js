@@ -2,7 +2,7 @@ import Sequelize from 'sequelize';
 import jwt from 'jsonwebtoken';
 import * as Yup from 'yup';
 import authConfig from '../../config/auth';
-import Milauser from '../models/MilaUser';
+import Milauser from '../models/Milauser';
 import Filial from '../models/Filial';
 import UserGroup from '../models/UserGroup';
 import UserGroupXUser from '../models/UserGroupXUser';

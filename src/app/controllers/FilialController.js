@@ -5,7 +5,7 @@ import Filial from '../models/Filial';
 import FilialPriceList from '../models/FilialPriceList';
 import FilialDiscountList from '../models/FilialDiscountList';
 import Filialtype from '../models/FilialType';
-import Milauser from '../models/MilaUser';
+import Milauser from '../models/Milauser';
 import UserGroupXUser from '../models/UserGroupXUser';
 import UserXFilial from '../models/UserXFilial';
 import Processsubstatus from '../models/ProcessSubstatus';
