@@ -16,7 +16,7 @@ import UserGroupController from './app/controllers/UserGroupController';
 import ParameterController from './app/controllers/ParameterController';
 import ChartOfAccountsController from './app/controllers/ChartOfAccountsController';
 import LanguageController from './app/controllers/LanguageController';
-import ProgramcategoryController from './app/controllers/ProgramcategoryController';
+import ProgramCategoryController from './app/controllers/ProgramCategoryController';
 import LevelController from './app/controllers/LevelController';
 import LanguagemodeController from './app/controllers/LanguagemodeController';
 import WorkloadController from './app/controllers/WorkloadController';
@@ -116,10 +116,10 @@ routes.get('/languages/:language_id', LanguageController.show);
 routes.post('/languages', LanguageController.store);
 routes.put('/languages/:language_id', LanguageController.update);
 
-routes.get('/programcategories', ProgramcategoryController.index);
-routes.get('/programcategories/:programcategory_id', ProgramcategoryController.show);
-routes.post('/programcategories', ProgramcategoryController.store);
-routes.put('/programcategories/:programcategory_id', ProgramcategoryController.update);
+routes.get('/programcategories', ProgramCategoryController.index);
+routes.get('/programcategories/:programcategory_id', ProgramCategoryController.show);
+routes.post('/programcategories', ProgramCategoryController.store);
+routes.put('/programcategories/:programcategory_id', ProgramCategoryController.update);
 
 routes.get('/levels', LevelController.index);
 routes.get('/levels/:level_id', LevelController.show);
