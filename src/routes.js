@@ -18,7 +18,7 @@ import ChartOfAccountsController from './app/controllers/ChartOfAccountsControll
 import LanguageController from './app/controllers/LanguageController';
 import ProgramCategoryController from './app/controllers/ProgramCategoryController';
 import LevelController from './app/controllers/LevelController';
-import LanguagemodeController from './app/controllers/LanguagemodeController';
+import LanguageModeController from './app/controllers/LanguageModeController';
 import WorkloadController from './app/controllers/WorkloadController';
 import PaceGuideController from './app/controllers/PaceGuideController';
 import MilaUserController from './app/controllers/MilaUserController';
@@ -126,10 +126,10 @@ routes.get('/levels/:level_id', LevelController.show);
 routes.post('/levels', LevelController.store);
 routes.put('/levels/:level_id', LevelController.update);
 
-routes.get('/languagemodes', LanguagemodeController.index);
-routes.get('/languagemodes/:languagemode_id', LanguagemodeController.show);
-routes.post('/languagemodes', LanguagemodeController.store);
-routes.put('/languagemodes/:languagemode_id', LanguagemodeController.update);
+routes.get('/languagemodes', LanguageModeController.index);
+routes.get('/languagemodes/:languagemode_id', LanguageModeController.show);
+routes.post('/languagemodes', LanguageModeController.store);
+routes.put('/languagemodes/:languagemode_id', LanguageModeController.update);
 
 routes.get('/workloads', WorkloadController.index);
 routes.get('/workloads/:workload_id', WorkloadController.show);
