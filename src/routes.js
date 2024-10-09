@@ -30,8 +30,8 @@ import StaffDocumentController from './app/controllers/StaffDocumentController';
 import EnrollmentController from './app/controllers/EnrollmentController';
 import ProcessTypeController from './app/controllers/ProcessTypeController';
 import ProcessSubstatusController from './app/controllers/ProcessSubstatusController';
-import EnrollmentdocumentController from './app/controllers/EnrollmentdocumentController';
-import EnrollmentsponsorController from './app/controllers/EnrollmentsponsorController';
+import EnrollmentDocumentController from './app/controllers/EnrollmentDocumentController';
+import EnrollmentSponsorController from './app/controllers/EnrollmentSponsorController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
@@ -47,8 +47,8 @@ routes.put('/outside/staffs/:staff_id', StaffController.updateOutside);
 routes.get('/outside/enrollments/:enrollment_id', EnrollmentController.outsideShow);
 routes.put('/outside/enrollments/:enrollment_id', EnrollmentController.outsideUpdate);
 
-routes.get('/outside/sponsors/:sponsor_id', EnrollmentsponsorController.outsideShow);
-routes.put('/outside/sponsors/:sponsor_id', EnrollmentsponsorController.outsideUpdate);
+routes.get('/outside/sponsors/:sponsor_id', EnrollmentSponsorController.outsideShow);
+routes.put('/outside/sponsors/:sponsor_id', EnrollmentSponsorController.outsideUpdate);
 
 routes.get('/users_short_info/:user_id', MilaUserController.shortInfo);
 
@@ -59,8 +59,8 @@ routes.get('/documentsByOrigin', DocumentController.showByOriginTypeSubtype);
 routes.post('/staffdocuments', StaffDocumentController.store);
 routes.delete('/staffdocuments/:staffDocument_id', StaffDocumentController.inactivate);
 
-routes.post('/enrollmentdocuments', EnrollmentdocumentController.store);
-routes.delete('/enrollmentdocuments/:enrollmentDocument_id', EnrollmentdocumentController.inactivate);
+routes.post('/enrollmentdocuments', EnrollmentDocumentController.store);
+routes.delete('/enrollmentdocuments/:enrollmentDocument_id', EnrollmentDocumentController.inactivate);
 
 routes.post('/enrollmentstudentsignature', EnrollmentController.studentsignature);
 routes.post('/enrollmentsponsorsignature', EnrollmentController.sponsorsignature);
