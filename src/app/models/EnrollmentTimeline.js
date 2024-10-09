@@ -1,5 +1,5 @@
 import Sequelize, { Model } from 'sequelize';
-
+// Recreate
 class Enrollmenttimeline extends Model {
     static init(sequelize) {
         super.init(
