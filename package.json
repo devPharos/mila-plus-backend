@@ -8,11 +8,10 @@
     "prod": "set NODE_ENV=production && nodemon src/server.js",
     "dev:debug": "set NODE_ENV=development && nodemon --inspect src/server.js",
     "queue": "nodemon src/queue.js",
-    "db:mi": "sequelize db:migrate --name",
-    "db:mi:undo": "sequelize db:migrate:undo",
-    "db:mo:g": "sequelize model:generate --name",
-    "db:mi:undo:all": "sequelize db:migrate:undo:all",
-    "db:mi:undo:all:force": "sequelize db:migrate:undo:all --force"
+    "db:mi": "sequelize-cli migration:generate --name",
+    "migrate": "sequelize-cli db:migrate",
+    "db:rollback": "NODE_ENV=development sequelize-cli db:migrate:undo:all",
+    "model:create": "sequelize-cli model:generate"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
