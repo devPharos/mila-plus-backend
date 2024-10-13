@@ -15,7 +15,7 @@ class BankAccountController {
                 order: [['account']]
             });
 
-            if (!bankAccounts) {
+            if (!bankAccounts.length) {
                 return res.status(400).json({
                     error: 'Bank Accounts not found.',
                 });
@@ -70,7 +70,7 @@ class BankAccountController {
             });
             t.commit();
 
-            return res.json(new_bankAccount);
+            return res.status(201).json(new_bankAccount);
         } catch (err) {
             await t.rollback();
             const className = 'BankAccountController';
