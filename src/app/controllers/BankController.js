@@ -1,33 +1,14 @@
-import Sequelize from 'sequelize';
-import MailLog from '../../Mails/MailLog';
-import databaseConfig from '../../config/database';
 import Bank from '../models/bank';
+import BaseController from './BaseController';
 
-const { Op } = Sequelize;
-
-class BankController {
+class BankController extends BaseController {
     async index(req, res) {
         try {
-            const banks = await Bank.findAll({
-                where: {
-                    canceled_at: null
-                },
-                order: [['bank_name']]
-            });
-
-            if (!banks.length) {
-                return res.status(400).json({
-                    error: 'Banks not found.',
-                });
-            }
-
+            const banks = await this.index(Bank);
             return res.json(banks);
         } catch (err) {
-            const className = 'BankController';
-            const functionName = 'index';
-            MailLog({ className, functionName, req, err });
             return res.status(500).json({
-                error: err,
+                error: err.message,
             });
         }
     }
@@ -35,114 +16,64 @@ class BankController {
     async show(req, res) {
         try {
             const { bank_id } = req.params;
-            const bank = await Bank.findByPk(bank_id, {
-                where: { canceled_at: null },
-            });
-
-            if (!bank) {
-                return res.status(400).json({
-                    error: 'Bank not found.',
-                });
-            }
-
+            const bank = await this.show(Bank, bank_id);
             return res.json(bank);
         } catch (err) {
-            const className = 'BankController';
-            const functionName = 'show';
-            MailLog({ className, functionName, req, err });
             return res.status(500).json({
-                error: err,
+                error: err.message,
             });
         }
     }
 
     async store(req, res) {
-        const connection = new Sequelize(databaseConfig);
-        const t = await connection.transaction();
         try {
-            const new_bank = await Bank.create({
-                ...req.body,
-                company_id: req.companyId,
-                created_at: new Date(),
-                created_by: req.userId,
-            }, {
-                transaction: t
+            const new_bank = await this.withTransaction(async (t) => {
+                return await Bank.create({
+                    ...req.body,
+                    company_id: req.companyId,
+                    created_at: new Date(),
+                    created_by: req.userId,
+                }, {
+                    transaction: t
+                });
             });
-            t.commit();
-
             return res.status(201).json(new_bank);
         } catch (err) {
-            await t.rollback();
-            const className = 'BankController';
-            const functionName = 'store';
-            MailLog({ className, functionName, req, err });
             return res.status(500).json({
-                error: err,
+                error: err.message,
             });
         }
     }
 
     async update(req, res) {
-        const connection = new Sequelize(databaseConfig);
-        const t = await connection.transaction();
+        const { bank_id } = req.params;
+
         try {
-            const { bank_id } = req.params;
+            const bank = await this.show(Bank, bank_id); // Verifica se o banco existe usando o método show do BaseController
 
-            const bankExists = await Bank.findByPk(bank_id);
-
-            if (!bankExists) {
-                return res.status(401).json({ error: 'Bank does not exist.' });
-            }
-
-            await bankExists.update({ ...req.body, updated_by: req.userId, updated_at: new Date() }, {
-                transaction: t
+            await bank.update({
+                ...req.body,
+                updated_by: req.userId,
+                updated_at: new Date()
             });
-            t.commit();
 
-            return res.status(200).json(bankExists);
+            return res.status(200).json(bank);
         } catch (err) {
-            await t.rollback();
-            const className = 'BankController';
-            const functionName = 'update';
-            MailLog({ className, functionName, req, err });
             return res.status(500).json({
-                error: err,
+                error: err.message,
             });
         }
     }
 
     async delete(req, res) {
-        const connection = new Sequelize(databaseConfig);
-        const t = await connection.transaction();
+        const { bank_id } = req.params;
+
         try {
-            const { bank_id } = req.params;
-            const bank = await Bank.findByPk(bank_id);
-
-            if (!bank) {
-                return res.status(400).json({
-                    error: 'Bank not found.',
-                });
-            }
-
-            await bank.update({
-                canceled_at: new Date(),
-                canceled_by: req.userId,
-                updated_at: new Date(),
-                updated_by: req.userId
-            }, {
-                transaction: t
-            });
-
-            t.commit();
-
-            return res.status(200).json({ message: 'Bank deleted successfully.' });
+            const message = await this.delete(Bank, bank_id, req.userId); // Chama o método delete do BaseController
+            return res.status(200).json(message);
         } catch (err) {
-            await t.rollback();
-            const className = 'BankController';
-            const functionName = 'delete';
-            MailLog({ className, functionName, req, err });
             return res.status(500).json({
-                error: err,
+                error: err.message,
             });
         }
     }
