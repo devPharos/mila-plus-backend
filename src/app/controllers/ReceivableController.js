@@ -1,51 +1,33 @@
-import Sequelize from 'sequelize';
-import MailLog from '../../Mails/MailLog';
-import databaseConfig from '../../config/database';
 import Receivable from '../models/Receivable';
 import PaymentMethod from '../models/PaymentMethod';
 import ChartOfAccount from '../models/Chartofaccount';
 import PaymentCriteria from '../models/PaymentCriteria';
+import BaseController from './BaseController';
 
-const { Op } = Sequelize;
-
-class ReceivableController {
+class ReceivableController extends BaseController {
     async index(req, res) {
         try {
-            const receivables = await Receivable.findAll({
-                include: [
-                    {
-                        model: PaymentMethod,
-                        as: 'paymentMethod',
-                        where: { canceled_at: null },
-                    },
-                    {
-                        model: ChartOfAccount,
-                        as: 'chartOfAccount',
-                        where: { canceled_at: null },
-                    },
-                    {
-                        model: PaymentCriteria,
-                        as: 'paymentCriteria',
-                        where: { canceled_at: null },
-                    },
-                ],
-                where: { canceled_at: null },
-                order: [['created_at', 'DESC']],
-            });
-
-            if (!receivables.length) {
-                return res.status(400).json({
-                    error: 'No receivables found.',
-                });
-            }
-
+            const receivables = await this.index(Receivable, [
+                {
+                    model: PaymentMethod,
+                    as: 'paymentMethod',
+                    where: { canceled_at: null },
+                },
+                {
+                    model: ChartOfAccount,
+                    as: 'chartOfAccount',
+                    where: { canceled_at: null },
+                },
+                {
+                    model: PaymentCriteria,
+                    as: 'paymentCriteria',
+                    where: { canceled_at: null },
+                },
+            ]);
             return res.json(receivables);
         } catch (err) {
-            const className = 'ReceivableController';
-            const functionName = 'index';
-            MailLog({ className, functionName, req, err });
             return res.status(500).json({
-                error: err,
+                error: err.message,
             });
         }
     }
@@ -53,128 +35,80 @@ class ReceivableController {
     async show(req, res) {
         try {
             const { id } = req.params;
-            const receivable = await Receivable.findByPk(id, {
-                where: { canceled_at: null },
-                include: [
-                    {
-                        model: PaymentMethod,
-                        as: 'paymentMethod',
-                        where: { canceled_at: null },
-                    },
-                    {
-                        model: ChartOfAccount,
-                        as: 'chartOfAccount',
-                        where: { canceled_at: null },
-                    },
-                    {
-                        model: PaymentCriteria,
-                        as: 'paymentCriteria',
-                        where: { canceled_at: null },
-                    },
-                ],
-            });
-
-            if (!receivable) {
-                return res.status(400).json({
-                    error: 'Receivable not found.',
-                });
-            }
-
+            const receivable = await this.show(Receivable, id, [
+                {
+                    model: PaymentMethod,
+                    as: 'paymentMethod',
+                    where: { canceled_at: null },
+                },
+                {
+                    model: ChartOfAccount,
+                    as: 'chartOfAccount',
+                    where: { canceled_at: null },
+                },
+                {
+                    model: PaymentCriteria,
+                    as: 'paymentCriteria',
+                    where: { canceled_at: null },
+                },
+            ]);
             return res.json(receivable);
         } catch (err) {
-            const className = 'ReceivableController';
-            const functionName = 'show';
-            MailLog({ className, functionName, req, err });
             return res.status(500).json({
-                error: err,
+                error: err.message,
             });
         }
     }
 
     async store(req, res) {
-        const connection = new Sequelize(databaseConfig);
-        const t = await connection.transaction();
         try {
-            const newReceivable = await Receivable.create({
-                ...req.body,
-                created_at: new Date(),
-                created_by: req.userId,
-            }, {
-                transaction: t
+            const newReceivable = await this.withTransaction(async (t) => {
+                return await Receivable.create({
+                    ...req.body,
+                    created_at: new Date(),
+                    created_by: req.userId,
+                }, {
+                    transaction: t
+                });
             });
-            await t.commit();
-
-            return res.json(newReceivable);
+            return res.status(201).json(newReceivable);
         } catch (err) {
-            await t.rollback();
-            const className = 'ReceivableController';
-            const functionName = 'store';
-            MailLog({ className, functionName, req, err });
             return res.status(500).json({
-                error: err,
+                error: err.message,
             });
         }
     }
 
     async update(req, res) {
-        const connection = new Sequelize(databaseConfig);
-        const t = await connection.transaction();
+        const { id } = req.params;
+
         try {
-            const { id } = req.params;
+            // todo - verificar se o recebível existe
+            const receivable = await this.show(Receivable, id);
 
-            const receivableExists = await Receivable.findByPk(id);
-
-            if (!receivableExists) {
-                return res.status(401).json({ error: 'Receivable does not exist.' });
-            }
-
-            await receivableExists.update({ ...req.body, updated_by: req.userId, updated_at: new Date() }, {
-                transaction: t
+            await receivable.update({
+                ...req.body,
+                updated_by: req.userId,
+                updated_at: new Date(),
             });
-            await t.commit();
 
-            return res.status(200).json(receivableExists);
+            return res.status(200).json(receivable);
         } catch (err) {
-            await t.rollback();
-            const className = 'ReceivableController';
-            const functionName = 'update';
-            MailLog({ className, functionName, req, err });
             return res.status(500).json({
-                error: err,
+                error: err.message,
             });
         }
     }
 
     async delete(req, res) {
-        const connection = new Sequelize(databaseConfig);
-        const t = await connection.transaction();
+        const { id } = req.params;
+
         try {
-            const { id } = req.params;
-
-            const receivableExists = await Receivable.findByPk(id);
-
-            if (!receivableExists) {
-                return res.status(401).json({ error: 'Receivable does not exist.' });
-            }
-
-            await receivableExists.update({
-                canceled_at: new Date(),
-                canceled_by: req.userId,
-                updated_at: new Date(),
-                updated_by: req.userId,
-            }, {
-                transaction: t
-            });
-            await t.commit();
-
-            return res.status(200).json({ message: 'Receivable deleted successfully.' });
+            const message = await this.delete(Receivable, id, req.userId);
+            return res.status(200).json(message);
         } catch (err) {
-            await t.rollback();
-            const className = 'ReceivableController';
-            const functionName = 'delete';
-            MailLog({ className, functionName, req, err });
             return res.status(500).json({
-                error: err,
+                error: err.message,
             });
         }
     }
