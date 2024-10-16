@@ -105,7 +105,7 @@ class EnrollmentController {
                     enrollment_id: enrollmentExists.id,
                     canceled_at: null
                 },
-                order: [['id', 'DESC']]
+                order: [['created_at', 'DESC']]
             })
 
             const existingSponsors = await Enrollmentsponsor.findAll({

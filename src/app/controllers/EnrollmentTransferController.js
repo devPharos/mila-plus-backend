@@ -83,7 +83,7 @@ class EnrollmenttransferController {
                         enrollment_id,
                         canceled_at: null
                     },
-                    order: [['id', 'DESC']]
+                    order: [['created_at', 'DESC']]
                 });
 
 

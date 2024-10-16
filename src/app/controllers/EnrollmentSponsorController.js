@@ -70,7 +70,7 @@ class EnrollmentsponsorController {
                     enrollment_id: enrollmentExists.id,
                     canceled_at: null
                 },
-                order: [['id', 'DESC']]
+                order: [['created_at', 'DESC']]
             })
 
             await Enrollmentsponsor.update({ ...req.body, updated_by: 2, updated_at: new Date() }, {

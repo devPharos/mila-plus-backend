@@ -376,7 +376,6 @@ class ProspectController {
       const { crypt } = req.body;
 
       const student = await Student.findByPk(crypt)
-      const sub_status = await Processsubstatus.findByPk(student.processsubstatus_id);
       const enrollment = await Enrollment.findOne({
         where: {
           student_id: student.id,
@@ -395,8 +394,10 @@ class ProspectController {
           enrollment_id: enrollment.id,
           canceled_at: null
         },
-        order: [['id', 'DESC']]
+        order: [['created_at', 'DESC']]
       })
+
+      console.log(lastTimeline)
 
       const { processtype_id, status, processsubstatus_id, step_status, phase_step } = lastTimeline.dataValues;
 
@@ -481,7 +482,6 @@ class ProspectController {
 
       // Validar para não replicar a mesma timeline em caso de reenvio de e-mail
       if (step_status !== nextTimeline.step_status) {
-        console.log(step_status)
         promise.push(await Enrollmenttimeline.create({
           enrollment_id: enrollment.id,
           processtype_id,
