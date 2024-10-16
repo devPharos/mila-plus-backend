@@ -10,8 +10,6 @@
         "queue": "nodemon src/queue.js",
         "format:check": "prettier --check .",
         "format:write": "prettier --write .",
-        "lint:check": "eslint .",
-        "lint:fix": "eslint --fix .",
         "db:mi": "sequelize-cli migration:generate --name",
         "migrate": "sequelize-cli db:migrate",
         "db:rollback": "NODE_ENV=development sequelize-cli db:migrate:undo:all",
