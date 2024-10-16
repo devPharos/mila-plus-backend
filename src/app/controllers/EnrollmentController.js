@@ -118,7 +118,7 @@ class EnrollmentController {
             if (activeMenu === 'transfer-request' && lastActiveMenu.name === 'transfer-request') {
                 nextStep = 'transfer-dso';
                 nextTimeline = {
-                    phase: 'Student Application',
+                    phase: 'Transfer Eligibility',
                     phase_step: 'Transfer form link has Sent to the DSO',
                     step_status: `Form filling has not been started yet.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
@@ -128,7 +128,7 @@ class EnrollmentController {
             } else if (activeMenu === 'transfer-dso' && lastActiveMenu.name === 'transfer-dso') {
                 nextStep = 'transfer-agent';
                 nextTimeline = {
-                    phase: 'Student Application',
+                    phase: 'Transfer Eligibility',
                     phase_step: 'DSO Signature',
                     step_status: `Form filling has been finished by the DSO`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
