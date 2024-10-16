@@ -1,10 +1,12 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
+import File from '../models/File';
 import Filial from '../models/Filial';
 import FilialPriceList from '../models/FilialPriceList';
 import FilialDiscountList from '../models/FilialDiscountList';
 import Filialtype from '../models/Filialtype';
+import Document from '../models/Document';
 import Milauser from '../models/Milauser';
 import UserGroupXUser from '../models/UserGroupXUser';
 import UserXFilial from '../models/UserXFilial';
@@ -12,6 +14,7 @@ import Processsubstatus from '../models/Processsubstatus';
 import { mailer } from '../../config/mailer';
 import { BASEURL, randomString } from '../functions';
 import MailLayout from '../../Mails/MailLayout';
+import Filialdocument from '../models/Filialdocument';
 const { Op } = Sequelize;
 
 class FilialController {
@@ -58,6 +61,34 @@ class FilialController {
             as: 'administrator',
             required: false,
             attributes: ['id', 'name', 'email']
+          }, {
+            model: Filialdocument,
+            as: 'filialdocuments',
+            required: false,
+            include: [
+              {
+                model: File,
+                as: 'file',
+                required: false,
+                include: [
+                  {
+                    model: Document,
+                    as: 'document',
+                    required: false,
+                    where: {
+                      canceled_at: null,
+                    }
+                  }
+                ],
+                where: {
+                  canceled_at: null,
+                  registry_type: 'Branches',
+                }
+              }
+            ],
+            where: {
+              canceled_at: null,
+            }
           }
         ]
       })
@@ -243,15 +274,14 @@ class FilialController {
         const pricesToUpdate = req.body.pricelists.filter(pricelist => pricelist.id)
 
         pricesToCreate.map((newPrice) => {
-          const { processsubstatus_id, tuition, book, registration_fee, active } = newPrice;
-          promises.push(FilialPriceList.create({ filial_id: filial.id, processsubstatus_id, tuition, book, registration_fee, active, created_by: req.userId, created_at: new Date() }, {
+          delete newPrice.id;
+          promises.push(FilialPriceList.create({ filial_id: filial.id, ...newPrice, created_by: req.userId, created_at: new Date() }, {
             transaction: t
           }))
         })
 
         pricesToUpdate.map((updPrice) => {
-          const { processsubstatus_id, tuition, book, registration_fee, active } = updPrice;
-          promises.push(FilialPriceList.update({ filial_id: filial.id, processsubstatus_id, tuition, book, registration_fee, active, updated_by: req.userId, updated_at: new Date() }, {
+          promises.push(FilialPriceList.update({ filial_id: filial.id, ...updPrice, updated_by: req.userId, updated_at: new Date() }, {
             where: {
               id: updPrice.id
             },
@@ -266,15 +296,14 @@ class FilialController {
         const discountsToUpdate = req.body.discountlists.filter(discount => discount.id)
 
         discountsToCreate.map((newDiscount) => {
-          const { type, name, value, percent, all_installments, free_vacation, special_discount, active } = newDiscount;
-          promises.push(FilialDiscountList.create({ filial_id: filial.id, type, name, value, percent, all_installments, free_vacation, special_discount, active, created_by: req.userId, created_at: new Date() }, {
+          delete newDiscount.id;
+          promises.push(FilialDiscountList.create({ filial_id: filial.id, ...newDiscount, created_by: req.userId, created_at: new Date() }, {
             transaction: t
           }))
         })
 
         discountsToUpdate.map((updDiscount) => {
-          const { type, name, value, percent, all_installments, free_vacation, special_discount, active } = updDiscount;
-          promises.push(FilialDiscountList.update({ filial_id: filial.id, type, name, value, percent, all_installments, free_vacation, special_discount, active, updated_by: req.userId, updated_at: new Date() }, {
+          promises.push(FilialDiscountList.update({ filial_id: filial.id, ...updDiscount, updated_by: req.userId, updated_at: new Date() }, {
             where: {
               id: updDiscount.id
             },

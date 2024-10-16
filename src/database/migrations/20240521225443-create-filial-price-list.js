@@ -23,12 +23,19 @@ module.exports = {
       },
       tuition: {
         type: Sequelize.FLOAT,
+        defaultValue: 0,
+      },
+      tuition_in_advance: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
       },
       book: {
         type: Sequelize.FLOAT,
+        defaultValue: 0,
       },
       registration_fee: {
         type: Sequelize.FLOAT,
+        defaultValue: 0,
       },
       active: {
         type: Sequelize.BOOLEAN,

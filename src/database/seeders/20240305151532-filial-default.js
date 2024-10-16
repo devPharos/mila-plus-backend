@@ -37,6 +37,8 @@ module.exports = {
       sendmail_port: 587,
       sendmail_password: '12345678',
       sendmail_name: 'Info - MILA Orlando',
+      financial_support_student_amount: 1058,
+      financial_support_dependent_amount: 400,
       active: true,
       created_at: new Date(),
       created_by: 1

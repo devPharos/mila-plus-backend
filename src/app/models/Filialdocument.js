@@ -1,6 +1,6 @@
 import Sequelize, { Model } from 'sequelize';
 
-class FilialPriceList extends Model {
+class Filialdocument extends Model {
     static init(sequelize) {
         super.init(
             {
@@ -9,13 +9,10 @@ class FilialPriceList extends Model {
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true
                 },
+                company_id: Sequelize.INTEGER,
+                file_id: Sequelize.UUID,
                 filial_id: Sequelize.INTEGER,
-                processsubstatus_id: Sequelize.INTEGER,
-                tuition: Sequelize.FLOAT,
-                tuition_in_advance: Sequelize.BOOLEAN,
-                book: Sequelize.FLOAT,
-                registration_fee: Sequelize.FLOAT,
-                active: Sequelize.BOOLEAN,
+                document_id: Sequelize.INTEGER,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -33,8 +30,9 @@ class FilialPriceList extends Model {
 
     static associate(models) {
         this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filials' });
-        this.belongsTo(models.Processsubstatus, { foreignKey: 'processsubstatus_id', as: 'processsubstatuses' });
+        this.belongsTo(models.Document, { foreignKey: 'document_id', as: 'documents' });
+        this.belongsTo(models.File, { foreignKey: 'file_id', as: 'file' });
     }
 }
 
-export default FilialPriceList;
+export default Filialdocument;

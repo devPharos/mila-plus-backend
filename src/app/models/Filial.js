@@ -82,6 +82,7 @@ class Filial extends Model {
       sourceKey: 'canceled_by',
       as: 'canceled',
     });
+    this.hasMany(models.Filialdocument, { foreignKey: 'filial_id', as: 'filialdocuments' });
   }
 }
 

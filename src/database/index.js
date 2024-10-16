@@ -37,6 +37,7 @@ import Enrollmenttimeline from '../app/models/Enrollmenttimeline';
 import Enrollmenttransfer from '../app/models/Enrollmenttransfer';
 import Processtype from '../app/models/Processtype';
 import Processsubstatus from '../app/models/Processsubstatus';
+import Filialdocument from '../app/models/Filialdocument';
 // import UserGroup from '../app/models/usergroup'
 
 const models = [
@@ -60,6 +61,7 @@ const models = [
   Filialtype,
   FilialPriceList,
   FilialDiscountList,
+  Filialdocument,
   Parameter,
   Language,
   Languagemode,

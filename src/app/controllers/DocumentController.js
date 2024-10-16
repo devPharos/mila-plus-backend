@@ -107,11 +107,22 @@ class DocumentController {
 
     async showByOriginTypeSubtype(req, res) {
         try {
-            const { origin, type, subtype } = req.query;
-            console.log({ origin, type, subtype })
-            const documents = await Document.findAll({
-                where: { origin, type, subtype, canceled_at: null },
-            });
+            const { origin = null, type = null, subtype = null } = req.query;
+            let documents = [];
+            if (origin && type && subtype) {
+
+                documents = await Document.findAll({
+                    where: { origin, type, subtype, canceled_at: null },
+                });
+            } else if (origin && type) {
+                documents = await Document.findAll({
+                    where: { origin, type, canceled_at: null },
+                });
+            } else if (origin) {
+                documents = await Document.findAll({
+                    where: { origin, canceled_at: null },
+                });
+            }
 
             if (!documents) {
                 return res.status(400).json({

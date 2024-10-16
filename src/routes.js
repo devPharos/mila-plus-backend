@@ -32,6 +32,7 @@ import ProcessTypeController from './app/controllers/ProcessTypeController';
 import ProcessSubstatusController from './app/controllers/ProcessSubstatusController';
 import EnrollmentDocumentController from './app/controllers/EnrollmentDocumentController';
 import EnrollmentSponsorController from './app/controllers/EnrollmentSponsorController';
+import FilialDocumentController from './app/controllers/FilialDocumentController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
@@ -82,6 +83,9 @@ routes.put('/processsubstatuses/:processsubstatus_id', ProcessSubstatusControlle
 routes.get('/companies', CompanyController.index);
 routes.get('/filials', FilialController.index);
 routes.get('/filials/:filial_id', FilialController.show);
+
+routes.post('/filialdocuments', FilialDocumentController.store);
+routes.delete('/filialdocuments/:filialDocument_id', FilialDocumentController.inactivate);
 
 routes.get('/users', MilaUserController.index);
 routes.get('/users/:user_id', MilaUserController.show);

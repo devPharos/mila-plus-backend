@@ -175,20 +175,16 @@ class EnrollmentController {
                         created_by: 2
                     }
                 } else {
-                    nextStep = 'payment';
+                    nextStep = 'finished';
                     nextTimeline = {
                         phase: 'Student Application',
-                        phase_step: 'Payment Process',
-                        step_status: `Payment pending.`,
+                        phase_step: 'Enrollment process',
+                        step_status: `Finished.`,
                         expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
                         created_at: new Date(),
                         created_by: 2
                     }
                 }
-            } else {
-                return res.status(400).json({
-                    error: 'activeMenu not valid.'
-                });
             }
 
             if (req.body.enrollmentemergencies && req.body.enrollmentemergencies.length > 0) {
@@ -254,7 +250,6 @@ class EnrollmentController {
                 }
             }
 
-            console.log(0)
             if (req.body.enrollmenttransfers && req.body.enrollmenttransfers.previous_school_name) {
                 console.log(1)
                 const existingTransfers = await Enrollmenttransfers.findOne({
@@ -263,7 +258,6 @@ class EnrollmentController {
                         canceled_at: null
                     }
                 })
-                console.log(2)
                 if (existingTransfers) {
                     console.log(req.body.enrollmenttransfers)
                     promises.push(existingTransfers.update({
@@ -327,7 +321,7 @@ class EnrollmentController {
 
                             const title = `Transfer Eligibility Form - DSO`;
                             const content = `<p>Dear ${sponsor.dataValues.name},</p>
-                                            <p>You have been asked to please complete the <strong>Enrollment Form - Sponsors</strong>, related to the student <strong>${enrollmentExists.students.name} ${enrollmentExists.students.last_name}</strong>.</p>
+                                            <p>You have been asked to please complete the <strong>Enrollment Form - Sponsors</strong>, related to the student <strong>${studentExists.name} ${studentExists.last_name}</strong>.</p>
                                             <br/>
                                             <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Sponsor?crypt=${sponsor.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
                             mailer.sendMail({

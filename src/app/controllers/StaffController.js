@@ -71,7 +71,7 @@ class StaffController {
 
                     if (fileCreated) {
 
-                        await StaffDocument.create({
+                        await Staffdocument.create({
                             company_id: req.companyId,
                             staff_id,
                             file_id: fileCreated.id,

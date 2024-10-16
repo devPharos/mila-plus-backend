@@ -1,23 +1,23 @@
 import Sequelize from 'sequelize';
 import MailLog from '../../Mails/MailLog';
 import databaseConfig from '../../config/database';
-import Staffdocument from '../models/Staffdocument';
+import Filialdocument from '../models/Filialdocument';
 import File from '../models/File';
-import Staff from '../models/Staff';
+import Filial from '../models/Filial';
 
 const { Op } = Sequelize;
 
-class StaffDocumentController {
+class FilialDocumentController {
     async store(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction();
         try {
 
-            const { files, staff_id } = req.body;
+            const { files, filial_id } = req.body;
 
-            const staffExists = await Staff.findByPk(staff_id);
-            if (!staffExists) {
-                return res.status(401).json({ error: 'staff does not exist.' });
+            const filialExist = await Filial.findByPk(filial_id);
+            if (!filialExist) {
+                return res.status(401).json({ error: 'Filial does not exist.' });
             }
 
             if (files) {
@@ -27,8 +27,8 @@ class StaffDocumentController {
                     size: files.size || 0,
                     url: files.url,
                     key: files.key,
-                    registry_type: 'Staff',
-                    registry_uuidkey: staff_id,
+                    registry_type: 'Branches',
+                    registry_idkey: filial_id,
                     document_id: files.document_id,
                     created_by: req.userId || 2,
                     created_at: new Date(),
@@ -38,9 +38,9 @@ class StaffDocumentController {
 
                 if (fileCreated) {
 
-                    await Staffdocument.create({
+                    await Filialdocument.create({
                         company_id: req.companyId || 1,
-                        staff_id,
+                        filial_id,
                         file_id: fileCreated.id,
                         document_id: files.document_id,
                         created_by: req.userId || 2,
@@ -48,7 +48,7 @@ class StaffDocumentController {
                     }, { transaction: t })
                 }
                 t.commit();
-                return res.status(201).json(staffExists);
+                return res.status(201).json(filialExist);
             }
             t.commit();
 
@@ -56,7 +56,7 @@ class StaffDocumentController {
                 error: 'No files were provided.',
             });
         } catch (err) {
-            const className = 'StaffDocumentController';
+            const className = 'FilialDocumentController';
             const functionName = 'store';
             MailLog({ className, functionName, req, err })
             await t.rollback();
@@ -70,8 +70,8 @@ class StaffDocumentController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction();
         try {
-            const { staffDocument_id } = req.params;
-            const document = await Staffdocument.findByPk(staffDocument_id, {
+            const { filialDocument_id } = req.params;
+            const document = await Filialdocument.findByPk(filialDocument_id, {
                 where: { canceled_at: null },
             });
 
@@ -99,7 +99,7 @@ class StaffDocumentController {
 
         } catch (err) {
             await t.rollback();
-            const className = 'StaffDocumentController';
+            const className = 'FilialDocumentController';
             const functionName = 'inactivate';
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -110,4 +110,4 @@ class StaffDocumentController {
     }
 }
 
-export default new StaffDocumentController();
+export default new FilialDocumentController();
