@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class Staffdocument extends Model {
     static init(sequelize) {
@@ -7,7 +7,7 @@ class Staffdocument extends Model {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
-                    primaryKey: true
+                    primaryKey: true,
                 },
                 company_id: Sequelize.INTEGER,
                 file_id: Sequelize.UUID,
@@ -23,16 +23,19 @@ class Staffdocument extends Model {
             {
                 sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
-        this.belongsTo(models.Staff, { foreignKey: 'staff_id', as: 'staffs' });
-        this.belongsTo(models.Document, { foreignKey: 'document_id', as: 'documents' });
-        this.belongsTo(models.File, { foreignKey: 'file_id', as: 'file' });
+        this.belongsTo(models.Staff, { foreignKey: 'staff_id', as: 'staffs' })
+        this.belongsTo(models.Document, {
+            foreignKey: 'document_id',
+            as: 'documents',
+        })
+        this.belongsTo(models.File, { foreignKey: 'file_id', as: 'file' })
     }
 }
 
-export default Staffdocument;
+export default Staffdocument

@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class Document extends Model {
     static init(sequelize) {
@@ -7,7 +7,7 @@ class Document extends Model {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
-                    primaryKey: true
+                    primaryKey: true,
                 },
                 company_id: Sequelize.INTEGER,
                 origin: Sequelize.STRING,
@@ -28,10 +28,10 @@ class Document extends Model {
             {
                 sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
 }
 
-export default Document;
+export default Document

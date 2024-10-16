@@ -1,42 +1,48 @@
 {
-  "name": "mila-plus",
-  "version": "1.0.3",
-  "main": "index.js",
-  "license": "MIT",
-  "scripts": {
-    "dev": "set NODE_ENV=development && nodemon src/server.js",
-    "prod": "set NODE_ENV=production && nodemon src/server.js",
-    "dev:debug": "set NODE_ENV=development && nodemon --inspect src/server.js",
-    "queue": "nodemon src/queue.js",
-    "db:mi": "sequelize-cli migration:generate --name",
-    "migrate": "sequelize-cli db:migrate",
-    "db:rollback": "NODE_ENV=development sequelize-cli db:migrate:undo:all",
-    "model:create": "sequelize-cli model:generate"
-  },
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "date-fns": "^3.6.0",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "firebase": "^10.13.0",
-    "https": "^1.0.0",
-    "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.9.14",
-    "pg": "^8.12.0",
-    "pg-hstore": "^2.3.4",
-    "react-firebase-hooks": "^5.1.1",
-    "sequelize": "^6.37.3",
-    "uuid": "^10.0.0",
-    "youch": "^3.3.3",
-    "yup": "^1.4.0"
-  },
-  "devDependencies": {
-    "eslint": "^9.5.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.29.1",
-    "nodemon": "^3.1.4",
-    "sequelize-cli": "^6.6.2",
-    "sucrase": "^3.35.0"
-  }
+    "name": "mila-plus",
+    "version": "1.0.3",
+    "main": "index.js",
+    "license": "MIT",
+    "scripts": {
+        "dev": "set NODE_ENV=development && nodemon src/server.js",
+        "prod": "set NODE_ENV=production && nodemon src/server.js",
+        "dev:debug": "set NODE_ENV=development && nodemon --inspect src/server.js",
+        "queue": "nodemon src/queue.js",
+        "format:check": "prettier --check .",
+        "format:write": "prettier --write .",
+        "lint:check": "eslint .",
+        "lint:fix": "eslint --fix .",
+        "db:mi": "sequelize-cli migration:generate --name",
+        "migrate": "sequelize-cli db:migrate",
+        "db:rollback": "NODE_ENV=development sequelize-cli db:migrate:undo:all",
+        "model:create": "sequelize-cli model:generate"
+    },
+    "dependencies": {
+        "bcryptjs": "^2.4.3",
+        "cors": "^2.8.5",
+        "date-fns": "^3.6.0",
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2",
+        "firebase": "^10.13.0",
+        "https": "^1.0.0",
+        "jsonwebtoken": "^9.0.2",
+        "nodemailer": "^6.9.14",
+        "pg": "^8.12.0",
+        "pg-hstore": "^2.3.4",
+        "react-firebase-hooks": "^5.1.1",
+        "sequelize": "^6.37.3",
+        "uuid": "^10.0.0",
+        "youch": "^3.3.3",
+        "yup": "^1.4.0"
+    },
+    "devDependencies": {
+        "eslint": "^9.12.0",
+        "eslint-config-airbnb-base": "^15.0.0",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-import": "^2.29.1",
+        "nodemon": "^3.1.4",
+        "prettier": "^3.3.3",
+        "sequelize-cli": "^6.6.2",
+        "sucrase": "^3.35.0"
+    }
 }

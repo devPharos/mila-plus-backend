@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
@@ -6,7 +6,7 @@ module.exports = {
             id: {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
-                primaryKey: true
+                primaryKey: true,
             },
             company_id: {
                 type: Sequelize.INTEGER,
@@ -28,38 +28,39 @@ module.exports = {
             },
             account: {
                 type: Sequelize.INTEGER,
-                allowNull: false
+                allowNull: false,
             },
             routing_number: {
                 type: Sequelize.INTEGER,
-                allowNull: false
-            },  created_at: {
-              allowNull: false,
-              type: Sequelize.DATE
+                allowNull: false,
+            },
+            created_at: {
+                allowNull: false,
+                type: Sequelize.DATE,
             },
             created_by: {
-              allowNull: false,
-              type: Sequelize.INTEGER
+                allowNull: false,
+                type: Sequelize.INTEGER,
             },
             updated_at: {
-              allowNull: true,
-              type: Sequelize.DATE
+                allowNull: true,
+                type: Sequelize.DATE,
             },
             updated_by: {
-              allowNull: true,
-              type: Sequelize.INTEGER
+                allowNull: true,
+                type: Sequelize.INTEGER,
             },
             canceled_at: {
-              allowNull: true,
-              type: Sequelize.DATE,
+                allowNull: true,
+                type: Sequelize.DATE,
             },
             canceled_by: {
-              allowNull: true,
-              type: Sequelize.INTEGER,
+                allowNull: true,
+                type: Sequelize.INTEGER,
             },
-        });
+        })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('bankaccounts');
-    }
-};
+        await queryInterface.dropTable('bankaccounts')
+    },
+}

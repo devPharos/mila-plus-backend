@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class MerchantXChartOfAccount extends Model {
     static init(sequelize) {
@@ -62,18 +62,26 @@ class MerchantXChartOfAccount extends Model {
                 sequelize,
                 tableName: 'merchantsxchartofaccounts', // Nome da tabela
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
-        this.belongsTo(models.Company, { foreignKey: 'company_id', as: 'company' });
-        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' });
-        this.belongsTo(models.Merchant, { foreignKey: 'merchant_id', as: 'merchant' });
-        this.belongsTo(models.ChartOfAccount, { foreignKey: 'chartofaccount_id', as: 'chartOfAccount' });
-
+        this.belongsTo(models.Company, {
+            foreignKey: 'company_id',
+            as: 'company',
+        })
+        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
+        this.belongsTo(models.Merchant, {
+            foreignKey: 'merchant_id',
+            as: 'merchant',
+        })
+        this.belongsTo(models.ChartOfAccount, {
+            foreignKey: 'chartofaccount_id',
+            as: 'chartOfAccount',
+        })
     }
 }
 
-export default MerchantXChartOfAccount;
+export default MerchantXChartOfAccount

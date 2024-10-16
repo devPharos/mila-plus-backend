@@ -1,4 +1,4 @@
-import { header_logo } from "./header_logo";
+import { header_logo } from './header_logo'
 
 export default function MailLayout({ title = '', content = '', filial = '' }) {
     return `<body style='background-color: #f3f4f6'>
@@ -14,5 +14,5 @@ export default function MailLayout({ title = '', content = '', filial = '' }) {
                         </div>
                     </div>
                 </div>
-              </body>`;
+              </body>`
 }

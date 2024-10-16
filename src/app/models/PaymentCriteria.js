@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class PaymentCriteria extends Model {
     static init(sequelize) {
@@ -78,16 +78,18 @@ class PaymentCriteria extends Model {
                 sequelize,
                 tableName: 'paymentcriterias', // Nome da tabela
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
-        this.belongsTo(models.Company, { foreignKey: 'company_id', as: 'company' });
-        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' });
-
+        this.belongsTo(models.Company, {
+            foreignKey: 'company_id',
+            as: 'company',
+        })
+        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
     }
 }
 
-export default PaymentCriteria;
+export default PaymentCriteria

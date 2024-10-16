@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
@@ -6,7 +6,7 @@ module.exports = {
             id: {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
-                primaryKey: true
+                primaryKey: true,
             },
             company_id: {
                 type: Sequelize.INTEGER,
@@ -22,124 +22,124 @@ module.exports = {
             },
             registration_number: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             name: {
                 type: Sequelize.STRING,
-                allowNull: false
+                allowNull: false,
             },
             middle_name: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             last_name: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             gender: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             marital_status: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             birth_country: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             birth_state: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             birth_city: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             native_language: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             citizen_country: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             state: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             city: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             zip: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             address: {
                 type: Sequelize.TEXT,
-                allowNull: true
+                allowNull: true,
             },
             foreign_address: {
                 type: Sequelize.TEXT,
-                allowNull: true
+                allowNull: true,
             },
             phone_ddi: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             phone: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             home_country_phone_ddi: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             home_country_phone: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             home_country_address: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             home_country_zip: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             home_country_city: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             home_country_state: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             home_country_country: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             whatsapp_ddi: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             whatsapp: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             email: {
                 type: Sequelize.STRING,
                 allowNull: false,
-                unique: true
+                unique: true,
             },
             date_of_birth: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             category: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             processtype_id: {
                 type: Sequelize.INTEGER,
@@ -149,7 +149,7 @@ module.exports = {
             },
             status: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             processsubstatus_id: {
                 type: Sequelize.INTEGER,
@@ -165,39 +165,39 @@ module.exports = {
             },
             preferred_contact_form: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             passport_number: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             passport_expiration_date: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             i94_expiration_date: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             visa_number: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             visa_expiration: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             nsevis: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             how_did_you_hear_about_us: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             preferred_shift: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             expected_level_id: {
                 type: Sequelize.UUID,
@@ -207,7 +207,7 @@ module.exports = {
             },
             shift: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             level_id: {
                 type: Sequelize.UUID,
@@ -223,7 +223,7 @@ module.exports = {
             },
             expected_start_date: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             email: {
                 type: Sequelize.STRING,
@@ -237,19 +237,19 @@ module.exports = {
             },
             created_at: {
                 allowNull: false,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             created_by: {
                 allowNull: false,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             updated_at: {
                 allowNull: true,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             updated_by: {
                 allowNull: true,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             canceled_at: {
                 allowNull: true,
@@ -259,9 +259,9 @@ module.exports = {
                 allowNull: true,
                 type: Sequelize.INTEGER,
             },
-        });
+        })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('students');
-    }
-};
+        await queryInterface.dropTable('students')
+    },
+}

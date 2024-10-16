@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
@@ -6,7 +6,7 @@ module.exports = {
             id: {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
-                primaryKey: true
+                primaryKey: true,
             },
             company_id: {
                 type: Sequelize.INTEGER,
@@ -22,58 +22,59 @@ module.exports = {
             },
             description: {
                 type: Sequelize.STRING,
-                allowNull: false
+                allowNull: false,
             },
             recurring_qt: {
                 type: Sequelize.INTEGER,
-                allowNull: true
+                allowNull: true,
             },
             recurring_metric: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             fee_qt: {
                 type: Sequelize.INTEGER,
-                allowNull: true
+                allowNull: true,
             },
             fee_metric: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             fee_type: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             fee_value: {
                 type: Sequelize.FLOAT,
-                allowNull: true
-            },  created_at: {
-              allowNull: false,
-              type: Sequelize.DATE
+                allowNull: true,
+            },
+            created_at: {
+                allowNull: false,
+                type: Sequelize.DATE,
             },
             created_by: {
-              allowNull: false,
-              type: Sequelize.INTEGER
+                allowNull: false,
+                type: Sequelize.INTEGER,
             },
             updated_at: {
-              allowNull: true,
-              type: Sequelize.DATE
+                allowNull: true,
+                type: Sequelize.DATE,
             },
             updated_by: {
-              allowNull: true,
-              type: Sequelize.INTEGER
+                allowNull: true,
+                type: Sequelize.INTEGER,
             },
             canceled_at: {
-              allowNull: true,
-              type: Sequelize.DATE,
+                allowNull: true,
+                type: Sequelize.DATE,
             },
             canceled_by: {
-              allowNull: true,
-              type: Sequelize.INTEGER,
+                allowNull: true,
+                type: Sequelize.INTEGER,
             },
-        });
+        })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('paymentcriterias');
-    }
-};
+        await queryInterface.dropTable('paymentcriterias')
+    },
+}

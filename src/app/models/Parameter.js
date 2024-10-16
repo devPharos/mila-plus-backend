@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class Parameter extends Model {
     static init(sequelize) {
@@ -7,7 +7,7 @@ class Parameter extends Model {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
-                    primaryKey: true
+                    primaryKey: true,
                 },
                 company_id: Sequelize.INTEGER,
                 filial_id: Sequelize.INTEGER,
@@ -22,12 +22,12 @@ class Parameter extends Model {
                 canceled_at: Sequelize.DATE,
             },
             {
-                sequelize
+                sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
 }
 
-export default Parameter;
+export default Parameter

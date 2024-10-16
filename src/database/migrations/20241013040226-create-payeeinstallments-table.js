@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
@@ -6,83 +6,83 @@ module.exports = {
             id: {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
-                primaryKey: true
+                primaryKey: true,
             },
             payee_id: {
                 type: Sequelize.UUID,
                 allowNull: false,
-                references: { model: 'payees', key: 'id' }
+                references: { model: 'payees', key: 'id' },
             },
             installment: {
                 type: Sequelize.INTEGER,
-                allowNull: false
+                allowNull: false,
             },
             amount: {
                 type: Sequelize.FLOAT,
-                allowNull: false
+                allowNull: false,
             },
             fee: {
                 type: Sequelize.FLOAT,
-                allowNull: false
+                allowNull: false,
             },
             total: {
                 type: Sequelize.FLOAT,
-                allowNull: false
+                allowNull: false,
             },
             paymentmethod_id: {
                 type: Sequelize.UUID,
                 allowNull: false,
-                references: { model: 'paymentmethods', key: 'id' }
+                references: { model: 'paymentmethods', key: 'id' },
             },
             status: {
                 type: Sequelize.STRING,
-                allowNull: false
+                allowNull: false,
             },
             status_date: {
                 type: Sequelize.STRING,
-                allowNull: false
+                allowNull: false,
             },
             authorization_code: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             chartofaccount_id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
-                references: { model: 'chartofaccounts', key: 'id' }
+                references: { model: 'chartofaccounts', key: 'id' },
             },
             paymentcriteria_id: {
                 type: Sequelize.UUID,
                 allowNull: false,
-                references: { model: 'paymentcriterias', key: 'id' }
+                references: { model: 'paymentcriterias', key: 'id' },
             },
             created_at: {
                 allowNull: false,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             created_by: {
                 allowNull: false,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             updated_at: {
                 allowNull: true,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             updated_by: {
                 allowNull: true,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             canceled_at: {
                 allowNull: true,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             canceled_by: {
                 allowNull: true,
-                type: Sequelize.INTEGER
-            }
-        });
+                type: Sequelize.INTEGER,
+            },
+        })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('payeeinstallments');
-    }
-};
+        await queryInterface.dropTable('payeeinstallments')
+    },
+}

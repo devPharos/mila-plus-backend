@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 
 /** @type {import('sequelize-cli').Migration} */
 
@@ -9,7 +9,7 @@ module.exports = {
                 allowNull: false,
                 autoIncrement: true,
                 primaryKey: true,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             company_id: {
                 type: Sequelize.INTEGER,
@@ -23,11 +23,11 @@ module.exports = {
             },
             name: {
                 type: Sequelize.STRING,
-                allowNull: false
+                allowNull: false,
             },
             visibility: {
                 type: Sequelize.STRING,
-                allowNull: false
+                allowNull: false,
             },
             father_id: {
                 type: Sequelize.INTEGER,
@@ -37,7 +37,7 @@ module.exports = {
             },
             created_at: {
                 allowNull: true,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             created_by: {
                 type: Sequelize.INTEGER,
@@ -45,7 +45,7 @@ module.exports = {
             },
             updated_at: {
                 allowNull: true,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             updated_by: {
                 type: Sequelize.INTEGER,
@@ -58,10 +58,10 @@ module.exports = {
             canceled_by: {
                 type: Sequelize.INTEGER,
                 allowNull: true,
-            }
-        });
+            },
+        })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('chartofaccounts');
-    }
-};
+        await queryInterface.dropTable('chartofaccounts')
+    },
+}

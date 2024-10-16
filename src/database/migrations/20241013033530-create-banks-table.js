@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
@@ -7,7 +7,7 @@ module.exports = {
                 type: Sequelize.INTEGER,
                 primaryKey: true,
                 allowNull: false,
-                autoIncrement: true
+                autoIncrement: true,
             },
             company_id: {
                 type: Sequelize.INTEGER,
@@ -17,38 +17,39 @@ module.exports = {
             },
             bank_alias: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             bank_name: {
                 type: Sequelize.STRING,
-                allowNull: true
-            },  created_at: {
-              allowNull: false,
-              type: Sequelize.DATE
+                allowNull: true,
+            },
+            created_at: {
+                allowNull: false,
+                type: Sequelize.DATE,
             },
             created_by: {
-              allowNull: false,
-              type: Sequelize.INTEGER
+                allowNull: false,
+                type: Sequelize.INTEGER,
             },
             updated_at: {
-              allowNull: true,
-              type: Sequelize.DATE
+                allowNull: true,
+                type: Sequelize.DATE,
             },
             updated_by: {
-              allowNull: true,
-              type: Sequelize.INTEGER
+                allowNull: true,
+                type: Sequelize.INTEGER,
             },
             canceled_at: {
-              allowNull: true,
-              type: Sequelize.DATE,
+                allowNull: true,
+                type: Sequelize.DATE,
             },
             canceled_by: {
-              allowNull: true,
-              type: Sequelize.INTEGER,
+                allowNull: true,
+                type: Sequelize.INTEGER,
             },
-        });
+        })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('banks');
-    }
-};
+        await queryInterface.dropTable('banks')
+    },
+}

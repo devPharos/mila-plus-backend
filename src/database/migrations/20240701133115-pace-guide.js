@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 
 /** @type {import('sequelize-cli').Migration} */
 
@@ -8,7 +8,7 @@ module.exports = {
             id: {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
-                primaryKey: true
+                primaryKey: true,
             },
             company_id: {
                 type: Sequelize.INTEGER,
@@ -24,19 +24,19 @@ module.exports = {
             },
             day: {
                 allowNull: false,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             type: {
                 allowNull: false,
-                type: Sequelize.STRING
+                type: Sequelize.STRING,
             },
             description: {
                 allowNull: false,
-                type: Sequelize.STRING
+                type: Sequelize.STRING,
             },
             created_at: {
                 allowNull: false,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             created_by: {
                 type: Sequelize.INTEGER,
@@ -44,7 +44,7 @@ module.exports = {
             },
             updated_at: {
                 allowNull: true,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             updated_by: {
                 type: Sequelize.INTEGER,
@@ -57,10 +57,10 @@ module.exports = {
             canceled_by: {
                 type: Sequelize.INTEGER,
                 allowNull: true,
-            }
-        });
+            },
+        })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('paceguides');
-    }
-};
+        await queryInterface.dropTable('paceguides')
+    },
+}

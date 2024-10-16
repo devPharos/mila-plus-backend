@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class Languagemode extends Model {
     static init(sequelize) {
@@ -7,7 +7,7 @@ class Languagemode extends Model {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
-                    primaryKey: true
+                    primaryKey: true,
                 },
                 company_id: Sequelize.INTEGER,
                 name: Sequelize.STRING,
@@ -19,12 +19,12 @@ class Languagemode extends Model {
                 canceled_at: Sequelize.DATE,
             },
             {
-                sequelize
+                sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
 }
 
-export default Languagemode;
+export default Languagemode

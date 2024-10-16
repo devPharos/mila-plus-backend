@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
@@ -7,7 +7,7 @@ module.exports = {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
                 allowNull: false,
-                primaryKey: true
+                primaryKey: true,
             },
             enrollment_id: {
                 type: Sequelize.UUID,
@@ -17,39 +17,39 @@ module.exports = {
             },
             previous_school_id: {
                 type: Sequelize.INTEGER,
-                allowNull: true
+                allowNull: true,
             },
             previous_school_name: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             previous_school_dso_name: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             previous_school_dso_email: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             previous_school_phone: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             previous_school_address: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             previous_school_zip: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             previous_school_city: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             previous_school_state: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             is_last_school: {
                 type: Sequelize.BOOLEAN,
@@ -57,11 +57,11 @@ module.exports = {
             },
             attendance_date_from: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             attendance_date_to: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             has_student_maintained_full_time_studies: {
                 type: Sequelize.BOOLEAN,
@@ -73,7 +73,7 @@ module.exports = {
             },
             transfer_release_date: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             uppon_acceptance: {
                 type: Sequelize.BOOLEAN,
@@ -81,7 +81,7 @@ module.exports = {
             },
             comments: {
                 type: Sequelize.TEXT,
-                allowNull: true
+                allowNull: true,
             },
             dso_signature: {
                 type: Sequelize.UUID,
@@ -89,19 +89,19 @@ module.exports = {
             },
             created_at: {
                 allowNull: false,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             created_by: {
                 allowNull: false,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             updated_at: {
                 allowNull: true,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             updated_by: {
                 allowNull: true,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             canceled_at: {
                 allowNull: true,
@@ -111,9 +111,9 @@ module.exports = {
                 allowNull: true,
                 type: Sequelize.INTEGER,
             },
-        });
+        })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('enrollmenttransfers');
-    }
-};
+        await queryInterface.dropTable('enrollmenttransfers')
+    },
+}

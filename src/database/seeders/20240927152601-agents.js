@@ -1,5 +1,5 @@
 module.exports = {
-    up: queryInterface => {
+    up: (queryInterface) => {
         return queryInterface.bulkInsert(
             'agents',
             [
@@ -10,14 +10,14 @@ module.exports = {
                     name: 'Agent Denis',
                     email: 'denis@pharosit.com.br',
                     created_by: 1,
-                    created_at: new Date()
+                    created_at: new Date(),
                 },
             ],
             {}
-        );
+        )
     },
 
-    down: queryInterface => {
-        return queryInterface.bulkDelete('agents', [], {});
+    down: (queryInterface) => {
+        return queryInterface.bulkDelete('agents', [], {})
     },
-};
+}

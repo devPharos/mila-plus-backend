@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class Enrollment extends Model {
     static init(sequelize) {
@@ -7,7 +7,7 @@ class Enrollment extends Model {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
-                    primaryKey: true
+                    primaryKey: true,
                 },
                 company_id: Sequelize.INTEGER,
                 filial_id: Sequelize.INTEGER,
@@ -36,49 +36,49 @@ class Enrollment extends Model {
             {
                 sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
         this.belongsTo(models.Student, {
             foreignKey: 'student_id',
             as: 'students',
-        });
+        })
         this.belongsTo(models.Agent, {
             foreignKey: 'agent_id',
             as: 'agents',
-        });
+        })
         this.belongsTo(models.Filial, {
             foreignKey: 'filial_id',
             as: 'filial',
-        });
+        })
         this.hasMany(models.Enrollmentdocument, {
             foreignKey: 'enrollment_id',
             as: 'enrollmentdocuments',
-        });
+        })
         this.hasMany(models.Enrollmentdependent, {
             foreignKey: 'enrollment_id',
             as: 'enrollmentdependents',
-        });
+        })
         this.hasMany(models.Enrollmentemergency, {
             foreignKey: 'enrollment_id',
             as: 'enrollmentemergencies',
-        });
+        })
         this.hasMany(models.Enrollmentsponsor, {
             foreignKey: 'enrollment_id',
             as: 'enrollmentsponsors',
-        });
+        })
         this.hasMany(models.Enrollmenttimeline, {
             foreignKey: 'enrollment_id',
             as: 'enrollmenttimelines',
-        });
+        })
         this.hasOne(models.Enrollmenttransfer, {
             foreignKey: 'enrollment_id',
             as: 'enrollmenttransfers',
-        });
+        })
     }
 }
 
-export default Enrollment;
+export default Enrollment

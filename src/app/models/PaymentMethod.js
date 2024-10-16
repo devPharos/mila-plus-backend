@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class PaymentMethod extends Model {
     static init(sequelize) {
@@ -60,16 +60,22 @@ class PaymentMethod extends Model {
                 sequelize,
                 tableName: 'paymentmethods', // Nome da tabela
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
-        this.belongsTo(models.Company, { foreignKey: 'company_id', as: 'company' });
-        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' });
-        this.belongsTo(models.BankAccount, { foreignKey: 'bankaccount_id', as: 'bankAccount' });
+        this.belongsTo(models.Company, {
+            foreignKey: 'company_id',
+            as: 'company',
+        })
+        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
+        this.belongsTo(models.BankAccount, {
+            foreignKey: 'bankaccount_id',
+            as: 'bankAccount',
+        })
     }
 }
 
-export default PaymentMethod;
+export default PaymentMethod

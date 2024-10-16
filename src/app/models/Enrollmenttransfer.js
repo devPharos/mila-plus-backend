@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class Enrollmenttransfer extends Model {
     static init(sequelize) {
@@ -7,7 +7,7 @@ class Enrollmenttransfer extends Model {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
-                    primaryKey: true
+                    primaryKey: true,
                 },
                 enrollment_id: Sequelize.UUID,
                 previous_school_id: Sequelize.INTEGER,
@@ -38,17 +38,17 @@ class Enrollmenttransfer extends Model {
             {
                 sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
         this.belongsTo(models.Enrollment, {
             foreignKey: 'enrollment_id',
             as: 'enrollments',
-        });
+        })
     }
 }
 
-export default Enrollmenttransfer;
+export default Enrollmenttransfer

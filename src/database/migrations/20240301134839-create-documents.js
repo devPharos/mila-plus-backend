@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
@@ -6,7 +6,7 @@ module.exports = {
             id: {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
-                primaryKey: true
+                primaryKey: true,
             },
             company_id: {
                 type: Sequelize.INTEGER,
@@ -16,51 +16,51 @@ module.exports = {
             },
             origin: {
                 type: Sequelize.STRING,
-                allowNull: false
+                allowNull: false,
             },
             type: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             subtype: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             title: {
                 type: Sequelize.STRING,
-                allowNull: false
+                allowNull: false,
             },
             multiple: {
                 type: Sequelize.BOOLEAN,
-                defaultValue: true
+                defaultValue: true,
             },
             required: {
                 type: Sequelize.BOOLEAN,
-                defaultValue: false
+                defaultValue: false,
             },
             formats: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             sizelimit: {
                 type: Sequelize.FLOAT,
-                defaultValue: 0
+                defaultValue: 0,
             },
             created_at: {
                 allowNull: false,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             created_by: {
                 allowNull: false,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             updated_at: {
                 allowNull: true,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             updated_by: {
                 allowNull: true,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             canceled_at: {
                 allowNull: true,
@@ -70,9 +70,9 @@ module.exports = {
                 allowNull: true,
                 type: Sequelize.INTEGER,
             },
-        });
+        })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('documents');
-    }
-};
+        await queryInterface.dropTable('documents')
+    },
+}

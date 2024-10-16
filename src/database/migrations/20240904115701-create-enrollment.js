@@ -1,6 +1,6 @@
-'use strict';
+'use strict'
 
-const { DataTypes } = require('sequelize');
+const { DataTypes } = require('sequelize')
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -9,7 +9,7 @@ module.exports = {
             id: {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
-                primaryKey: true
+                primaryKey: true,
             },
             company_id: {
                 type: Sequelize.INTEGER,
@@ -32,11 +32,11 @@ module.exports = {
             form_step: {
                 type: Sequelize.STRING,
                 defaultValue: 'student-information',
-                allowNull: false
+                allowNull: false,
             },
             application: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             agent_id: {
                 type: Sequelize.UUID,
@@ -46,23 +46,23 @@ module.exports = {
             },
             notes: {
                 type: Sequelize.TEXT,
-                allowNull: true
+                allowNull: true,
             },
             admission_correspondence_address: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             plan_months: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             plan_schedule: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             plan_date: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             has_dependents: {
                 type: Sequelize.BOOLEAN,
@@ -78,31 +78,31 @@ module.exports = {
             },
             student_signature: {
                 type: Sequelize.UUID,
-                allowNull: true
+                allowNull: true,
             },
             guardian_name: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             guardian_signature: {
                 type: Sequelize.UUID,
-                allowNull: true
+                allowNull: true,
             },
             created_at: {
                 allowNull: false,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             created_by: {
                 allowNull: false,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             updated_at: {
                 allowNull: true,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             updated_by: {
                 allowNull: true,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             canceled_at: {
                 allowNull: true,
@@ -112,9 +112,9 @@ module.exports = {
                 allowNull: true,
                 type: Sequelize.INTEGER,
             },
-        });
+        })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('enrollments');
-    }
-};
+        await queryInterface.dropTable('enrollments')
+    },
+}

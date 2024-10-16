@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class FilialDiscountList extends Model {
     static init(sequelize) {
@@ -7,7 +7,7 @@ class FilialDiscountList extends Model {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
-                    primaryKey: true
+                    primaryKey: true,
                 },
                 filial_id: Sequelize.INTEGER,
                 name: Sequelize.STRING,
@@ -29,14 +29,17 @@ class FilialDiscountList extends Model {
             {
                 sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
-        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filials' });
+        this.belongsTo(models.Filial, {
+            foreignKey: 'filial_id',
+            as: 'filials',
+        })
     }
 }
 
-export default FilialDiscountList;
+export default FilialDiscountList

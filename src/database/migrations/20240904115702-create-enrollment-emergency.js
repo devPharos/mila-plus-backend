@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
@@ -7,7 +7,7 @@ module.exports = {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
                 allowNull: false,
-                primaryKey: true
+                primaryKey: true,
             },
             enrollment_id: {
                 type: Sequelize.UUID,
@@ -17,35 +17,35 @@ module.exports = {
             },
             name: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             relationship_type: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             email: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             phone: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             created_at: {
                 allowNull: false,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             created_by: {
                 allowNull: false,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             updated_at: {
                 allowNull: true,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             updated_by: {
                 allowNull: true,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             canceled_at: {
                 allowNull: true,
@@ -55,9 +55,9 @@ module.exports = {
                 allowNull: true,
                 type: Sequelize.INTEGER,
             },
-        });
+        })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('enrollmentemergencies');
-    }
-};
+        await queryInterface.dropTable('enrollmentemergencies')
+    },
+}

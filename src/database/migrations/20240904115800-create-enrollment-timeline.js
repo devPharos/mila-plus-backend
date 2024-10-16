@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
@@ -7,7 +7,7 @@ module.exports = {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
                 allowNull: false,
-                primaryKey: true
+                primaryKey: true,
             },
             enrollment_id: {
                 type: Sequelize.UUID,
@@ -23,7 +23,7 @@ module.exports = {
             },
             status: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             processsubstatus_id: {
                 type: Sequelize.INTEGER,
@@ -33,35 +33,35 @@ module.exports = {
             },
             phase: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             phase_step: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             step_status: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             expected_date: {
                 type: Sequelize.STRING,
-                allowNull: true
+                allowNull: true,
             },
             created_at: {
                 allowNull: false,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             created_by: {
                 allowNull: false,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             updated_at: {
                 allowNull: true,
-                type: Sequelize.DATE
+                type: Sequelize.DATE,
             },
             updated_by: {
                 allowNull: true,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
             },
             canceled_at: {
                 allowNull: true,
@@ -71,9 +71,9 @@ module.exports = {
                 allowNull: true,
                 type: Sequelize.INTEGER,
             },
-        });
+        })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('enrollmenttimelines');
-    }
-};
+        await queryInterface.dropTable('enrollmenttimelines')
+    },
+}

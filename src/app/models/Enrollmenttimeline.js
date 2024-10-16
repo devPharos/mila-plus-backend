@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 // Recreate
 class Enrollmenttimeline extends Model {
     static init(sequelize) {
@@ -7,7 +7,7 @@ class Enrollmenttimeline extends Model {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
-                    primaryKey: true
+                    primaryKey: true,
                 },
                 enrollment_id: Sequelize.UUID,
                 processtype_id: Sequelize.INTEGER,
@@ -27,25 +27,25 @@ class Enrollmenttimeline extends Model {
             {
                 sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
         this.belongsTo(models.Enrollment, {
             foreignKey: 'enrollment_id',
             as: 'enrollments',
-        });
+        })
         this.belongsTo(models.Processtype, {
             foreignKey: 'processtype_id',
             as: 'processtypes',
-        });
+        })
         this.belongsTo(models.Processsubstatus, {
             foreignKey: 'processsubstatus_id',
             as: 'processsubstatuses',
-        });
+        })
     }
 }
 
-export default Enrollmenttimeline;
+export default Enrollmenttimeline

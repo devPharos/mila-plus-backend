@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class Processsubstatus extends Model {
     static init(sequelize) {
@@ -14,16 +14,19 @@ class Processsubstatus extends Model {
                 canceled_at: Sequelize.DATE,
             },
             {
-                sequelize
+                sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
-        this.belongsTo(models.Processtype, { foreignKey: 'processtype_id', as: 'processtypes' });
+        this.belongsTo(models.Processtype, {
+            foreignKey: 'processtype_id',
+            as: 'processtypes',
+        })
     }
 }
 
-export default Processsubstatus;
+export default Processsubstatus

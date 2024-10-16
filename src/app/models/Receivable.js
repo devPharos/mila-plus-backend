@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class Receivable extends Model {
     static init(sequelize) {
@@ -118,16 +118,25 @@ class Receivable extends Model {
                 sequelize,
                 tableName: 'receivables', // Nome da tabela
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
-        this.belongsTo(models.PaymentMethod, { foreignKey: 'paymentmethod_id', as: 'paymentMethod' });
-        this.belongsTo(models.ChartOfAccount, { foreignKey: 'chartofaccount_id', as: 'chartOfAccount' });
-        this.belongsTo(models.PaymentCriteria, { foreignKey: 'paymentcriteria_id', as: 'paymentCriteria' });
+        this.belongsTo(models.PaymentMethod, {
+            foreignKey: 'paymentmethod_id',
+            as: 'paymentMethod',
+        })
+        this.belongsTo(models.ChartOfAccount, {
+            foreignKey: 'chartofaccount_id',
+            as: 'chartOfAccount',
+        })
+        this.belongsTo(models.PaymentCriteria, {
+            foreignKey: 'paymentcriteria_id',
+            as: 'paymentCriteria',
+        })
     }
 }
 
-export default Receivable;
+export default Receivable
