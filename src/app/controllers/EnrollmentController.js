@@ -137,7 +137,7 @@ class EnrollmentController {
                 }
             } else if (activeMenu === 'student-information' && lastActiveMenu.name === 'student-information') {
                 nextStep = 'emergency-contact';
-            } else if (activeMenu === 'transfer-agent' && lastActiveMenu.name === 'transfer-agent') {
+            } else if (activeMenu === 'student-information' && lastActiveMenu.name === 'transfer-agent') {
                 nextStep = 'emergency-contact';
             } else if (activeMenu === 'emergency-contact' && lastActiveMenu.name === 'emergency-contact') {
                 nextStep = 'enrollment-information';
