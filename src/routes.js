@@ -67,6 +67,7 @@ routes.post('/enrollmentstudentsignature', EnrollmentController.studentsignature
 routes.post('/enrollmentsponsorsignature', EnrollmentController.sponsorsignature);
 routes.post('/enrollmentdsosignature', EnrollmentController.dsosignature);
 routes.get('/filials', FilialController.index);
+routes.get('/filials/:filial_id', FilialController.show);
 
 // A partir daqui precisa de autenticação
 routes.use(authMiddleware);
@@ -82,7 +83,6 @@ routes.post('/processsubstatuses', ProcessSubstatusController.store);
 routes.put('/processsubstatuses/:processsubstatus_id', ProcessSubstatusController.update);
 
 routes.get('/companies', CompanyController.index);
-routes.get('/filials/:filial_id', FilialController.show);
 
 routes.post('/filialdocuments', FilialDocumentController.store);
 routes.delete('/filialdocuments/:filialDocument_id', FilialDocumentController.inactivate);
