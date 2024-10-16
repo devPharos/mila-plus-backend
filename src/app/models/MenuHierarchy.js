@@ -25,9 +25,10 @@ class MenuHierarchy extends Model {
   static associate(models) {
     this.hasMany(models.MenuHierarchy, {
       foreignKey: 'father_id',
+      as: 'children'
     });
     this.hasOne(models.MenuHierarchyXGroups, { foreignKey: 'access_id' });
-    this.belongsTo(models.UserGroup)
+    // this.belongsTo(models.UserGroup)
   }
 }
 

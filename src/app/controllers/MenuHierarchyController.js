@@ -22,28 +22,27 @@ class MenuHierarchyController {
     const hierarchy = await MenuHierarchy.findAll({
       include: [
         {
-          model: MenuHierarchyXGroups,
-          required: false,
-          where: {
-            group_id,
-            canceled_at: null
-          }
-        },
-        {
           model: MenuHierarchy,
-          required: false,
-          attributes: ['id', 'alias', 'name'],
+          as: 'children',
           include: [
+
             {
               model: MenuHierarchyXGroups,
-              required: false,
+              attributes: ['id', 'view', 'edit', 'create', 'inactivate'],
               where: {
                 group_id,
                 canceled_at: null
               }
             },
-          ],
+          ]
+        },
+        {
+          model: MenuHierarchyXGroups,
+          attributes: ['id', 'view', 'edit', 'create', 'inactivate'],
+          required: true,
           where: {
+            view: true,
+            group_id,
             canceled_at: null
           }
         },
@@ -52,8 +51,8 @@ class MenuHierarchyController {
         father_id: null,
         canceled_at: null
       },
-      attributes: ['id', 'alias', 'name'],
-      order: [['name'], [MenuHierarchy, 'name']]
+      attributes: ['alias', 'father_id', 'name'],
+      order: [['name'], ['children', 'name']]
     })
 
     return res.json(hierarchy);
@@ -86,10 +85,31 @@ class MenuHierarchyController {
       const hierarchy = await MenuHierarchy.findAll({
         include: [
           {
+            model: MenuHierarchy,
+            as: 'children',
+            required: true,
+            include: [
+
+              {
+                model: MenuHierarchyXGroups,
+                attributes: ['id', 'view', 'edit', 'create', 'inactivate'],
+                required: true,
+                where: {
+                  view: true,
+                  group_id: {
+                    [Op.in]: groupIds
+                  },
+                  canceled_at: null
+                }
+              },
+            ]
+          },
+          {
             model: MenuHierarchyXGroups,
             attributes: ['id', 'view', 'edit', 'create', 'inactivate'],
             required: true,
             where: {
+              view: true,
               group_id: {
                 [Op.in]: groupIds
               },
@@ -98,9 +118,10 @@ class MenuHierarchyController {
           },
         ],
         where: {
+          father_id: null,
           canceled_at: null
         },
-        attributes: ['alias', 'name']
+        attributes: ['alias', 'father_id', 'name']
       })
 
       return res.json({ hierarchy, groups });
