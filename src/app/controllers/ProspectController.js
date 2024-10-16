@@ -445,7 +445,7 @@ class ProspectController {
         page = 'Transfer';
         title = 'Transfer Form - Student';
         nextTimeline = {
-          phase: 'Student Application',
+          phase: 'Transfer Eligibility',
           phase_step: phase_step === 'DSO Signature' ? 'Form link has been sent to student' : 'Transfer form link has been sent to Student',
           step_status: `Form filling has not been started yet.`,
           expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
@@ -456,7 +456,7 @@ class ProspectController {
           page = 'Enrollment';
           title = 'Enrollment Form - Student';
           nextTimeline = {
-            phase: 'Transfer Eligibility',
+            phase: 'Student Application',
             phase_step: phase_step === 'DSO Signature' ? 'Form link has been sent to student' : 'Transfer form link has been sent to Student',
             step_status: `Form filling has not been started yet.`,
             expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
