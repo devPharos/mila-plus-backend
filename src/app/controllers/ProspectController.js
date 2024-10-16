@@ -444,10 +444,6 @@ class ProspectController {
       } else if (student.processsubstatus_id === 4) { // Transfer
         page = 'Transfer';
         title = 'Transfer Form - Student';
-        if (phase_step === 'DSO Signature') {
-          page = 'Enrollment';
-          title = 'Enrollment Form - Student';
-        }
         nextTimeline = {
           phase: 'Student Application',
           phase_step: phase_step === 'DSO Signature' ? 'Form link has been sent to student' : 'Transfer form link has been sent to Student',
@@ -455,6 +451,18 @@ class ProspectController {
           expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
           created_at: new Date(),
           created_by: req.userId || 2
+        }
+        if (phase_step === 'DSO Signature') {
+          page = 'Enrollment';
+          title = 'Enrollment Form - Student';
+          nextTimeline = {
+            phase: 'Transfer Eligibility',
+            phase_step: phase_step === 'DSO Signature' ? 'Form link has been sent to student' : 'Transfer form link has been sent to Student',
+            step_status: `Form filling has not been started yet.`,
+            expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+            created_at: new Date(),
+            created_by: req.userId || 2
+          }
         }
       } else if (student.processsubstatus_id === 5) { // Private
         page = 'Private';
