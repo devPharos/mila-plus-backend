@@ -449,7 +449,8 @@ class EnrollmentController {
                         required: false,
                         where: {
                             canceled_at: null
-                        }
+                        },
+                        order: [['created_at', 'DESC']]
                     },
                 ]
             })
