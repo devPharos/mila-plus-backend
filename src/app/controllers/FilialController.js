@@ -206,15 +206,15 @@ class FilialController {
           }).finally(() => {
             const title = `Account created`;
             const content = `<p>Dear ${name},</p>
-                            <p>Now you have access to Mila Plus system, please use these information on your first access:<br/>
+                            <p>Now you have access to MILA Plus system, please use these information on your first access:<br/>
                             E-mail: ${email}</br>
                             Password: ${password}</p>
                             <br/>
                             <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
             mailer.sendMail({
-              from: '"Mila Plus" <development@pharosit.com.br>',
+              from: '"MILA Plus" <development@pharosit.com.br>',
               to: sponsor.dataValues.email,
-              subject: `Mila Plus - ${title}`,
+              subject: `MILA Plus - ${title}`,
               html: MailLayout({ title, content, filial: newFilial.dataValues.name }),
             })
 
@@ -364,15 +364,15 @@ class FilialController {
 
               const title = `Account created`;
               const content = `<p>Dear ${name},</p>
-                              <p>Now you have access to Mila Plus system, please use these information on your first access:<br/>
+                              <p>Now you have access to MILA Plus system, please use these information on your first access:<br/>
                               E-mail: ${email}</br>
                               Password: ${password}</p>
                               <br/>
                               <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
               mailer.sendMail({
-                from: '"Mila Plus" <development@pharosit.com.br>',
+                from: '"MILA Plus" <development@pharosit.com.br>',
                 to: sponsor.dataValues.email,
-                subject: `Mila Plus - ${title}`,
+                subject: `MILA Plus - ${title}`,
                 html: MailLayout({ title, content, filial: filial.name }),
               })
             }).catch(err => {

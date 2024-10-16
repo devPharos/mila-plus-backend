@@ -325,9 +325,9 @@ class EnrollmentController {
                                             <br/>
                                             <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Sponsor?crypt=${sponsor.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
                             mailer.sendMail({
-                                from: '"Mila Plus" <development@pharosit.com.br>',
+                                from: '"MILA Plus" <development@pharosit.com.br>',
                                 to: sponsor.dataValues.email,
-                                subject: `Mila Plus - ${title}`,
+                                subject: `MILA Plus - ${title}`,
                                 html: MailLayout({ title, content, filial: filial.name }),
                             })
 
@@ -342,9 +342,9 @@ class EnrollmentController {
                                     <br/>
                                     <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/TransferDSO?crypt=${enrollmentExists.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
                         mailer.sendMail({
-                            from: '"Mila Plus" <development@pharosit.com.br>',
+                            from: '"MILA Plus" <development@pharosit.com.br>',
                             to: req.body.enrollmenttransfers.previous_school_dso_email,
-                            subject: `Mila Plus - ${title}`,
+                            subject: `MILA Plus - ${title}`,
                             html: MailLayout({ title, content, filial: filial.name }),
                         })
                     }
@@ -357,9 +357,9 @@ class EnrollmentController {
                                     <br/>
                                     <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/TransferDSO?crypt=${enrollmentExists.id}&activeMenu=transfer-dso" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
                     mailer.sendMail({
-                        from: '"Mila Plus" <development@pharosit.com.br>',
+                        from: '"MILA Plus" <development@pharosit.com.br>',
                         to: agent.dataValues.email,
-                        subject: `Mila Plus - ${title}`,
+                        subject: `MILA Plus - ${title}`,
                         html: MailLayout({ title, content, filial: filial.dataValues.name }),
                     })
                 }
