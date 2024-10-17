@@ -33,6 +33,7 @@ import ProcessSubstatusController from './app/controllers/ProcessSubstatusContro
 import EnrollmentDocumentController from './app/controllers/EnrollmentDocumentController'
 import EnrollmentSponsorController from './app/controllers/EnrollmentSponsorController'
 import BankAccountController from './app/controllers/BankAccountController'
+import FilialDocumentController from './app/controllers/FilialDocumentController'
 
 const routes = new Router()
 routes.post('/sessions', SessionController.store)
