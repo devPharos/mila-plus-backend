@@ -13,7 +13,8 @@
         "db:mi": "sequelize-cli migration:generate --name",
         "migrate": "sequelize-cli db:migrate",
         "db:rollback": "NODE_ENV=development sequelize-cli db:migrate:undo:all",
-        "model:create": "sequelize-cli model:generate"
+        "model:create": "sequelize-cli model:generate",
+        "seed" : "sequelize-cli db:seed:all"
     },
     "dependencies": {
         "bcryptjs": "^2.4.3",
