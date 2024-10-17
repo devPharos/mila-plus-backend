@@ -32,6 +32,7 @@ import ProcessTypeController from './app/controllers/ProcessTypeController'
 import ProcessSubstatusController from './app/controllers/ProcessSubstatusController'
 import EnrollmentDocumentController from './app/controllers/EnrollmentDocumentController'
 import EnrollmentSponsorController from './app/controllers/EnrollmentSponsorController'
+import BankAccountController from './app/controllers/BankAccountController'
 
 const routes = new Router()
 routes.post('/sessions', SessionController.store)
@@ -237,11 +238,19 @@ routes.delete(
 
 // routes.use(FilialValidation);
 
+// bank accounts
+routes.get('/bankaccounts', BankAccountController.index)
+routes.get('/bankaccounts/:bankAccount_id', BankAccountController.show)
+routes.post('/bankaccounts', BankAccountController.store)
+routes.put('/bankaccounts/:bankAccount_id', BankAccountController.update)
+routes.delete('/bankaccounts/:bankAccount_id', BankAccountController.delete)
+
+// users
 routes.post('/users', validateUserStore, MilaUserController.store)
 routes.post('/users/filial', MilaUserController.createUserToFilial)
-
 routes.put('/users/:user_id', MilaUserController.update)
 
+// prospects
 routes.post('/prospects', ProspectController.store)
 routes.put('/prospects/:prospect_id', ProspectController.update)
 routes.post('/prospects/formMail', ProspectController.formMail)
