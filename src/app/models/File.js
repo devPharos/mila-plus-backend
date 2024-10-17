@@ -30,8 +30,12 @@ class File extends Model {
             }
         )
 
-        return this
-    }
+    return this;
+  }
+
+  static associate(models) {
+    this.belongsTo(models.Document, { foreignKey: 'document_id', as: 'document' });
+  }
 }
 
 export default File

@@ -81,15 +81,11 @@ routes.delete(
     EnrollmentDocumentController.inactivate
 )
 
-routes.post(
-    '/enrollmentstudentsignature',
-    EnrollmentController.studentsignature
-)
-routes.post(
-    '/enrollmentsponsorsignature',
-    EnrollmentController.sponsorsignature
-)
-routes.post('/enrollmentdsosignature', EnrollmentController.dsosignature)
+routes.post('/enrollmentstudentsignature', EnrollmentController.studentsignature);
+routes.post('/enrollmentsponsorsignature', EnrollmentController.sponsorsignature);
+routes.post('/enrollmentdsosignature', EnrollmentController.dsosignature);
+routes.get('/filials', FilialController.index);
+routes.get('/filials/:filial_id', FilialController.show);
 
 // A partir daqui precisa de autenticação
 routes.use(authMiddleware)
@@ -110,9 +106,10 @@ routes.put(
     ProcessSubstatusController.update
 )
 
-routes.get('/companies', CompanyController.index)
-routes.get('/filials', FilialController.index)
-routes.get('/filials/:filial_id', FilialController.show)
+routes.get('/companies', CompanyController.index);
+
+routes.post('/filialdocuments', FilialDocumentController.store);
+routes.delete('/filialdocuments/:filialDocument_id', FilialDocumentController.inactivate);
 
 routes.get('/users', MilaUserController.index)
 routes.get('/users/:user_id', MilaUserController.show)

@@ -22,28 +22,32 @@ class MenuHierarchyController {
         const hierarchy = await MenuHierarchy.findAll({
             include: [
                 {
-                    model: MenuHierarchyXGroups,
-                    required: false,
-                    where: {
-                        group_id,
-                        canceled_at: null,
-                    },
-                },
-                {
                     model: MenuHierarchy,
-                    required: false,
-                    attributes: ['id', 'alias', 'name'],
+                    as: 'children',
                     include: [
                         {
                             model: MenuHierarchyXGroups,
-                            required: false,
+                            attributes: [
+                                'id',
+                                'view',
+                                'edit',
+                                'create',
+                                'inactivate',
+                            ],
                             where: {
                                 group_id,
                                 canceled_at: null,
                             },
                         },
                     ],
+                },
+                {
+                    model: MenuHierarchyXGroups,
+                    attributes: ['id', 'view', 'edit', 'create', 'inactivate'],
+                    required: true,
                     where: {
+                        view: true,
+                        group_id,
                         canceled_at: null,
                     },
                 },
@@ -52,11 +56,91 @@ class MenuHierarchyController {
                 father_id: null,
                 canceled_at: null,
             },
-            attributes: ['id', 'alias', 'name'],
-            order: [['name'], [MenuHierarchy, 'name']],
+            attributes: ['alias', 'father_id', 'name'],
+            order: [['name'], ['children', 'name']],
         })
 
         return res.json(hierarchy)
+    }
+
+    async hierarchyByUser(req, res) {
+        const { user_id } = req.params
+
+        const groups = await UserGroupXUser.findAll({
+            attributes: ['group_id'],
+            where: {
+                user_id,
+                canceled_at: null,
+            },
+            include: [
+                {
+                    model: UserGroup,
+                    as: 'group',
+                    attributes: ['name'],
+                },
+            ],
+            raw: false,
+        })
+
+        const promises = groups.map((group) => {
+            return group.group_id
+        })
+        Promise.all(promises).then(async (groupIds) => {
+            const hierarchy = await MenuHierarchy.findAll({
+                include: [
+                    {
+                        model: MenuHierarchy,
+                        as: 'children',
+                        required: true,
+                        include: [
+                            {
+                                model: MenuHierarchyXGroups,
+                                attributes: [
+                                    'id',
+                                    'view',
+                                    'edit',
+                                    'create',
+                                    'inactivate',
+                                ],
+                                required: true,
+                                where: {
+                                    view: true,
+                                    group_id: {
+                                        [Op.in]: groupIds,
+                                    },
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
+                    },
+                    {
+                        model: MenuHierarchyXGroups,
+                        attributes: [
+                            'id',
+                            'view',
+                            'edit',
+                            'create',
+                            'inactivate',
+                        ],
+                        required: true,
+                        where: {
+                            view: true,
+                            group_id: {
+                                [Op.in]: groupIds,
+                            },
+                            canceled_at: null,
+                        },
+                    },
+                ],
+                where: {
+                    father_id: null,
+                    canceled_at: null,
+                },
+                attributes: ['alias', 'father_id', 'name'],
+            })
+
+            return res.json(hierarchy)
+        })
     }
 
     async hierarchyByUser(req, res) {

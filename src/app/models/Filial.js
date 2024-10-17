@@ -55,37 +55,35 @@ class Filial extends Model {
         return this
     }
 
-    static associate(models) {
-        this.belongsTo(models.Company, {
-            foreignKey: 'company_id',
-            as: 'filials',
-        })
-        this.belongsTo(models.Filialtype, { foreignKey: 'filialtype_id' })
-        this.hasMany(models.FilialPriceList, {
-            foreignKey: 'filial_id',
-            as: 'pricelists',
-        })
-        this.hasMany(models.FilialDiscountList, {
-            foreignKey: 'filial_id',
-            as: 'discountlists',
-        })
-        this.belongsTo(models.Milauser, {
-            foreignKey: 'administrator_id',
-            as: 'administrator',
-        })
-        this.hasOne(models.Milauser, {
-            sourceKey: 'created_by',
-            as: 'created',
-        })
-        this.hasOne(models.Milauser, {
-            sourceKey: 'updated_by',
-            as: 'updated',
-        })
-        this.hasOne(models.Milauser, {
-            sourceKey: 'canceled_by',
-            as: 'canceled',
-        })
-    }
+  static associate(models) {
+    this.belongsTo(models.Company, { foreignKey: 'company_id', as: 'filials' });
+    this.belongsTo(models.Filialtype, { foreignKey: 'filialtype_id' });
+    this.hasMany(models.FilialPriceList, {
+      foreignKey: 'filial_id',
+      as: 'pricelists',
+    });
+    this.hasMany(models.FilialDiscountList, {
+      foreignKey: 'filial_id',
+      as: 'discountlists',
+    });
+    this.belongsTo(models.Milauser, {
+      foreignKey: 'administrator_id',
+      as: 'administrator',
+    });
+    this.hasOne(models.Milauser, {
+      sourceKey: 'created_by',
+      as: 'created',
+    });
+    this.hasOne(models.Milauser, {
+      sourceKey: 'updated_by',
+      as: 'updated',
+    });
+    this.hasOne(models.Milauser, {
+      sourceKey: 'canceled_by',
+      as: 'canceled',
+    });
+    this.hasMany(models.Filialdocument, { foreignKey: 'filial_id', as: 'filialdocuments' });
+  }
 }
 
 export default Filial

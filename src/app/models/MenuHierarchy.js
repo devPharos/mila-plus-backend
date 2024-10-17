@@ -22,13 +22,14 @@ class MenuHierarchy extends Model {
         return this
     }
 
-    static associate(models) {
-        this.hasMany(models.MenuHierarchy, {
-            foreignKey: 'father_id',
-        })
-        this.hasOne(models.MenuHierarchyXGroups, { foreignKey: 'access_id' })
-        this.belongsTo(models.UserGroup)
-    }
+  static associate(models) {
+    this.hasMany(models.MenuHierarchy, {
+      foreignKey: 'father_id',
+      as: 'children'
+    });
+    this.hasOne(models.MenuHierarchyXGroups, { foreignKey: 'access_id' });
+    // this.belongsTo(models.UserGroup)
+  }
 }
 
 export default MenuHierarchy

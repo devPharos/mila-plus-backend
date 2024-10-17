@@ -121,7 +121,7 @@ class EnrollmentController {
                     enrollment_id: enrollmentExists.id,
                     canceled_at: null,
                 },
-                order: [['id', 'DESC']],
+                order: [['created_at', 'DESC']]
             })
 
             const existingSponsors = await Enrollmentsponsor.findAll({
@@ -137,7 +137,7 @@ class EnrollmentController {
             ) {
                 nextStep = 'transfer-dso'
                 nextTimeline = {
-                    phase: 'Student Application',
+                    phase: 'Transfer Eligibility',
                     phase_step: 'Transfer form link has Sent to the DSO',
                     step_status: `Form filling has not been started yet.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
@@ -150,38 +150,25 @@ class EnrollmentController {
             ) {
                 nextStep = 'transfer-agent'
                 nextTimeline = {
-                    phase: 'Student Application',
+                    phase: 'Transfer Eligibility',
                     phase_step: 'DSO Signature',
                     step_status: `Form filling has been finished by the DSO`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
                     created_at: new Date(),
                     created_by: 2,
                 }
-            } else if (
-                activeMenu === 'student-information' &&
-                lastActiveMenu.name === 'student-information'
-            ) {
-                nextStep = 'emergency-contact'
-            } else if (
-                activeMenu === 'emergency-contact' &&
-                lastActiveMenu.name === 'emergency-contact'
-            ) {
-                nextStep = 'enrollment-information'
-            } else if (
-                activeMenu === 'enrollment-information' &&
-                lastActiveMenu.name === 'enrollment-information'
-            ) {
-                nextStep = 'dependent-information'
-            } else if (
-                activeMenu === 'dependent-information' &&
-                lastActiveMenu.name === 'dependent-information'
-            ) {
-                nextStep = 'affidavit-of-support'
-            } else if (
-                activeMenu === 'affidavit-of-support' &&
-                lastActiveMenu.name === 'affidavit-of-support'
-            ) {
-                nextStep = 'documents-upload'
+            } else if (activeMenu === 'student-information' && lastActiveMenu.name === 'student-information') {
+                nextStep = 'emergency-contact';
+            } else if (activeMenu === 'student-information' && lastActiveMenu.name === 'transfer-agent') {
+                nextStep = 'emergency-contact';
+            } else if (activeMenu === 'emergency-contact' && lastActiveMenu.name === 'emergency-contact') {
+                nextStep = 'enrollment-information';
+            } else if (activeMenu === 'enrollment-information' && lastActiveMenu.name === 'enrollment-information') {
+                nextStep = 'dependent-information';
+            } else if (activeMenu === 'dependent-information' && lastActiveMenu.name === 'dependent-information') {
+                nextStep = 'affidavit-of-support';
+            } else if (activeMenu === 'affidavit-of-support' && lastActiveMenu.name === 'affidavit-of-support') {
+                nextStep = 'documents-upload';
                 nextTimeline = {
                     phase: 'Student Application',
                     phase_step: 'Form link has been sent to the student',
@@ -221,23 +208,16 @@ class EnrollmentController {
                         created_by: 2,
                     }
                 } else {
-                    nextStep = 'payment'
+                    nextStep = 'finished';
                     nextTimeline = {
                         phase: 'Student Application',
-                        phase_step: 'Payment Process',
-                        step_status: `Payment pending.`,
-                        expected_date: format(
-                            addDays(new Date(), 3),
-                            'yyyyMMdd'
-                        ),
+                        phase_step: 'Enrollment process',
+                        step_status: `Finished.`,
+                        expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
                         created_at: new Date(),
                         created_by: 2,
                     }
                 }
-            } else {
-                return res.status(400).json({
-                    error: 'activeMenu not valid.',
-                })
             }
 
             if (
@@ -376,11 +356,7 @@ class EnrollmentController {
                 }
             }
 
-            console.log(0)
-            if (
-                req.body.enrollmenttransfers &&
-                req.body.enrollmenttransfers.previous_school_name
-            ) {
+            if (req.body.enrollmenttransfers && req.body.enrollmenttransfers.previous_school_name) {
                 console.log(1)
                 const existingTransfers = await Enrollmenttransfers.findOne({
                     where: {
@@ -388,7 +364,6 @@ class EnrollmentController {
                         canceled_at: null,
                     },
                 })
-                console.log(2)
                 if (existingTransfers) {
                     console.log(req.body.enrollmenttransfers)
                     promises.push(
@@ -483,18 +458,14 @@ class EnrollmentController {
                         if (sponsor.dataValues.canceled_at === null) {
                             const title = `Transfer Eligibility Form - DSO`
                             const content = `<p>Dear ${sponsor.dataValues.name},</p>
-                                            <p>You have been asked to please complete the <strong>Enrollment Form - Sponsors</strong>, related to the student <strong>${enrollmentExists.students.name} ${enrollmentExists.students.last_name}</strong>.</p>
+                                            <p>You have been asked to please complete the <strong>Enrollment Form - Sponsors</strong>, related to the student <strong>${studentExists.name} ${studentExists.last_name}</strong>.</p>
                                             <br/>
                                             <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Sponsor?crypt=${sponsor.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
                             mailer.sendMail({
-                                from: '"Mila Plus" <development@pharosit.com.br>',
+                                from: '"MILA Plus" <development@pharosit.com.br>',
                                 to: sponsor.dataValues.email,
-                                subject: `Mila Plus - ${title}`,
-                                html: MailLayout({
-                                    title,
-                                    content,
-                                    filial: filial.name,
-                                }),
+                                subject: `MILA Plus - ${title}`,
+                                html: MailLayout({ title, content, filial: filial.name }),
                             })
                         }
                     })
@@ -509,15 +480,10 @@ class EnrollmentController {
                                     <br/>
                                     <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/TransferDSO?crypt=${enrollmentExists.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
                         mailer.sendMail({
-                            from: '"Mila Plus" <development@pharosit.com.br>',
-                            to: req.body.enrollmenttransfers
-                                .previous_school_dso_email,
-                            subject: `Mila Plus - ${title}`,
-                            html: MailLayout({
-                                title,
-                                content,
-                                filial: filial.name,
-                            }),
+                            from: '"MILA Plus" <development@pharosit.com.br>',
+                            to: req.body.enrollmenttransfers.previous_school_dso_email,
+                            subject: `MILA Plus - ${title}`,
+                            html: MailLayout({ title, content, filial: filial.name }),
                         })
                     }
                 } else if (activeMenu === 'transfer-dso') {
@@ -527,14 +493,10 @@ class EnrollmentController {
                                     <br/>
                                     <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/TransferDSO?crypt=${enrollmentExists.id}&activeMenu=transfer-dso" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
                     mailer.sendMail({
-                        from: '"Mila Plus" <development@pharosit.com.br>',
+                        from: '"MILA Plus" <development@pharosit.com.br>',
                         to: agent.dataValues.email,
-                        subject: `Mila Plus - ${title}`,
-                        html: MailLayout({
-                            title,
-                            content,
-                            filial: filial.dataValues.name,
-                        }),
+                        subject: `MILA Plus - ${title}`,
+                        html: MailLayout({ title, content, filial: filial.dataValues.name }),
                     })
                 }
                 t.commit()
@@ -623,8 +585,9 @@ class EnrollmentController {
                         as: 'enrollmenttimelines',
                         required: false,
                         where: {
-                            canceled_at: null,
+                            canceled_at: null
                         },
+                        order: [['created_at', 'DESC']]
                     },
                 ],
             })

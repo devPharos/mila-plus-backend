@@ -12,6 +12,7 @@ class FilialPriceList extends Model {
                 filial_id: Sequelize.INTEGER,
                 processsubstatus_id: Sequelize.INTEGER,
                 tuition: Sequelize.FLOAT,
+                tuition_in_advance: Sequelize.BOOLEAN,
                 book: Sequelize.FLOAT,
                 registration_fee: Sequelize.FLOAT,
                 active: Sequelize.BOOLEAN,

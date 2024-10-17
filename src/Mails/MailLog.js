@@ -12,9 +12,9 @@ export default function MailLog({ className, functionName, req, err }) {
         <p><strong>Body:</strong> ${JSON.stringify(req.body)}</p>
         <p><strong>Error:</strong> ${err}</p>`
     mailer.sendMail({
-        from: '"Mila Plus" <development@pharosit.com.br>',
-        to: 'development@pharosit.com.br',
-        subject: `Mila Plus - ${title}`,
+        from: '"MILA Plus" <development@pharosit.com.br>',
+        to: "development@pharosit.com.br",
+        subject: `MILA Plus - ${title}`,
         html: MailLayout({ title, content, filial: '' }),
     })
 }
