@@ -18,7 +18,6 @@ import Filialdocument from '../models/Filialdocument';
 const { Op } = Sequelize;
 
 class FilialController {
-
   async show(req, res) {
     try {
       const { filial_id } = req.params;
@@ -34,34 +33,35 @@ class FilialController {
                 model: Processsubstatus,
                 as: 'processsubstatuses',
                 where: {
-                  canceled_at: null
-                }
-              }
+                  canceled_at: null,
+                },
+              },
             ],
             where: {
-              canceled_at: null
+              canceled_at: null,
             },
-            order: [Processsubstatus, 'name']
+            order: [Processsubstatus, 'name'],
           },
           {
             model: FilialDiscountList,
             as: 'discountlists',
             required: false,
             where: {
-              canceled_at: null
+              canceled_at: null,
             },
-            order: ['name']
+            order: ['name'],
           },
           {
             model: Filialtype,
-            attributes: ['id', 'name']
+            attributes: ['id', 'name'],
           },
           {
             model: Milauser,
             as: 'administrator',
             required: false,
-            attributes: ['id', 'name', 'email']
-          }, {
+            attributes: ['id', 'name', 'email'],
+          },
+          {
             model: Filialdocument,
             as: 'filialdocuments',
             required: false,
@@ -77,21 +77,21 @@ class FilialController {
                     required: false,
                     where: {
                       canceled_at: null,
-                    }
-                  }
+                    },
+                  },
                 ],
                 where: {
                   canceled_at: null,
                   registry_type: 'Branches',
-                }
-              }
+                },
+              },
             ],
             where: {
               canceled_at: null,
-            }
-          }
-        ]
-      })
+            },
+          },
+        ],
+      });
 
       if (!filial) {
         return res.status(400).json({
@@ -103,7 +103,7 @@ class FilialController {
     } catch (err) {
       const className = 'FilialController';
       const functionName = 'show';
-      MailLog({ className, functionName, req, err })
+      MailLog({ className, functionName, req, err });
       return res.status(500).json({
         error: err,
       });
@@ -116,21 +116,21 @@ class FilialController {
         where: {
           canceled_at: null,
           // company_id: req.companyId,
-          [Op.not]: { alias: 'AAA' }
+          [Op.not]: { alias: 'AAA' },
         },
         include: [
           {
             model: Filialtype,
-          }
+          },
         ],
-        order: [['name']]
-      })
+        order: [['name']],
+      });
 
       return res.json(filials);
     } catch (err) {
       const className = 'FilialController';
       const functionName = 'index';
-      MailLog({ className, functionName, req, err })
+      MailLog({ className, functionName, req, err });
       return res.status(500).json({
         error: err,
       });
@@ -138,7 +138,7 @@ class FilialController {
   }
 
   async store(req, res) {
-    const connection = new Sequelize(databaseConfig)
+    const connection = new Sequelize(databaseConfig);
     const t = await connection.transaction();
     try {
       const filialExist = await Filial.findOne({
@@ -146,8 +146,8 @@ class FilialController {
           company_id: req.companyId,
           ein: req.body.ein,
           canceled_at: null,
-        }
-      })
+        },
+      });
 
       if (filialExist) {
         return res.status(400).json({
@@ -155,12 +155,17 @@ class FilialController {
         });
       }
 
-      const newFilial = await Filial.create({
-        company_id: req.companyId, ...req.body, created_by: req.userId, created_at: new Date()
-      }, {
-        transaction: t
-      })
-
+      const newFilial = await Filial.create(
+        {
+          company_id: req.companyId,
+          ...req.body,
+          created_by: req.userId,
+          created_at: new Date(),
+        },
+        {
+          transaction: t,
+        }
+      );
 
       if (!req.body.administrator.id) {
         const { name, email } = req.body.administrator;
@@ -170,7 +175,7 @@ class FilialController {
               email,
               canceled_at: null,
             },
-            attributes: ['id']
+            attributes: ['id'],
           });
 
           if (userExists) {
@@ -179,7 +184,10 @@ class FilialController {
             });
           }
 
-          const password = randomString(10, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+          const password = randomString(
+            10,
+            '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+          );
 
           await Milauser.create({
             company_id: req.companyId,
@@ -189,55 +197,74 @@ class FilialController {
             force_password_change: true,
             created_at: new Date(),
             created_by: req.userId,
-          }).then(async (newUser) => {
+          })
+            .then(async (newUser) => {
+              newFilial.update({
+                administrator_id: newUser.id,
+                updated_by: req.userId,
+                updated_at: new Date(),
+              });
 
-            newFilial.update({
-              administrator_id: newUser.id,
-              updated_by: req.userId,
-              updated_at: new Date()
+              await UserXFilial.create(
+                {
+                  user_id: newUser.id,
+                  filial_id: newFilial.id,
+                  created_at: new Date(),
+                  created_by: req.userId,
+                },
+                {
+                  transaction: t,
+                }
+              );
+              await UserGroupXUser.create(
+                {
+                  user_id: newUser.id,
+                  group_id: 'ae0453fd-b493-41ff-803b-9aea989a8567',
+                  created_at: new Date(),
+                  created_by: req.userId,
+                },
+                {
+                  transaction: t,
+                }
+              );
             })
-
-            await UserXFilial.create({ user_id: newUser.id, filial_id: newFilial.id, created_at: new Date, created_by: req.userId }, {
-              transaction: t
-            });
-            await UserGroupXUser.create({ user_id: newUser.id, group_id: 'ae0453fd-b493-41ff-803b-9aea989a8567', created_at: new Date(), created_by: req.userId }, {
-              transaction: t
-            })
-          }).finally(() => {
-            const title = `Account created`;
-            const content = `<p>Dear ${name},</p>
+            .finally(() => {
+              const title = `Account created`;
+              const content = `<p>Dear ${name},</p>
                             <p>Now you have access to MILA Plus system, please use these information on your first access:<br/>
                             E-mail: ${email}</br>
                             Password: ${password}</p>
                             <br/>
                             <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
-            mailer.sendMail({
-              from: '"MILA Plus" <development@pharosit.com.br>',
-              to: sponsor.dataValues.email,
-              subject: `MILA Plus - ${title}`,
-              html: MailLayout({ title, content, filial: newFilial.dataValues.name }),
+              mailer.sendMail({
+                from: '"MILA Plus" <development@pharosit.com.br>',
+                to: sponsor.dataValues.email,
+                subject: `MILA Plus - ${title}`,
+                html: MailLayout({
+                  title,
+                  content,
+                  filial: newFilial.dataValues.name,
+                }),
+              });
             })
-
-          }).catch(err => {
-            console.log(err)
-            t.rollback()
-            return res.status(400).json({
-              error: 'An error has ocourred.',
+            .catch((err) => {
+              console.log(err);
+              t.rollback();
+              return res.status(400).json({
+                error: 'An error has ocourred.',
+              });
             });
-          })
         }
-
       }
 
       t.commit();
 
       return res.json(newFilial);
-
     } catch (err) {
       await t.rollback();
       const className = 'FilialController';
       const functionName = 'store';
-      MailLog({ className, functionName, req, err })
+      MailLog({ className, functionName, req, err });
       return res.status(500).json({
         error: err,
       });
@@ -245,11 +272,11 @@ class FilialController {
   }
 
   async update(req, res) {
-    const connection = new Sequelize(databaseConfig)
+    const connection = new Sequelize(databaseConfig);
     const t = await connection.transaction();
     try {
       const { filial_id } = req.params;
-      const filialExist = await Filial.findByPk(filial_id)
+      const filialExist = await Filial.findByPk(filial_id);
 
       if (!filialExist) {
         return res.status(400).json({
@@ -257,64 +284,110 @@ class FilialController {
         });
       }
 
-      let filial = await filialExist.update({
-        ...req.body,
-        updated_by: req.userId,
-        updated_at: new Date()
-      },
+      let filial = await filialExist.update(
         {
-          transaction: t
-        })
+          ...req.body,
+          updated_by: req.userId,
+          updated_at: new Date(),
+        },
+        {
+          transaction: t,
+        }
+      );
 
       const promises = [];
 
       if (req.body.pricelists) {
-
-        const pricesToCreate = req.body.pricelists.filter(pricelist => !pricelist.id)
-        const pricesToUpdate = req.body.pricelists.filter(pricelist => pricelist.id)
+        const pricesToCreate = req.body.pricelists.filter(
+          (pricelist) => !pricelist.id
+        );
+        const pricesToUpdate = req.body.pricelists.filter(
+          (pricelist) => pricelist.id
+        );
 
         pricesToCreate.map((newPrice) => {
           delete newPrice.id;
-          promises.push(FilialPriceList.create({ filial_id: filial.id, ...newPrice, created_by: req.userId, created_at: new Date() }, {
-            transaction: t
-          }))
-        })
+          promises.push(
+            FilialPriceList.create(
+              {
+                filial_id: filial.id,
+                ...newPrice,
+                created_by: req.userId,
+                created_at: new Date(),
+              },
+              {
+                transaction: t,
+              }
+            )
+          );
+        });
 
         pricesToUpdate.map((updPrice) => {
-          promises.push(FilialPriceList.update({ filial_id: filial.id, ...updPrice, updated_by: req.userId, updated_at: new Date() }, {
-            where: {
-              id: updPrice.id
-            },
-            transaction: t
-
-          }))
-        })
+          promises.push(
+            FilialPriceList.update(
+              {
+                filial_id: filial.id,
+                ...updPrice,
+                updated_by: req.userId,
+                updated_at: new Date(),
+              },
+              {
+                where: {
+                  id: updPrice.id,
+                },
+                transaction: t,
+              }
+            )
+          );
+        });
       }
 
       if (req.body.discountlists) {
-        const discountsToCreate = req.body.discountlists.filter(discount => !discount.id)
-        const discountsToUpdate = req.body.discountlists.filter(discount => discount.id)
+        const discountsToCreate = req.body.discountlists.filter(
+          (discount) => !discount.id
+        );
+        const discountsToUpdate = req.body.discountlists.filter(
+          (discount) => discount.id
+        );
 
         discountsToCreate.map((newDiscount) => {
           delete newDiscount.id;
-          promises.push(FilialDiscountList.create({ filial_id: filial.id, ...newDiscount, created_by: req.userId, created_at: new Date() }, {
-            transaction: t
-          }))
-        })
+          promises.push(
+            FilialDiscountList.create(
+              {
+                filial_id: filial.id,
+                ...newDiscount,
+                created_by: req.userId,
+                created_at: new Date(),
+              },
+              {
+                transaction: t,
+              }
+            )
+          );
+        });
 
         discountsToUpdate.map((updDiscount) => {
-          promises.push(FilialDiscountList.update({ filial_id: filial.id, ...updDiscount, updated_by: req.userId, updated_at: new Date() }, {
-            where: {
-              id: updDiscount.id
-            },
-            transaction: t
-
-          }))
-        })
+          promises.push(
+            FilialDiscountList.update(
+              {
+                filial_id: filial.id,
+                ...updDiscount,
+                updated_by: req.userId,
+                updated_at: new Date(),
+              },
+              {
+                where: {
+                  id: updDiscount.id,
+                },
+                transaction: t,
+              }
+            )
+          );
+        });
       }
 
       Promise.all(promises).then(async () => {
-
         if (!req.body.administrator.id) {
           const { name, email } = req.body.administrator;
           if (name && email) {
@@ -323,7 +396,7 @@ class FilialController {
                 email,
                 canceled_at: null,
               },
-              attributes: ['id']
+              attributes: ['id'],
             });
 
             if (userExists) {
@@ -332,82 +405,114 @@ class FilialController {
               });
             }
 
-            const password = randomString(10, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+            const password = randomString(
+              10,
+              '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+            );
 
-            await Milauser.create({
-              company_id: req.companyId,
-              name,
-              email,
-              password,
-              force_password_change: true,
-              created_at: new Date(),
-              created_by: req.userId,
-            }, {
-              transaction: t
-            }).then(async (newUser) => {
+            await Milauser.create(
+              {
+                company_id: req.companyId,
+                name,
+                email,
+                password,
+                force_password_change: true,
+                created_at: new Date(),
+                created_by: req.userId,
+              },
+              {
+                transaction: t,
+              }
+            )
+              .then(async (newUser) => {
+                await filial.update(
+                  {
+                    administrator_id: newUser.id,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                  },
+                  {
+                    transaction: t,
+                  }
+                );
 
-              await filial.update({
-                administrator_id: newUser.id,
-                updated_by: req.userId,
-                updated_at: new Date()
-              }, {
-                transaction: t
+                await UserXFilial.create(
+                  {
+                    user_id: newUser.id,
+                    filial_id,
+                    created_at: new Date(),
+                    created_by: req.userId,
+                  },
+                  {
+                    transaction: t,
+                  }
+                );
+                await UserGroupXUser.create(
+                  {
+                    user_id: newUser.id,
+                    group_id: 'ae0453fd-b493-41ff-803b-9aea989a8567',
+                    created_at: new Date(),
+                    created_by: req.userId,
+                  },
+                  {
+                    transaction: t,
+                  }
+                );
               })
-
-              await UserXFilial.create({ user_id: newUser.id, filial_id, created_at: new Date, created_by: req.userId }, {
-                transaction: t
-              });
-              await UserGroupXUser.create({ user_id: newUser.id, group_id: 'ae0453fd-b493-41ff-803b-9aea989a8567', created_at: new Date(), created_by: req.userId }, {
-                transaction: t
-              })
-            }).finally(() => {
-
-              const title = `Account created`;
-              const content = `<p>Dear ${name},</p>
+              .finally(() => {
+                const title = `Account created`;
+                const content = `<p>Dear ${name},</p>
                               <p>Now you have access to MILA Plus system, please use these information on your first access:<br/>
                               E-mail: ${email}</br>
                               Password: ${password}</p>
                               <br/>
                               <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`;
-              mailer.sendMail({
-                from: '"MILA Plus" <development@pharosit.com.br>',
-                to: sponsor.dataValues.email,
-                subject: `MILA Plus - ${title}`,
-                html: MailLayout({ title, content, filial: filial.name }),
+                mailer.sendMail({
+                  from: '"MILA Plus" <development@pharosit.com.br>',
+                  to: sponsor.dataValues.email,
+                  subject: `MILA Plus - ${title}`,
+                  html: MailLayout({ title, content, filial: filial.name }),
+                });
               })
-            }).catch(err => {
-              console.log(err)
-              t.rollback()
-              return res.status(400).json({
-                error: 'An error has ocourred.',
+              .catch((err) => {
+                console.log(err);
+                t.rollback();
+                return res.status(400).json({
+                  error: 'An error has ocourred.',
+                });
               });
-            })
           }
-
         }
-        console.log(3)
+        console.log(3);
 
         if (req.body.administrator.id) {
           const { name, email } = req.body.administrator;
           if (name && email) {
-            const userExists = await Milauser.findByPk(req.body.administrator.id);
+            const userExists = await Milauser.findByPk(
+              req.body.administrator.id
+            );
 
-            const password = randomString(10, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+            const password = randomString(
+              10,
+              '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+            );
 
-            await userExists.update({
-              name,
-              email,
-              password,
-              force_password_change: true,
-              updated_at: new Date(),
-              updated_by: req.userId,
-            }, {
-              transaction: t
-            })
+            await userExists.update(
+              {
+                name,
+                email,
+                password,
+                force_password_change: true,
+                updated_at: new Date(),
+                updated_by: req.userId,
+              },
+              {
+                transaction: t,
+              }
+            );
           }
-
         }
-        console.log(4)
+        console.log(4);
 
         filial = await Filial.findByPk(filial.id, {
           include: [
@@ -416,39 +521,38 @@ class FilialController {
               as: 'pricelists',
               required: false,
               where: {
-                canceled_at: null
-              }
+                canceled_at: null,
+              },
             },
             {
               model: FilialDiscountList,
               as: 'discountlists',
               required: false,
               where: {
-                canceled_at: null
-              }
+                canceled_at: null,
+              },
             },
             {
               model: Milauser,
               as: 'administrator',
               required: false,
               where: {
-                canceled_at: null
-              }
+                canceled_at: null,
+              },
             },
-          ]
-        })
+          ],
+        });
 
-        console.log(5)
+        console.log(5);
         t.commit();
-      })
+      });
 
       return res.json(filial);
-
     } catch (err) {
       await t.rollback();
       const className = 'FilialController';
       const functionName = 'update';
-      MailLog({ className, functionName, req, err })
+      MailLog({ className, functionName, req, err });
       return res.status(500).json({
         error: err,
       });
