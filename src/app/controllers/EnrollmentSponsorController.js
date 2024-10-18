@@ -239,7 +239,7 @@ class EnrollmentsponsorController {
           {
             model: Enrollmentsponsor,
             as: 'enrollmentsponsors',
-            required: false,
+            required: true,
             where: {
               id: sponsor_id,
               canceled_at: null,
