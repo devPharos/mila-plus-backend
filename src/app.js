@@ -3,7 +3,6 @@ import cors from 'cors';
 import Youch from 'youch';
 import routes from './routes';
 
-
 import './database';
 
 class App {
@@ -21,7 +20,7 @@ class App {
     this.server.use(
       cors({
         origin: ['http://localhost:3000', 'https://milaplus.netlify.app'],
-        methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
         credentials: true, // This option is important for handling cookies and authentication headers
       })
     );
@@ -34,6 +33,7 @@ class App {
   exceptionHandler() {
     this.server.use(async (err, req, res, next) => {
       const errors = await new Youch(err, req).toJSON();
+      console.log(errors);
       return res.status(500).json(errors);
     });
   }

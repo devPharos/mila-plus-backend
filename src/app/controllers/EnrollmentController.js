@@ -1039,7 +1039,6 @@ class EnrollmentController {
         where: {
           enrollment_id,
           canceled_at: null,
-          dso_signature: null,
         },
       });
 
