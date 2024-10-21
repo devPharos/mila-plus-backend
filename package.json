@@ -14,7 +14,7 @@
         "migrate": "sequelize-cli db:migrate",
         "db:rollback": "NODE_ENV=development sequelize-cli db:migrate:undo:all",
         "model:create": "sequelize-cli model:generate",
-        "seed" : "sequelize-cli db:seed:all"
+        "seed": "sequelize-cli db:seed:all"
     },
     "dependencies": {
         "bcryptjs": "^2.4.3",
@@ -31,6 +31,8 @@
         "react-firebase-hooks": "^5.1.1",
         "sequelize": "^6.37.3",
         "uuid": "^10.0.0",
+        "winston": "^3.15.0",
+        "winston-daily-rotate-file": "^5.0.0",
         "youch": "^3.3.3",
         "yup": "^1.4.0"
     },
@@ -39,6 +41,7 @@
         "eslint-config-airbnb-base": "^15.0.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-import": "^2.29.1",
+        "http-status-codes": "^2.3.0",
         "nodemon": "^3.1.4",
         "prettier": "^3.3.3",
         "sequelize-cli": "^6.6.2",
