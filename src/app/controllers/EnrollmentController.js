@@ -1304,30 +1304,18 @@ class EnrollmentController {
                 transaction: t,
               }
             ).then(async () => {
-              await Enrollmenttransfer.create(
-                {
-                  enrollment_id: enrollment.id,
-                  company_id: req.companyId,
-                  created_at: new Date(),
-                  created_by: req.userId,
-                },
-                {
-                  transaction: t,
-                }
-              ).then(async () => {
-                const title = `Enrollment Process Form - Student`;
-                const filial = await Filial.findByPk(enrollment.filial_id);
-                const content = `<p>Dear ${student.dataValues.name},</p>
+              const title = `Enrollment Process Form - Student`;
+              const filial = await Filial.findByPk(enrollment.filial_id);
+              const content = `<p>Dear ${student.dataValues.name},</p>
                       <p>You have been asked to please complete the <strong>${title}</strong>.</p>
                       <br/>
                       <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Enrollment?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
 
-                await mailer.sendMail({
-                  from: '"MILA Plus" <development@pharosit.com.br>',
-                  to: student.dataValues.email,
-                  subject: `MILA Plus - ${title}`,
-                  html: MailLayout({ title, content, filial: filial.name }),
-                });
+              await mailer.sendMail({
+                from: '"MILA Plus" <development@pharosit.com.br>',
+                to: student.dataValues.email,
+                subject: `MILA Plus - ${title}`,
+                html: MailLayout({ title, content, filial: filial.name }),
               });
             });
           })
@@ -1396,30 +1384,18 @@ class EnrollmentController {
                 transaction: t,
               }
             ).then(async () => {
-              await Enrollmenttransfer.create(
-                {
-                  enrollment_id: enrollment.id,
-                  company_id: req.companyId,
-                  created_at: new Date(),
-                  created_by: req.userId,
-                },
-                {
-                  transaction: t,
-                }
-              ).then(async () => {
-                const title = `Placement Test Form - Student`;
-                const filial = await Filial.findByPk(enrollment.filial_id);
-                const content = `<p>Dear ${student.dataValues.name},</p>
+              const title = `Placement Test Form - Student`;
+              const filial = await Filial.findByPk(enrollment.filial_id);
+              const content = `<p>Dear ${student.dataValues.name},</p>
                       <p>You have been asked to please complete the <strong>${title}</strong>.</p>
                       <br/>
                       <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Enrollment?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
 
-                await mailer.sendMail({
-                  from: '"MILA Plus" <development@pharosit.com.br>',
-                  to: student.dataValues.email,
-                  subject: `MILA Plus - ${title}`,
-                  html: MailLayout({ title, content, filial: filial.name }),
-                });
+              await mailer.sendMail({
+                from: '"MILA Plus" <development@pharosit.com.br>',
+                to: student.dataValues.email,
+                subject: `MILA Plus - ${title}`,
+                html: MailLayout({ title, content, filial: filial.name }),
               });
             });
           })
