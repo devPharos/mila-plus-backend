@@ -483,7 +483,6 @@ class FilialController {
               });
           }
         }
-        console.log(3);
 
         if (req.body.administrator.id) {
           const { name, email } = req.body.administrator;
@@ -512,7 +511,6 @@ class FilialController {
             );
           }
         }
-        console.log(4);
 
         filial = await Filial.findByPk(filial.id, {
           include: [
@@ -543,7 +541,6 @@ class FilialController {
           ],
         });
 
-        console.log(5);
         t.commit();
       });
 
