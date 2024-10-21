@@ -1,3 +1,4 @@
+require('dotenv').config();
 import { mailer } from '../config/mailer';
 import MailLayout from './MailLayout';
 
@@ -12,8 +13,8 @@ export default function MailLog({ className, functionName, req, err }) {
         <p><strong>Body:</strong> ${JSON.stringify(req.body)}</p>
         <p><strong>Error:</strong> ${err}</p>`;
   mailer.sendMail({
-    from: '"MILA Plus" <development@pharosit.com.br>',
-    to: 'denis@pharosit.com.br',
+    from: `"MILA Plus" <${process.env.MAIL_FROM}>`,
+    to: process.env.MAIL_TO,
     subject: `MILA Plus - ${title}`,
     html: MailLayout({ title, content, filial: '' }),
   });
