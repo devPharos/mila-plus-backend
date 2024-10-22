@@ -38,6 +38,16 @@ import Enrollmenttransfer from '../app/models/Enrollmenttransfer';
 import Processtype from '../app/models/Processtype';
 import Processsubstatus from '../app/models/Processsubstatus';
 import Filialdocument from '../app/models/Filialdocument';
+import Bank from '../app/models/Bank';
+import Merchants from '../app/models/Merchants'
+import BankAccounts from '../app/models/BankAccount';
+import MerchantXChartOfAccount from '../app/models/MerchantXChartOfAccounts';
+import Payee from '../app/models/Payee';
+import PayeeInstallment from '../app/models/PayeeInstallment';
+import PaymentCriteria from '../app/models/PaymentCriteria';
+import PaymentMethod from '../app/models/PaymentMethod';
+import Receivable from '../app/models/Receivable';
+import ReceivableInstallment from '../app/models/ReceivableInstallment';
 // import UserGroup from '../app/models/usergroup'
 
 const models = [
@@ -76,7 +86,17 @@ const models = [
   MenuHierarchyXGroups,
   Student,
   Staff,
-  Staffdocument
+  Staffdocument,
+  Bank,
+  BankAccounts,
+  Merchants,
+  MerchantXChartOfAccount,
+  Payee,
+  PayeeInstallment,
+  PaymentCriteria,
+  PaymentMethod,
+  Receivable,
+  ReceivableInstallment
 ];
 
 class Database {
