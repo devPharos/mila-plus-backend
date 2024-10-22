@@ -32,9 +32,20 @@ class App {
 
   exceptionHandler() {
     this.server.use(async (err, req, res, next) => {
-      const errors = await new Youch(err, req).toJSON();
-      console.log(errors);
-      return res.status(500).json(errors);
+      // Se for ambiente de desenvolvimento, detalha o erro
+      if (process.env.NODE_ENV === 'development') {
+        const errors = await new Youch(err, req).toJSON();
+        console.log('Development Error:', errors);
+        return res.status(500).json(errors);
+      }
+
+      // Em produção, mostre uma mensagem genérica ao invés de detalhes do erro
+      console.error('Production Error:', err);
+
+      return res.status(err.status || 500).json({
+        message: 'Something went wrong. Please try again later.',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined,
+      });
     });
   }
 }
