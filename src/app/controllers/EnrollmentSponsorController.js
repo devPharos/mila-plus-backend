@@ -17,10 +17,97 @@ import Filial from '../models/Filial';
 import Agent from '../models/Agent';
 import MailLayout from '../../Mails/MailLayout';
 import { BASEURL } from '../functions';
+import Enrollmentsponsordocument from '../models/Enrollmentsponsordocument';
 
 const { Op } = Sequelize;
 
 class EnrollmentsponsorController {
+  async store(req, res) {
+    const connection = new Sequelize(databaseConfig);
+    const t = await connection.transaction();
+    try {
+      const { enrollment_id } = req.body;
+
+      const enrollment = await Enrollment.findByPk(enrollment_id);
+
+      if (!enrollment) {
+        return res.status(400).json({
+          error: 'enrollment does not exist.',
+        });
+      }
+
+      const sponsor = await Enrollmentsponsor.create(
+        {
+          enrollment_id,
+          ...req.body,
+          created_by: req.userId || 2,
+          created_at: new Date(),
+        },
+        {
+          transaction: t,
+        }
+      );
+
+      t.commit();
+
+      const retSponsor = await Enrollmentsponsor.findByPk(
+        sponsor.dataValues.id,
+        {
+          include: [
+            {
+              model: Enrollmentsponsordocument,
+              as: 'documents',
+              required: false,
+            },
+          ],
+        }
+      );
+
+      return res.json(retSponsor);
+    } catch (err) {
+      await t.rollback();
+      const className = 'EnrollmentSponsorController';
+      const functionName = 'store';
+      MailLog({ className, functionName, req, err });
+      return res.status(500).json({
+        error: err,
+      });
+    }
+  }
+
+  async inactivate(req, res) {
+    const connection = new Sequelize(databaseConfig);
+    const t = await connection.transaction();
+    try {
+      const { enrollmentsponsor_id } = req.params;
+      const enrollmentsponsor = await Enrollmentsponsor.findByPk(
+        enrollmentsponsor_id
+      );
+
+      if (!enrollmentsponsor) {
+        return res.status(400).json({
+          error: 'enrollmentdependent was not found.',
+        });
+      }
+
+      await enrollmentsponsor.destroy({
+        transaction: t,
+      });
+
+      t.commit();
+
+      return res.status(200).json(enrollmentsponsor);
+    } catch (err) {
+      await t.rollback();
+      const className = 'EnrollmentSponsorController';
+      const functionName = 'inactivate';
+      MailLog({ className, functionName, req, err });
+      return res.status(500).json({
+        error: err,
+      });
+    }
+  }
+
   async outsideUpdate(req, res) {
     const connection = new Sequelize(databaseConfig);
     const t = await connection.transaction();

@@ -19,6 +19,11 @@ import Filial from '../models/Filial';
 import Enrollmenttransfer from '../models/Enrollmenttransfer';
 import MailLayout from '../../Mails/MailLayout';
 import { BASEURL } from '../functions';
+import mailEnrollmentToStudent from '../../Mails/Processes/Enrollment Process/toStudent';
+import mailTransferToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent';
+import mailPlacementTestToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent';
+import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument';
+import Enrollmentsponsordocument from '../models/Enrollmentsponsordocument';
 
 const { Op } = Sequelize;
 
@@ -341,42 +346,61 @@ class EnrollmentController {
         req.body.enrollmentdependents.length > 0
       ) {
         const { enrollmentdependents } = req.body;
-        const existingDependents = await Enrollmentdependent.findAll({
-          where: {
-            enrollment_id: enrollment_id,
-            canceled_at: null,
-          },
-        });
-        if (existingDependents) {
-          existingDependents.map((dependent) => {
-            promises.push(
-              dependent.update(
-                { canceled_at: new Date(), canceled_by: 2 },
-                {
-                  transaction: t,
-                }
-              )
-            );
-          });
-        }
+        // const existingDependents = await Enrollmentdependent.findAll({
+        //   where: {
+        //     enrollment_id: enrollment_id,
+        //     canceled_at: null,
+        //   },
+        // });
+        // if (existingDependents) {
+        //   existingDependents.map((dependent) => {
+        //     promises.push(
+        //       dependent.update(
+        //         { canceled_at: new Date(), canceled_by: 2 },
+        //         {
+        //           transaction: t,
+        //         }
+        //       )
+        //     );
+        //   });
+        // }
         enrollmentdependents.map((dependent) => {
           promises.push(
-            Enrollmentdependent.create(
+            Enrollmentdependent.update(
               {
-                enrollment_id: enrollmentExists.id,
                 name: dependent.name,
                 relationship_type: dependent.relationship_type,
                 gender: dependent.gender,
                 dept1_type: dependent.dept1_type,
                 email: dependent.email,
                 phone: dependent.phone,
-                created_at: new Date(),
-                created_by: 2,
+                updated_at: new Date(),
+                updated_by: req.userId || 2,
               },
               {
-                transaction: t,
+                where: {
+                  enrollment_id: enrollmentExists.id,
+                  id: dependent.id,
+                  canceled_at: null,
+                },
               }
             )
+            // Enrollmentdependent.create(
+            //   {
+            //     enrollment_id: enrollmentExists.id,
+            //     name: dependent.name,
+            //     relationship_type: dependent.relationship_type,
+            //     gender: dependent.gender,
+            //     dept1_type: dependent.dept1_type,
+            //     email: dependent.email,
+            //     phone: dependent.phone,
+            //     created_at: new Date(),
+            //     created_by: 2,
+            //   },
+            //   {
+            //     transaction: t,
+            //   }
+            // )
           );
         });
       }
@@ -718,6 +742,22 @@ class EnrollmentController {
             where: {
               canceled_at: null,
             },
+            include: [
+              {
+                model: Enrollmentdependentdocument,
+                as: 'documents',
+                required: false,
+                include: [
+                  {
+                    model: File,
+                    as: 'file',
+                  },
+                ],
+                where: {
+                  canceled_at: null,
+                },
+              },
+            ],
           },
           {
             model: Enrollmentemergency,
@@ -734,6 +774,22 @@ class EnrollmentController {
             where: {
               canceled_at: null,
             },
+            include: [
+              {
+                model: Enrollmentsponsordocument,
+                as: 'documents',
+                required: false,
+                include: [
+                  {
+                    model: File,
+                    as: 'file',
+                  },
+                ],
+                where: {
+                  canceled_at: null,
+                },
+              },
+            ],
           },
           {
             model: Enrollmenttimeline,
@@ -1304,18 +1360,9 @@ class EnrollmentController {
                 transaction: t,
               }
             ).then(async () => {
-              const title = `Enrollment Process Form - Student`;
-              const filial = await Filial.findByPk(enrollment.filial_id);
-              const content = `<p>Dear ${student.dataValues.name},</p>
-                      <p>You have been asked to please complete the <strong>${title}</strong>.</p>
-                      <br/>
-                      <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Enrollment?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
-
-              await mailer.sendMail({
-                from: '"MILA Plus" <development@pharosit.com.br>',
-                to: student.dataValues.email,
-                subject: `MILA Plus - ${title}`,
-                html: MailLayout({ title, content, filial: filial.name }),
+              await mailEnrollmentToStudent({
+                enrollment_id: enrollment.id,
+                student_id: student.id,
               });
             });
           })
@@ -1418,6 +1465,27 @@ class EnrollmentController {
       // return res.json({ status: 'ok' });
     } catch (err) {
       await t.rollback();
+      const className = 'EnrollmentController';
+      const functionName = 'startProcess';
+      MailLog({ className, functionName, req, err });
+      return res.status(500).json({
+        error: err,
+      });
+    }
+  }
+
+  async sendFormMail(req, res) {
+    try {
+      const { type, enrollment_id, student_id } = req.body;
+      if (type === 'enrollment-process') {
+        await mailEnrollmentToStudent({ enrollment_id, student_id });
+      } else if (type === 'transfer-eligibility') {
+        await mailTransferToStudent({ enrollment_id, student_id });
+      } else if (type === 'placement-test') {
+        await mailPlacementTestToStudent({ enrollment_id, student_id });
+      }
+      return res.json({ ok: true });
+    } catch (err) {
       const className = 'EnrollmentController';
       const functionName = 'startProcess';
       MailLog({ className, functionName, req, err });

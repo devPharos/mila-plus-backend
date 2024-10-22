@@ -33,6 +33,7 @@ import ProcessSubstatusController from './app/controllers/ProcessSubstatusContro
 import EnrollmentDocumentController from './app/controllers/EnrollmentDocumentController';
 import EnrollmentSponsorController from './app/controllers/EnrollmentSponsorController';
 import FilialDocumentController from './app/controllers/FilialDocumentController';
+import EnrollmentDependentController from './app/controllers/EnrollmentDependentController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
@@ -75,7 +76,24 @@ routes.delete(
   StaffDocumentController.inactivate
 );
 
+routes.post('/enrollmentdependent', EnrollmentDependentController.store);
+routes.delete(
+  '/enrollmentdependent/:enrollmentdependent_id',
+  EnrollmentDependentController.inactivate
+);
+
+routes.post('/enrollmentsponsor', EnrollmentSponsorController.store);
+routes.delete(
+  '/enrollmentsponsor/:enrollmentsponsor_id',
+  EnrollmentSponsorController.inactivate
+);
+
 routes.post('/enrollmentdocuments', EnrollmentDocumentController.store);
+routes.post('/dependentsdocuments', EnrollmentDocumentController.dependents);
+routes.delete(
+  '/dependentsdocuments/:dependentDocument_id',
+  EnrollmentDocumentController.dependentsDelete
+);
 routes.delete(
   '/enrollmentdocuments/:enrollmentDocument_id',
   EnrollmentDocumentController.inactivate
@@ -234,6 +252,7 @@ routes.put('/enrollments/:enrollment_id', EnrollmentController.update);
 routes.delete('/enrollments/:enrollment_id', EnrollmentController.inactivate);
 
 routes.post('/enrollments/start-process/', EnrollmentController.startProcess);
+routes.post('/enrollments/send-form-mail/', EnrollmentController.sendFormMail);
 
 routes.get('/calendar-days', CalendarDayController.index);
 routes.get('/calendar-days/:calendarDay_id', CalendarDayController.show);

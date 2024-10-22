@@ -1,6 +1,5 @@
 import Sequelize from 'sequelize';
 
-
 import databaseConfig from '../config/database';
 import Filial from '../app/models/Filial';
 import File from '../app/models/File';
@@ -38,6 +37,8 @@ import Enrollmenttransfer from '../app/models/Enrollmenttransfer';
 import Processtype from '../app/models/Processtype';
 import Processsubstatus from '../app/models/Processsubstatus';
 import Filialdocument from '../app/models/Filialdocument';
+import Enrollmentsponsordocument from '../app/models/Enrollmentsponsordocument';
+import Enrollmentdependentdocument from '../app/models/Enrollmentdependentdocument';
 // import UserGroup from '../app/models/usergroup'
 
 const models = [
@@ -52,7 +53,9 @@ const models = [
   Enrollment,
   Enrollmentdocument,
   Enrollmentdependent,
+  Enrollmentdependentdocument,
   Enrollmentsponsor,
+  Enrollmentsponsordocument,
   Enrollmentemergency,
   Enrollmenttimeline,
   Enrollmenttransfer,
@@ -76,7 +79,7 @@ const models = [
   MenuHierarchyXGroups,
   Student,
   Staff,
-  Staffdocument
+  Staffdocument,
 ];
 
 class Database {
@@ -89,8 +92,10 @@ class Database {
     this.connection = new Sequelize(databaseConfig);
 
     models
-      .map(model => model.init(this.connection))
-      .map(model => model.associate && model.associate(this.connection.models));
+      .map((model) => model.init(this.connection))
+      .map(
+        (model) => model.associate && model.associate(this.connection.models)
+      );
   }
 
   // mongo() {
