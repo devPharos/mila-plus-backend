@@ -33,6 +33,8 @@ import ProcessSubstatusController from './app/controllers/ProcessSubstatusContro
 import EnrollmentDocumentController from './app/controllers/EnrollmentDocumentController';
 import EnrollmentSponsorController from './app/controllers/EnrollmentSponsorController';
 import FilialDocumentController from './app/controllers/FilialDocumentController';
+import BankAccountController from './app/controllers/BankAccountController'
+import BankController from './app/controllers/BankController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
@@ -200,5 +202,20 @@ routes.put('/prospects/:prospect_id', ProspectController.update);
 routes.post('/prospects/formMail', ProspectController.formMail);
 
 routes.post('/userxfilial', validateFilialAssociate, MilaUserController.filialAssociate)
+
+// bank
+routes.get('/bank', BankController.index)
+routes.get('/bank/:bank_id', BankController.show)
+routes.post('/bank', BankController.store)
+routes.put('/bank/:bank_id', BankController.update)
+routes.delete('/bank/:bankAccount_id', BankController.delete)
+
+// bank accounts
+routes.get('/bankaccounts', BankAccountController.index)
+routes.get('/bankaccounts/:bankAccount_id', BankAccountController.show)
+routes.post('/bankaccounts', BankAccountController.store)
+routes.put('/bankaccounts/:bankAccount_id', BankAccountController.update)
+routes.delete('/bankaccounts/:bankAccount_id', BankAccountController.delete)
+
 
 export default routes;
