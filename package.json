@@ -7,7 +7,15 @@
     "dev": "set NODE_ENV=development && nodemon src/server.js",
     "prod": "set NODE_ENV=production && nodemon src/server.js",
     "dev:debug": "set NODE_ENV=development && nodemon --inspect src/server.js",
-    "queue": "nodemon src/queue.js"
+    "queue": "nodemon src/queue.js",
+    "format:check": "prettier --check .",
+    "format:write": "prettier --write .",
+    "db:mi": "sequelize-cli migration:generate --name",
+    "migrate": "sequelize-cli db:migrate",
+    "db:rollback": "NODE_ENV=development sequelize-cli db:migrate:undo:all",
+    "model:create": "sequelize-cli model:generate",
+    "seed": "sequelize-cli db:seed:all",
+    "db:seed": "sequelize-cli seed:generate --name "
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
