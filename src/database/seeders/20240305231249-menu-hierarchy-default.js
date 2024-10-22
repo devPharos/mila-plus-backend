@@ -173,6 +173,11 @@ module.exports = {
           alias: 'processsubstatuses',
           name: 'ProcessSubstatuses',
         },
+        {
+          father_id: 4,
+          alias: 'financial-bank',
+          name: 'FinancialBankaccounts',
+        }
       ],
       {}
     );
