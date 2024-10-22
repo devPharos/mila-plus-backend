@@ -30,6 +30,12 @@ class EnrollmentDependentontroller {
         });
       }
 
+      if (enrollment.form_step.includes('signature')) {
+        return res.status(400).json({
+          error: 'You cannot add a dependent to this enrollment.',
+        });
+      }
+
       const dependent = await Enrollmentdependent.create(
         {
           enrollment_id,
@@ -86,6 +92,16 @@ class EnrollmentDependentontroller {
       if (!enrollmentdependent) {
         return res.status(400).json({
           error: 'enrollmentdependent was not found.',
+        });
+      }
+
+      const enrollment = await Enrollment.findByPk(
+        enrollmentdependent.datavlues.enrollment_id
+      );
+
+      if (enrollment.form_step.includes('signature')) {
+        return res.status(400).json({
+          error: 'You cannot remove a dependent from this enrollment.',
         });
       }
 

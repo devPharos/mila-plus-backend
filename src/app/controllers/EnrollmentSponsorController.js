@@ -36,6 +36,12 @@ class EnrollmentsponsorController {
         });
       }
 
+      if (enrollment.form_step.includes('signature')) {
+        return res.status(400).json({
+          error: 'You cannot add a sponsor to this enrollment.',
+        });
+      }
+
       const sponsor = await Enrollmentsponsor.create(
         {
           enrollment_id,
@@ -87,6 +93,16 @@ class EnrollmentsponsorController {
       if (!enrollmentsponsor) {
         return res.status(400).json({
           error: 'enrollmentdependent was not found.',
+        });
+      }
+
+      const enrollment = await Enrollment.findByPk(
+        enrollmentsponsor.datavlues.enrollment_id
+      );
+
+      if (enrollment.form_step.includes('signature')) {
+        return res.status(400).json({
+          error: 'You cannot remove a sponsor from this enrollment.',
         });
       }
 
