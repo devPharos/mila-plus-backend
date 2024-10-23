@@ -10,15 +10,7 @@ import Enrollmentsponsor from '../models/Enrollmentsponsor';
 import Enrollmenttransfers from '../models/Enrollmenttransfer';
 import Student from '../models/Student';
 import Agent from '../models/Agent';
-import {
-  addDays,
-  addMinutes,
-  addSeconds,
-  format,
-  isAfter,
-  parseISO,
-  set,
-} from 'date-fns';
+import { addDays, format } from 'date-fns';
 import Processtype from '../models/Processtype';
 import Processsubstatus from '../models/Processsubstatus';
 import File from '../models/File';
@@ -27,6 +19,11 @@ import Filial from '../models/Filial';
 import Enrollmenttransfer from '../models/Enrollmenttransfer';
 import MailLayout from '../../Mails/MailLayout';
 import { BASEURL } from '../functions';
+import mailEnrollmentToStudent from '../../Mails/Processes/Enrollment Process/toStudent';
+import mailTransferToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent';
+import mailPlacementTestToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent';
+import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument';
+import Enrollmentsponsordocument from '../models/Enrollmentsponsordocument';
 
 const { Op } = Sequelize;
 
@@ -35,6 +32,69 @@ class EnrollmentController {
     const connection = new Sequelize(databaseConfig);
     const t = await connection.transaction();
     try {
+      const { processsubstatus_id } = req.body;
+
+      const substatus = await Processsubstatus.findByPk(processsubstatus_id);
+      if (!substatus) {
+        return res.status(400).json({
+          error: 'Substatus not found.',
+        });
+      }
+      let promises = [];
+      promises.push(
+        await Enrollment.create(
+          {
+            filial_id: newProspect.filial_id,
+            company_id: req.companyId,
+            student_id: newProspect.id,
+            form_step:
+              substatus.dataValues.name === 'Transfer'
+                ? 'transfer-request'
+                : 'student-information',
+            agent_id: newProspect.agent_id,
+            created_at: new Date(),
+            created_by: req.userId,
+          },
+          {
+            transaction: t,
+          }
+        ).then(async (enrollment) => {
+          await Enrollmenttimeline.create(
+            {
+              enrollment_id: enrollment.id,
+              processtype_id: newProspect.processtype_id,
+              status: 'Waiting',
+              processsubstatus_id: newProspect.processsubstatus_id,
+              phase: 'Prospect',
+              phase_step: 'Admission Information',
+              step_status: `Waiting for prospect's response. `,
+              expected_date: null,
+              created_at: new Date(),
+              created_by: req.userId,
+            },
+            {
+              transaction: t,
+            }
+          ).then(async () => {
+            if (newProspect.processsubstatus_id === 4) {
+              promises.push(
+                await Enrollmenttransfer.create(
+                  {
+                    enrollment_id: enrollment.id,
+                    company_id: req.companyId,
+                    created_at: new Date(),
+                    created_by: req.userId,
+                  },
+                  {
+                    transaction: t,
+                  }
+                )
+              );
+            }
+          });
+        })
+      );
+
       const new_enrollment = await Enrollment.create(
         {
           ...req.body,
@@ -144,10 +204,10 @@ class EnrollmentController {
         activeMenu === 'transfer-dso' &&
         lastActiveMenu.name === 'transfer-dso'
       ) {
-        nextStep = 'transfer-agent';
+        nextStep = 'finished';
         nextTimeline = {
           phase: 'Transfer Eligibility',
-          phase_step: 'DSO Signature',
+          phase_step: 'finished',
           step_status: `Form filling has been finished by the DSO`,
           expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
           created_at: new Date(),
@@ -286,42 +346,61 @@ class EnrollmentController {
         req.body.enrollmentdependents.length > 0
       ) {
         const { enrollmentdependents } = req.body;
-        const existingDependents = await Enrollmentdependent.findAll({
-          where: {
-            enrollment_id: enrollment_id,
-            canceled_at: null,
-          },
-        });
-        if (existingDependents) {
-          existingDependents.map((dependent) => {
-            promises.push(
-              dependent.update(
-                { canceled_at: new Date(), canceled_by: 2 },
-                {
-                  transaction: t,
-                }
-              )
-            );
-          });
-        }
+        // const existingDependents = await Enrollmentdependent.findAll({
+        //   where: {
+        //     enrollment_id: enrollment_id,
+        //     canceled_at: null,
+        //   },
+        // });
+        // if (existingDependents) {
+        //   existingDependents.map((dependent) => {
+        //     promises.push(
+        //       dependent.update(
+        //         { canceled_at: new Date(), canceled_by: 2 },
+        //         {
+        //           transaction: t,
+        //         }
+        //       )
+        //     );
+        //   });
+        // }
         enrollmentdependents.map((dependent) => {
           promises.push(
-            Enrollmentdependent.create(
+            Enrollmentdependent.update(
               {
-                enrollment_id: enrollmentExists.id,
                 name: dependent.name,
                 relationship_type: dependent.relationship_type,
                 gender: dependent.gender,
                 dept1_type: dependent.dept1_type,
                 email: dependent.email,
                 phone: dependent.phone,
-                created_at: new Date(),
-                created_by: 2,
+                updated_at: new Date(),
+                updated_by: req.userId || 2,
               },
               {
-                transaction: t,
+                where: {
+                  enrollment_id: enrollmentExists.id,
+                  id: dependent.id,
+                  canceled_at: null,
+                },
               }
             )
+            // Enrollmentdependent.create(
+            //   {
+            //     enrollment_id: enrollmentExists.id,
+            //     name: dependent.name,
+            //     relationship_type: dependent.relationship_type,
+            //     gender: dependent.gender,
+            //     dept1_type: dependent.dept1_type,
+            //     email: dependent.email,
+            //     phone: dependent.phone,
+            //     created_at: new Date(),
+            //     created_by: 2,
+            //   },
+            //   {
+            //     transaction: t,
+            //   }
+            // )
           );
         });
       }
@@ -371,7 +450,6 @@ class EnrollmentController {
         req.body.enrollmenttransfers &&
         req.body.enrollmenttransfers.previous_school_name
       ) {
-        console.log(1);
         const existingTransfers = await Enrollmenttransfers.findOne({
           where: {
             enrollment_id: enrollmentExists.id,
@@ -379,7 +457,6 @@ class EnrollmentController {
           },
         });
         if (existingTransfers) {
-          console.log(req.body.enrollmenttransfers);
           promises.push(
             existingTransfers.update(
               {
@@ -665,6 +742,22 @@ class EnrollmentController {
             where: {
               canceled_at: null,
             },
+            include: [
+              {
+                model: Enrollmentdependentdocument,
+                as: 'documents',
+                required: false,
+                include: [
+                  {
+                    model: File,
+                    as: 'file',
+                  },
+                ],
+                where: {
+                  canceled_at: null,
+                },
+              },
+            ],
           },
           {
             model: Enrollmentemergency,
@@ -681,6 +774,22 @@ class EnrollmentController {
             where: {
               canceled_at: null,
             },
+            include: [
+              {
+                model: Enrollmentsponsordocument,
+                as: 'documents',
+                required: false,
+                include: [
+                  {
+                    model: File,
+                    as: 'file',
+                  },
+                ],
+                where: {
+                  canceled_at: null,
+                },
+              },
+            ],
           },
           {
             model: Enrollmenttimeline,
@@ -753,7 +862,6 @@ class EnrollmentController {
   async show(req, res) {
     try {
       const { enrollment_id } = req.params;
-      console.log(enrollment_id);
       const enrollments = await Enrollment.findByPk(enrollment_id, {
         include: [
           {
@@ -827,7 +935,6 @@ class EnrollmentController {
   async showByOriginTypeSubtype(req, res) {
     try {
       const { origin, type, subtype } = req.query;
-      console.log({ origin, type, subtype });
       const enrollments = await Enrollment.findAll({
         where: { origin, type, subtype, canceled_at: null },
       });
@@ -1089,6 +1196,298 @@ class EnrollmentController {
       await t.rollback();
       const className = 'EnrollmentController';
       const functionName = 'dsosignature';
+      MailLog({ className, functionName, req, err });
+      return res.status(500).json({
+        error: err,
+      });
+    }
+  }
+
+  async startProcess(req, res) {
+    const connection = new Sequelize(databaseConfig);
+    const t = await connection.transaction();
+    try {
+      const { processType, student_id } = req.body;
+
+      const promises = [];
+
+      const student = await Student.findByPk(student_id);
+
+      if (!student) {
+        return res.status(400).json({
+          error: 'Student not found.',
+        });
+      }
+
+      if (processType === 'transfer-eligibility') {
+        const transferEligibility = await Enrollment.findOne({
+          where: {
+            student_id: student_id,
+            application: 'Transfer Eligibility',
+            canceled_at: null,
+          },
+        });
+
+        if (transferEligibility) {
+          return res.status(400).json({
+            error: 'Transfer Eligibility already started.',
+          });
+        }
+
+        promises.push(
+          await Enrollment.create(
+            {
+              filial_id: student.filial_id,
+              company_id: req.companyId,
+              student_id: student.id,
+              application: 'Transfer Eligibility',
+              form_step: 'transfer-request',
+              agent_id: student.agent_id,
+              created_at: new Date(),
+              created_by: req.userId,
+            },
+            {
+              transaction: t,
+            }
+          ).then(async (enrollment) => {
+            await Enrollmenttimeline.create(
+              {
+                enrollment_id: enrollment.id,
+                processtype_id: student.processtype_id,
+                status: 'Waiting',
+                processsubstatus_id: student.processsubstatus_id,
+                phase: 'Student Application',
+                phase_step:
+                  'Transfer Eligibility form link has been sent to the Student',
+                step_status: `Form filling has not been started yet.`,
+                expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+                created_at: new Date(),
+                created_by: req.userId,
+              },
+              {
+                transaction: t,
+              }
+            ).then(async () => {
+              await Enrollmenttransfer.create(
+                {
+                  enrollment_id: enrollment.id,
+                  company_id: req.companyId,
+                  created_at: new Date(),
+                  created_by: req.userId,
+                },
+                {
+                  transaction: t,
+                }
+              ).then(async () => {
+                const title = `Transfer Eligibility Form - Student`;
+                const filial = await Filial.findByPk(enrollment.filial_id);
+                const content = `<p>Dear ${student.dataValues.name},</p>
+                      <p>You have been asked to please complete the <strong>${title}</strong>.</p>
+                      <br/>
+                      <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Transfer?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
+
+                await mailer.sendMail({
+                  from: '"MILA Plus" <development@pharosit.com.br>',
+                  to: student.dataValues.email,
+                  subject: `MILA Plus - ${title}`,
+                  html: MailLayout({ title, content, filial: filial.name }),
+                });
+              });
+            });
+          })
+        );
+
+        Promise.all(promises).then(async () => {
+          t.commit();
+
+          const enrollment = await Enrollment.findOne({
+            where: {
+              student_id: student_id,
+              application: 'Transfer Eligibility',
+              canceled_at: null,
+            },
+          });
+          return res.json(enrollment);
+        });
+      }
+
+      if (processType === 'enrollment-process') {
+        const enrollmentProcess = await Enrollment.findOne({
+          where: {
+            student_id: student_id,
+            application: 'Enrollment Process',
+            canceled_at: null,
+          },
+        });
+
+        if (enrollmentProcess) {
+          return res.status(400).json({
+            error: 'Enrollment Process already started.',
+          });
+        }
+
+        promises.push(
+          await Enrollment.create(
+            {
+              filial_id: student.filial_id,
+              company_id: req.companyId,
+              student_id: student.id,
+              application: 'Enrollment Process',
+              form_step: 'student-information',
+              agent_id: student.agent_id,
+              created_at: new Date(),
+              created_by: req.userId,
+            },
+            {
+              transaction: t,
+            }
+          ).then(async (enrollment) => {
+            await Enrollmenttimeline.create(
+              {
+                enrollment_id: enrollment.id,
+                processtype_id: student.processtype_id,
+                status: 'Waiting',
+                processsubstatus_id: student.processsubstatus_id,
+                phase: 'Student Application',
+                phase_step:
+                  'Enrollment Process form link has been sent to the Student',
+                step_status: `Form filling has not been started yet.`,
+                expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+                created_at: new Date(),
+                created_by: req.userId,
+              },
+              {
+                transaction: t,
+              }
+            ).then(async () => {
+              await mailEnrollmentToStudent({
+                enrollment_id: enrollment.id,
+                student_id: student.id,
+              });
+            });
+          })
+        );
+
+        Promise.all(promises).then(async () => {
+          t.commit();
+
+          const enrollment = await Enrollment.findOne({
+            where: {
+              student_id: student_id,
+              application: 'Transfer Eligibility',
+              canceled_at: null,
+            },
+          });
+          return res.json(enrollment);
+        });
+      }
+
+      if (processType === 'placement-test') {
+        const placementTest = await Enrollment.findOne({
+          where: {
+            student_id: student_id,
+            application: 'Placement Test',
+            canceled_at: null,
+          },
+        });
+
+        if (placementTest) {
+          return res.status(400).json({
+            error: 'Placement Test already started.',
+          });
+        }
+
+        promises.push(
+          await Enrollment.create(
+            {
+              filial_id: student.filial_id,
+              company_id: req.companyId,
+              student_id: student.id,
+              application: 'Placement Test',
+              form_step: 'student-information',
+              agent_id: student.agent_id,
+              created_at: new Date(),
+              created_by: req.userId,
+            },
+            {
+              transaction: t,
+            }
+          ).then(async (enrollment) => {
+            await Enrollmenttimeline.create(
+              {
+                enrollment_id: enrollment.id,
+                processtype_id: student.processtype_id,
+                status: 'Waiting',
+                processsubstatus_id: student.processsubstatus_id,
+                phase: 'Student Application',
+                phase_step:
+                  'Placement Test form link has been sent to the Student',
+                step_status: `Form filling has not been started yet.`,
+                expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+                created_at: new Date(),
+                created_by: req.userId,
+              },
+              {
+                transaction: t,
+              }
+            ).then(async () => {
+              const title = `Placement Test Form - Student`;
+              const filial = await Filial.findByPk(enrollment.filial_id);
+              const content = `<p>Dear ${student.dataValues.name},</p>
+                      <p>You have been asked to please complete the <strong>${title}</strong>.</p>
+                      <br/>
+                      <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Enrollment?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
+
+              await mailer.sendMail({
+                from: '"MILA Plus" <development@pharosit.com.br>',
+                to: student.dataValues.email,
+                subject: `MILA Plus - ${title}`,
+                html: MailLayout({ title, content, filial: filial.name }),
+              });
+            });
+          })
+        );
+
+        Promise.all(promises).then(async () => {
+          t.commit();
+
+          const enrollment = await Enrollment.findOne({
+            where: {
+              student_id: student_id,
+              application: 'Transfer Eligibility',
+              canceled_at: null,
+            },
+          });
+          return res.json(enrollment);
+        });
+      }
+
+      // return res.json({ status: 'ok' });
+    } catch (err) {
+      await t.rollback();
+      const className = 'EnrollmentController';
+      const functionName = 'startProcess';
+      MailLog({ className, functionName, req, err });
+      return res.status(500).json({
+        error: err,
+      });
+    }
+  }
+
+  async sendFormMail(req, res) {
+    try {
+      const { type, enrollment_id, student_id } = req.body;
+      if (type === 'enrollment-process') {
+        await mailEnrollmentToStudent({ enrollment_id, student_id });
+      } else if (type === 'transfer-eligibility') {
+        await mailTransferToStudent({ enrollment_id, student_id });
+      } else if (type === 'placement-test') {
+        await mailPlacementTestToStudent({ enrollment_id, student_id });
+      }
+      return res.json({ ok: true });
+    } catch (err) {
+      const className = 'EnrollmentController';
+      const functionName = 'startProcess';
       MailLog({ className, functionName, req, err });
       return res.status(500).json({
         error: err,

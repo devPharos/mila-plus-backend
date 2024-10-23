@@ -1,6 +1,6 @@
 import Sequelize, { Model } from 'sequelize';
 
-class Enrollmentsponsor extends Model {
+class Enrollmentsponsordocument extends Model {
   static init(sequelize) {
     super.init(
       {
@@ -10,21 +10,9 @@ class Enrollmentsponsor extends Model {
           primaryKey: true,
         },
         enrollment_id: Sequelize.UUID,
-        name: Sequelize.STRING,
-        relationship_type: Sequelize.STRING,
-        email: Sequelize.STRING,
-        phone: Sequelize.STRING,
-        birthday: Sequelize.STRING,
-        address: Sequelize.STRING,
-        zip_code: Sequelize.STRING,
-        city: Sequelize.STRING,
-        state: Sequelize.STRING,
-        country: Sequelize.STRING,
-        birth_city: Sequelize.STRING,
-        birth_state: Sequelize.STRING,
-        birth_country: Sequelize.STRING,
-        responsible_checkbox: Sequelize.BOOLEAN,
-        signature: Sequelize.UUID,
+        sponsor_id: Sequelize.UUID,
+        file_id: Sequelize.UUID,
+        document_id: Sequelize.UUID,
         created_by: Sequelize.INTEGER,
         created_at: Sequelize.DATE,
         updated_by: Sequelize.INTEGER,
@@ -45,11 +33,16 @@ class Enrollmentsponsor extends Model {
       foreignKey: 'enrollment_id',
       as: 'enrollments',
     });
-    this.hasMany(models.Enrollmentsponsordocument, {
-      foreignKey: 'sponsor_id',
+    this.belongsTo(models.Document, {
+      foreignKey: 'document_id',
       as: 'documents',
     });
+    this.belongsTo(models.Enrollmentsponsor, {
+      foreignKey: 'sponsor_id',
+      as: 'sponsor',
+    });
+    this.belongsTo(models.File, { foreignKey: 'file_id', as: 'file' });
   }
 }
 
-export default Enrollmentsponsor;
+export default Enrollmentsponsordocument;

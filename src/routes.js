@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import MilaUserController from './app/controllers/MilaUserController';
 
-import authMiddleware from './app/middlewares/auth'
+import authMiddleware from './app/middlewares/auth';
 
 import validateUserStore from './app/validators/UserStore';
 import validateFilialAssociate from './app/validators/FilialAssociate';
@@ -35,6 +35,7 @@ import EnrollmentSponsorController from './app/controllers/EnrollmentSponsorCont
 import FilialDocumentController from './app/controllers/FilialDocumentController';
 import BankAccountController from './app/controllers/BankAccountController'
 import BankController from './app/controllers/BankController';
+import EnrollmentDependentController from './app/controllers/EnrollmentDependentController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
@@ -47,11 +48,23 @@ routes.get('/outside/filials/:filial_id', FilialController.show);
 routes.get('/outside/staffs/:staff_id', StaffController.show);
 routes.put('/outside/staffs/:staff_id', StaffController.updateOutside);
 
-routes.get('/outside/enrollments/:enrollment_id', EnrollmentController.outsideShow);
-routes.put('/outside/enrollments/:enrollment_id', EnrollmentController.outsideUpdate);
+routes.get(
+  '/outside/enrollments/:enrollment_id',
+  EnrollmentController.outsideShow
+);
+routes.put(
+  '/outside/enrollments/:enrollment_id',
+  EnrollmentController.outsideUpdate
+);
 
-routes.get('/outside/sponsors/:sponsor_id', EnrollmentSponsorController.outsideShow);
-routes.put('/outside/sponsors/:sponsor_id', EnrollmentSponsorController.outsideUpdate);
+routes.get(
+  '/outside/sponsors/:sponsor_id',
+  EnrollmentSponsorController.outsideShow
+);
+routes.put(
+  '/outside/sponsors/:sponsor_id',
+  EnrollmentSponsorController.outsideUpdate
+);
 
 routes.get('/users_short_info/:user_id', MilaUserController.shortInfo);
 
@@ -60,13 +73,42 @@ routes.get('/agents', AgentController.index);
 routes.get('/documentsByOrigin', DocumentController.showByOriginTypeSubtype);
 
 routes.post('/staffdocuments', StaffDocumentController.store);
-routes.delete('/staffdocuments/:staffDocument_id', StaffDocumentController.inactivate);
+routes.delete(
+  '/staffdocuments/:staffDocument_id',
+  StaffDocumentController.inactivate
+);
+
+routes.post('/enrollmentdependent', EnrollmentDependentController.store);
+routes.delete(
+  '/enrollmentdependent/:enrollmentdependent_id',
+  EnrollmentDependentController.inactivate
+);
+
+routes.post('/enrollmentsponsor', EnrollmentSponsorController.store);
+routes.delete(
+  '/enrollmentsponsor/:enrollmentsponsor_id',
+  EnrollmentSponsorController.inactivate
+);
 
 routes.post('/enrollmentdocuments', EnrollmentDocumentController.store);
-routes.delete('/enrollmentdocuments/:enrollmentDocument_id', EnrollmentDocumentController.inactivate);
+routes.post('/dependentsdocuments', EnrollmentDocumentController.dependents);
+routes.delete(
+  '/dependentsdocuments/:dependentDocument_id',
+  EnrollmentDocumentController.dependentsDelete
+);
+routes.delete(
+  '/enrollmentdocuments/:enrollmentDocument_id',
+  EnrollmentDocumentController.inactivate
+);
 
-routes.post('/enrollmentstudentsignature', EnrollmentController.studentsignature);
-routes.post('/enrollmentsponsorsignature', EnrollmentController.sponsorsignature);
+routes.post(
+  '/enrollmentstudentsignature',
+  EnrollmentController.studentsignature
+);
+routes.post(
+  '/enrollmentsponsorsignature',
+  EnrollmentController.sponsorsignature
+);
 routes.post('/enrollmentdsosignature', EnrollmentController.dsosignature);
 routes.get('/filials', FilialController.index);
 routes.get('/filials/:filial_id', FilialController.show);
@@ -80,14 +122,23 @@ routes.post('/processtypes', ProcessTypeController.store);
 routes.put('/processtypes/:processtype_id', ProcessTypeController.update);
 
 routes.get('/processsubstatuses', ProcessSubstatusController.index);
-routes.get('/processsubstatuses/:processsubstatus_id', ProcessSubstatusController.show);
+routes.get(
+  '/processsubstatuses/:processsubstatus_id',
+  ProcessSubstatusController.show
+);
 routes.post('/processsubstatuses', ProcessSubstatusController.store);
-routes.put('/processsubstatuses/:processsubstatus_id', ProcessSubstatusController.update);
+routes.put(
+  '/processsubstatuses/:processsubstatus_id',
+  ProcessSubstatusController.update
+);
 
 routes.get('/companies', CompanyController.index);
 
 routes.post('/filialdocuments', FilialDocumentController.store);
-routes.delete('/filialdocuments/:filialDocument_id', FilialDocumentController.inactivate);
+routes.delete(
+  '/filialdocuments/:filialDocument_id',
+  FilialDocumentController.inactivate
+);
 
 routes.get('/users', MilaUserController.index);
 routes.get('/users/:user_id', MilaUserController.show);
@@ -97,7 +148,10 @@ routes.get('/prospects', ProspectController.index);
 
 routes.get('/MenuHierarchy', MenuHierarchyController.index);
 routes.get('/MenuHierarchy/group/:group_id', MenuHierarchyController.group);
-routes.get('/MenuHierarchy/user/:user_id', MenuHierarchyController.hierarchyByUser)
+routes.get(
+  '/MenuHierarchy/user/:user_id',
+  MenuHierarchyController.hierarchyByUser
+);
 
 routes.post('/filials', FilialController.store);
 routes.put('/filials/:filial_id', FilialController.update);
@@ -113,9 +167,15 @@ routes.post('/parameters', ParameterController.store);
 routes.put('/parameters/:parameter_id', ParameterController.update);
 
 routes.get('/chartofaccounts', ChartOfAccountsController.index);
-routes.get('/chartofaccounts/:chartofaccount_id', ChartOfAccountsController.show);
+routes.get(
+  '/chartofaccounts/:chartofaccount_id',
+  ChartOfAccountsController.show
+);
 routes.post('/chartofaccounts', ChartOfAccountsController.store);
-routes.put('/chartofaccounts/:chartofaccount_id', ChartOfAccountsController.update);
+routes.put(
+  '/chartofaccounts/:chartofaccount_id',
+  ChartOfAccountsController.update
+);
 
 routes.get('/languages', LanguageController.index);
 routes.get('/languages/:language_id', LanguageController.show);
@@ -123,9 +183,15 @@ routes.post('/languages', LanguageController.store);
 routes.put('/languages/:language_id', LanguageController.update);
 
 routes.get('/programcategories', ProgramCategoryController.index);
-routes.get('/programcategories/:programcategory_id', ProgramCategoryController.show);
+routes.get(
+  '/programcategories/:programcategory_id',
+  ProgramCategoryController.show
+);
 routes.post('/programcategories', ProgramCategoryController.store);
-routes.put('/programcategories/:programcategory_id', ProgramCategoryController.update);
+routes.put(
+  '/programcategories/:programcategory_id',
+  ProgramCategoryController.update
+);
 
 routes.get('/levels', LevelController.index);
 routes.get('/levels/:level_id', LevelController.show);
@@ -146,7 +212,10 @@ routes.get('/paceguides', PaceGuideController.index);
 routes.get('/paceguides/:paceguide_id', PaceGuideController.show);
 routes.post('/paceguides', PaceGuideController.store);
 routes.put('/paceguides/:paceguide_id', PaceGuideController.update);
-routes.get('/paceguides_by_workload/:workload_id', PaceGuideController.listByWorkload);
+routes.get(
+  '/paceguides_by_workload/:workload_id',
+  PaceGuideController.listByWorkload
+);
 
 routes.get('/groups', UserGroupController.index);
 routes.get('/groups/:group_id', UserGroupController.show);
@@ -184,11 +253,17 @@ routes.post('/enrollments', EnrollmentController.store);
 routes.put('/enrollments/:enrollment_id', EnrollmentController.update);
 routes.delete('/enrollments/:enrollment_id', EnrollmentController.inactivate);
 
+routes.post('/enrollments/start-process/', EnrollmentController.startProcess);
+routes.post('/enrollments/send-form-mail/', EnrollmentController.sendFormMail);
+
 routes.get('/calendar-days', CalendarDayController.index);
 routes.get('/calendar-days/:calendarDay_id', CalendarDayController.show);
 routes.post('/calendar-days', CalendarDayController.store);
 routes.put('/calendar-days/:calendarDay_id', CalendarDayController.update);
-routes.delete('/calendar-days/:calendarDay_id', CalendarDayController.inactivate);
+routes.delete(
+  '/calendar-days/:calendarDay_id',
+  CalendarDayController.inactivate
+);
 
 // routes.use(FilialValidation);
 
@@ -201,7 +276,11 @@ routes.post('/prospects', ProspectController.store);
 routes.put('/prospects/:prospect_id', ProspectController.update);
 routes.post('/prospects/formMail', ProspectController.formMail);
 
-routes.post('/userxfilial', validateFilialAssociate, MilaUserController.filialAssociate)
+routes.post(
+  '/userxfilial',
+  validateFilialAssociate,
+  MilaUserController.filialAssociate
+);
 
 // bank
 routes.get('/bank', BankController.index)
