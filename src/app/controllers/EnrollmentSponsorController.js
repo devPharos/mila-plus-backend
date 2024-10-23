@@ -54,22 +54,22 @@ class EnrollmentsponsorController {
         }
       );
 
-      t.commit();
+      t.commit().then(async () => {
+        const retSponsor = await Enrollmentsponsor.findByPk(
+          sponsor.dataValues.id,
+          {
+            include: [
+              {
+                model: Enrollmentsponsordocument,
+                as: 'documents',
+                required: false,
+              },
+            ],
+          }
+        );
 
-      const retSponsor = await Enrollmentsponsor.findByPk(
-        sponsor.dataValues.id,
-        {
-          include: [
-            {
-              model: Enrollmentsponsordocument,
-              as: 'documents',
-              required: false,
-            },
-          ],
-        }
-      );
-
-      return res.json(retSponsor);
+        return res.json(retSponsor);
+      });
     } catch (err) {
       await t.rollback();
       const className = 'EnrollmentSponsorController';
