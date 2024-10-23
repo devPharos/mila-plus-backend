@@ -697,6 +697,14 @@ class EnrollmentController {
       const enrollments = await Enrollment.findByPk(enrollment_id, {
         include: [
           {
+            model: File,
+            as: 'signature',
+            required: false,
+            where: {
+              canceled_at: null,
+            },
+          },
+          {
             model: Student,
             as: 'students',
             include: [
@@ -806,6 +814,16 @@ class EnrollmentController {
             where: {
               canceled_at: null,
             },
+            include: [
+              {
+                model: File,
+                as: 'dsosignature',
+                required: false,
+                where: {
+                  canceled_at: null,
+                },
+              },
+            ],
           },
         ],
       });

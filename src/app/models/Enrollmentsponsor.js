@@ -45,6 +45,10 @@ class Enrollmentsponsor extends Model {
       foreignKey: 'enrollment_id',
       as: 'enrollments',
     });
+    this.belongsTo(models.File, {
+      foreignKey: 'signature',
+      as: 'sponsorsignature',
+    });
     this.hasMany(models.Enrollmentsponsordocument, {
       foreignKey: 'sponsor_id',
       as: 'documents',

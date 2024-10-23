@@ -96,7 +96,7 @@ class EnrollmentDependentontroller {
       }
 
       const enrollment = await Enrollment.findByPk(
-        enrollmentdependent.datavlues.enrollment_id
+        enrollmentdependent.dataValues.enrollment_id
       );
 
       if (enrollment.form_step.includes('signature')) {

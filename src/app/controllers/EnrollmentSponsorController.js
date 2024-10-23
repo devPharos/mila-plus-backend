@@ -97,7 +97,7 @@ class EnrollmentsponsorController {
       }
 
       const enrollment = await Enrollment.findByPk(
-        enrollmentsponsor.datavlues.enrollment_id
+        enrollmentsponsor.dataValues.enrollment_id
       );
 
       if (enrollment.form_step.includes('signature')) {
@@ -347,6 +347,16 @@ class EnrollmentsponsorController {
               id: sponsor_id,
               canceled_at: null,
             },
+            include: [
+              {
+                model: File,
+                as: 'sponsorsignature',
+                required: false,
+                where: {
+                  canceled_at: null,
+                },
+              },
+            ],
           },
           {
             model: Enrollmenttimeline,
