@@ -7,12 +7,20 @@ class BankController {
     async index(req, res) {
         try {
             const banks = await Bank.findAll({
+                include: [
+                    {
+                        association: 'company',
+                        attributes: ['id', 'company_name'],
+                    },
+                ],
                 where: {
                     canceled_at: null,
                 },
                 order: [['created_at']],
             })
 
+
+            console.log(banks)
             if (!banks.length) {
                 return res.status(400).json({
                     error: 'Banks not found.',
