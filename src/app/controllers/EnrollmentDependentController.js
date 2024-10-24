@@ -12,15 +12,7 @@ class EnrollmentDependentontroller {
     const connection = new Sequelize(databaseConfig);
     const t = await connection.transaction();
     try {
-      const {
-        enrollment_id,
-        name,
-        gender,
-        dept1_type,
-        relationship_type,
-        email,
-        phone,
-      } = req.body;
+      const { enrollment_id } = req.body;
 
       const enrollment = await Enrollment.findByPk(enrollment_id);
 
@@ -39,12 +31,7 @@ class EnrollmentDependentontroller {
       const dependent = await Enrollmentdependent.create(
         {
           enrollment_id,
-          name,
-          gender,
-          dept1_type,
-          relationship_type,
-          email,
-          phone,
+          ...req.body,
           created_by: req.userId || 2,
           created_at: new Date(),
         },
@@ -53,22 +40,22 @@ class EnrollmentDependentontroller {
         }
       );
 
-      t.commit();
+      t.commit().then(async () => {
+        const retDependent = await Enrollmentdependent.findByPk(
+          dependent.dataValues.id,
+          {
+            include: [
+              {
+                model: Enrollmentdependentdocument,
+                as: 'documents',
+                required: false,
+              },
+            ],
+          }
+        );
 
-      const retDependent = await Enrollmentdependent.findByPk(
-        dependent.dataValues.id,
-        {
-          include: [
-            {
-              model: Enrollmentdependentdocument,
-              as: 'documents',
-              required: false,
-            },
-          ],
-        }
-      );
-
-      return res.json(retDependent);
+        return res.json(retDependent);
+      });
     } catch (err) {
       await t.rollback();
       const className = 'EnrollmentDependentController';
@@ -96,7 +83,7 @@ class EnrollmentDependentontroller {
       }
 
       const enrollment = await Enrollment.findByPk(
-        enrollmentdependent.datavlues.enrollment_id
+        enrollmentdependent.dataValues.enrollment_id
       );
 
       if (enrollment.form_step.includes('signature')) {

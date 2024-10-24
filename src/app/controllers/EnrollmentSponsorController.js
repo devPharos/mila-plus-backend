@@ -54,22 +54,22 @@ class EnrollmentsponsorController {
         }
       );
 
-      t.commit();
+      t.commit().then(async () => {
+        const retSponsor = await Enrollmentsponsor.findByPk(
+          sponsor.dataValues.id,
+          {
+            include: [
+              {
+                model: Enrollmentsponsordocument,
+                as: 'documents',
+                required: false,
+              },
+            ],
+          }
+        );
 
-      const retSponsor = await Enrollmentsponsor.findByPk(
-        sponsor.dataValues.id,
-        {
-          include: [
-            {
-              model: Enrollmentsponsordocument,
-              as: 'documents',
-              required: false,
-            },
-          ],
-        }
-      );
-
-      return res.json(retSponsor);
+        return res.json(retSponsor);
+      });
     } catch (err) {
       await t.rollback();
       const className = 'EnrollmentSponsorController';
@@ -97,7 +97,7 @@ class EnrollmentsponsorController {
       }
 
       const enrollment = await Enrollment.findByPk(
-        enrollmentsponsor.datavlues.enrollment_id
+        enrollmentsponsor.dataValues.enrollment_id
       );
 
       if (enrollment.form_step.includes('signature')) {
@@ -347,6 +347,16 @@ class EnrollmentsponsorController {
               id: sponsor_id,
               canceled_at: null,
             },
+            include: [
+              {
+                model: File,
+                as: 'sponsorsignature',
+                required: false,
+                where: {
+                  canceled_at: null,
+                },
+              },
+            ],
           },
           {
             model: Enrollmenttimeline,
