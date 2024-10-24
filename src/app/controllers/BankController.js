@@ -10,7 +10,7 @@ class BankController {
                 include: [
                     {
                         association: 'company',
-                        attributes: ['id', 'company_name'],
+                        attributes: ['name'],
                     },
                 ],
                 where: {
@@ -19,8 +19,6 @@ class BankController {
                 order: [['created_at']],
             })
 
-
-            console.log(banks)
             if (!banks.length) {
                 return res.status(400).json({
                     error: 'Banks not found.',
@@ -44,6 +42,12 @@ class BankController {
         try {
             const { bank_id } = req.params
             const bank = await Bank.findByPk(bank_id, {
+                include: [
+                    {
+                        association: 'company',
+                        attributes: ['name'],
+                    },
+                ],
                 where: { canceled_at: null },
             })
 
@@ -67,12 +71,15 @@ class BankController {
     async store(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
+        const data = req.body;
+
         try {
             const new_bank = await Bank.create(
                 {
-                    ...req.body,
-                    company_id: req.companyId,
-                    created_at: new Date(),
+                    bank_alias: data.bank_alias,
+                    bank_name: data.bank_name,
+                    company_id: data.company_id,
+                    cre2ated_at: new Date(),
                     created_by: req.userId,
                 },
                 {
@@ -86,6 +93,8 @@ class BankController {
             await t.rollback()
             const className = 'BankController'
             const functionName = 'store'
+
+            console.log(err)
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,
