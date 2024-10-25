@@ -7,17 +7,21 @@ class BankAccountController {
     async index(req, res) {
         try {
             const bankAccounts = await Bankaccounts.findAll({
+                include: [
+                    {
+                        association: 'filial',
+                        attributes: ['name'],
+                    },
+                    {
+                        association: 'bank',
+                        attributes: ['bank_name'],
+                    },
+                ],
                 where: {
                     canceled_at: null,
                 },
                 order: [['account']],
             })
-
-            if (!bankAccounts.length) {
-                return res.status(400).json({
-                    error: 'Bank Accounts not found.',
-                })
-            }
 
             return res.json(bankAccounts)
         } catch (err) {
@@ -35,7 +39,17 @@ class BankAccountController {
     async show(req, res) {
         try {
             const { bankAccount_id } = req.params
-            const bankAccount = await BankAccount.findByPk(bankAccount_id, {
+            const bankAccount = await Bankaccounts.findByPk(bankAccount_id, {
+                include: [
+                    {
+                        association: 'filial',
+                        attributes: ['name'],
+                    },
+                    {
+                        association: 'bank',
+                        attributes: ['bank_name'],
+                    },
+                ],
                 where: { canceled_at: null },
             })
 
@@ -59,8 +73,10 @@ class BankAccountController {
     async store(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
+
+        console.log(req)
         try {
-            const new_bankAccount = await BankAccount.create(
+            const new_bankAccount = await Bankaccounts.create(
                 {
                     ...req.body,
                     company_id: req.companyId,
@@ -91,7 +107,9 @@ class BankAccountController {
         try {
             const { bankAccount_id } = req.params
 
-            const bankAccountExists = await BankAccount.findByPk(bankAccount_id)
+            const bankAccountExists = await Bankaccounts.findByPk(
+                bankAccount_id
+            )
 
             if (!bankAccountExists) {
                 return res
@@ -124,7 +142,7 @@ class BankAccountController {
         const t = await connection.transaction()
         try {
             const { bankAccount_id } = req.params
-            const bankAccount = await BankAccount.findByPk(bankAccount_id)
+            const bankAccount = await Bankaccounts.findByPk(bankAccount_id)
 
             if (!bankAccount) {
                 return res.status(400).json({
