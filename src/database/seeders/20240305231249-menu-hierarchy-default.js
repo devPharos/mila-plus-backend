@@ -177,6 +177,11 @@ module.exports = {
           father_id: 4,
           alias: 'financial-bank',
           name: 'FinancialBank',
+        },
+        {
+          father_id: 4,
+          alias: 'financial-bank-account',
+          name: 'FinancialBankAccount',
         }
       ],
       {}
