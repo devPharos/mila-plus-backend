@@ -118,16 +118,11 @@ class Database {
       );
   }
 
-  // mongo() {
-  //   this.mongoConnection = mongoose.connect(
-  //     `mongodb://${process.env.MDB_USERNAME}:${process.env.MDB_PASSWORD}@${process.env.MDB_HOST}:${process.env.MDB_PORT}/${process.env.MDB_DB}`,
-  //     {
-  //       useNewUrlParser: true,
-  //       useFindAndModify: true,
-  //       useUnifiedTopology: true,
-  //     }
-  //   );
-  // }
+  close() {
+    this.connection.close(()  => {
+      console.log('Database connection closed')
+    })
+  }
 }
 
 export default new Database();
