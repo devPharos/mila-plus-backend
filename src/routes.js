@@ -36,6 +36,14 @@ import FilialDocumentController from './app/controllers/FilialDocumentController
 import BankAccountController from './app/controllers/BankAccountController'
 import BankController from './app/controllers/BankController';
 import EnrollmentDependentController from './app/controllers/EnrollmentDependentController';
+import MerchantController from './app/controllers/MerchantController';
+import MerchantXChartOfAccountController from './app/controllers/MerchantXChartOfAccountController';
+import PayeeController from './app/controllers/PayeeController';
+import PayeeInstallmentController from './app/controllers/PayeeInstallmentController';
+import PaymentCriteriaController from './app/controllers/PaymentCriteriaController';
+import PaymentMethodController from './app/controllers/PaymentMethodController';
+import ReceivableController from './app/controllers/ReceivableController';
+import ReceivableInstallmentController from './app/controllers/ReceivableInstallmentController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
@@ -295,6 +303,63 @@ routes.get('/bankaccounts/:bankAccount_id', BankAccountController.show)
 routes.post('/bankaccounts', BankAccountController.store)
 routes.put('/bankaccounts/:bankAccount_id', BankAccountController.update)
 routes.delete('/bankaccounts/:bankAccount_id', BankAccountController.delete)
+
+// merchant
+routes.get('/merchant', MerchantController.index)
+routes.get('/merchant/:merchant_id', MerchantController.show)
+routes.post('/merchant', MerchantController.store)
+routes.put('/merchant/:merchant_id', MerchantController.update)
+routes.delete('/merchant/:merchant_id', MerchantController.delete)
+
+// merchant x chart of account
+routes.get('/merchantxchartofaccount', MerchantXChartOfAccountController.index)
+routes.get('/merchantxchartofaccount/:merchantxchartofaccount_id', MerchantXChartOfAccountController.show)
+routes.post('/merchantxchartofaccount', MerchantXChartOfAccountController.store)
+routes.put('/merchantxchartofaccount/:merchantxchartofaccount_id', MerchantXChartOfAccountController.update)
+routes.delete('/merchantxchartofaccount/:merchantxchartofaccount_id', MerchantXChartOfAccountController.delete)
+
+// payee
+routes.get('/payee', PayeeController.index)
+routes.get('/payee/:payee_id', PayeeController.show)
+routes.post('/payee', PayeeController.store)
+routes.put('/payee/:payee_id', PayeeController.update)
+routes.delete('/payee/:payee_id', PayeeController.delete)
+
+// payee installment
+routes.get('/payeeinstallment', PayeeInstallmentController.index)
+routes.get('/payeeinstallment/:payeeinstallment_id', PayeeInstallmentController.show)
+routes.post('/payeeinstallment', PayeeInstallmentController.store)
+routes.put('/payeeinstallment/:payeeinstallment_id', PayeeInstallmentController.update)
+routes.delete('/payeeinstallment/:payeeinstallment_id', PayeeInstallmentController.delete)
+
+// payment criteria
+routes.get('/paymentcriteria', PaymentCriteriaController.index)
+routes.get('/paymentcriteria/:paymentcriteria_id', PaymentCriteriaController.show)
+routes.post('/paymentcriteria', PaymentCriteriaController.store)
+routes.put('/paymentcriteria/:paymentcriteria_id', PaymentCriteriaController.update)
+routes.delete('/paymentcriteria/:paymentcriteria_id', PaymentCriteriaController.delete)
+
+// payment method
+routes.get('/paymentmethod', PaymentMethodController.index)
+routes.get('/paymentmethod/:paymentmethod_id', PaymentMethodController.show)
+routes.post('/paymentmethod', PaymentMethodController.store)
+routes.put('/paymentmethod/:paymentmethod_id', PaymentMethodController.update)
+routes.delete('/paymentmethod/:paymentmethod_id', PaymentMethodController.delete)
+
+// receivable
+routes.get('/receivable', ReceivableController.index)
+routes.get('/receivable/:receivable_id', ReceivableController.show)
+routes.post('/receivable', ReceivableController.store)
+routes.put('/receivable/:receivable_id', ReceivableController.update)
+routes.delete('/receivable/:receivable_id', ReceivableController.delete)
+
+// receivable installment
+routes.get('/receivableinstallment', ReceivableInstallmentController.index)
+routes.get('/receivableinstallment/:receivableinstallment_id', ReceivableInstallmentController.show)
+routes.post('/receivableinstallment', ReceivableInstallmentController.store)
+routes.put('/receivableinstallment/:receivableinstallment_id', ReceivableInstallmentController.update)
+routes.delete('/receivableinstallment/:receivableinstallment_id', ReceivableInstallmentController.delete)
+
 
 
 export default routes;
