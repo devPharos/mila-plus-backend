@@ -1,8 +1,8 @@
 import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
-import MerchantXChartOfAccount from '../models/MerchantXChartOfAccount'
-import Merchant from '../models/Merchant'
+import MerchantXChartOfAccount from '../models/MerchantXChartOfAccounts'
+import Merchant from '../models/Merchants'
 import ChartOfAccount from '../models/Chartofaccount'
 
 const { Op } = Sequelize
