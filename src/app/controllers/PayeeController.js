@@ -4,7 +4,6 @@ import databaseConfig from '../../config/database'
 import Payee from '../models/Payee'
 import Company from '../models/Company'
 import Filial from '../models/Filial'
-import Issuer from '../models/Issuer'
 import PaymentMethod from '../models/PaymentMethod'
 import ChartOfAccount from '../models/Chartofaccount'
 import PaymentCriteria from '../models/PaymentCriteria'
@@ -24,11 +23,6 @@ class PayeeController {
                     {
                         model: Filial,
                         as: 'filial',
-                        where: { canceled_at: null },
-                    },
-                    {
-                        model: Issuer,
-                        as: 'issuer',
                         where: { canceled_at: null },
                     },
                     {
