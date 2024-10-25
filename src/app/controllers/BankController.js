@@ -19,11 +19,6 @@ class BankController {
                 order: [['created_at']],
             })
 
-            if (!banks.length) {
-                return res.status(400).json({
-                    error: 'Banks not found.',
-                })
-            }
 
             return res.json(banks)
         } catch (err) {
@@ -78,8 +73,8 @@ class BankController {
                 {
                     bank_alias: data.bank_alias,
                     bank_name: data.bank_name,
-                    company_id: data.company_id,
-                    cre2ated_at: new Date(),
+                    company_id: req.companyId,
+                    created_at: new Date(),
                     created_by: req.userId,
                 },
                 {
@@ -93,8 +88,6 @@ class BankController {
             await t.rollback()
             const className = 'BankController'
             const functionName = 'store'
-
-            console.log(err)
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,
@@ -140,12 +133,6 @@ class BankController {
         try {
             const { bank_id } = req.params
             const bank = await Bank.findByPk(bank_id)
-
-            if (!bank) {
-                return res.status(400).json({
-                    error: 'Bank not found.',
-                })
-            }
 
             await bank.update(
                 {
