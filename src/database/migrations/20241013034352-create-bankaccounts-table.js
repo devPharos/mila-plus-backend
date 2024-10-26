@@ -27,11 +27,11 @@ module.exports = {
                 onUpdate: 'NO ACTION',
             },
             account: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.STRING,
                 allowNull: false,
             },
             routing_number: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.STRING,
                 allowNull: false,
             },
             created_at: {
