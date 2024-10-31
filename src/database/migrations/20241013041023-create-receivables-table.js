@@ -12,14 +12,26 @@ module.exports = {
             company_id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
+                references: {
+                    model: 'companies',
+                    key: 'id',
+                },
             },
             filial_id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
+                references: {
+                    model: 'filials',
+                    key: 'id',
+                },
             },
             issuer_id: {
                 type: Sequelize.UUID,
                 allowNull: true,
+                references: {
+                    model: 'issuers',
+                    key: 'id',
+                }
             },
             entry_date: {
                 type: Sequelize.STRING,
