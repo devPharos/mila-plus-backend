@@ -44,6 +44,7 @@ import PaymentCriteriaController from './app/controllers/PaymentCriteriaControll
 import PaymentMethodController from './app/controllers/PaymentMethodController';
 import ReceivableController from './app/controllers/ReceivableController';
 import ReceivableInstallmentController from './app/controllers/ReceivableInstallmentController';
+import IssuerController from './app/controllers/IssuerController';
 
 const routes = new Router();
 routes.post('/sessions', SessionController.store);
@@ -305,11 +306,11 @@ routes.put('/bankaccounts/:bankAccount_id', BankAccountController.update)
 routes.delete('/bankaccounts/:bankAccount_id', BankAccountController.delete)
 
 // merchant
-routes.get('/merchant', MerchantController.index)
-routes.get('/merchant/:merchant_id', MerchantController.show)
-routes.post('/merchant', MerchantController.store)
-routes.put('/merchant/:merchant_id', MerchantController.update)
-routes.delete('/merchant/:merchant_id', MerchantController.delete)
+routes.get('/merchants', MerchantController.index)
+routes.get('/merchants/:merchant_id', MerchantController.show)
+routes.post('/merchants', MerchantController.store)
+routes.put('/merchants/:merchant_id', MerchantController.update)
+routes.delete('/merchants/:merchant_id', MerchantController.delete)
 
 // merchant x chart of account
 routes.get('/merchantxchartofaccount', MerchantXChartOfAccountController.index)
@@ -333,18 +334,18 @@ routes.put('/payeeinstallment/:payeeinstallment_id', PayeeInstallmentController.
 routes.delete('/payeeinstallment/:payeeinstallment_id', PayeeInstallmentController.delete)
 
 // payment criteria
-routes.get('/paymentcriteria', PaymentCriteriaController.index)
-routes.get('/paymentcriteria/:paymentcriteria_id', PaymentCriteriaController.show)
-routes.post('/paymentcriteria', PaymentCriteriaController.store)
-routes.put('/paymentcriteria/:paymentcriteria_id', PaymentCriteriaController.update)
-routes.delete('/paymentcriteria/:paymentcriteria_id', PaymentCriteriaController.delete)
+routes.get('/paymentcriterias', PaymentCriteriaController.index)
+routes.get('/paymentcriterias/:paymentcriteria_id', PaymentCriteriaController.show)
+routes.post('/paymentcriterias', PaymentCriteriaController.store)
+routes.put('/paymentcriterias/:paymentcriteria_id', PaymentCriteriaController.update)
+routes.delete('/paymentcriterias/:paymentcriteria_id', PaymentCriteriaController.delete)
 
 // payment method
-routes.get('/paymentmethod', PaymentMethodController.index)
-routes.get('/paymentmethod/:paymentmethod_id', PaymentMethodController.show)
-routes.post('/paymentmethod', PaymentMethodController.store)
-routes.put('/paymentmethod/:paymentmethod_id', PaymentMethodController.update)
-routes.delete('/paymentmethod/:paymentmethod_id', PaymentMethodController.delete)
+routes.get('/paymentmethods', PaymentMethodController.index)
+routes.get('/paymentmethods/:paymentmethod_id', PaymentMethodController.show)
+routes.post('/paymentmethods', PaymentMethodController.store)
+routes.put('/paymentmethods/:paymentmethod_id', PaymentMethodController.update)
+routes.delete('/paymentmethods/:paymentmethod_id', PaymentMethodController.delete)
 
 // receivable
 routes.get('/receivable', ReceivableController.index)
@@ -360,6 +361,11 @@ routes.post('/receivableinstallment', ReceivableInstallmentController.store)
 routes.put('/receivableinstallment/:receivableinstallment_id', ReceivableInstallmentController.update)
 routes.delete('/receivableinstallment/:receivableinstallment_id', ReceivableInstallmentController.delete)
 
+routes.get('/issuers', IssuerController.index);
+routes.get('/issuers/:issuer_id', IssuerController.show);
+routes.post('/issuers', IssuerController.store);
+routes.put('/issuers/:issuer_id', IssuerController.update);
+routes.delete('/issuers/:issuer_id', IssuerController.delete);
 
 
 export default routes;
