@@ -5,6 +5,7 @@ import PaymentMethod from '../models/PaymentMethod'
 import Company from '../models/Company'
 import Filial from '../models/Filial'
 import BankAccount from '../models/BankAccount'
+import BankAccounts from '../models/BankAccount'
 
 const { Op } = Sequelize
 
@@ -24,7 +25,7 @@ class PaymentMethodController {
                         where: { canceled_at: null },
                     },
                     {
-                        model: BankAccount,
+                        model: BankAccounts,
                         as: 'bankAccount',
                         where: { canceled_at: null },
                     },
@@ -32,12 +33,6 @@ class PaymentMethodController {
                 where: { canceled_at: null },
                 order: [['created_at', 'DESC']],
             })
-
-            if (!paymentMethods.length) {
-                return res.status(400).json({
-                    error: 'No payment methods found.',
-                })
-            }
 
             return res.json(paymentMethods)
         } catch (err) {
@@ -52,8 +47,9 @@ class PaymentMethodController {
 
     async show(req, res) {
         try {
-            const { id } = req.params
-            const paymentMethod = await PaymentMethod.findByPk(id, {
+            const { paymentmethod_id } = req.params
+
+            const paymentMethod = await PaymentMethod.findByPk(paymentmethod_id, {
                 where: { canceled_at: null },
                 include: [
                     {
@@ -67,18 +63,12 @@ class PaymentMethodController {
                         where: { canceled_at: null },
                     },
                     {
-                        model: BankAccount,
+                        model: BankAccounts,
                         as: 'bankAccount',
                         where: { canceled_at: null },
                     },
                 ],
             })
-
-            if (!paymentMethod) {
-                return res.status(400).json({
-                    error: 'Payment method not found.',
-                })
-            }
 
             return res.json(paymentMethod)
         } catch (err) {
@@ -94,10 +84,13 @@ class PaymentMethodController {
     async store(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
+
         try {
             const newPaymentMethod = await PaymentMethod.create(
                 {
                     ...req.body,
+                    filial_id: req.body.filial_id ? req.body.filial_id : req.headers.filial,
+                    company_id: req.companyId,
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -123,9 +116,9 @@ class PaymentMethodController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { id } = req.params
+            const { paymentmethod_id } = req.params
 
-            const paymentMethodExists = await PaymentMethod.findByPk(id)
+            const paymentMethodExists = await PaymentMethod.findByPk(paymentmethod_id)
 
             if (!paymentMethodExists) {
                 return res
@@ -134,7 +127,12 @@ class PaymentMethodController {
             }
 
             await paymentMethodExists.update(
-                { ...req.body, updated_by: req.userId, updated_at: new Date() },
+                {
+                    ...req.body,
+                    company_id: req.companyId,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
                 {
                     transaction: t,
                 }
