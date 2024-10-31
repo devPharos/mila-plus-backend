@@ -25,12 +25,6 @@ class MerchantController {
                 order: [['name']],
             })
 
-            if (!merchants.length) {
-                return res.status(400).json({
-                    error: 'Merchants not found.',
-                })
-            }
-
             return res.json(merchants)
         } catch (err) {
             const className = 'MerchantController'
@@ -47,6 +41,15 @@ class MerchantController {
             const { merchant_id } = req.params
             const merchant = await Merchant.findByPk(merchant_id, {
                 where: { canceled_at: null },
+                include: [
+                    {
+                        model: Filial,
+                        as: 'filial',
+                        where: {
+                            canceled_at: null,
+                        },
+                    },
+                ],
             })
 
             if (!merchant) {
@@ -73,6 +76,7 @@ class MerchantController {
             const new_merchant = await Merchant.create(
                 {
                     ...req.body,
+                    filial_id: req.body.filial_id ? req.body.filial_id : req.headers.filial,
                     company_id: req.companyId,
                     created_at: new Date(),
                     created_by: req.userId,
@@ -110,7 +114,7 @@ class MerchantController {
             }
 
             await merchantExists.update(
-                { ...req.body, updated_by: req.userId, updated_at: new Date() },
+                { ...req.body, company_id: req.companyId, updated_by: req.userId, updated_at: new Date() },
                 {
                     transaction: t,
                 }
