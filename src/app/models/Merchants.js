@@ -57,6 +57,30 @@ class Merchants extends Model {
                     type: Sequelize.STRING,
                     allowNull: true,
                 },
+                phone_number: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
+                bank_account: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
+                bank_routing_number: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
+                bank_name: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
+                late_payees: {
+                    type: Sequelize.INTEGER,
+                    allowNull: true,
+                },
+                balance_payees: {
+                    type: Sequelize.INTEGER,
+                    allowNull: true,
+                },
                 created_at: {
                     type: Sequelize.DATE,
                     allowNull: false,
@@ -96,6 +120,7 @@ class Merchants extends Model {
             as: 'company',
         })
         this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
+
     }
 }
 
