@@ -4,6 +4,7 @@ import databaseConfig from '../../config/database'
 import MerchantXChartOfAccount from '../models/MerchantXChartOfAccounts'
 import Merchant from '../models/Merchants'
 import ChartOfAccount from '../models/Chartofaccount'
+import Filial from '../models/Filial'
 
 const { Op } = Sequelize
 
@@ -23,16 +24,16 @@ class MerchantXChartOfAccountController {
                             as: 'chartOfAccount',
                             where: { canceled_at: null },
                         },
+                        {
+                            model: Filial,
+                            as: 'filial',
+                            where: { canceled_at: null },
+                        }
                     ],
                     where: { canceled_at: null },
                     order: [['created_at', 'DESC']],
                 })
 
-            if (!merchantXChartOfAccounts.length) {
-                return res.status(400).json({
-                    error: 'No Merchant X Chart Of Account records found.',
-                })
-            }
 
             return res.json(merchantXChartOfAccounts)
         } catch (err) {
@@ -47,9 +48,10 @@ class MerchantXChartOfAccountController {
 
     async show(req, res) {
         try {
-            const { id } = req.params
+            const { merchantxchartofaccount_id } = req.params
+
             const merchantXChartOfAccount =
-                await MerchantXChartOfAccount.findByPk(id, {
+                await MerchantXChartOfAccount.findByPk(merchantxchartofaccount_id, {
                     where: { canceled_at: null },
                     include: [
                         {
@@ -60,6 +62,11 @@ class MerchantXChartOfAccountController {
                         {
                             model: ChartOfAccount,
                             as: 'chartOfAccount',
+                            where: { canceled_at: null },
+                        },
+                        {
+                            model: Filial,
+                            as: 'filial',
                             where: { canceled_at: null },
                         },
                     ],
@@ -90,6 +97,8 @@ class MerchantXChartOfAccountController {
                 await MerchantXChartOfAccount.create(
                     {
                         ...req.body,
+                        company_id: req.companyId,
+                        filial_id: req.body.filial_id ? req.body.filial_id : req.headers.filial,
                         created_at: new Date(),
                         created_by: req.userId,
                     },
@@ -115,10 +124,10 @@ class MerchantXChartOfAccountController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { id } = req.params
+            const { merchantxchartofaccount_id } = req.params
 
             const merchantXChartOfAccountExists =
-                await MerchantXChartOfAccount.findByPk(id)
+                await MerchantXChartOfAccount.findByPk(merchantxchartofaccount_id)
 
             if (!merchantXChartOfAccountExists) {
                 return res.status(401).json({
@@ -127,7 +136,7 @@ class MerchantXChartOfAccountController {
             }
 
             await merchantXChartOfAccountExists.update(
-                { ...req.body, updated_by: req.userId, updated_at: new Date() },
+                { ...req.body, company_id: req.companyId, updated_by: req.userId, updated_at: new Date() },
                 {
                     transaction: t,
                 }
@@ -150,10 +159,10 @@ class MerchantXChartOfAccountController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { id } = req.params
+            const { merchantxchartofaccount_id } = req.params
 
             const merchantXChartOfAccountExists =
-                await MerchantXChartOfAccount.findByPk(id)
+                await MerchantXChartOfAccount.findByPk(merchantxchartofaccount_id)
 
             if (!merchantXChartOfAccountExists) {
                 return res.status(401).json({
