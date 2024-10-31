@@ -28,6 +28,10 @@ module.exports = {
             issuer_id: {
                 type: Sequelize.UUID,
                 allowNull: false,
+                references: {
+                    model: 'issuers',
+                    key: 'id',
+                },
             },
             entry_date: {
                 type: Sequelize.STRING,
