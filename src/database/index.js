@@ -41,6 +41,7 @@ import Bank from '../app/models/Bank';
 import Merchants from '../app/models/Merchants'
 import BankAccounts from '../app/models/BankAccount';
 import MerchantXChartOfAccount from '../app/models/MerchantXChartOfAccounts';
+import Issuer from '../app/models/Issuer';
 import Payee from '../app/models/Payee';
 import PayeeInstallment from '../app/models/PayeeInstallment';
 import PaymentCriteria from '../app/models/PaymentCriteria';
@@ -94,6 +95,7 @@ const models = [
   BankAccounts,
   Merchants,
   MerchantXChartOfAccount,
+  Issuer,
   Payee,
   PayeeInstallment,
   PaymentCriteria,
