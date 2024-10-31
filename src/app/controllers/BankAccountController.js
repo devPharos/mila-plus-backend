@@ -74,10 +74,6 @@ class BankAccountController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
 
-        // account 12
-        // routing  9
-
-        console.log(req)
         try {
             const new_bankAccount = await Bankaccounts.create(
                 {
