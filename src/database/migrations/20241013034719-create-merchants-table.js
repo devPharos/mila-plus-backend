@@ -56,6 +56,30 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: true,
             },
+            phone_number: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+            bank_account: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+            bank_routing_number: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+            bank_name: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+            late_payees: {
+                type: Sequelize.FLOAT,
+                allowNull: true,
+            },
+            balance_payees: {
+                type: Sequelize.FLOAT,
+                allowNull: true,
+            },
             created_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
