@@ -27,12 +27,6 @@ class PaymentCriteriaController {
                 order: [['created_at', 'DESC']],
             })
 
-            if (!criteriaList.length) {
-                return res.status(400).json({
-                    error: 'No payment criteria found.',
-                })
-            }
-
             return res.json(criteriaList)
         } catch (err) {
             const className = 'PaymentCriteriaController'
@@ -46,8 +40,9 @@ class PaymentCriteriaController {
 
     async show(req, res) {
         try {
-            const { id } = req.params
-            const criteria = await PaymentCriteria.findByPk(id, {
+            const { paymentcriteria_id } = req.params
+
+            const criteria = await PaymentCriteria.findByPk(paymentcriteria_id, {
                 where: { canceled_at: null },
                 include: [
                     {
@@ -62,12 +57,6 @@ class PaymentCriteriaController {
                     },
                 ],
             })
-
-            if (!criteria) {
-                return res.status(400).json({
-                    error: 'Payment criteria not found.',
-                })
-            }
 
             return res.json(criteria)
         } catch (err) {
@@ -87,7 +76,9 @@ class PaymentCriteriaController {
             const newCriteria = await PaymentCriteria.create(
                 {
                     ...req.body,
+                    company_id: req.companyId,
                     created_at: new Date(),
+                    filial_id: req.body.filial_id ? req.body.filial_id : req.headers.filial,
                     created_by: req.userId,
                 },
                 {
@@ -112,9 +103,9 @@ class PaymentCriteriaController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { id } = req.params
+            const { paymentcriteria_id } = req.params
 
-            const criteriaExists = await PaymentCriteria.findByPk(id)
+            const criteriaExists = await PaymentCriteria.findByPk(paymentcriteria_id)
 
             if (!criteriaExists) {
                 return res
@@ -123,7 +114,12 @@ class PaymentCriteriaController {
             }
 
             await criteriaExists.update(
-                { ...req.body, updated_by: req.userId, updated_at: new Date() },
+                {
+                    ...req.body,
+                    company_id: req.companyId,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
                 {
                     transaction: t,
                 }
@@ -146,9 +142,9 @@ class PaymentCriteriaController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { id } = req.params
+            const { paymentcriteria_id } = req.params
 
-            const criteriaExists = await PaymentCriteria.findByPk(id)
+            const criteriaExists = await PaymentCriteria.findByPk(paymentcriteria_id)
 
             if (!criteriaExists) {
                 return res
