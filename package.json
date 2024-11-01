@@ -31,7 +31,7 @@
     "pg-hstore": "^2.3.4",
     "react-firebase-hooks": "^5.1.1",
     "sequelize": "^6.37.3",
-    "uuid": "^10.0.0",
+    "uuid": "^11.0.2",
     "youch": "^3.3.3",
     "yup": "^1.4.0"
   },
