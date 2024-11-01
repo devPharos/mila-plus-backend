@@ -20,6 +20,10 @@ class Receivable extends Model {
                 issuer_id: {
                     type: Sequelize.UUID,
                     allowNull: true,
+                    references: {
+                        model: 'issuers',
+                        key: 'id',
+                    }
                 },
                 entry_date: {
                     type: Sequelize.STRING,
@@ -135,6 +139,18 @@ class Receivable extends Model {
         this.belongsTo(models.PaymentCriteria, {
             foreignKey: 'paymentcriteria_id',
             as: 'paymentCriteria',
+        })
+        this.belongsTo(models.Filial, {
+            foreignKey: 'filial_id',
+            as: 'filial',
+        })
+        this.belongsTo(models.Issuer, {
+            foreignKey: 'issuer_id',
+            as: 'issuer',
+        })
+        this.hasMany(models.ReceivableInstallment, {
+            foreignKey: 'receivable_id',
+            as: 'installments',
         })
     }
 }

@@ -97,6 +97,7 @@ class IssuerController {
             const newIssuer = await Issuer.create(
                 {
                     ...req.body,
+                    student_id:  req.body.merchant_id ? req.body.merchant_id : req.body.student_id,
                     filial_id: req.body.filial_id ? req.body.filial_id : req.headers.filial,
                     company_id: req.companyId,
                     created_at: new Date(),

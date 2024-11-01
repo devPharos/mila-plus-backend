@@ -164,6 +164,44 @@ class ReceivableInstallmentController {
         }
     }
 
+    async storeAllInstallmentsByDateInterval(resources) {
+      const installmentsItens = [];
+      const enTryDate = resources.entry_date;
+      const dueDate = resources.due_date;
+      const paymentCriteria = resources.paymentCriteria;
+
+      const paymentCriteriaExists = await PaymentCriteria.findByPk(paymentCriteria);
+
+      if (!paymentCriteriaExists) {
+        return
+      }
+
+      const diffDays = Math.ceil(
+        (new Date(dueDate) - new Date(enTryDate)) / (1000 * 60 * 60 * 24)
+      );
+
+      for (let i = 0; i <= diffDays; i++) {
+        const installment = await ReceivableInstallment.create({
+          receivable_id: resources.id,
+          installment: i + 1,
+          amount: resources.amount,
+          fee: resources.fee,
+          total: resources.amount + resources.fee,
+          paymentmethod_id: resources.paymentmethod_id,
+          status: 'PENDING',
+          status_date: enTryDate,
+          created_at: new Date(),
+          created_by: resources.created_by,
+        });
+
+        installmentsItens.push(installment);
+
+        enTryDate.setDate(enTryDate.getDate() + 1);
+      }
+
+      return installmentsItens;
+    }
+
     async delete(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()

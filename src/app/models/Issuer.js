@@ -73,6 +73,30 @@ class Issuer extends Model {
                     type: Sequelize.STRING,
                     allowNull: true,
                 },
+                created_at: {
+                    type: Sequelize.DATE,
+                    allowNull: false,
+                },
+                created_by: {
+                    type: Sequelize.INTEGER,
+                    allowNull: false,
+                },
+                updated_at: {
+                    type: Sequelize.DATE,
+                    allowNull: true,
+                },
+                updated_by: {
+                    type: Sequelize.INTEGER,
+                    allowNull: true,
+                },
+                canceled_at: {
+                    type: Sequelize.DATE,
+                    allowNull: true,
+                },
+                canceled_by: {
+                    type: Sequelize.INTEGER,
+                    allowNull: true,
+                },
             },
             {
                 sequelize,
@@ -89,8 +113,14 @@ class Issuer extends Model {
             as: 'company',
         })
         this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
-        this.belongsTo(models.Student, { foreignKey: 'student_id', as: 'student' })
-        this.belongsTo(models.Merchants, { foreignKey: 'merchant_id', as: 'merchant' })
+        this.belongsTo(models.Student, {
+            foreignKey: 'student_id',
+            as: 'student',
+        })
+        this.belongsTo(models.Merchants, {
+            foreignKey: 'merchant_id',
+            as: 'merchant',
+        })
     }
 }
 

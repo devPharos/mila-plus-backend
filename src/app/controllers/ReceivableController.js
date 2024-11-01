@@ -5,6 +5,10 @@ import Receivable from '../models/Receivable'
 import PaymentMethod from '../models/PaymentMethod'
 import ChartOfAccount from '../models/Chartofaccount'
 import PaymentCriteria from '../models/PaymentCriteria'
+import Filial from '../models/Filial'
+import ReceivableInstallment from '../models/ReceivableInstallment'
+import Issuer from '../models/Issuer'
+import ReceivableInstallmentController from './ReceivableInstallmentController'
 
 const { Op } = Sequelize
 
@@ -28,16 +32,25 @@ class ReceivableController {
                         as: 'paymentCriteria',
                         where: { canceled_at: null },
                     },
+                    {
+                        model: ReceivableInstallment,
+                        as: 'installments',
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Filial,
+                        as: 'filial',
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Issuer,
+                        as: 'issuer',
+                        where: { canceled_at: null },
+                    },
                 ],
                 where: { canceled_at: null },
                 order: [['created_at', 'DESC']],
             })
-
-            if (!receivables.length) {
-                return res.status(400).json({
-                    error: 'No receivables found.',
-                })
-            }
 
             return res.json(receivables)
         } catch (err) {
@@ -52,8 +65,9 @@ class ReceivableController {
 
     async show(req, res) {
         try {
-            const { id } = req.params
-            const receivable = await Receivable.findByPk(id, {
+            const { receivable_id } = req.params
+
+            const receivable = await Receivable.findByPk(receivable_id, {
                 where: { canceled_at: null },
                 include: [
                     {
@@ -71,14 +85,23 @@ class ReceivableController {
                         as: 'paymentCriteria',
                         where: { canceled_at: null },
                     },
+                    {
+                        model: ReceivableInstallment,
+                        as: 'installments',
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Filial,
+                        as: 'filial',
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Issuer,
+                        as: 'issuer',
+                        where: { canceled_at: null },
+                    },
                 ],
             })
-
-            if (!receivable) {
-                return res.status(400).json({
-                    error: 'Receivable not found.',
-                })
-            }
 
             return res.json(receivable)
         } catch (err) {
@@ -98,6 +121,10 @@ class ReceivableController {
             const newReceivable = await Receivable.create(
                 {
                     ...req.body,
+                    company_id: req.companyId,
+                    filial_id: req.body.filial_id
+                        ? req.body.filial_id
+                        : req.headers.filial,
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -106,6 +133,15 @@ class ReceivableController {
                 }
             )
             await t.commit()
+
+            const { installmentsItens } =
+                await ReceivableInstallmentController.storeAllInstallmentsByDateInterval(
+                    newReceivable
+                )
+
+            newReceivable.receivableInstallmentsItems = installmentsItens
+
+            console.log('newReceivable', newReceivable)
 
             return res.json(newReceivable)
         } catch (err) {
@@ -123,9 +159,9 @@ class ReceivableController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { id } = req.params
+            const { receivable_id } = req.params
 
-            const receivableExists = await Receivable.findByPk(id)
+            const receivableExists = await Receivable.findByPk(receivable_id)
 
             if (!receivableExists) {
                 return res
