@@ -165,41 +165,55 @@ class ReceivableInstallmentController {
     }
 
     async storeAllInstallmentsByDateInterval(resources) {
-      const installmentsItens = [];
-      const enTryDate = resources.entry_date;
-      const dueDate = resources.due_date;
-      const paymentCriteria = resources.paymentCriteria;
+        try {
+            const installmentsItens = []
+            const enTryDate = resources.entry_date
+            const dueDate = resources.due_date
+            const paymentCriteria = resources.paymentCriteria
 
-      const paymentCriteriaExists = await PaymentCriteria.findByPk(paymentCriteria);
+            const paymentCriteriaExists = await PaymentCriteria.findByPk(
+                paymentCriteria
+            )
 
-      if (!paymentCriteriaExists) {
-        return
-      }
+            if (!paymentCriteriaExists) {
+                return
+            }
 
-      const diffDays = Math.ceil(
-        (new Date(dueDate) - new Date(enTryDate)) / (1000 * 60 * 60 * 24)
-      );
+            const diffDays = Math.ceil(
+                (new Date(dueDate) - new Date(enTryDate)) /
+                    (1000 * 60 * 60 * 24)
+            )
 
-      for (let i = 0; i <= diffDays; i++) {
-        const installment = await ReceivableInstallment.create({
-          receivable_id: resources.id,
-          installment: i + 1,
-          amount: resources.amount,
-          fee: resources.fee,
-          total: resources.amount + resources.fee,
-          paymentmethod_id: resources.paymentmethod_id,
-          status: 'PENDING',
-          status_date: enTryDate,
-          created_at: new Date(),
-          created_by: resources.created_by,
-        });
+            for (let i = 0; i <= diffDays; i++) {
+                const installment = await ReceivableInstallment.create({
+                    receivable_id: resources.id,
+                    installment: i + 1,
+                    amount: resources.amount,
+                    fee: resources.fee,
+                    total: resources.amount + resources.fee,
+                    paymentmethod_id: resources.paymentmethod_id,
+                    status: 'PENDING',
+                    status_date: enTryDate,
+                    created_at: new Date(),
+                    created_by: resources.created_by,
+                })
 
-        installmentsItens.push(installment);
+                installmentsItens.push(installment)
 
-        enTryDate.setDate(enTryDate.getDate() + 1);
-      }
+                enTryDate.setDate(enTryDate.getDate() + 1)
+            }
 
-      return installmentsItens;
+            return installmentsItens
+        } catch (err) {
+            const className = 'ReceivableInstallmentController'
+            const functionName = 'storeAllInstallmentsByDateInterval'
+
+            console.log('err', err)
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
     }
 
     async delete(req, res) {
