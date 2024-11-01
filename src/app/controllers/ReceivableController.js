@@ -52,6 +52,7 @@ class ReceivableController {
                 order: [['created_at', 'DESC']],
             })
 
+
             return res.json(receivables)
         } catch (err) {
             const className = 'ReceivableController'
@@ -117,11 +118,16 @@ class ReceivableController {
     async store(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
+        console.log('chegou papai')
+
         try {
             const newReceivable = await Receivable.create(
                 {
                     ...req.body,
                     company_id: req.companyId,
+
+                    status: 'PENDING',
+
                     filial_id: req.body.filial_id
                         ? req.body.filial_id
                         : req.headers.filial,
@@ -132,22 +138,27 @@ class ReceivableController {
                     transaction: t,
                 }
             )
-            await t.commit()
 
-            const { installmentsItens } =
+            const installmentsItens =
                 await ReceivableInstallmentController.storeAllInstallmentsByDateInterval(
                     newReceivable
                 )
 
-            newReceivable.receivableInstallmentsItems = installmentsItens
+            console.log('installmentsItens', installmentsItens)
+            newReceivable.dataValues.receivableInstallmentsItems =
+                installmentsItens || []
 
             console.log('newReceivable', newReceivable)
+
+            await t.commit()
 
             return res.json(newReceivable)
         } catch (err) {
             await t.rollback()
             const className = 'ReceivableController'
             const functionName = 'store'
+            console.log('err', err)
+
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,
