@@ -207,16 +207,6 @@ module.exports = {
                     father_id: 4,
                     alias: 'financial-issuer',
                     name: 'FinancialIssuer',
-                },
-                {
-                    father_id: 4,
-                    alias: 'financial-receivables',
-                    name: 'FinancialReceivables',
-                },
-                {
-                    father_id: 4,
-                    alias: 'financial-payees',
-                    name: 'FinancialPayees',
                 }
             ],
             {}
