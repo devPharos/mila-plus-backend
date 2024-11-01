@@ -348,11 +348,11 @@ routes.put('/paymentmethods/:paymentmethod_id', PaymentMethodController.update)
 routes.delete('/paymentmethods/:paymentmethod_id', PaymentMethodController.delete)
 
 // receivable
-routes.get('/receivable', ReceivableController.index)
-routes.get('/receivable/:receivable_id', ReceivableController.show)
-routes.post('/receivable', ReceivableController.store)
-routes.put('/receivable/:receivable_id', ReceivableController.update)
-routes.delete('/receivable/:receivable_id', ReceivableController.delete)
+routes.get('/receivables', ReceivableController.index)
+routes.get('/receivables/:receivable_id', ReceivableController.show)
+routes.post('/receivables', ReceivableController.store)
+routes.put('/receivables/:receivable_id', ReceivableController.update)
+routes.delete('/receivables/:receivable_id', ReceivableController.delete)
 
 // receivable installment
 routes.get('/receivableinstallment', ReceivableInstallmentController.index)
