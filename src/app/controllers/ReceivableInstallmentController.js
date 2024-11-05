@@ -166,10 +166,15 @@ class ReceivableInstallmentController {
 
     async storeAllInstallmentsByDateInterval(resources) {
         try {
+            const receivableExists = await Receivable.findByPk(resources.id)
+            if (!receivableExists) {
+                throw new Error('Receivable does not exist.')
+            }
+
             const installmentsItens = []
-            const enTryDate = resources.entry_date
-            const dueDate = resources.due_date
-            const paymentCriteria = resources.paymentCriteria
+            const enTryDate = new Date(resources.entry_date)
+            const dueDate = new Date(resources.due_date)
+            const paymentCriteria = resources.paymentcriteria_id
 
             const paymentCriteriaExists = await PaymentCriteria.findByPk(
                 paymentCriteria
@@ -179,12 +184,26 @@ class ReceivableInstallmentController {
                 return
             }
 
-            const diffDays = Math.ceil(
-                (new Date(dueDate) - new Date(enTryDate)) /
-                    (1000 * 60 * 60 * 24)
-            )
+            // month, day, year
+            const fee_metric = paymentCriteriaExists.fee_metric || "month"
+            let diffDays = 0
+
+            if (fee_metric === 'month') {
+              diffDays = Math.floor(
+                (dueDate.getTime() - enTryDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
+              )
+            } else if (fee_metric === 'day') {
+              diffDays = Math.floor(
+                (dueDate.getTime() - enTryDate.getTime()) / (1000 * 60 * 60 * 24)
+              )
+            } else if (fee_metric === 'year') {
+              diffDays = Math.floor(
+                (dueDate.getTime() - enTryDate.getTime()) / (1000 * 60 * 60 * 24 * 365)
+              )
+            }
 
             for (let i = 0; i <= diffDays; i++) {
+                const statusDate = new Date(enTryDate)
                 const installment = await ReceivableInstallment.create({
                     receivable_id: resources.id,
                     installment: i + 1,
@@ -192,8 +211,11 @@ class ReceivableInstallmentController {
                     fee: resources.fee,
                     total: resources.amount + resources.fee,
                     paymentmethod_id: resources.paymentmethod_id,
+                    authorization_code: resources.authorization_code,
+                    chartofaccount_id: resources.chartofaccount_id,
+                    paymentcriteria_id: resources.paymentcriteria_id,
                     status: 'PENDING',
-                    status_date: enTryDate,
+                    status_date: statusDate.toDateString(),
                     created_at: new Date(),
                     created_by: resources.created_by,
                 })
@@ -205,14 +227,90 @@ class ReceivableInstallmentController {
 
             return installmentsItens
         } catch (err) {
-            const className = 'ReceivableInstallmentController'
-            const functionName = 'storeAllInstallmentsByDateInterval'
-
             console.log('err', err)
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+
+            throw new Error(err)
+        }
+    }
+
+    async updateAllInstallmentsByDateInterval(resources) {
+        try {
+            const receivableExists = await Receivable.findByPk(resources.id)
+            if (!receivableExists) {
+                throw new Error('Receivable does not exist.')
+            }
+
+            const installmentsItens = []
+            const enTryDate = new Date(resources.entry_date)
+            const dueDate = new Date(resources.due_date)
+
+            const paymentCriteria = resources.paymentcriteria_id
+
+            const paymentCriteriaExists = await PaymentCriteria.findByPk(
+                paymentCriteria
+            )
+
+            if (!paymentCriteriaExists) {
+                return
+            }
+
+            // month, day, year
+            const fee_metric = paymentCriteriaExists.fee_metric || "month"
+            let diffDays = 0
+
+            if (fee_metric === 'month') {
+              diffDays = Math.floor(
+                (dueDate.getTime() - enTryDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
+              )
+            } else if (fee_metric === 'day') {
+              diffDays = Math.floor(
+                (dueDate.getTime() - enTryDate.getTime()) / (1000 * 60 * 60 * 24)
+              )
+            } else if (fee_metric === 'year') {
+              diffDays = Math.floor(
+                (dueDate.getTime() - enTryDate.getTime()) / (1000 * 60 * 60 * 24 * 365)
+              )
+            }
+
+            for (let i = 0; i <= diffDays; i++) {
+
+                const statusDate = new Date(enTryDate)
+                const installment = await ReceivableInstallment.findOne({
+                    where: {
+                        receivable_id: resources.id,
+                        installment: i + 1,
+                    },
+                })
+
+                if (!installment) {
+                    throw new Error('Installment does not exist.')
+                }
+
+                await installment.update({
+                    amount: resources.amount,
+                    fee: resources.fee,
+                    total: resources.amount + resources.fee,
+                    paymentmethod_id: resources.paymentmethod_id,
+                    authorization_code: resources.authorization_code,
+                    chartofaccount_id: resources.chartofaccount_id,
+                    paymentcriteria_id: resources.paymentcriteria_id,
+                    status: 'PENDING',
+                    status_date: statusDate.toDateString(),
+                    updated_at: new Date(),
+                    updated_by: resources.updated_by,
+                })
+
+                installmentsItens.push(installment)
+
+                enTryDate.setDate(enTryDate.getDate() + 1)
+
+            }
+
+            return installmentsItens
+        } catch (err) {
+            console.log('err', err)
+
+            throw new Error(err)
         }
     }
 
