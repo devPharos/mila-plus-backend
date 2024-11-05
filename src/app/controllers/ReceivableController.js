@@ -20,38 +20,43 @@ class ReceivableController {
                     {
                         model: PaymentMethod,
                         as: 'paymentMethod',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: ChartOfAccount,
                         as: 'chartOfAccount',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: ReceivableInstallment,
                         as: 'installments',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: Filial,
                         as: 'filial',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: Issuer,
                         as: 'issuer',
+                        required: false,
                         where: { canceled_at: null },
                     },
                 ],
                 where: { canceled_at: null },
                 order: [['created_at', 'DESC']],
             })
-
 
             return res.json(receivables)
         } catch (err) {
@@ -74,35 +79,55 @@ class ReceivableController {
                     {
                         model: PaymentMethod,
                         as: 'paymentMethod',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: ChartOfAccount,
                         as: 'chartOfAccount',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: ReceivableInstallment,
                         as: 'installments',
+                        required: false,
                         where: { canceled_at: null },
+                        order: [['installment', 'ASC']],
                     },
                     {
                         model: Filial,
                         as: 'filial',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: Issuer,
                         as: 'issuer',
+                        required: false,
                         where: { canceled_at: null },
                     },
                 ],
             })
+
+            // if (
+            //     receivable &&
+            //     (receivable.installments.length == 0 ||
+            //         receivable.installments.length < 0)
+            // ) {
+            //     const installmentsItens =
+            //         await ReceivableInstallmentController.storeAllInstallmentsByDateInterval(
+            //             receivable
+            //         )
+
+            //     receivable.installments = installmentsItens || []
+            // }
 
             return res.json(receivable)
         } catch (err) {
@@ -118,16 +143,12 @@ class ReceivableController {
     async store(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
-        console.log('chegou papai')
-
         try {
             const newReceivable = await Receivable.create(
                 {
                     ...req.body,
                     company_id: req.companyId,
-
                     status: 'PENDING',
-
                     filial_id: req.body.filial_id
                         ? req.body.filial_id
                         : req.headers.filial,
@@ -139,20 +160,30 @@ class ReceivableController {
                 }
             )
 
+            await t.commit()
+
+            const newReceivableWithInstallments = await Receivable.findByPk(
+                newReceivable.id,
+                {
+                    include: [
+                        {
+                            model: ReceivableInstallment,
+                            as: 'installments',
+                            required: false,
+                            where: { canceled_at: null },
+                        },
+                    ],
+                }
+            )
+
             const installmentsItens =
                 await ReceivableInstallmentController.storeAllInstallmentsByDateInterval(
                     newReceivable
                 )
 
-            console.log('installmentsItens', installmentsItens)
-            newReceivable.dataValues.receivableInstallmentsItems =
-                installmentsItens || []
+            newReceivableWithInstallments.installments = installmentsItens || []
 
-            console.log('newReceivable', newReceivable)
-
-            await t.commit()
-
-            return res.json(newReceivable)
+            return res.json(newReceivableWithInstallments)
         } catch (err) {
             await t.rollback()
             const className = 'ReceivableController'
@@ -172,7 +203,23 @@ class ReceivableController {
         try {
             const { receivable_id } = req.params
 
-            const receivableExists = await Receivable.findByPk(receivable_id)
+            const receivableExists = await Receivable.findByPk(receivable_id, {
+                where: { canceled_at: null },
+                include: [
+                    {
+                        model: ReceivableInstallment,
+                        as: 'installments',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: PaymentCriteria,
+                        as: 'paymentCriteria',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                ],
+            })
 
             if (!receivableExists) {
                 return res
@@ -186,6 +233,14 @@ class ReceivableController {
                     transaction: t,
                 }
             )
+
+            const installmentsItens =
+                await ReceivableInstallmentController.updateAllInstallmentsByDateInterval(
+                    receivableExists
+                )
+
+            receivableExists.installments = installmentsItens || []
+
             await t.commit()
 
             return res.status(200).json(receivableExists)
