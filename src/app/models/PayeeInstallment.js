@@ -32,7 +32,7 @@ class PayeeInstallment extends Model {
                 },
                 paymentmethod_id: {
                     type: Sequelize.UUID,
-                    allowNull: false,
+                    allowNull: true,
                     references: { model: 'paymentmethods', key: 'id' },
                 },
                 status: {
@@ -49,12 +49,12 @@ class PayeeInstallment extends Model {
                 },
                 chartofaccount_id: {
                     type: Sequelize.INTEGER,
-                    allowNull: false,
+                    allowNull: true,
                     references: { model: 'chartofaccounts', key: 'id' },
                 },
                 paymentcriteria_id: {
                     type: Sequelize.UUID,
-                    allowNull: false,
+                    allowNull: true,
                     references: { model: 'paymentcriterias', key: 'id' },
                 },
                 created_at: {
