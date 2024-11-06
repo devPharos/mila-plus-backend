@@ -12,17 +12,18 @@ class Payee extends Model {
                 company_id: {
                     type: Sequelize.INTEGER,
                     allowNull: false,
-                    references: { model: 'companies', key: 'id' },
                 },
                 filial_id: {
                     type: Sequelize.INTEGER,
                     allowNull: false,
-                    references: { model: 'filials', key: 'id' },
                 },
                 issuer_id: {
                     type: Sequelize.UUID,
-                    allowNull: false,
-                    // Aqui você pode adicionar uma referência, se a tabela 'issuers' for criada
+                    allowNull: true,
+                    references: {
+                        model: 'issuers',
+                        key: 'id',
+                    },
                 },
                 entry_date: {
                     type: Sequelize.STRING,
@@ -118,11 +119,6 @@ class Payee extends Model {
     }
 
     static associate(models) {
-        this.belongsTo(models.Company, {
-            foreignKey: 'company_id',
-            as: 'company',
-        })
-        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
         this.belongsTo(models.PaymentMethod, {
             foreignKey: 'paymentmethod_id',
             as: 'paymentMethod',
@@ -134,6 +130,18 @@ class Payee extends Model {
         this.belongsTo(models.PaymentCriteria, {
             foreignKey: 'paymentcriteria_id',
             as: 'paymentCriteria',
+        })
+        this.belongsTo(models.Filial, {
+            foreignKey: 'filial_id',
+            as: 'filial',
+        })
+        this.belongsTo(models.Issuer, {
+            foreignKey: 'issuer_id',
+            as: 'issuer',
+        })
+        this.hasMany(models.PayeeInstallment, {
+            foreignKey: 'payee_id',
+            as: 'installments',
         })
     }
 }
