@@ -31,7 +31,7 @@ module.exports = {
             },
             paymentmethod_id: {
                 type: Sequelize.UUID,
-                allowNull: false,
+                allowNull: true,
                 references: { model: 'paymentmethods', key: 'id' },
             },
             status: {
@@ -48,12 +48,12 @@ module.exports = {
             },
             chartofaccount_id: {
                 type: Sequelize.INTEGER,
-                allowNull: false,
+                allowNull: true,
                 references: { model: 'chartofaccounts', key: 'id' },
             },
             paymentcriteria_id: {
                 type: Sequelize.UUID,
-                allowNull: false,
+                allowNull: true,
                 references: { model: 'paymentcriterias', key: 'id' },
             },
             created_at: {
