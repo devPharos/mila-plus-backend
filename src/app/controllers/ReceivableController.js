@@ -40,6 +40,7 @@ class ReceivableController {
                         as: 'installments',
                         required: false,
                         where: { canceled_at: null },
+                        order: [['installment', 'ASC']],
                     },
                     {
                         model: Filial,
@@ -148,7 +149,7 @@ class ReceivableController {
                 {
                     ...req.body,
                     company_id: req.companyId,
-                    status: 'PENDING',
+                    status: 'Open',
                     filial_id: req.body.filial_id
                         ? req.body.filial_id
                         : req.headers.filial,
@@ -162,34 +163,11 @@ class ReceivableController {
 
             await t.commit()
 
-            const newReceivableWithInstallments = await Receivable.findByPk(
-                newReceivable.id,
-                {
-                    include: [
-                        {
-                            model: ReceivableInstallment,
-                            as: 'installments',
-                            required: false,
-                            where: { canceled_at: null },
-                        },
-                    ],
-                }
-            )
-
-            const installmentsItens =
-                await ReceivableInstallmentController.storeAllInstallmentsByDateInterval(
-                    newReceivable
-                )
-
-            newReceivableWithInstallments.installments = installmentsItens || []
-
-            return res.json(newReceivableWithInstallments)
+            return res.json(newReceivable)
         } catch (err) {
             await t.rollback()
             const className = 'ReceivableController'
             const functionName = 'store'
-            console.log('err', err)
-
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,
@@ -200,6 +178,10 @@ class ReceivableController {
     async update(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
+        let oldInstallments = []
+        let oldEntryDate = null
+        let oldDueDate = null
+
         try {
             const { receivable_id } = req.params
 
@@ -211,6 +193,7 @@ class ReceivableController {
                         as: 'installments',
                         required: false,
                         where: { canceled_at: null },
+                        order: [['installment', 'ASC']],
                     },
                     {
                         model: PaymentCriteria,
@@ -227,6 +210,22 @@ class ReceivableController {
                     .json({ error: 'Receivable does not exist.' })
             }
 
+            if (
+                req.body.entry_date &&
+                receivableExists.entry_date &&
+                req.body.entry_date !== receivableExists.entry_date
+            ) {
+                oldEntryDate = receivableExists.entry_date
+            }
+
+            if (
+                req.body.due_date &&
+                receivableExists.due_date &&
+                req.body.due_date !== receivableExists.due_date
+            ) {
+                oldDueDate = receivableExists.due_date
+            }
+
             await receivableExists.update(
                 { ...req.body, updated_by: req.userId, updated_at: new Date() },
                 {
@@ -234,12 +233,116 @@ class ReceivableController {
                 }
             )
 
-            const installmentsItens =
-                await ReceivableInstallmentController.updateAllInstallmentsByDateInterval(
+            if (
+                receivableExists?.installments &&
+                receivableExists.installments.length > 0
+            ) {
+                oldInstallments = receivableExists.installments
+            }
+
+            const { installmentsItens, diifDate } =
+                await ReceivableInstallmentController.allInstallmentsByDateInterval(
                     receivableExists
                 )
 
-            receivableExists.installments = installmentsItens || []
+            if (
+                installmentsItens &&
+                installmentsItens.length > 0 &&
+                oldInstallments.length > 0
+            ) {
+                let updatedInstallments = []
+                const allDiffs = oldInstallments.filter(
+                    (oldItem) =>
+                        !installmentsItens.some(
+                            (newItem) =>
+                                newItem.installment === oldItem.installment
+                        )
+                )
+
+                if (allDiffs.length > 0) {
+                    for (let i = 0; i < allDiffs.length; i++) {
+                        const itemDiff = allDiffs[i]
+
+                        if (!itemDiff.id) {
+                            return
+                        }
+
+                        if (oldEntryDate && itemDiff.status_date) {
+                            console.log('oldEntryDate', oldEntryDate)
+
+                            const statusDate = new Date(itemDiff.status_date)
+                            const entryDate = new Date(oldEntryDate)
+
+                            // isso é para fazer o soft dele nos items que eram menores que a data de entrada
+                            if (entryDate < statusDate) {
+                                await ReceivableInstallment.update(
+                                    {
+                                        canceled_at: new Date(),
+                                        canceled_by: req.userId,
+                                        updated_at: new Date(),
+                                        updated_by: req.userId,
+                                    },
+                                    {
+                                        where: {
+                                            receivable_id: receivableExists.id,
+                                            installment: 1,
+                                        },
+                                        transaction: t,
+                                    }
+                                )
+
+                                await t.commit()
+
+                                updatedInstallments.push(true)
+
+                                break
+                            }
+                        }
+
+                        // isso é para fazer o soft dele nos items que estao entre a antiga due date e a nova due date
+                        if (oldDueDate && itemDiff.status_date) {
+                            const statusDate = new Date(itemDiff.status_date)
+
+
+                            if (
+                                statusDate >= new Date(oldDueDate) &&
+                                statusDate <=
+                                    new Date(receivableExists.due_date)
+                            ) {
+                                await ReceivableInstallment.update(
+                                    {
+                                        canceled_at: new Date(),
+                                        canceled_by: req.userId,
+                                        updated_at: new Date(),
+                                        updated_by: req.userId,
+                                    },
+                                    {
+                                        transaction: t,
+                                        where: {
+                                            receivable_id: receivableExists.id,
+                                            installment: itemDiff.installment,
+                                        },
+                                    }
+                                )
+
+                                updatedInstallments.push(true)
+                                break
+                            }
+                        }
+                    }
+                }
+
+                if (updatedInstallments.length > 0) {
+                    const newInstallmentsItens =
+                        await ReceivableInstallmentController.allInstallmentsByDateInterval(
+                            receivableExists
+                        )
+
+                    receivableExists.installments = newInstallmentsItens || []
+                } else {
+                    receivableExists.installments = installmentsItens || []
+                }
+            }
 
             await t.commit()
 
