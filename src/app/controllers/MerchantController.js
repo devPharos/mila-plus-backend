@@ -3,6 +3,8 @@ import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Merchant from '../models/Merchants'
 import Filial from '../models/Filial'
+import MerchantXChartOfAccounts from '../models/MerchantXChartOfAccounts'
+import ChartOfAccounts from '../models/Chartofaccount'
 
 const { Op } = Sequelize
 
@@ -14,6 +16,14 @@ class MerchantController {
                     {
                         model: Filial,
                         as: 'filial',
+                        where: {
+                            canceled_at: null,
+                        },
+                    },
+                    {
+                        model: MerchantXChartOfAccounts,
+                        as: 'merchantxchartofaccounts',
+                        required: false,
                         where: {
                             canceled_at: null,
                         },
@@ -49,6 +59,14 @@ class MerchantController {
                             canceled_at: null,
                         },
                     },
+                    {
+                        model: MerchantXChartOfAccounts,
+                        as: 'merchantxchartofaccounts',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                    },
                 ],
             })
 
@@ -76,7 +94,9 @@ class MerchantController {
             const new_merchant = await Merchant.create(
                 {
                     ...req.body,
-                    filial_id: req.body.filial_id ? req.body.filial_id : req.headers.filial,
+                    filial_id: req.body.filial_id
+                        ? req.body.filial_id
+                        : req.headers.filial,
                     company_id: req.companyId,
                     created_at: new Date(),
                     created_by: req.userId,
@@ -105,7 +125,35 @@ class MerchantController {
         try {
             const { merchant_id } = req.params
 
-            const merchantExists = await Merchant.findByPk(merchant_id)
+            const merchantExists = await Merchant.findByPk(merchant_id, {
+              include: [
+                {
+                    model: Filial,
+                    as: 'filial',
+                    where: {
+                        canceled_at: null,
+                    },
+                },
+                {
+                    model: MerchantXChartOfAccounts,
+                    as: 'merchantxchartofaccounts',
+                    required: false,
+                    where: {
+                        canceled_at: null,
+                    },
+                    include: [
+                        {
+                            model: ChartOfAccounts,
+                            as: 'chartofaccount',
+                            required: false,
+                            where: {
+                                canceled_at: null,
+                            },
+                        },
+                    ],
+                },
+            ],
+            })
 
             if (!merchantExists) {
                 return res
@@ -114,11 +162,43 @@ class MerchantController {
             }
 
             await merchantExists.update(
-                { ...req.body, company_id: req.companyId, updated_by: req.userId, updated_at: new Date() },
+                {
+                    ...req.body,
+                    company_id: req.companyId,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
                 {
                     transaction: t,
                 }
             )
+
+            if (req.body.merchantxchartofaccounts) {
+                await MerchantXChartOfAccounts.destroy({
+                    where: {
+                        merchant_id,
+                    },
+                    transaction: t,
+                })
+
+                await Promise.all(
+                    req.body.merchantxchartofaccounts.map(async (item) => {
+                        await MerchantXChartOfAccounts.create(
+                            {
+                                ...item,
+                                merchant_id,
+                                company_id: req.companyId,
+                                created_at: new Date(),
+                                created_by: req.userId,
+                            },
+                            {
+                                transaction: t,
+                            }
+                        )
+                    })
+                )
+            }
+
             await t.commit()
 
             return res.status(200).json(merchantExists)
