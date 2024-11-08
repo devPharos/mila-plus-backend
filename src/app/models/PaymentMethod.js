@@ -75,6 +75,7 @@ class PaymentMethod extends Model {
             foreignKey: 'bankaccount_id',
             as: 'bankAccount',
         })
+
     }
 }
 
