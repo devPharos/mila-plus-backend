@@ -344,20 +344,6 @@ routes.get('/payeeinstallments/:payeeinstallment_id', PayeeInstallmentController
 routes.post('/payeeinstallments', PayeeInstallmentController.store)
 routes.post('/payeeinstallments/temp', PayeeInstallmentController.storeTemp)
 routes.put('/payeeinstallments/:payeeinstallment_id', PayeeInstallmentController.update)
-routes.get('/payeeinstallment', PayeeInstallmentController.index)
-routes.get(
-    '/payeeinstallment/:payeeinstallment_id',
-    PayeeInstallmentController.show
-)
-routes.post('/payeeinstallment', PayeeInstallmentController.store)
-routes.put(
-    '/payeeinstallment/:payeeinstallment_id',
-    PayeeInstallmentController.update
-)
-routes.delete(
-    '/payeeinstallment/:payeeinstallment_id',
-    PayeeInstallmentController.delete
-)
 
 // payment criteria
 routes.get('/paymentcriterias', PaymentCriteriaController.index)
@@ -398,20 +384,6 @@ routes.get('/receivableinstallments/:receivableinstallment_id', ReceivableInstal
 routes.post('/receivableinstallments', ReceivableInstallmentController.store)
 routes.post('/receivableinstallments/temp', ReceivableInstallmentController.storeTemp)
 routes.put('/receivableinstallments/:receivableinstallment_id', ReceivableInstallmentController.update)
-routes.get('/receivableinstallment', ReceivableInstallmentController.index)
-routes.get(
-    '/receivableinstallment/:receivableinstallment_id',
-    ReceivableInstallmentController.show
-)
-routes.post('/receivableinstallment', ReceivableInstallmentController.store)
-routes.put(
-    '/receivableinstallment/:receivableinstallment_id',
-    ReceivableInstallmentController.update
-)
-routes.delete(
-    '/receivableinstallment/:receivableinstallment_id',
-    ReceivableInstallmentController.delete
-)
 
 routes.get('/issuers', IssuerController.index)
 routes.get('/issuers/:issuer_id', IssuerController.show)
