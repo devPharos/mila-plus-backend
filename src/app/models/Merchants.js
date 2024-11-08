@@ -120,7 +120,10 @@ class Merchants extends Model {
             as: 'company',
         })
         this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
-
+        this.hasMany(models.MerchantXChartOfAccount, {
+            foreignKey: 'merchant_id',
+            as: 'merchantxchartofaccounts',
+        })
     }
 }
 
