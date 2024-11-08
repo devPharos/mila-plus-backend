@@ -17,6 +17,10 @@ module.exports = {
                     key: 'id',
                 },
             },
+            due_date: {
+                type: Sequelize.DATE,
+                allowNull: false,
+            },
             installment: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
