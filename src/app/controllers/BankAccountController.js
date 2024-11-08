@@ -3,6 +3,7 @@ import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Bankaccounts from '../models/BankAccount'
 
+
 class BankAccountController {
     async index(req, res) {
         try {
