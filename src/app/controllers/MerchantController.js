@@ -27,12 +27,21 @@ class MerchantController {
                         where: {
                             canceled_at: null,
                         },
+                        include: [
+                            {
+                                model: ChartOfAccounts,
+                                as: 'chartOfAccount',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
                     },
                 ],
                 where: {
                     canceled_at: null,
                 },
-                order: [['name']],
             })
 
             return res.json(merchants)
@@ -66,15 +75,19 @@ class MerchantController {
                         where: {
                             canceled_at: null,
                         },
+                        include: [
+                            {
+                                model: ChartOfAccounts,
+                                as: 'chartOfAccount',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
                     },
                 ],
             })
-
-            if (!merchant) {
-                return res.status(400).json({
-                    error: 'Merchant not found.',
-                })
-            }
 
             return res.json(merchant)
         } catch (err) {
@@ -126,33 +139,33 @@ class MerchantController {
             const { merchant_id } = req.params
 
             const merchantExists = await Merchant.findByPk(merchant_id, {
-              include: [
-                {
-                    model: Filial,
-                    as: 'filial',
-                    where: {
-                        canceled_at: null,
-                    },
-                },
-                {
-                    model: MerchantXChartOfAccounts,
-                    as: 'merchantxchartofaccounts',
-                    required: false,
-                    where: {
-                        canceled_at: null,
-                    },
-                    include: [
-                        {
-                            model: ChartOfAccounts,
-                            as: 'chartofaccount',
-                            required: false,
-                            where: {
-                                canceled_at: null,
-                            },
+                include: [
+                    {
+                        model: Filial,
+                        as: 'filial',
+                        where: {
+                            canceled_at: null,
                         },
-                    ],
-                },
-            ],
+                    },
+                    {
+                        model: MerchantXChartOfAccounts,
+                        as: 'merchantxchartofaccounts',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                        include: [
+                            {
+                                model: ChartOfAccounts,
+                                as: 'chartOfAccount',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
+                    },
+                ],
             })
 
             if (!merchantExists) {
@@ -173,7 +186,11 @@ class MerchantController {
                 }
             )
 
-            if (req.body.merchantxchartofaccounts) {
+            if (
+                req.body.merchantxchartofaccounts ||
+                ( merchantExists.merchantxchartofaccounts?.length > 0 &&
+                  !req.body.merchantxchartofaccounts)
+            ) {
                 await MerchantXChartOfAccounts.destroy({
                     where: {
                         merchant_id,
@@ -181,22 +198,25 @@ class MerchantController {
                     transaction: t,
                 })
 
-                await Promise.all(
-                    req.body.merchantxchartofaccounts.map(async (item) => {
-                        await MerchantXChartOfAccounts.create(
-                            {
-                                ...item,
-                                merchant_id,
-                                company_id: req.companyId,
-                                created_at: new Date(),
-                                created_by: req.userId,
-                            },
-                            {
-                                transaction: t,
-                            }
-                        )
-                    })
-                )
+                if (req.body.merchantxchartofaccounts?.length > 0) {
+                    await Promise.all(
+                        req.body.merchantxchartofaccounts.map(async (item) => {
+                            await MerchantXChartOfAccounts.create(
+                                {
+                                    filial_id: merchantExists.filial_id,
+                                    merchant_id: merchantExists.id,
+                                    chartofaccount_id: item.chartofaccount_id,
+                                    company_id: merchantExists.company_id,
+                                    created_at: new Date(),
+                                    created_by: req.userId,
+                                },
+                                {
+                                    transaction: t,
+                                }
+                            )
+                        })
+                    )
+                }
             }
 
             await t.commit()
