@@ -1,10 +1,10 @@
-import Sequelize from 'sequelize'
+import Sequelize, { literal } from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import PaymentMethod from '../models/PaymentMethod'
 import Company from '../models/Company'
 import Filial from '../models/Filial'
-import BankAccount from '../models/BankAccount'
+import Bank from '../models/Bank'
 import BankAccounts from '../models/BankAccount'
 
 const { Op } = Sequelize
@@ -28,6 +28,13 @@ class PaymentMethodController {
                         model: BankAccounts,
                         as: 'bankAccount',
                         where: { canceled_at: null },
+                        include: [
+                            {
+                                model: Bank,
+                                as: 'bank',
+                                where: { canceled_at: null },
+                            },
+                        ],
                     },
                 ],
                 where: { canceled_at: null },
@@ -49,26 +56,36 @@ class PaymentMethodController {
         try {
             const { paymentmethod_id } = req.params
 
-            const paymentMethod = await PaymentMethod.findByPk(paymentmethod_id, {
-                where: { canceled_at: null },
-                include: [
-                    {
-                        model: Company,
-                        as: 'company',
-                        where: { canceled_at: null },
-                    },
-                    {
-                        model: Filial,
-                        as: 'filial',
-                        where: { canceled_at: null },
-                    },
-                    {
-                        model: BankAccounts,
-                        as: 'bankAccount',
-                        where: { canceled_at: null },
-                    },
-                ],
-            })
+            const paymentMethod = await PaymentMethod.findByPk(
+                paymentmethod_id,
+                {
+                    where: { canceled_at: null },
+                    include: [
+                        {
+                            model: Company,
+                            as: 'company',
+                            where: { canceled_at: null },
+                        },
+                        {
+                            model: Filial,
+                            as: 'filial',
+                            where: { canceled_at: null },
+                        },
+                        {
+                            model: BankAccounts,
+                            as: 'bankAccount',
+                            where: { canceled_at: null },
+                            include: [
+                                {
+                                    model: Bank,
+                                    as: 'bank',
+                                    where: { canceled_at: null },
+                                },
+                            ],
+                        },
+                    ],
+                }
+            )
 
             return res.json(paymentMethod)
         } catch (err) {
@@ -89,7 +106,9 @@ class PaymentMethodController {
             const newPaymentMethod = await PaymentMethod.create(
                 {
                     ...req.body,
-                    filial_id: req.body.filial_id ? req.body.filial_id : req.headers.filial,
+                    filial_id: req.body.filial_id
+                        ? req.body.filial_id
+                        : req.headers.filial,
                     company_id: req.companyId,
                     created_at: new Date(),
                     created_by: req.userId,
@@ -118,7 +137,9 @@ class PaymentMethodController {
         try {
             const { paymentmethod_id } = req.params
 
-            const paymentMethodExists = await PaymentMethod.findByPk(paymentmethod_id)
+            const paymentMethodExists = await PaymentMethod.findByPk(
+                paymentmethod_id
+            )
 
             if (!paymentMethodExists) {
                 return res
