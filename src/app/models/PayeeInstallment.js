@@ -18,6 +18,10 @@ class PayeeInstallment extends Model {
                     type: Sequelize.INTEGER,
                     allowNull: false,
                 },
+                due_date: {
+                    type: Sequelize.DATE,
+                    allowNull: false,
+                },
                 amount: {
                     type: Sequelize.FLOAT,
                     allowNull: false,
