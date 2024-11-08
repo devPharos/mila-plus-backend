@@ -216,7 +216,7 @@ module.exports = {
                 {
                     father_id: 4,
                     alias: 'financial-payees',
-                    name: 'FinancialPayee',
+                    name: 'FinancialPayees',
                 },
             ],
             {}
