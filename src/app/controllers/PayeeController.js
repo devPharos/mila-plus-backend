@@ -146,7 +146,7 @@ class PayeeController {
                         : 0,
                     company_id: req.companyId,
                     status: 'Open',
-                    status_date: new Date().toString() ,
+                    status_date: new Date().toString(),
                     filial_id: req.body.filial_id
                         ? req.body.filial_id
                         : req.headers.filial,
@@ -202,9 +202,7 @@ class PayeeController {
             })
 
             if (!payeeExists) {
-                return res
-                    .status(401)
-                    .json({ error: 'Payee does not exist.' })
+                return res.status(401).json({ error: 'Payee does not exist.' })
             }
 
             if (
@@ -224,7 +222,11 @@ class PayeeController {
             }
 
             await payeeExists.update(
-                { ...req.body, updated_by: req.userId, updated_at: new Date() },
+                {
+                    ...req.body,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
                 {
                     transaction: t,
                 }
@@ -298,8 +300,7 @@ class PayeeController {
 
                             if (
                                 statusDate >= new Date(oldDueDate) &&
-                                statusDate <=
-                                    new Date(payeeExists.due_date)
+                                statusDate <= new Date(payeeExists.due_date)
                             ) {
                                 await PayeeInstallment.update(
                                     {
@@ -360,9 +361,7 @@ class PayeeController {
             const payeeExists = await Payee.findByPk(id)
 
             if (!payeeExists) {
-                return res
-                    .status(401)
-                    .json({ error: 'Payee does not exist.' })
+                return res.status(401).json({ error: 'Payee does not exist.' })
             }
 
             await payeeExists.update(
@@ -378,9 +377,7 @@ class PayeeController {
             )
             await t.commit()
 
-            return res
-                .status(200)
-                .json({ message: 'Payee has been deleted.' })
+            return res.status(200).json({ message: 'Payee has been deleted.' })
         } catch (err) {
             await t.rollback()
             const className = 'PayeeController'
