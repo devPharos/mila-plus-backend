@@ -45,7 +45,7 @@ class PayeeInstallment extends Model {
                 },
                 status_date: {
                     type: Sequelize.STRING,
-                    allowNull: false,
+                    allowNull: true,
                 },
                 authorization_code: {
                     type: Sequelize.STRING,
