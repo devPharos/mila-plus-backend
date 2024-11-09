@@ -10,8 +10,6 @@ import ReceivableInstallment from '../models/ReceivableInstallment'
 import Issuer from '../models/Issuer'
 import ReceivableInstallmentController from './ReceivableInstallmentController'
 
-const { Op } = Sequelize
-
 class ReceivableController {
     async index(req, res) {
         try {
@@ -117,19 +115,6 @@ class ReceivableController {
                 ],
             })
 
-            // if (
-            //     receivable &&
-            //     (receivable.installments.length == 0 ||
-            //         receivable.installments.length < 0)
-            // ) {
-            //     const installmentsItens =
-            //         await ReceivableInstallmentController.storeAllInstallmentsByDateInterval(
-            //             receivable
-            //         )
-
-            //     receivable.installments = installmentsItens || []
-            // }
-
             return res.json(receivable)
         } catch (err) {
             const className = 'ReceivableController'
@@ -148,8 +133,18 @@ class ReceivableController {
             const newReceivable = await Receivable.create(
                 {
                     ...req.body,
+                    fee: req.body.fee ? req.body.fee : 0,
+                    is_recurrency: req.body.is_recurrency
+                        ? req.body.is_recurrency
+                        : false,
+                    total: req.body.total
+                        ? req.body.total
+                        : req.body.amount
+                        ? req.body.amount
+                        : 0,
                     company_id: req.companyId,
                     status: 'Open',
+                    status_date: new Date().toString() ,
                     filial_id: req.body.filial_id
                         ? req.body.filial_id
                         : req.headers.filial,
@@ -179,7 +174,7 @@ class ReceivableController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         let oldInstallments = []
-        let oldEntryDate = null
+        let oldFistDueDate = null
         let oldDueDate = null
 
         try {
@@ -211,11 +206,11 @@ class ReceivableController {
             }
 
             if (
-                req.body.entry_date &&
-                receivableExists.entry_date &&
-                req.body.entry_date !== receivableExists.entry_date
+                req.body.first_due_date &&
+                receivableExists.first_due_date &&
+                req.body.first_due_date !== receivableExists.first_due_date
             ) {
-                oldEntryDate = receivableExists.entry_date
+                oldFistDueDate = receivableExists.first_due_date
             }
 
             if (
@@ -240,20 +235,20 @@ class ReceivableController {
                 oldInstallments = receivableExists.installments
             }
 
-            const { installmentsItens, diifDate } =
+            const { installmentsItems } =
                 await ReceivableInstallmentController.allInstallmentsByDateInterval(
                     receivableExists
                 )
 
             if (
-                installmentsItens &&
-                installmentsItens.length > 0 &&
+                installmentsItems &&
+                installmentsItems.length > 0 &&
                 oldInstallments.length > 0
             ) {
                 let updatedInstallments = []
                 const allDiffs = oldInstallments.filter(
                     (oldItem) =>
-                        !installmentsItens.some(
+                        !installmentsItems.some(
                             (newItem) =>
                                 newItem.installment === oldItem.installment
                         )
@@ -267,14 +262,13 @@ class ReceivableController {
                             return
                         }
 
-                        if (oldEntryDate && itemDiff.status_date) {
-                            console.log('oldEntryDate', oldEntryDate)
+                        if (oldFistDueDate && itemDiff.due_date) {
+                            console.log('oldEntryDate', oldFistDueDate)
 
-                            const statusDate = new Date(itemDiff.status_date)
-                            const entryDate = new Date(oldEntryDate)
+                            const dueDate = new Date(itemDiff.due_date)
+                            const entryDate = new Date(oldFistDueDate)
 
-                            // isso é para fazer o soft dele nos items que eram menores que a data de entrada
-                            if (entryDate < statusDate) {
+                            if (entryDate < dueDate) {
                                 await ReceivableInstallment.update(
                                     {
                                         canceled_at: new Date(),
@@ -299,10 +293,8 @@ class ReceivableController {
                             }
                         }
 
-                        // isso é para fazer o soft dele nos items que estao entre a antiga due date e a nova due date
-                        if (oldDueDate && itemDiff.status_date) {
-                            const statusDate = new Date(itemDiff.status_date)
-
+                        if (oldDueDate && itemDiff.due_date) {
+                            const statusDate = new Date(itemDiff.due_date)
 
                             if (
                                 statusDate >= new Date(oldDueDate) &&
@@ -338,9 +330,10 @@ class ReceivableController {
                             receivableExists
                         )
 
-                    receivableExists.installments = newInstallmentsItens || []
+                    receivableExists.installments =
+                        newInstallmentsItens.installmentsItems || []
                 } else {
-                    receivableExists.installments = installmentsItens || []
+                    receivableExists.installments = installmentsItems || []
                 }
             }
 
