@@ -144,7 +144,7 @@ class ReceivableController {
                         : 0,
                     company_id: req.companyId,
                     status: 'Open',
-                    status_date: new Date().toString() ,
+                    status_date: new Date().toString(),
                     filial_id: req.body.filial_id
                         ? req.body.filial_id
                         : req.headers.filial,
@@ -222,7 +222,11 @@ class ReceivableController {
             }
 
             await receivableExists.update(
-                { ...req.body, updated_by: req.userId, updated_at: new Date() },
+                {
+                    ...req.body,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
                 {
                     transaction: t,
                 }
@@ -263,8 +267,6 @@ class ReceivableController {
                         }
 
                         if (oldFistDueDate && itemDiff.due_date) {
-                            console.log('oldEntryDate', oldFistDueDate)
-
                             const dueDate = new Date(itemDiff.due_date)
                             const entryDate = new Date(oldFistDueDate)
 
