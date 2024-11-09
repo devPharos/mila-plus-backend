@@ -7,7 +7,17 @@ import PaymentMethod from '../models/PaymentMethod'
 import ChartOfAccount from '../models/Chartofaccount'
 import PaymentCriteria from '../models/PaymentCriteria'
 
-const { Op } = Sequelize
+function calculateTotalInstallments(
+    startDate,
+    endDate,
+    recurring_qt,
+    recurring_metric
+) {
+    const diffTime = endDate.getTime() - startDate.getTime()
+    const metrics = { day: 1, week: 7, month: 30, year: 365 }
+    const metricDays = metrics[recurring_metric] * recurring_qt
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24 * metricDays))
+}
 
 class ReceivableInstallmentController {
     async index(req, res) {
@@ -115,7 +125,7 @@ class ReceivableInstallmentController {
             }
 
             const installmentsItens = []
-            const enTryDate = new Date(resources.entry_date)
+            const enTryDate = new Date(resources.first_due_date)
             const dueDate = new Date(resources.due_date)
             const paymentCriteria = resources.paymentcriteria_id
 
@@ -127,29 +137,42 @@ class ReceivableInstallmentController {
                 return
             }
 
-            // month, day, year
-            const fee_metric = paymentCriteriaExists.fee_metric || 'month'
-            let diffDays = 0
+            const recurring_qt = paymentCriteriaExists.recurring_qt || 1
+            const recurring_metric =
+                paymentCriteriaExists.recurring_metric || 'month'
 
-            if (fee_metric === 'month') {
-                diffDays = Math.floor(
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24 * 30)
-                )
-            } else if (fee_metric === 'day') {
-                diffDays = Math.floor(
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24)
-                )
-            } else if (fee_metric === 'year') {
-                diffDays = Math.floor(
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24 * 365)
-                )
-            }
+            const totalInstallments = calculateTotalInstallments(
+                enTryDate,
+                dueDate,
+                recurring_qt,
+                recurring_metric
+            )
 
-            for (let i = 0; i <= diffDays; i++) {
-                const statusDate = new Date(enTryDate)
+            let oldStatusDate = new Date(enTryDate)
+
+            for (let i = 0; i < totalInstallments; i++) {
+                let newStatusDate = new Date(oldStatusDate)
+
+                if (i !== 0) {
+                    if (recurring_metric === 'month') {
+                        newStatusDate.setMonth(
+                            newStatusDate.getMonth() + recurring_qt
+                        )
+                    } else if (recurring_metric === 'day') {
+                        newStatusDate.setDate(
+                            newStatusDate.getDate() + recurring_qt
+                        )
+                    } else if (recurring_metric === 'year') {
+                        newStatusDate.setFullYear(
+                            newStatusDate.getFullYear() + recurring_qt
+                        )
+                    } else if (recurring_metric === 'week') {
+                        newStatusDate.setDate(
+                            newStatusDate.getDate() + recurring_qt * 7
+                        )
+                    }
+                }
+
                 const installment = await ReceivableInstallment.create(
                     {
                         receivable_id: resources.id,
@@ -162,7 +185,8 @@ class ReceivableInstallmentController {
                         chartofaccount_id: resources.chartofaccount_id,
                         paymentcriteria_id: resources.paymentcriteria_id,
                         status: 'PENDING',
-                        status_date: statusDate.toDateString(),
+                        status_date: newStatusDate.toDateString(),
+                        due_date: newStatusDate,
                         created_at: new Date(),
                         created_by: resources.created_by,
                     },
@@ -173,7 +197,7 @@ class ReceivableInstallmentController {
 
                 installmentsItens.push(installment)
 
-                enTryDate.setDate(enTryDate.getDate() + 1)
+                oldStatusDate = new Date(newStatusDate)
             }
 
             await t.commit()
@@ -204,7 +228,7 @@ class ReceivableInstallmentController {
             }
 
             const installmentsItens = []
-            const enTryDate = new Date(resources.entry_date)
+            const enTryDate = new Date(resources.first_due_date)
             const dueDate = new Date(resources.due_date)
 
             const paymentCriteria = resources.paymentcriteria_id
@@ -217,53 +241,40 @@ class ReceivableInstallmentController {
                 return
             }
 
-            // month, day, year, week
+            const recurring_qt = paymentCriteriaExists.recurring_qt || 1
             const recurring_metric =
                 paymentCriteriaExists.recurring_metric || 'month'
-            let diffDate = 0
 
-            if (recurring_metric === 'month') {
-                diffDate = Math.floor(
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24 * 30)
-                )
-            } else if (recurring_metric === 'day') {
-                diffDate = Math.floor(
-                    // 1000 milisegundos, 60 segundos, 60 minutos, 24 horas
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24)
-                )
-            } else if (recurring_metric === 'year') {
-                diffDate = Math.floor(
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24 * 365)
-                )
-            } else if (recurring_metric === 'week') {
-                diffDate = Math.floor(
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24 * 7)
-                )
-            }
+            const totalInstallments = calculateTotalInstallments(
+                enTryDate,
+                dueDate,
+                recurring_qt,
+                recurring_metric
+            )
 
             let oldStatusDate = new Date(enTryDate)
 
-            for (let i = 0; i <= diffDate; i++) {
+            for (let i = 0; i < totalInstallments; i++) {
                 let newStatusDate = new Date(oldStatusDate)
 
                 if (i !== 0) {
                     if (recurring_metric === 'month') {
-                        newStatusDate.setMonth(oldStatusDate.getMonth() + 1)
+                        newStatusDate.setMonth(
+                            newStatusDate.getMonth() + recurring_qt
+                        )
                     } else if (recurring_metric === 'day') {
-                        newStatusDate.setDate(oldStatusDate.getDate() + 1)
+                        newStatusDate.setDate(
+                            newStatusDate.getDate() + recurring_qt
+                        )
                     } else if (recurring_metric === 'year') {
                         newStatusDate.setFullYear(
-                            oldStatusDate.getFullYear() + 1
+                            newStatusDate.getFullYear() + recurring_qt
                         )
                     } else if (recurring_metric === 'week') {
-                        newStatusDate.setDate(oldStatusDate.getDate() + 7)
+                        newStatusDate.setDate(
+                            newStatusDate.getDate() + recurring_qt * 7
+                        )
                     }
-
-                    oldStatusDate = new Date(newStatusDate)
                 }
 
                 const installment = {
@@ -277,12 +288,17 @@ class ReceivableInstallmentController {
                     chartofaccount_id: resources.chartofaccount_id,
                     paymentcriteria_id: resources.paymentcriteria_id,
                     status: 'Open',
-                    status_date: newStatusDate,
+                    status_date: null,
+                    due_date: new Date(newStatusDate).getDate(
+                        newStatusDate.getDate() + 1
+                    ),
                     created_at: new Date(),
                     created_by: resources.created_by,
                 }
 
                 installmentsItens.push(installment)
+
+                oldStatusDate = new Date(newStatusDate)
             }
 
             await t.commit()
@@ -348,18 +364,24 @@ class ReceivableInstallmentController {
             if (!paymentCriteria) return
 
             const recurringMetric = paymentCriteria.recurring_metric || 'month'
+            const recurringQt = paymentCriteria.recurring_qt || 1
+
             const diffDate = this.calculateDateDifference(
-                new Date(resources.entry_date),
+                new Date(resources.first_due_date),
                 new Date(resources.due_date),
+                recurringQt,
                 recurringMetric
             )
 
             const installments = receivable.installments || []
-            const activeInstallments = this.filterActiveInstallments(installments)
+            const activeInstallments =
+                this.filterActiveInstallments(installments)
+
             let installmentsItems = await this.processInstallments(
                 activeInstallments,
                 resources,
                 recurringMetric,
+                recurringQt,
                 diffDate
             )
 
@@ -399,10 +421,16 @@ class ReceivableInstallmentController {
         return PaymentCriteria.findByPk(paymentCriteriaId)
     }
 
-    calculateDateDifference(startDate, endDate, metric) {
+    calculateDateDifference(
+        startDate,
+        endDate,
+        recurring_qt,
+        recurring_metric
+    ) {
         const diffTime = endDate.getTime() - startDate.getTime()
         const metrics = { day: 1, week: 7, month: 30, year: 365 }
-        return Math.floor(diffTime / (1000 * 60 * 60 * 24 * metrics[metric]))
+        const metricDays = metrics[recurring_metric] * recurring_qt
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24 * metricDays))
     }
 
     filterActiveInstallments(installments) {
@@ -413,15 +441,17 @@ class ReceivableInstallmentController {
         activeInstallments,
         resources,
         recurringMetric,
+        reccuringQt,
         diffDate
     ) {
         let installmentsItems = []
-        let oldStatusDate = new Date(resources.entry_date)
+        let oldStatusDate = new Date(resources.first_due_date)
 
-        for (let i = 0; i <= diffDate; i++) {
+        for (let i = 0; i < diffDate; i++) {
             const newStatusDate = this.getNextStatusDate(
                 oldStatusDate,
                 recurringMetric,
+                reccuringQt,
                 i
             )
             const installment = await this.findOrCreateInstallment(
@@ -436,15 +466,19 @@ class ReceivableInstallmentController {
         return installmentsItems
     }
 
-    getNextStatusDate(oldStatusDate, metric, index) {
+    getNextStatusDate(oldStatusDate, metric, qt, index) {
         const newDate = new Date(oldStatusDate)
         if (index === 0) return newDate
 
-        if (metric === 'month') newDate.setMonth(oldStatusDate.getMonth() + 1)
-        else if (metric === 'day') newDate.setDate(oldStatusDate.getDate() + 1)
-        else if (metric === 'year')
-            newDate.setFullYear(oldStatusDate.getFullYear() + 1)
-        else if (metric === 'week') newDate.setDate(oldStatusDate.getDate() + 7)
+        if (metric === 'month') {
+            newDate.setMonth(oldStatusDate.getMonth() + qt)
+        } else if (metric === 'day') {
+            newDate.setDate(oldStatusDate.getDate() + qt)
+        } else if (metric === 'year') {
+            newDate.setFullYear(oldStatusDate.getFullYear() + qt)
+        } else if (metric === 'week') {
+            newDate.setDate(oldStatusDate.getDate() + qt * 7)
+        }
 
         return newDate
     }
@@ -469,7 +503,8 @@ class ReceivableInstallmentController {
             chartofaccount_id: resources.chartofaccount_id,
             paymentcriteria_id: resources.paymentcriteria_id,
             status: 'Open',
-            status_date: newStatusDate.toString(),
+            due_date: new Date(newStatusDate).getDate(newStatusDate.getDate() + 1),
+            status_date: null,
         }
 
         if (installment) {
@@ -503,6 +538,52 @@ class ReceivableInstallmentController {
                 updated_by: updatedBy,
             })
         }
+    }
+
+    async applyLateFees(installment) {
+        const paymentCriteria = await PaymentCriteria.findByPk(
+            installment.paymentcriteria_id
+        )
+
+        if (!paymentCriteria) {
+            return installment
+        }
+
+        const fee_qt = paymentCriteria.fee_qt || 0
+        const fee_metric = paymentCriteria.fee_metric || 'day'
+        const fee_type = paymentCriteria.fee_type || 'percentage'
+        const fee_value = paymentCriteria.fee_value || 0
+
+        const currentDate = new Date()
+        const dueDate = new Date(installment.due_date)
+
+        if (currentDate > dueDate) {
+            const delayDays = Math.floor(
+                (currentDate - dueDate) / (1000 * 60 * 60 * 24)
+            )
+
+            let totalFee = 0
+
+            if (fee_metric === 'day') {
+                totalFee = Math.floor(delayDays / fee_qt) * fee_value
+            } else if (fee_metric === 'week') {
+                totalFee = Math.floor(delayDays / (fee_qt * 7)) * fee_value
+            } else if (fee_metric === 'month') {
+                totalFee = Math.floor(delayDays / (fee_qt * 30)) * fee_value
+            } else if (fee_metric === 'year') {
+                totalFee = Math.floor(delayDays / (fee_qt * 365)) * fee_value
+            }
+
+            if (fee_type === 'percentage') {
+                installment.total += (installment.amount * totalFee) / 100
+            } else if (fee_type === 'fixed') {
+                installment.total += totalFee
+            }
+
+            await installment.save()
+        }
+
+        return installment
     }
 }
 
