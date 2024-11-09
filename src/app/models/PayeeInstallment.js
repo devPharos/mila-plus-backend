@@ -19,7 +19,7 @@ class PayeeInstallment extends Model {
                     allowNull: false,
                 },
                 due_date: {
-                    type: Sequelize.DATE,
+                    type: Sequelize.STRING,
                     allowNull: false,
                 },
                 amount: {
