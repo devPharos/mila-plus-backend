@@ -1,17 +1,16 @@
 import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
+
 import Payee from '../models/Payee'
-import Company from '../models/Company'
-import Filial from '../models/Filial'
 import PaymentMethod from '../models/PaymentMethod'
 import ChartOfAccount from '../models/Chartofaccount'
 import PaymentCriteria from '../models/PaymentCriteria'
-import PayeeInstallment from '../models/PayeeInstallment'
-import PayeeInstallmentController from './PayeeInstallmentController'
+import Filial from '../models/Filial'
 import Issuer from '../models/Issuer'
 
-const { Op } = Sequelize
+import PayeeInstallment from '../models/PayeeInstallment'
+import PayeeInstallmentController from './PayeeInstallmentController'
 
 class PayeeController {
     async index(req, res) {
@@ -19,18 +18,20 @@ class PayeeController {
             const payees = await Payee.findAll({
                 include: [
                     {
-                        model: Filial,
-                        as: 'filial',
-                        where: { canceled_at: null },
-                    },
-                    {
                         model: PaymentMethod,
                         as: 'paymentMethod',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: ChartOfAccount,
                         as: 'chartOfAccount',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: PaymentCriteria,
+                        as: 'paymentCriteria',
                         required: false,
                         where: { canceled_at: null },
                     },
@@ -42,15 +43,17 @@ class PayeeController {
                         order: [['installment', 'ASC']],
                     },
                     {
-                        model: PaymentCriteria,
-                        as: 'paymentCriteria',
+                        model: Filial,
+                        as: 'filial',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: Issuer,
                         as: 'issuer',
+                        required: false,
                         where: { canceled_at: null },
-                    }
+                    },
                 ],
                 where: { canceled_at: null },
                 order: [['created_at', 'DESC']],
@@ -69,8 +72,9 @@ class PayeeController {
 
     async show(req, res) {
         try {
-            const { payeeinstallment_id } = req.params
-            const payee = await Payee.findByPk(payeeinstallment_id, {
+            const { payee_id } = req.params
+
+            const payee = await Payee.findByPk(payee_id, {
                 where: { canceled_at: null },
                 include: [
                     {
@@ -131,8 +135,18 @@ class PayeeController {
             const newPayee = await Payee.create(
                 {
                     ...req.body,
+                    fee: req.body.fee ? req.body.fee : 0,
+                    is_recurrency: req.body.is_recurrency
+                        ? req.body.is_recurrency
+                        : false,
+                    total: req.body.total
+                        ? req.body.total
+                        : req.body.amount
+                        ? req.body.amount
+                        : 0,
                     company_id: req.companyId,
                     status: 'Open',
+                    status_date: new Date().toString() ,
                     filial_id: req.body.filial_id
                         ? req.body.filial_id
                         : req.headers.filial,
@@ -143,6 +157,7 @@ class PayeeController {
                     transaction: t,
                 }
             )
+
             await t.commit()
 
             return res.json(newPayee)
@@ -161,7 +176,7 @@ class PayeeController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         let oldInstallments = []
-        let oldEntryDate = null
+        let oldFistDueDate = null
         let oldDueDate = null
 
         try {
@@ -187,15 +202,17 @@ class PayeeController {
             })
 
             if (!payeeExists) {
-                return res.status(401).json({ error: 'Payee does not exist.' })
+                return res
+                    .status(401)
+                    .json({ error: 'Payee does not exist.' })
             }
 
             if (
-                req.body.entry_date &&
-                payeeExists.entry_date &&
-                req.body.entry_date !== payeeExists.entry_date
+                req.body.first_due_date &&
+                payeeExists.first_due_date &&
+                req.body.first_due_date !== payeeExists.first_due_date
             ) {
-                oldEntryDate = payeeExists.entry_date
+                oldFistDueDate = payeeExists.first_due_date
             }
 
             if (
@@ -220,20 +237,20 @@ class PayeeController {
                 oldInstallments = payeeExists.installments
             }
 
-            const { installmentsItens, diifDate } =
+            const { installmentsItems } =
                 await PayeeInstallmentController.allInstallmentsByDateInterval(
                     payeeExists
                 )
 
             if (
-                installmentsItens &&
-                installmentsItens.length > 0 &&
+                installmentsItems &&
+                installmentsItems.length > 0 &&
                 oldInstallments.length > 0
             ) {
                 let updatedInstallments = []
                 const allDiffs = oldInstallments.filter(
                     (oldItem) =>
-                        !installmentsItens.some(
+                        !installmentsItems.some(
                             (newItem) =>
                                 newItem.installment === oldItem.installment
                         )
@@ -247,11 +264,11 @@ class PayeeController {
                             return
                         }
 
-                        if (oldEntryDate && itemDiff.status_date) {
-                            const statusDate = new Date(itemDiff.status_date)
-                            const entryDate = new Date(oldEntryDate)
+                        if (oldFistDueDate && itemDiff.due_date) {
+                            const dueDate = new Date(itemDiff.due_date)
+                            const entryDate = new Date(oldFistDueDate)
 
-                            if (entryDate < statusDate) {
+                            if (entryDate < dueDate) {
                                 await PayeeInstallment.update(
                                     {
                                         canceled_at: new Date(),
@@ -269,17 +286,20 @@ class PayeeController {
                                 )
 
                                 await t.commit()
+
                                 updatedInstallments.push(true)
+
                                 break
                             }
                         }
 
-                        if (oldDueDate && itemDiff.status_date) {
-                            const statusDate = new Date(itemDiff.status_date)
+                        if (oldDueDate && itemDiff.due_date) {
+                            const statusDate = new Date(itemDiff.due_date)
 
                             if (
                                 statusDate >= new Date(oldDueDate) &&
-                                statusDate <= new Date(payeeExists.due_date)
+                                statusDate <=
+                                    new Date(payeeExists.due_date)
                             ) {
                                 await PayeeInstallment.update(
                                     {
@@ -296,6 +316,7 @@ class PayeeController {
                                         },
                                     }
                                 )
+
                                 updatedInstallments.push(true)
                                 break
                             }
@@ -308,9 +329,11 @@ class PayeeController {
                         await PayeeInstallmentController.allInstallmentsByDateInterval(
                             payeeExists
                         )
-                    payeeExists.installments = newInstallmentsItens || []
+
+                    payeeExists.installments =
+                        newInstallmentsItens.installmentsItems || []
                 } else {
-                    payeeExists.installments = installmentsItens || []
+                    payeeExists.installments = installmentsItems || []
                 }
             }
 
@@ -337,7 +360,9 @@ class PayeeController {
             const payeeExists = await Payee.findByPk(id)
 
             if (!payeeExists) {
-                return res.status(401).json({ error: 'Payee does not exist.' })
+                return res
+                    .status(401)
+                    .json({ error: 'Payee does not exist.' })
             }
 
             await payeeExists.update(
@@ -355,7 +380,7 @@ class PayeeController {
 
             return res
                 .status(200)
-                .json({ message: 'Payee deleted successfully.' })
+                .json({ message: 'Payee has been deleted.' })
         } catch (err) {
             await t.rollback()
             const className = 'PayeeController'
