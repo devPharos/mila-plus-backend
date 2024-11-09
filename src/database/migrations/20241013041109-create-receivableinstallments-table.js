@@ -18,7 +18,7 @@ module.exports = {
                 },
             },
             due_date: {
-                type: Sequelize.DATE,
+                type: Sequelize.STRING,
                 allowNull: false,
             },
             installment: {
