@@ -113,109 +113,6 @@ class ReceivableInstallmentController {
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
-        const resources = req.body
-
-        try {
-            const receivableExists = await Receivable.findByPk(resources.id)
-            if (!receivableExists) {
-                throw new Error('Receivable does not exist.')
-            }
-
-            const installmentsItens = []
-            const enTryDate = new Date(resources.first_due_date)
-            const dueDate = new Date(resources.due_date)
-            const paymentCriteria = resources.paymentcriteria_id
-
-            const paymentCriteriaExists = await PaymentCriteria.findByPk(
-                paymentCriteria
-            )
-
-            if (!paymentCriteriaExists) {
-                return
-            }
-
-            const recurring_qt = paymentCriteriaExists.recurring_qt || 1
-            const recurring_metric =
-                paymentCriteriaExists.recurring_metric || 'month'
-
-            const totalInstallments = calculateTotalInstallments(
-                enTryDate,
-                dueDate,
-                recurring_qt,
-                recurring_metric
-            )
-
-            let oldStatusDate = new Date(enTryDate)
-
-            for (let i = 0; i < totalInstallments; i++) {
-                let newStatusDate = new Date(oldStatusDate)
-
-                if (i !== 0) {
-                    if (recurring_metric === 'month') {
-                        newStatusDate.setMonth(
-                            newStatusDate.getMonth() + recurring_qt
-                        )
-                    } else if (recurring_metric === 'day') {
-                        newStatusDate.setDate(
-                            newStatusDate.getDate() + recurring_qt
-                        )
-                    } else if (recurring_metric === 'year') {
-                        newStatusDate.setFullYear(
-                            newStatusDate.getFullYear() + recurring_qt
-                        )
-                    } else if (recurring_metric === 'week') {
-                        newStatusDate.setDate(
-                            newStatusDate.getDate() + recurring_qt * 7
-                        )
-                    }
-                }
-
-                const installment = await ReceivableInstallment.create(
-                    {
-                        receivable_id: resources.id,
-                        installment: i + 1,
-                        amount: resources.amount,
-                        fee: resources.fee,
-                        total: resources.amount + resources.fee,
-                        paymentmethod_id: resources.paymentmethod_id,
-                        authorization_code: resources.authorization_code,
-                        chartofaccount_id: resources.chartofaccount_id,
-                        paymentcriteria_id: resources.paymentcriteria_id,
-                        status: 'PENDING',
-                        status_date: newStatusDate.toDateString(),
-                        due_date: newStatusDate,
-                        created_at: new Date(),
-                        created_by: resources.created_by,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
-
-                installmentsItens.push(installment)
-
-                oldStatusDate = new Date(newStatusDate)
-            }
-
-            await t.commit()
-
-            return res.json(installmentsItens)
-        } catch (err) {
-            await t.rollback()
-
-            const className = 'ReceivableInstallmentController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-
-            return res.status(500).json({
-                error: err,
-            })
-        }
-    }
-
     async storeTemp(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
@@ -288,10 +185,8 @@ class ReceivableInstallmentController {
                     chartofaccount_id: resources.chartofaccount_id,
                     paymentcriteria_id: resources.paymentcriteria_id,
                     status: 'Open',
-                    status_date: null,
-                    due_date: new Date(newStatusDate).getDate(
-                        newStatusDate.getDate() + 1
-                    ),
+                    status_date: new Date().toString(),
+                    due_date: new Date(newStatusDate).toString(),
                     created_at: new Date(),
                     created_by: resources.created_by,
                 }
@@ -503,8 +398,8 @@ class ReceivableInstallmentController {
             chartofaccount_id: resources.chartofaccount_id,
             paymentcriteria_id: resources.paymentcriteria_id,
             status: 'Open',
-            due_date: new Date(newStatusDate).getDate(newStatusDate.getDate() + 1),
-            status_date: null,
+            due_date: new Date(newStatusDate).toString(),
+            status_date: new Date().toString(),
         }
 
         if (installment) {
