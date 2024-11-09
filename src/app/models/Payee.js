@@ -27,11 +27,15 @@ class Payee extends Model {
                 },
                 entry_date: {
                     type: Sequelize.STRING,
-                    allowNull: true,
+                    allowNull: false,
+                },
+                first_due_date: {
+                    type: Sequelize.STRING,
+                    allowNull: false,
                 },
                 due_date: {
                     type: Sequelize.STRING,
-                    allowNull: true,
+                    allowNull: false,
                 },
                 memo: {
                     type: Sequelize.TEXT,
