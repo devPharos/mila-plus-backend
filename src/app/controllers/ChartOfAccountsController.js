@@ -55,6 +55,8 @@ class ChartOfAccountsController {
 
     async index(req, res) {
         try {
+            const { type } = req.query;
+
             const chartofaccounts = await Chartofaccount.findAll({
                 where: {
                     canceled_at: null,
@@ -86,6 +88,11 @@ class ChartOfAccountsController {
                 ],
                 order: [['code']]
             })
+
+            if (type) {
+              if (type === 'receipts') return res.json(chartofaccounts.filter(chartofaccount => chartofaccount.code.substring(0, 2) == 1));
+              if (type === 'expenses') return res.json(chartofaccounts.filter(chartofaccount => chartofaccount.code.substring(0, 2) == 2));
+            }
 
             return res.json(chartofaccounts);
 
