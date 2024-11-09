@@ -138,6 +138,8 @@ class MerchantController {
         try {
             const { merchant_id } = req.params
 
+            console.log(req.body)
+
             const merchantExists = await Merchant.findByPk(merchant_id, {
                 include: [
                     {
