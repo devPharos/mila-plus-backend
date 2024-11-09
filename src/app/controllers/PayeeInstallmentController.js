@@ -1,13 +1,24 @@
 import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
-import PayeeInstallment from '../models/PayeeInstallment'
-import Payee from '../models/Payee'
 import PaymentMethod from '../models/PaymentMethod'
 import ChartOfAccount from '../models/Chartofaccount'
 import PaymentCriteria from '../models/PaymentCriteria'
 
-const { Op } = Sequelize
+import PayeeInstallment from '../models/PayeeInstallment'
+import Payee from '../models/Payee'
+
+function calculateTotalInstallments(
+    startDate,
+    endDate,
+    recurring_qt,
+    recurring_metric
+) {
+    const diffTime = endDate.getTime() - startDate.getTime()
+    const metrics = { day: 1, week: 7, month: 30, year: 365 }
+    const metricDays = metrics[recurring_metric] * recurring_qt
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24 * metricDays))
+}
 
 class PayeeInstallmentController {
     async index(req, res) {
@@ -36,7 +47,7 @@ class PayeeInstallmentController {
                     },
                 ],
                 where: { canceled_at: null },
-                order: [['created_at', 'DESC']],
+                order: [['installment', 'ASC']],
             })
 
             if (!installments.length) {
@@ -83,11 +94,12 @@ class PayeeInstallmentController {
                         where: { canceled_at: null },
                     },
                 ],
+                order: [['installment', 'ASC']],
             })
 
             if (!installment) {
                 return res.status(400).json({
-                    error: 'Payee installment not found.',
+                    error: 'Installment not found.',
                 })
             }
 
@@ -114,7 +126,7 @@ class PayeeInstallmentController {
             }
 
             const installmentsItens = []
-            const enTryDate = new Date(resources.entry_date)
+            const enTryDate = new Date(resources.first_due_date)
             const dueDate = new Date(resources.due_date)
             const paymentCriteria = resources.paymentcriteria_id
 
@@ -126,28 +138,42 @@ class PayeeInstallmentController {
                 return
             }
 
-            const fee_metric = paymentCriteriaExists.recurring_metric || 'month'
-            let diffDays = 0
+            const recurring_qt = paymentCriteriaExists.recurring_qt || 1
+            const recurring_metric =
+                paymentCriteriaExists.recurring_metric || 'month'
 
-            if (fee_metric === 'month') {
-                diffDays = Math.floor(
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24 * 30)
-                )
-            } else if (fee_metric === 'day') {
-                diffDays = Math.floor(
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24)
-                )
-            } else if (fee_metric === 'year') {
-                diffDays = Math.floor(
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24 * 365)
-                )
-            }
+            const totalInstallments = calculateTotalInstallments(
+                enTryDate,
+                dueDate,
+                recurring_qt,
+                recurring_metric
+            )
 
-            for (let i = 0; i <= diffDays; i++) {
-                const statusDate = new Date(enTryDate)
+            let oldStatusDate = new Date(enTryDate)
+
+            for (let i = 0; i < totalInstallments; i++) {
+                let newStatusDate = new Date(oldStatusDate)
+
+                if (i !== 0) {
+                    if (recurring_metric === 'month') {
+                        newStatusDate.setMonth(
+                            newStatusDate.getMonth() + recurring_qt
+                        )
+                    } else if (recurring_metric === 'day') {
+                        newStatusDate.setDate(
+                            newStatusDate.getDate() + recurring_qt
+                        )
+                    } else if (recurring_metric === 'year') {
+                        newStatusDate.setFullYear(
+                            newStatusDate.getFullYear() + recurring_qt
+                        )
+                    } else if (recurring_metric === 'week') {
+                        newStatusDate.setDate(
+                            newStatusDate.getDate() + recurring_qt * 7
+                        )
+                    }
+                }
+
                 const installment = await PayeeInstallment.create(
                     {
                         payee_id: resources.id,
@@ -159,8 +185,9 @@ class PayeeInstallmentController {
                         authorization_code: resources.authorization_code,
                         chartofaccount_id: resources.chartofaccount_id,
                         paymentcriteria_id: resources.paymentcriteria_id,
-                        status: 'Open',
-                        status_date: statusDate.toDateString(),
+                        status: 'PENDING',
+                        status_date: newStatusDate.toDateString(),
+                        due_date: newStatusDate,
                         created_at: new Date(),
                         created_by: resources.created_by,
                     },
@@ -171,7 +198,7 @@ class PayeeInstallmentController {
 
                 installmentsItens.push(installment)
 
-                enTryDate.setDate(enTryDate.getDate() + 1)
+                oldStatusDate = new Date(newStatusDate)
             }
 
             await t.commit()
@@ -179,11 +206,9 @@ class PayeeInstallmentController {
             return res.json(installmentsItens)
         } catch (err) {
             await t.rollback()
-
             const className = 'PayeeInstallmentController'
             const functionName = 'store'
             MailLog({ className, functionName, req, err })
-
             return res.status(500).json({
                 error: err,
             })
@@ -202,7 +227,7 @@ class PayeeInstallmentController {
             }
 
             const installmentsItens = []
-            const enTryDate = new Date(resources.entry_date)
+            const enTryDate = new Date(resources.first_due_date)
             const dueDate = new Date(resources.due_date)
 
             const paymentCriteria = resources.paymentcriteria_id
@@ -215,51 +240,40 @@ class PayeeInstallmentController {
                 return
             }
 
+            const recurring_qt = paymentCriteriaExists.recurring_qt || 1
             const recurring_metric =
                 paymentCriteriaExists.recurring_metric || 'month'
-            let diffDate = 0
 
-            if (recurring_metric === 'month') {
-                diffDate = Math.floor(
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24 * 30)
-                )
-            } else if (recurring_metric === 'day') {
-                diffDate = Math.floor(
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24)
-                )
-            } else if (recurring_metric === 'year') {
-                diffDate = Math.floor(
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24 * 365)
-                )
-            } else if (recurring_metric === 'week') {
-                diffDate = Math.floor(
-                    (dueDate.getTime() - enTryDate.getTime()) /
-                        (1000 * 60 * 60 * 24 * 7)
-                )
-            }
+            const totalInstallments = calculateTotalInstallments(
+                enTryDate,
+                dueDate,
+                recurring_qt,
+                recurring_metric
+            )
 
             let oldStatusDate = new Date(enTryDate)
 
-            for (let i = 0; i <= diffDate; i++) {
+            for (let i = 0; i < totalInstallments; i++) {
                 let newStatusDate = new Date(oldStatusDate)
 
                 if (i !== 0) {
                     if (recurring_metric === 'month') {
-                        newStatusDate.setMonth(oldStatusDate.getMonth() + 1)
+                        newStatusDate.setMonth(
+                            newStatusDate.getMonth() + recurring_qt
+                        )
                     } else if (recurring_metric === 'day') {
-                        newStatusDate.setDate(oldStatusDate.getDate() + 1)
+                        newStatusDate.setDate(
+                            newStatusDate.getDate() + recurring_qt
+                        )
                     } else if (recurring_metric === 'year') {
                         newStatusDate.setFullYear(
-                            oldStatusDate.getFullYear() + 1
+                            newStatusDate.getFullYear() + recurring_qt
                         )
                     } else if (recurring_metric === 'week') {
-                        newStatusDate.setDate(oldStatusDate.getDate() + 7)
+                        newStatusDate.setDate(
+                            newStatusDate.getDate() + recurring_qt * 7
+                        )
                     }
-
-                    oldStatusDate = new Date(newStatusDate)
                 }
 
                 const installment = {
@@ -273,12 +287,17 @@ class PayeeInstallmentController {
                     chartofaccount_id: resources.chartofaccount_id,
                     paymentcriteria_id: resources.paymentcriteria_id,
                     status: 'Open',
-                    status_date: newStatusDate,
+                    status_date: null,
+                    due_date: new Date(newStatusDate).getDate(
+                        newStatusDate.getDate() + 1
+                    ),
                     created_at: new Date(),
                     created_by: resources.created_by,
                 }
 
                 installmentsItens.push(installment)
+
+                oldStatusDate = new Date(newStatusDate)
             }
 
             await t.commit()
@@ -286,9 +305,8 @@ class PayeeInstallmentController {
             return res.json(installmentsItens)
         } catch (err) {
             await t.rollback()
-
             const className = 'PayeeInstallmentController'
-            const functionName = 'storeTemp'
+            const functionName = 'store'
             MailLog({ className, functionName, req, err })
 
             return res.status(500).json({
@@ -297,10 +315,46 @@ class PayeeInstallmentController {
         }
     }
 
+    async update(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { id } = req.params
+
+            const installmentExists = await PayeeInstallment.findByPk(id)
+
+            if (!installmentExists) {
+                return res
+                    .status(401)
+                    .json({ error: 'Installment does not exist.' })
+            }
+
+            await installmentExists.update(
+                { ...req.body, updated_by: req.userId, updated_at: new Date() },
+                {
+                    transaction: t,
+                }
+            )
+            await t.commit()
+
+            return res.status(200).json(installmentExists)
+        } catch (err) {
+            await t.rollback()
+            const className = 'PayeeInstallmentController'
+            const functionName = 'update'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
     async allInstallmentsByDateInterval(resources) {
         try {
-            const payee = await this.fetchPayeeWithInstallments(resources.id)
-            if (!payee) throw new Error('Payee does not exist.')
+            const payee = await this.fetchpayeeWithInstallments(
+                resources.id
+            )
+            if (!payee) throw new Error('payee does not exist.')
 
             const paymentCriteria = await this.fetchPaymentCriteria(
                 resources.paymentcriteria_id
@@ -308,19 +362,24 @@ class PayeeInstallmentController {
             if (!paymentCriteria) return
 
             const recurringMetric = paymentCriteria.recurring_metric || 'month'
+            const recurringQt = paymentCriteria.recurring_qt || 1
+
             const diffDate = this.calculateDateDifference(
-                new Date(resources.entry_date),
+                new Date(resources.first_due_date),
                 new Date(resources.due_date),
+                recurringQt,
                 recurringMetric
             )
 
             const installments = payee.installments || []
             const activeInstallments =
                 this.filterActiveInstallments(installments)
+
             let installmentsItems = await this.processInstallments(
                 activeInstallments,
                 resources,
                 recurringMetric,
+                recurringQt,
                 diffDate
             )
 
@@ -342,9 +401,7 @@ class PayeeInstallmentController {
         }
     }
 
-    // Implementar os métodos auxiliares como fetchPayeeWithInstallments, fetchPaymentCriteria, calculateDateDifference, filterActiveInstallments, processInstallments e cancelExtraInstallments, seguindo a lógica do ReceivableInstallmentController.js.
-
-    async fetchPayeeWithInstallments(id) {
+    async fetchpayeeWithInstallments(id) {
         return Payee.findByPk(id, {
             where: { canceled_at: null },
             include: [
@@ -352,7 +409,7 @@ class PayeeInstallmentController {
                     model: PayeeInstallment,
                     as: 'installments',
                     required: false,
-                    where: { canceled_at: null },
+                    order: [['installment', 'ASC']],
                 },
             ],
         })
@@ -362,10 +419,16 @@ class PayeeInstallmentController {
         return PaymentCriteria.findByPk(paymentCriteriaId)
     }
 
-    calculateDateDifference(startDate, endDate, metric) {
+    calculateDateDifference(
+        startDate,
+        endDate,
+        recurring_qt,
+        recurring_metric
+    ) {
         const diffTime = endDate.getTime() - startDate.getTime()
         const metrics = { day: 1, week: 7, month: 30, year: 365 }
-        return Math.floor(diffTime / (1000 * 60 * 60 * 24 * metrics[metric]))
+        const metricDays = metrics[recurring_metric] * recurring_qt
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24 * metricDays))
     }
 
     filterActiveInstallments(installments) {
@@ -376,15 +439,17 @@ class PayeeInstallmentController {
         activeInstallments,
         resources,
         recurringMetric,
+        reccuringQt,
         diffDate
     ) {
         let installmentsItems = []
-        let oldStatusDate = new Date(resources.entry_date)
+        let oldStatusDate = new Date(resources.first_due_date)
 
-        for (let i = 0; i <= diffDate; i++) {
+        for (let i = 0; i < diffDate; i++) {
             const newStatusDate = this.getNextStatusDate(
                 oldStatusDate,
                 recurringMetric,
+                reccuringQt,
                 i
             )
             const installment = await this.findOrCreateInstallment(
@@ -399,15 +464,19 @@ class PayeeInstallmentController {
         return installmentsItems
     }
 
-    getNextStatusDate(oldStatusDate, metric, index) {
+    getNextStatusDate(oldStatusDate, metric, qt, index) {
         const newDate = new Date(oldStatusDate)
         if (index === 0) return newDate
 
-        if (metric === 'month') newDate.setMonth(oldStatusDate.getMonth() + 1)
-        else if (metric === 'day') newDate.setDate(oldStatusDate.getDate() + 1)
-        else if (metric === 'year')
-            newDate.setFullYear(oldStatusDate.getFullYear() + 1)
-        else if (metric === 'week') newDate.setDate(oldStatusDate.getDate() + 7)
+        if (metric === 'month') {
+            newDate.setMonth(oldStatusDate.getMonth() + qt)
+        } else if (metric === 'day') {
+            newDate.setDate(oldStatusDate.getDate() + qt)
+        } else if (metric === 'year') {
+            newDate.setFullYear(oldStatusDate.getFullYear() + qt)
+        } else if (metric === 'week') {
+            newDate.setDate(oldStatusDate.getDate() + qt * 7)
+        }
 
         return newDate
     }
@@ -432,7 +501,8 @@ class PayeeInstallmentController {
             chartofaccount_id: resources.chartofaccount_id,
             paymentcriteria_id: resources.paymentcriteria_id,
             status: 'Open',
-            status_date: newStatusDate.toString(),
+            due_date: new Date(newStatusDate).getDate(newStatusDate.getDate() + 1),
+            status_date: null,
         }
 
         if (installment) {
@@ -448,10 +518,7 @@ class PayeeInstallmentController {
 
     async cancelExtraInstallments(installmentsItems, payeeId, updatedBy) {
         const allInstallments = await PayeeInstallment.findAll({
-            where: {
-                payee_id: payeeId,
-                canceled_at: null,
-            },
+            where: { payee_id: payeeId, },
         })
 
         const canceledInstallments = allInstallments.filter(
@@ -471,39 +538,52 @@ class PayeeInstallmentController {
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
-        try {
-            const { id } = req.params
+    async applyLateFees(installment) {
+        const paymentCriteria = await PaymentCriteria.findByPk(
+            installment.paymentcriteria_id
+        )
 
-            const installmentExists = await PayeeInstallment.findByPk(id)
+        if (!paymentCriteria) {
+            return installment
+        }
 
-            if (!installmentExists) {
-                return res
-                    .status(401)
-                    .json({ error: 'Payee installment does not exist.' })
+        const fee_qt = paymentCriteria.fee_qt || 0
+        const fee_metric = paymentCriteria.fee_metric || 'day'
+        const fee_type = paymentCriteria.fee_type || 'percentage'
+        const fee_value = paymentCriteria.fee_value || 0
+
+        const currentDate = new Date()
+        const dueDate = new Date(installment.due_date)
+
+        if (currentDate > dueDate) {
+            const delayDays = Math.floor(
+                (currentDate - dueDate) / (1000 * 60 * 60 * 24)
+            )
+
+            let totalFee = 0
+
+            if (fee_metric === 'day') {
+                totalFee = Math.floor(delayDays / fee_qt) * fee_value
+            } else if (fee_metric === 'week') {
+                totalFee = Math.floor(delayDays / (fee_qt * 7)) * fee_value
+            } else if (fee_metric === 'month') {
+                totalFee = Math.floor(delayDays / (fee_qt * 30)) * fee_value
+            } else if (fee_metric === 'year') {
+                totalFee = Math.floor(delayDays / (fee_qt * 365)) * fee_value
             }
 
-            await installmentExists.update(
-                { ...req.body, updated_by: req.userId, updated_at: new Date() },
-                {
-                    transaction: t,
-                }
-            )
-            await t.commit()
+            if (fee_type === 'percentage') {
+                installment.total += (installment.amount * totalFee) / 100
+            } else if (fee_type === 'fixed') {
+                installment.total += totalFee
+            }
 
-            return res.status(200).json(installmentExists)
-        } catch (err) {
-            await t.rollback()
-            const className = 'PayeeInstallmentController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            await installment.save()
         }
+
+        return installment
     }
 }
 
 export default new PayeeInstallmentController()
+
