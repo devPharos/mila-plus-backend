@@ -341,7 +341,6 @@ routes.delete('/payee/:payee_id', PayeeController.delete)
 // payee installment
 routes.get('/payeeinstallments', PayeeInstallmentController.index)
 routes.get('/payeeinstallments/:payeeinstallment_id', PayeeInstallmentController.show)
-routes.post('/payeeinstallments', PayeeInstallmentController.store)
 routes.post('/payeeinstallments/temp', PayeeInstallmentController.storeTemp)
 routes.put('/payeeinstallments/:payeeinstallment_id', PayeeInstallmentController.update)
 
@@ -381,7 +380,6 @@ routes.delete('/receivables/:receivable_id', ReceivableController.delete)
 // receivable installment
 routes.get('/receivableinstallments', ReceivableInstallmentController.index)
 routes.get('/receivableinstallments/:receivableinstallment_id', ReceivableInstallmentController.show)
-routes.post('/receivableinstallments', ReceivableInstallmentController.store)
 routes.post('/receivableinstallments/temp', ReceivableInstallmentController.storeTemp)
 routes.put('/receivableinstallments/:receivableinstallment_id', ReceivableInstallmentController.update)
 
