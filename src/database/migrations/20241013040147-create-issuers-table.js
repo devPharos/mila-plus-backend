@@ -22,13 +22,13 @@ module.exports = {
             },
             student_id: {
                 type: Sequelize.UUID,
-                allowNull: false,
+                allowNull: true,
                 references: { model: 'students', key: 'id' },
                 onUpdate: 'NO ACTION',
             },
             merchant_id: {
                 type: Sequelize.UUID,
-                allowNull: false,
+                allowNull: true,
                 references: { model: 'merchants', key: 'id' },
                 onUpdate: 'NO ACTION',
             },
