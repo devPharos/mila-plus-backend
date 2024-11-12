@@ -17,21 +17,25 @@ class IssuerController {
                     {
                         model: Company,
                         as: 'company',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: Filial,
                         as: 'filial',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: Student,
                         as: 'student',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: Merchants,
                         as: 'merchant',
+                        required: false,
                         where: { canceled_at: null },
                     },
                 ],
@@ -59,21 +63,25 @@ class IssuerController {
                     {
                         model: Company,
                         as: 'company',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: Filial,
                         as: 'filial',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: Student,
                         as: 'student',
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
                         model: Merchants,
                         as: 'merchant',
+                        required: false,
                         where: { canceled_at: null },
                     },
                 ],
@@ -113,6 +121,7 @@ class IssuerController {
             await t.rollback()
             const className = 'IssuerController'
             const functionName = 'store'
+            console.log(err)
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,
