@@ -21,12 +21,12 @@ class Issuer extends Model {
                 },
                 student_id: {
                     type: Sequelize.UUID,
-                    allowNull: false,
+                    allowNull: true,
                     references: { model: 'students', key: 'id' },
                 },
                 merchant_id: {
                     type: Sequelize.UUID,
-                    allowNull: false,
+                    allowNull: true,
                     references: { model: 'merchants', key: 'id' },
                 },
                 name: {
