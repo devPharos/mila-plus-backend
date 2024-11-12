@@ -49,7 +49,7 @@ module.exports = {
                 allowNull: true,
             },
             ein: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.STRING,
                 allowNull: true,
             },
             email: {
