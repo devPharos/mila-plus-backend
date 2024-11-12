@@ -110,6 +110,12 @@ class MerchantController {
                     filial_id: req.body.filial_id
                         ? req.body.filial_id
                         : req.headers.filial,
+                    balance_payees: req.body.balance_payees
+                        ? req.body.balance_payees
+                        : 0,
+                    late_payees: req.body.late_payees
+                        ? req.body.late_payees
+                        : 0,
                     company_id: req.companyId,
                     created_at: new Date(),
                     created_by: req.userId,
@@ -190,8 +196,8 @@ class MerchantController {
 
             if (
                 req.body.merchantxchartofaccounts ||
-                ( merchantExists.merchantxchartofaccounts?.length > 0 &&
-                  !req.body.merchantxchartofaccounts)
+                (merchantExists.merchantxchartofaccounts?.length > 0 &&
+                    !req.body.merchantxchartofaccounts)
             ) {
                 await MerchantXChartOfAccounts.destroy({
                     where: {
