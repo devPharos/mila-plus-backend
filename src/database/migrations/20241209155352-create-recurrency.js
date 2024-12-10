@@ -2,7 +2,7 @@
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('receivables', {
+        await queryInterface.createTable('recurrencies', {
             id: {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
@@ -27,7 +27,7 @@ module.exports = {
             },
             issuer_id: {
                 type: Sequelize.UUID,
-                allowNull: true,
+                allowNull: false,
                 references: {
                     model: 'issuers',
                     key: 'id',
@@ -37,70 +37,57 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: false,
             },
-            first_due_date: {
+            in_class_date: {
                 type: Sequelize.STRING,
-                allowNull: false,
-            },
-            due_date: {
-                type: Sequelize.STRING,
-                allowNull: false,
-            },
-            memo: {
-                type: Sequelize.TEXT,
-                allowNull: true,
-            },
-            is_recurrency: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false,
-            },
-            contract_number: {
-                type: Sequelize.STRING,
-                allowNull: true,
-            },
-            amount: {
-                type: Sequelize.FLOAT,
-                allowNull: false,
-            },
-            fee: {
-                type: Sequelize.FLOAT,
-                allowNull: false,
-                defaultValue: 0,
-            },
-            total: {
-                type: Sequelize.FLOAT,
                 allowNull: false,
             },
             paymentmethod_id: {
                 type: Sequelize.UUID,
-                allowNull: true,
+                allowNull: false,
                 references: {
                     model: 'paymentmethods',
                     key: 'id',
                 },
             },
-            status: {
-                type: Sequelize.STRING,
+            amount: {
+                type: Sequelize.FLOAT,
                 allowNull: false,
             },
-            status_date: {
-                type: Sequelize.STRING,
-                allowNull: true,
-            },
-            authorization_code: {
-                type: Sequelize.STRING,
-                allowNull: true,
+            active: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: true,
             },
             chartofaccount_id: {
                 type: Sequelize.INTEGER,
-                allowNull: true,
+                allowNull: false,
                 references: {
                     model: 'chartofaccounts',
                     key: 'id',
                 },
             },
+            card_number: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+            card_expiration_date: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+            card_holder_name: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+            card_address: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+            card_zip: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
             paymentcriteria_id: {
                 type: Sequelize.UUID,
-                allowNull: true,
+                allowNull: false,
                 references: {
                     model: 'paymentcriterias',
                     key: 'id',
@@ -134,6 +121,6 @@ module.exports = {
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('receivables')
+        await queryInterface.dropTable('recurrencies')
     },
 }

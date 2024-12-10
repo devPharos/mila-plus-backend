@@ -187,7 +187,13 @@ export function signatureLine({
         })
 }
 
-export function footer({ doc = null, maxWidth = 0, id = '' }) {
+export function footer({
+    doc = null,
+    maxWidth = 0,
+    id = '',
+    page = null,
+    pages = null,
+}) {
     if (!doc) return
     doc.rect(0, 762, maxWidth, 30).fill('#E85F00')
 
@@ -197,4 +203,13 @@ export function footer({ doc = null, maxWidth = 0, id = '' }) {
             width: maxWidth - 60,
             align: 'center',
         })
+
+    if (page && pages) {
+        doc.fill('#FFF')
+            .fontSize(8)
+            .text(`Page ${page} / ${pages}`, 30, 780, {
+                width: maxWidth - 60,
+                align: 'right',
+            })
+    }
 }

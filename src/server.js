@@ -1,5 +1,5 @@
-import app from './app'
-import db from './database'
+import app from './app.js'
+import db from './database/index.js'
 
 const server = app.listen(process.env.APP_PORT || 3333, () => {
     console.log(

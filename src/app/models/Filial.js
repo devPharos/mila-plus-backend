@@ -41,6 +41,7 @@ class Filial extends Model {
                 financial_support_student_amount: Sequelize.FLOAT,
                 financial_support_dependent_amount: Sequelize.FLOAT,
                 sevis_school: Sequelize.STRING,
+                parking_spot_image: Sequelize.UUID,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -89,6 +90,10 @@ class Filial extends Model {
         this.hasMany(models.Filialdocument, {
             foreignKey: 'filial_id',
             as: 'filialdocuments',
+        })
+        this.belongsTo(models.File, {
+            foreignKey: 'parking_spot_image',
+            as: 'parking_spot_image_file',
         })
     }
 }

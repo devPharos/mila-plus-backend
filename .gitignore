@@ -11,8 +11,7 @@
 # production
 /build
 
-/tmp/reporting/*
-/tmp/signatures/*
+/tmp
 
 # misc
 .DS_Store

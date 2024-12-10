@@ -1,9 +1,9 @@
 import express from 'express'
 import cors from 'cors'
 import Youch from 'youch'
-import routes from './routes'
+import routes from './routes.js'
 
-import './database'
+import './database/index.js'
 
 class App {
     constructor() {
@@ -54,8 +54,6 @@ class App {
             })
         })
     }
-
-
 }
 
 export default new App().server

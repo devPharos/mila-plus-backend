@@ -46,6 +46,7 @@ import ReceivableController from './app/controllers/ReceivableController'
 import ReceivableInstallmentController from './app/controllers/ReceivableInstallmentController'
 import IssuerController from './app/controllers/IssuerController'
 import PDFController from './app/controllers/PDFController'
+import ProspectPaymentController from './app/controllers/ProspectPaymentController'
 
 const routes = new Router()
 routes.post('/sessions', SessionController.store)
@@ -340,9 +341,15 @@ routes.delete('/payee/:payee_id', PayeeController.delete)
 
 // payee installment
 routes.get('/payeeinstallments', PayeeInstallmentController.index)
-routes.get('/payeeinstallments/:payeeinstallment_id', PayeeInstallmentController.show)
+routes.get(
+    '/payeeinstallments/:payeeinstallment_id',
+    PayeeInstallmentController.show
+)
 routes.post('/payeeinstallments/temp', PayeeInstallmentController.storeTemp)
-routes.put('/payeeinstallments/:payeeinstallment_id', PayeeInstallmentController.update)
+routes.put(
+    '/payeeinstallments/:payeeinstallment_id',
+    PayeeInstallmentController.update
+)
 
 // payment criteria
 routes.get('/paymentcriterias', PaymentCriteriaController.index)
@@ -370,6 +377,12 @@ routes.delete(
     PaymentMethodController.delete
 )
 
+routes.post('/prospect_payments/issuer', ProspectPaymentController.createIssuer)
+routes.post(
+    '/prospect_payments/payment_link',
+    ProspectPaymentController.sendPaymentLink
+)
+
 // receivable
 routes.get('/receivables', ReceivableController.index)
 routes.get('/receivables/:receivable_id', ReceivableController.show)
@@ -379,9 +392,18 @@ routes.delete('/receivables/:receivable_id', ReceivableController.delete)
 
 // receivable installment
 routes.get('/receivableinstallments', ReceivableInstallmentController.index)
-routes.get('/receivableinstallments/:receivableinstallment_id', ReceivableInstallmentController.show)
-routes.post('/receivableinstallments/temp', ReceivableInstallmentController.storeTemp)
-routes.put('/receivableinstallments/:receivableinstallment_id', ReceivableInstallmentController.update)
+routes.get(
+    '/receivableinstallments/:receivableinstallment_id',
+    ReceivableInstallmentController.show
+)
+routes.post(
+    '/receivableinstallments/temp',
+    ReceivableInstallmentController.storeTemp
+)
+routes.put(
+    '/receivableinstallments/:receivableinstallment_id',
+    ReceivableInstallmentController.update
+)
 
 routes.get('/issuers', IssuerController.index)
 routes.get('/issuers/:issuer_id', IssuerController.show)
