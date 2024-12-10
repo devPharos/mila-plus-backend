@@ -12,7 +12,7 @@ module.exports = {
                     recurring_metric: 'Week',
                     fee_qt: 10,
                     fee_metric: 'Day',
-                    fee_type: 'Flat_fee',
+                    fee_type: 'Flat Fee',
                     fee_value: 30,
                     created_by: 1,
                     created_at: new Date(),
