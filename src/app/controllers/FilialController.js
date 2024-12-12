@@ -15,6 +15,7 @@ import { mailer } from '../../config/mailer'
 import { BASEURL, randomString } from '../functions'
 import MailLayout from '../../Mails/MailLayout'
 import Filialdocument from '../models/Filialdocument'
+import { resolve } from 'path'
 const { Op } = Sequelize
 const client = require('https')
 const fs = require('fs')
