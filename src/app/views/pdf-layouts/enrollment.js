@@ -2571,11 +2571,18 @@ Mila’s web site for enrollment requirements.`,
                 width: 200,
                 align: 'center',
             })
-            .fontSize(8)
-            .text(enrollmentSponsor[0].dataValues.name, 46, helperHeight - 8, {
-                width: 200,
-                align: 'center',
-            })
+
+        if (enrollmentSponsor.length > 0) {
+            doc.fontSize(8).text(
+                enrollmentSponsor[0].dataValues.name,
+                46,
+                helperHeight - 8,
+                {
+                    width: 200,
+                    align: 'center',
+                }
+            )
+        }
 
         doc.rect(270, helperHeight, 320, 1)
             .fill('#111')
