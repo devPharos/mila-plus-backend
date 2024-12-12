@@ -2487,7 +2487,10 @@ Mila’s web site for enrollment requirements.`,
             helperHeight + 3
         )
 
-    if (enrollmentSponsor.length > 0) {
+    if (
+        enrollment.dataValues.need_sponsorship &&
+        enrollmentSponsor.length > 0
+    ) {
         doc.lineJoin('round')
             .rect(70, helperHeight, 12, 12)
             .strokeColor('#E85F00')
@@ -2572,7 +2575,10 @@ Mila’s web site for enrollment requirements.`,
                 align: 'center',
             })
 
-        if (enrollmentSponsor.length > 0) {
+        if (
+            enrollment.dataValues.need_sponsorship &&
+            enrollmentSponsor.length > 0
+        ) {
             doc.fontSize(8).text(
                 enrollmentSponsor[0].dataValues.name,
                 46,
@@ -2592,7 +2598,10 @@ Mila’s web site for enrollment requirements.`,
                 align: 'center',
             })
 
-        if (enrollmentSponsor.length > 0) {
+        if (
+            enrollment.dataValues.need_sponsorship &&
+            enrollmentSponsor.length > 0
+        ) {
             doc.fontSize(8).text(
                 enrollmentSponsor[0].dataValues.address +
                     ', ' +
@@ -2649,43 +2658,48 @@ Mila’s web site for enrollment requirements.`,
             height: 40,
         })
 
-        const sponsorSignaturePath = resolve(
-            __dirname,
-            '..',
-            '..',
-            '..',
-            '..',
-            'tmp',
-            'signatures',
-            `signature-${enrollmentSponsor[0].dataValues.id}.jpg`
-        )
-
-        if (fs.existsSync(sponsorSignaturePath)) {
-            doc.image(sponsorSignaturePath, 130, helperHeight - 2, {
-                width: 82,
-            })
-        }
-
-        signatureLine({
-            doc,
-            maxWidth,
-            text: 'DATE (MM/DD/YYYY)',
-            width: '1/2',
-            topPos: helperHeight,
-            leftPos: '3',
-            height: 40,
-        })
-
-        doc.fontSize(10)
-            .fillColor('#111')
-            .text(
-                format(
-                    enrollmentSponsor[0].dataValues.updated_at,
-                    'MM/dd/yyyy'
-                ),
-                420,
-                helperHeight + 24
+        if (
+            enrollment.dataValues.need_sponsorship &&
+            enrollmentSponsor.length > 0
+        ) {
+            const sponsorSignaturePath = resolve(
+                __dirname,
+                '..',
+                '..',
+                '..',
+                '..',
+                'tmp',
+                'signatures',
+                `signature-${enrollmentSponsor[0].dataValues.id}.jpg`
             )
+
+            if (fs.existsSync(sponsorSignaturePath)) {
+                doc.image(sponsorSignaturePath, 130, helperHeight - 2, {
+                    width: 82,
+                })
+            }
+
+            signatureLine({
+                doc,
+                maxWidth,
+                text: 'DATE (MM/DD/YYYY)',
+                width: '1/2',
+                topPos: helperHeight,
+                leftPos: '3',
+                height: 40,
+            })
+
+            doc.fontSize(10)
+                .fillColor('#111')
+                .text(
+                    format(
+                        enrollmentSponsor[0].dataValues.updated_at,
+                        'MM/dd/yyyy'
+                    ),
+                    420,
+                    helperHeight + 24
+                )
+        }
     }
 
     helperHeight += 70
