@@ -47,8 +47,12 @@ import ReceivableInstallmentController from './app/controllers/ReceivableInstall
 import IssuerController from './app/controllers/IssuerController'
 import PDFController from './app/controllers/PDFController'
 import ProspectPaymentController from './app/controllers/ProspectPaymentController'
+import EmergepayController from './app/controllers/EmergepayController'
 
 const routes = new Router()
+
+routes.post('/emergepay/simple-form', EmergepayController.simpleForm)
+
 routes.post('/sessions', SessionController.store)
 // routes.post('/forgot_password', ForgotPasswordController.store);
 routes.put('/reset_password', SessionController.resetpw)
