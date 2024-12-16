@@ -52,6 +52,11 @@ import EmergepayController from './app/controllers/EmergepayController'
 const routes = new Router()
 
 routes.post('/emergepay/simple-form', EmergepayController.simpleForm)
+routes.post('/emergepay/text-to-pay', EmergepayController.textToPay)
+routes.post(
+    '/emergepay/post-back-listener',
+    EmergepayController.postBackListener
+)
 
 routes.post('/sessions', SessionController.store)
 // routes.post('/forgot_password', ForgotPasswordController.store);
