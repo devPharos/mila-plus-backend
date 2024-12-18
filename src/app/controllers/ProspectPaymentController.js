@@ -12,6 +12,7 @@ import { BASEURL } from '../functions'
 import Receivable from '../models/Receivable'
 import FilialPriceList from '../models/FilialPriceList'
 import { addDays, format, parseISO } from 'date-fns'
+import { emergepay } from '../../config/emergepay'
 
 const { Op } = Sequelize
 
@@ -173,57 +174,243 @@ class ProspectPaymentController {
                 })
             }
 
-            const filial = await Filial.findByPk(
-                enrollment.dataValues.filial_id
-            )
-            const content = `<p>Dear ${student.dataValues.name},</p>
-                            <p>To complete your enrollment process, please use the link below to pay your registration fee.</p>
-                            <br/>
-                            <p style='margin: 12px 0;'><a href="${BASEURL}/receivables/${receivable_id}/payment" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Registration Fee - Payment</a></p>`
+            const receivable = await Receivable.findByPk(receivable_id)
 
-            const title = `Registration Fee - ${student.dataValues.name}`
-            await mailer.sendMail({
-                from: '"MILA Plus" <development@pharosit.com.br>',
-                to: student.dataValues.email,
-                subject: `MILA Plus - Registration Fee - ${student.dataValues.name}`,
-                html: MailLayout({
-                    title,
-                    content,
-                    filial: filial.dataValues.name,
-                }),
-            })
+            if (!receivable) {
+                return res.status(400).json({
+                    error: 'Receivable not found.',
+                })
+            }
 
-            await enrollment.update(
-                {
-                    payment_link_sent_to_student: true,
-                    updated_at: new Date(),
-                    updated_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            const filial = await Filial.findByPk(enrollment.filial_id)
 
-            await Enrollmenttimeline.create(
-                {
-                    enrollment_id: enrollment.id,
-                    processtype_id: student.dataValues.processtype_id,
-                    status: 'Waiting',
-                    processsubstatus_id: student.dataValues.processsubstatus_id,
-                    phase: 'Student Application',
-                    phase_step: 'Payment Link Sent',
-                    step_status: 'The link has been sent to student.',
-                    expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
-                    created_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
-            t.commit()
+            if (!filial) {
+                return res.status(400).json({
+                    error: 'Filial not found.',
+                })
+            }
 
-            return res.json({ status: 'ok' })
+            emergepay
+                .startTextToPayTransaction({
+                    amount: receivable.dataValues.amount.toFixed(2),
+                    externalTransactionId: receivable_id,
+                    // Optional
+                    billingName: issuerExists.dataValues.name,
+                    billingAddress: issuerExists.dataValues.address,
+                    billingPostalCode: issuerExists.dataValues.zip,
+                    promptTip: false,
+                    pageDescription: `Registration Fee - ${issuerExists.dataValues.name}`,
+                    transactionReference: receivable_id,
+                })
+                .then((response) => {
+                    const { paymentPageId, paymentPageUrl } = response.data
+                    mailer
+                        .sendMail({
+                            from: '"MILA Plus" <development@pharosit.com.br>',
+                            to: issuerExists.dataValues.email,
+                            subject: `MILA Plus - Registration Fee - ${issuerExists.dataValues.name}`,
+                            html: `<!DOCTYPE html>
+                                <html lang="en">
+                                <head>
+                                    <meta charset="UTF-8">
+                                    <title>Invoice for Payment</title>
+                                </head>
+                                <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: Arial, sans-serif;color: #444;font-size: 16px;">
+                                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; padding: 20px;">
+                                        <tr>
+                                            <td align="center">
+                                                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 6px; overflow: hidden; border: 1px solid #e0e0e0;">
+                                                    <tr>
+                                                        <td style="background-color: #fff;  text-align: center; padding: 20px;">
+                                                            <h1 style="margin: 0; font-size: 24px;">INVOICE I${receivable.dataValues.invoice_number
+                                                                .toString()
+                                                                .padStart(
+                                                                    6,
+                                                                    '0'
+                                                                )} - DETAILS</h1>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="background-color: #f4f5f8; border-top: 1px solid #ccc;  text-align: center; padding: 4px;">
+                                                            <h3 style="margin: 10px 0;line-height: 1.5;font-size: 16px;font-weight: normal;">MILA INTERNATIONAL LANGUAGE ACADEMY<br/><strong>${
+                                                                filial
+                                                                    .dataValues
+                                                                    .name
+                                                            }</strong></h3>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 20px 0;">
+                                                            <p style="margin: 20px 40px;">Dear ${
+                                                                issuerExists
+                                                                    .dataValues
+                                                                    .name
+                                                            },</p>
+                                                            <p style="margin: 20px 40px;">Here's your invoice! We appreciate your prompt payment.</p>
+                                                            <table width="100%" cellpadding="10" cellspacing="0" style="background-color: #dbe9f1; border-radius: 4px; margin: 20px 0;padding: 10px 0;">
+                                                                <tr>
+                                                                    <td style="font-weight: bold;text-align: center;color: #444;">DUE ${format(
+                                                                        parseISO(
+                                                                            receivable
+                                                                                .dataValues
+                                                                                .due_date
+                                                                        ),
+                                                                        'MM/dd/yyyy'
+                                                                    )}</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td style="font-weight: bold;text-align: center;font-size: 36px;color: #444;">$ ${receivable.dataValues.amount.toFixed(
+                                                                        2
+                                                                    )}</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td style="font-weight: bold;text-align: center;">
+                                                                        <a href="${paymentPageUrl}" target="_blank" style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
+                                                                    </td>
+                                                                </tr>
+                                                            </table>
+                                                            <p style="margin: 20px 40px;">Have a great day,</p>
+                                                            <p style="margin: 20px 40px;">MILA - Miami International Language Academy</p>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="background-color: #f4f5f8; border-top: 1px solid #ccc;  text-align: center; padding: 4px;">
+                                                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f5f8; overflow: hidden;padding: 0 40px;">
+                                                                <tr>
+                                                                    <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                        <strong>Bill to</strong>
+                                                                    </td>
+                                                                    <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                        ${
+                                                                            issuerExists
+                                                                                .dataValues
+                                                                                .name
+                                                                        }
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td style=" text-align: left; padding: 20px;">
+                                                                        <strong>Terms</strong>
+                                                                    </td>
+                                                                    <td style=" text-align: right; padding: 20px;">
+                                                                        Due on receipt
+                                                                    </td>
+                                                                </tr>
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="color: #444; text-align: center; padding: 4px;">
+                                                            <table width="100%" cellpadding="0" cellspacing="0" style="overflow: hidden;padding: 0 40px;">
+                                                                <tr>
+                                                                    <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                        <strong>English course - Registration fee</strong><br/>
+                                                                        <span style="font-size: 12px;">1 X $ ${receivable.dataValues.amount.toFixed(
+                                                                            2
+                                                                        )}</span>
+                                                                    </td>
+                                                                    <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                        $ ${receivable.dataValues.amount.toFixed(
+                                                                            2
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td colspan="2" style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                        Balance due <span style="margin-left: 10px;">$ ${receivable.dataValues.amount.toFixed(
+                                                                            2
+                                                                        )}</span>
+                                                                    </td>
+                                                                </tr>
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 40px;font-size: 12px;">
+                                                            *.*Este pagamento não isenta invoices anteriores.<br/>
+                                                            *.*This payment does not exempt previous invoices
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="text-align: center;padding: 10px 0 30px;">
+                                                            <a href="${paymentPageUrl}" target="_blank" style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="text-align: center; padding: 10px; line-height: 1.5; background-color: #f1f3f5; font-size: 12px; color: #6c757d;">
+                                                            MILA INTERNATIONAL LANGUAGE ACADEMY - ${
+                                                                filial
+                                                                    .dataValues
+                                                                    .name
+                                                            }<br/>
+                                                            ${
+                                                                filial
+                                                                    .dataValues
+                                                                    .address
+                                                            } ${
+                                filial.dataValues.name
+                            }, ${filial.dataValues.state} ${
+                                filial.dataValues.zipcode
+                            } US
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </body>
+                                </html>`,
+                            // html: `<p>Payment ID: ${paymentPageId}<br/>Payment Link: ${paymentPageUrl}</p>`,
+                        })
+                        .then(async () => {
+                            await enrollment.update(
+                                {
+                                    payment_link_sent_to_student: true,
+                                    updated_at: new Date(),
+                                    updated_by: req.userId,
+                                },
+                                {
+                                    transaction: t,
+                                }
+                            )
+
+                            await Enrollmenttimeline.create(
+                                {
+                                    enrollment_id: enrollment.id,
+                                    processtype_id:
+                                        student.dataValues.processtype_id,
+                                    status: 'Waiting',
+                                    processsubstatus_id:
+                                        student.dataValues.processsubstatus_id,
+                                    phase: 'Student Application',
+                                    phase_step: 'Payment Link Sent',
+                                    step_status:
+                                        'The link has been sent to student.',
+                                    expected_date: format(
+                                        addDays(new Date(), 3),
+                                        'yyyyMMdd'
+                                    ),
+                                    created_at: new Date(),
+                                    created_by: req.userId,
+                                },
+                                {
+                                    transaction: t,
+                                }
+                            )
+                            t.commit()
+
+                            return res.json({ status: 'ok' })
+                        })
+                })
+                .catch((err) => {
+                    t.rollback()
+                    const className = 'EmergepayController'
+                    const functionName = 'textToPay'
+                    MailLog({ className, functionName, req, err })
+                    return res.status(500).json({
+                        error: err,
+                    })
+                })
         } catch (err) {
             await t.rollback()
             const className = 'ProspectPaymentController'

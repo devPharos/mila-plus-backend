@@ -57,6 +57,7 @@ routes.post(
     '/emergepay/post-back-listener',
     EmergepayController.postBackListener
 )
+routes.post('/emergepay/refund', EmergepayController.refund)
 
 routes.post('/sessions', SessionController.store)
 // routes.post('/forgot_password', ForgotPasswordController.store);

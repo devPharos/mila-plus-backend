@@ -1153,6 +1153,25 @@ class EnrollmentController {
                 })
             }
 
+            const enrollment = await Enrollment.findByPk(sponsor.enrollment_id)
+
+            if (!enrollment) {
+                return res.status(400).json({
+                    error: 'Enrollment not found.',
+                })
+            }
+
+            enrollment.update(
+                {
+                    form_step: 'finished',
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
+                {
+                    transaction: t,
+                }
+            )
+
             const signatureFile = await File.create(
                 {
                     company_id: req.companyId || 1,

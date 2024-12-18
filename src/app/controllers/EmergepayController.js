@@ -6,19 +6,11 @@ import { v4 as uuidv4 } from 'uuid'
 import { Sequelize } from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import Receivable from '../models/Receivable'
-
-const oid = process.env.EMERGEPAY_OID
-const authToken = process.env.EMERGEPAY_AUTH_TOKEN
-const environmentUrl = process.env.EMERGEPAY_ENVIRONMENT_URL
+import { emergepay } from '../../config/emergepay'
 
 class EmergepayController {
     async simpleForm(req, res) {
         try {
-            const emergepay = new emergepaySdk({
-                oid: oid,
-                authToken: authToken,
-                environmentUrl: environmentUrl,
-            })
             var amount = '0.01'
             var config = {
                 transactionType: TransactionType.CreditSale,
@@ -54,19 +46,13 @@ class EmergepayController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const emergepay = new emergepaySdk({
-                oid: oid,
-                authToken: authToken,
-                environmentUrl: environmentUrl,
-            })
+            const { receivable_id, amount, pageDescription = '' } = req.body
 
-            const { amount, pageDescription = '' } = req.body
-
-            // if (!receivable_id) {
-            //     return res.status(400).json({
-            //         error: 'receivable_id is required.',
-            //     })
-            // }
+            if (!receivable_id) {
+                return res.status(400).json({
+                    error: 'receivable_id is required.',
+                })
+            }
 
             if (!amount) {
                 return res.status(400).json({
@@ -74,16 +60,19 @@ class EmergepayController {
                 })
             }
 
-            const receivable_id = uuidv4()
+            const fileUuid = uuidv4()
 
             emergepay
                 .startTextToPayTransaction({
                     amount: amount.toFixed(2),
-                    externalTransactionId: receivable_id,
+                    externalTransactionId: fileUuid,
                     // Optional
+                    billingName: 'Denis Varella',
+                    billingAddress: 'Rua Primeiro de Maio, 56',
+                    billingPostalCode: '12345',
                     promptTip: false,
                     pageDescription,
-                    transactionReference: '1234',
+                    transactionReference: receivable_id,
                 })
                 .then((response) => {
                     const { paymentPageId, paymentPageUrl } = response.data
@@ -91,7 +80,7 @@ class EmergepayController {
                         from: '"MILA Plus" <development@pharosit.com.br>',
                         to: 'denis@pharosit.com.br',
                         subject: `MILA Plus - Payment Link`,
-                        html: `<p>Payment ID: ${paymentPageId}<br/>Payment Link: ${paymentPageUrl}<br/>External Transaction ID: ${receivable_id}</p>`,
+                        html: `<p>Payment ID: ${paymentPageId}<br/>Payment Link: ${paymentPageUrl}<br/>External Transaction ID: ${fileUuid}</p>`,
                     })
                     t.commit()
                 })
@@ -146,6 +135,27 @@ class EmergepayController {
             res.sendStatus(200)
         } catch (err) {
             console.log({ err })
+        }
+    }
+
+    async refund(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            emergepay.tokenizedRefundTransaction({
+                uniqueTransId:
+                    '31bfc165cc9f414194db1adcdb008a57-636de9fd59bb40b2becbeec8b8208197',
+                externalTransactionId: emergepay.getExternalTransactionId(),
+                amount: '498.00',
+            })
+        } catch (err) {
+            await t.rollback()
+            const className = 'EmergepayController'
+            const functionName = 'refund'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
         }
     }
 }

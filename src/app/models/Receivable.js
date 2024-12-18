@@ -9,6 +9,12 @@ class Receivable extends Model {
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true,
                 },
+                invoice_number: {
+                    type: Sequelize.INTEGER,
+                    autoIncrement: true,
+                    unique: true,
+                    allowNull: false,
+                },
                 company_id: {
                     type: Sequelize.INTEGER,
                     allowNull: false,
@@ -23,7 +29,7 @@ class Receivable extends Model {
                     references: {
                         model: 'issuers',
                         key: 'id',
-                    }
+                    },
                 },
                 entry_date: {
                     type: Sequelize.STRING,
