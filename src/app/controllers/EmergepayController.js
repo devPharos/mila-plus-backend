@@ -60,19 +60,21 @@ class EmergepayController {
                 environmentUrl: environmentUrl,
             })
 
-            const { receivable_id, amount, pageDescription = '' } = req.body
+            const { amount, pageDescription = '' } = req.body
 
-            if (!receivable_id) {
-                return res.status(400).json({
-                    error: 'receivable_id is required.',
-                })
-            }
+            // if (!receivable_id) {
+            //     return res.status(400).json({
+            //         error: 'receivable_id is required.',
+            //     })
+            // }
 
             if (!amount) {
                 return res.status(400).json({
                     error: 'amount is required.',
                 })
             }
+
+            const receivable_id = uuidv4()
 
             emergepay
                 .startTextToPayTransaction({
@@ -89,7 +91,7 @@ class EmergepayController {
                         from: '"MILA Plus" <development@pharosit.com.br>',
                         to: 'denis@pharosit.com.br',
                         subject: `MILA Plus - Payment Link`,
-                        html: `<p>Payment ID: ${paymentPageId}<br/>Payment Link: ${paymentPageUrl}<br/>External Transaction ID: ${fileUuid}</p>`,
+                        html: `<p>Payment ID: ${paymentPageId}<br/>Payment Link: ${paymentPageUrl}<br/>External Transaction ID: ${receivable_id}</p>`,
                     })
                     t.commit()
                 })
@@ -124,6 +126,7 @@ class EmergepayController {
         }
 
         try {
+            console.log('Post-back acionado')
             var hmacSignature = req.header('hmac-signature')
             var rawData = req.body
             var jsonData = JSON.stringify(rawData)
@@ -136,6 +139,7 @@ class EmergepayController {
 
             //if the hmac signature matched, the response body data is valid
             if (signatureMatched) {
+                console.log(jsonData)
                 //do something with the transaction result
             }
 
