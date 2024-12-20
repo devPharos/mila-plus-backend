@@ -118,10 +118,9 @@ class EmergepayController {
             return hmac.digest('base64') === hmacSignature
         }
         try {
-            const connection = new Sequelize(databaseConfig)
-            const t = await connection.transaction()
+            // const connection = new Sequelize(databaseConfig)
+            // const t = await connection.transaction()
 
-            console.log('Post-back acionado')
             var hmacSignature = req.header('hmac-signature')
             var rawData = req.body
             var jsonData = JSON.stringify(rawData)
@@ -162,56 +161,46 @@ class EmergepayController {
                     uniqueTransId,
                 } = emergeData
 
-                await Emergepaytransaction.create(
-                    {
-                        account_card_type: accountCardType,
-                        account_entry_method: accountEntryMethod,
-                        account_expiry_date: accountExpiryDate,
-                        amount: parseFloat(amount),
-                        amount_balance: parseFloat(amountBalance || 0),
-                        amount_processed: parseFloat(amountProcessed || 0),
-                        amount_taxed: parseFloat(amountTaxed || 0),
-                        amount_tipped: parseFloat(amountTipped || 0),
-                        approval_number_result: approvalNumberResult,
-                        avs_response_code: avsResponseCode,
-                        avs_response_text: avsResponseText,
-                        batch_number: batchNumber,
-                        billing_name: billingName,
-                        cashier: cashier,
-                        cvv_response_code: cvvResponseCode,
-                        cvv_response_text: cvvResponseText,
-                        external_transaction_id: externalTransactionId,
-                        is_partial_approval: isPartialApproval,
-                        masked_account: maskedAccount,
-                        result_message: resultMessage,
-                        result_status: resultStatus,
-                        transaction_reference: transactionReference,
-                        transaction_type: transactionType,
-                        unique_trans_id: uniqueTransId,
-                        created_at: new Date(),
-                        created_by: 2,
-                    },
-                    {
-                        transaction: t,
-                    }
-                ).then(async (emergepaytransaction) => {
+                await Emergepaytransaction.create({
+                    account_card_type: accountCardType,
+                    account_entry_method: accountEntryMethod,
+                    account_expiry_date: accountExpiryDate,
+                    amount: parseFloat(amount),
+                    amount_balance: parseFloat(amountBalance || 0),
+                    amount_processed: parseFloat(amountProcessed || 0),
+                    amount_taxed: parseFloat(amountTaxed || 0),
+                    amount_tipped: parseFloat(amountTipped || 0),
+                    approval_number_result: approvalNumberResult,
+                    avs_response_code: avsResponseCode,
+                    avs_response_text: avsResponseText,
+                    batch_number: batchNumber,
+                    billing_name: billingName,
+                    cashier: cashier,
+                    cvv_response_code: cvvResponseCode,
+                    cvv_response_text: cvvResponseText,
+                    external_transaction_id: externalTransactionId,
+                    is_partial_approval: isPartialApproval,
+                    masked_account: maskedAccount,
+                    result_message: resultMessage,
+                    result_status: resultStatus,
+                    transaction_reference: transactionReference,
+                    transaction_type: transactionType,
+                    unique_trans_id: uniqueTransId,
+                    created_at: new Date(),
+                    created_by: 2,
+                }).then(async (emergepaytransaction) => {
                     const receivable = await Receivable.findByPk(
                         externalTransactionId
                     )
                     if (receivable && resultMessage === 'Approved') {
                         await receivable
-                            .update(
-                                {
-                                    status: 'Paid',
-                                    status_date: format(new Date(), 'yyyyMMdd'),
-                                    authorization_code: approvalNumberResult,
-                                    updated_at: new Date(),
-                                    updated_by: 2,
-                                },
-                                {
-                                    transaction: t,
-                                }
-                            )
+                            .update({
+                                status: 'Paid',
+                                status_date: format(new Date(), 'yyyyMMdd'),
+                                authorization_code: approvalNumberResult,
+                                updated_at: new Date(),
+                                updated_by: 2,
+                            })
                             .then(async () => {
                                 const otherReceivables =
                                     await Receivable.findAll({
@@ -230,29 +219,18 @@ class EmergepayController {
                                     }).then((receivables) => {
                                         receivables.forEach((receivable) => {
                                             receivable
-                                                .update(
-                                                    {
-                                                        status: 'Paid',
-                                                        status_date: format(
-                                                            new Date(),
-                                                            'yyyyMMdd'
-                                                        ),
-                                                        authorization_code:
-                                                            approvalNumberResult,
-                                                        updated_at: new Date(),
-                                                        updated_by: 2,
-                                                    },
-                                                    {
-                                                        transaction: t,
-                                                    }
-                                                )
-                                                .then(async () => {
-                                                    t.commit()
-                                                    res.sendStatus(200)
-                                                    return
+                                                .update({
+                                                    status: 'Paid',
+                                                    status_date: format(
+                                                        new Date(),
+                                                        'yyyyMMdd'
+                                                    ),
+                                                    authorization_code:
+                                                        approvalNumberResult,
+                                                    updated_at: new Date(),
+                                                    updated_by: 2,
                                                 })
                                                 .catch((err) => {
-                                                    t.rollback()
                                                     const className =
                                                         'EmergepayController'
                                                     const functionName =
@@ -263,30 +241,22 @@ class EmergepayController {
                                                         req,
                                                         err,
                                                     })
-                                                    return res
-                                                        .status(500)
-                                                        .json({
-                                                            error: err,
-                                                        })
                                                 })
                                         })
                                     })
                             })
                     } else {
                         console.log('Transação não paga')
-                        t.commit()
-                        res.sendStatus(200)
-                        return
                     }
                 })
             } else {
                 console.log('Hmac não corresponde')
-                return res.sendStatus(400)
             }
         } catch (err) {
             console.log({ err })
-            return res.sendStatus(400)
         }
+        res.sendStatus(200)
+        return
     }
 
     async refund(req, res) {
