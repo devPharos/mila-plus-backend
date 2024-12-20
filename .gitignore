@@ -23,6 +23,8 @@
 denis.env
 producao.env
 
+/public/uploads
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
