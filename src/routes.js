@@ -48,8 +48,12 @@ import IssuerController from './app/controllers/IssuerController'
 import PDFController from './app/controllers/PDFController'
 import ProspectPaymentController from './app/controllers/ProspectPaymentController'
 import EmergepayController from './app/controllers/EmergepayController'
+import DataSyncController from './app/controllers/DataSyncController'
+import multer from 'multer'
 
 const routes = new Router()
+
+const upload = multer({ dest: 'public/uploads/' })
 
 routes.post('/emergepay/simple-form', EmergepayController.simpleForm)
 routes.post('/emergepay/text-to-pay', EmergepayController.textToPay)
@@ -138,6 +142,12 @@ routes.get('/pdf/:layout/:id', PDFController.show)
 
 // A partir daqui precisa de autenticação
 routes.use(authMiddleware)
+
+routes.post(
+    '/data-sync/import',
+    upload.single('file'),
+    DataSyncController.import
+)
 
 routes.get('/processtypes', ProcessTypeController.index)
 routes.get('/processtypes/:processtype_id', ProcessTypeController.show)
