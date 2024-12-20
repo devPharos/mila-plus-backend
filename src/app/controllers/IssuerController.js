@@ -9,6 +9,62 @@ import Merchants from '../models/Merchants'
 
 const { Op } = Sequelize
 
+export async function createIssuerFromStudent({
+    student_id,
+    created_by = null,
+}) {
+    try {
+        const student = await Student.findByPk(student_id)
+        if (!student) {
+            return null
+        }
+
+        const {
+            company_id,
+            filial_id,
+            name,
+            middle_name,
+            last_name,
+            email,
+            phone_number,
+            address,
+            city,
+            state,
+            zip,
+            country,
+        } = student.dataValues
+
+        let fullName = name
+        if (middle_name) {
+            fullName += ' ' + middle_name
+        }
+        fullName += ' ' + last_name
+
+        const issuer = await Issuer.create({
+            company_id,
+            filial_id,
+            student_id,
+            name: fullName,
+            email,
+            phone_number,
+            address,
+            city,
+            state,
+            zip,
+            country,
+            created_at: new Date(),
+            created_by: created_by || 2,
+        })
+
+        return issuer
+    } catch (err) {
+        const className = 'IssuerController'
+        const functionName = 'createIssuerFromStudent'
+        MailLog({ className, functionName, req, err })
+        return null
+    }
+}
+
 class IssuerController {
     async index(req, res) {
         try {
@@ -105,7 +161,9 @@ class IssuerController {
             const newIssuer = await Issuer.create(
                 {
                     ...req.body,
-                    filial_id: req.body.filial_id ? req.body.filial_id : req.headers.filial,
+                    filial_id: req.body.filial_id
+                        ? req.body.filial_id
+                        : req.headers.filial,
                     company_id: req.companyId,
                     created_at: new Date(),
                     created_by: req.userId,
@@ -142,7 +200,12 @@ class IssuerController {
             }
 
             await issuerExists.update(
-                { ...req.body, company_id: req.companyId, updated_by: req.userId, updated_at: new Date() },
+                {
+                    ...req.body,
+                    company_id: req.companyId,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
                 {
                     transaction: t,
                 }

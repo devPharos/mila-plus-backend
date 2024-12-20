@@ -6,7 +6,6 @@ module.exports = {
         await queryInterface.addColumn('receivables', 'invoice_number', {
             type: Sequelize.INTEGER,
             autoIncrement: true,
-            unique: true,
             allowNull: false,
         })
     },

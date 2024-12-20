@@ -387,7 +387,10 @@ routes.delete(
     PaymentMethodController.delete
 )
 
-routes.post('/prospect_payments/issuer', ProspectPaymentController.createIssuer)
+routes.post(
+    '/prospect_payments/generateFees',
+    ProspectPaymentController.generateFees
+)
 routes.post(
     '/prospect_payments/payment_link',
     ProspectPaymentController.sendPaymentLink

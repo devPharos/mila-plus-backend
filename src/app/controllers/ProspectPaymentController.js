@@ -13,11 +13,16 @@ import Receivable from '../models/Receivable'
 import FilialPriceList from '../models/FilialPriceList'
 import { addDays, format, parseISO } from 'date-fns'
 import { emergepay } from '../../config/emergepay'
+import { createIssuerFromStudent } from './IssuerController'
+import {
+    createRegistrationFeeReceivable,
+    createTuitionFeeReceivable,
+} from './ReceivableController'
 
 const { Op } = Sequelize
 
 class ProspectPaymentController {
-    async createIssuer(req, res) {
+    async generateFees(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
@@ -47,106 +52,60 @@ class ProspectPaymentController {
             }
 
             if (!issuerExists) {
-                let fullName = student.dataValues.name
-                if (student.dataValues.middle_name) {
-                    fullName += ' ' + student.dataValues.middle_name
-                }
-                fullName += ' ' + student.dataValues.last_name
-                issuerExists = await Issuer.create(
-                    {
-                        company_id: req.companyId,
-                        filial_id,
-                        student_id,
-                        name: fullName,
-                        email: student.dataValues.email,
-                        phone_number: student.dataValues.phone_number,
-                        address: student.dataValues.home_country_address,
-                        city: student.dataValues.home_country_city,
-                        state: student.dataValues.home_country_state,
-                        zip: student.dataValues.home_country_zip,
-                        country: student.dataValues.home_country_country,
-                        created_at: new Date(),
-                        created_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                issuerExists = await createIssuerFromStudent({
+                    student_id,
+                    created_by: req.userId,
+                })
             }
 
-            const filialPriceList = await FilialPriceList.findOne({
-                where: {
-                    filial_id,
-                    processsubstatus_id: student.dataValues.processsubstatus_id,
-                    canceled_at: null,
-                },
-            })
-            const receivableExists = await Receivable.findOne({
+            let tuitionFee = null
+            let registrationFee = null
+
+            registrationFee = await Receivable.findOne({
                 where: {
                     company_id: req.companyId,
                     filial_id,
-                    issuer_id: issuerExists.dataValues.id,
-                    memo: 'Registration fee',
+                    issuer_id: issuerExists.id,
+                    type: 'Invoice',
+                    type_detail: 'Registration fee',
                     canceled_at: null,
                 },
             })
-            if (!receivableExists) {
-                await Receivable.create(
-                    {
-                        company_id: req.companyId,
-                        filial_id,
-                        issuer_id: issuerExists.dataValues.id,
-                        entry_date: format(addDays(new Date(), 0), 'yyyyMMdd'),
-                        due_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                        first_due_date: format(
-                            addDays(new Date(), 3),
-                            'yyyyMMdd'
-                        ),
-                        status: 'Open',
-                        status_date: format(addDays(new Date(), 0), 'yyyyMMdd'),
-                        memo: 'Registration fee',
-                        fee: 0,
-                        authorization_code: null,
-                        chartofaccount_id: 8,
-                        is_recurrency: false,
-                        contract_number: '',
-                        amount: filialPriceList.dataValues.registration_fee,
-                        total: filialPriceList.dataValues.registration_fee,
-                        paymentmethod_id:
-                            'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
-                        paymentcriteria_id:
-                            '97db98d7-6ce3-4fe1-83e8-9042d41404ce',
-                        created_at: new Date(),
-                        created_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
-                    .then(async (receivable) => {
-                        t.commit()
-                        return res.json({ issuer: issuerExists, receivable })
-                    })
-                    .catch((err) => {
-                        t.rollback()
-                        const className = 'ProspectPaymentController'
-                        const functionName = 'createIssuer'
-                        MailLog({
-                            className,
-                            functionName,
-                            req,
-                            err,
-                        })
-                        return res.status(500).json({
-                            error: err,
-                        })
-                    })
-            } else {
-                return res.json({
-                    issuer: issuerExists,
-                    receivable: receivableExists,
+
+            if (!registrationFee) {
+                registrationFee = await createRegistrationFeeReceivable({
+                    issuer_id: issuerExists.id,
+                    created_by: req.userId,
                 })
             }
+
+            tuitionFee = await Receivable.findOne({
+                where: {
+                    company_id: req.companyId,
+                    filial_id,
+                    issuer_id: issuerExists.id,
+                    type: 'Invoice',
+                    type_detail: 'Tuition fee',
+                    canceled_at: null,
+                },
+            })
+
+            if (!tuitionFee) {
+                tuitionFee = await createTuitionFeeReceivable({
+                    issuer_id: issuerExists.id,
+                    in_advance: true,
+                    created_by: req.userId,
+                    invoice_number: registrationFee.dataValues.invoice_number,
+                    t,
+                })
+            }
+
+            t.commit()
+            return res.json({
+                issuer: issuerExists,
+                registrationFee,
+                tuitionFee,
+            })
         } catch (err) {
             await t.rollback()
             const className = 'ProspectPaymentController'
@@ -162,8 +121,13 @@ class ProspectPaymentController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { issuer_id, enrollment_id, student_id, receivable_id } =
-                req.body
+            const {
+                issuer_id,
+                enrollment_id,
+                student_id,
+                registrationFee_id,
+                tuitionFee_id,
+            } = req.body
             const issuerExists = await Issuer.findByPk(issuer_id)
             const enrollment = await Enrollment.findByPk(enrollment_id)
             const student = await Student.findByPk(student_id)
@@ -174,13 +138,17 @@ class ProspectPaymentController {
                 })
             }
 
-            const receivable = await Receivable.findByPk(receivable_id)
+            const registrationFee = await Receivable.findByPk(
+                registrationFee_id
+            )
 
-            if (!receivable) {
+            if (!registrationFee) {
                 return res.status(400).json({
-                    error: 'Receivable not found.',
+                    error: 'Registration Fee not found.',
                 })
             }
+
+            const tuitionFee = await Receivable.findByPk(tuitionFee_id)
 
             const filial = await Filial.findByPk(enrollment.filial_id)
 
@@ -190,20 +158,43 @@ class ProspectPaymentController {
                 })
             }
 
+            let amount = registrationFee.dataValues.amount
+            if (tuitionFee) {
+                amount += tuitionFee.dataValues.amount
+            }
+
             emergepay
                 .startTextToPayTransaction({
-                    amount: receivable.dataValues.amount.toFixed(2),
-                    externalTransactionId: receivable_id,
+                    amount: amount.toFixed(2),
+                    externalTransactionId: registrationFee_id,
                     // Optional
                     billingName: issuerExists.dataValues.name,
                     billingAddress: issuerExists.dataValues.address,
                     billingPostalCode: issuerExists.dataValues.zip,
                     promptTip: false,
                     pageDescription: `Registration Fee - ${issuerExists.dataValues.name}`,
-                    transactionReference: receivable_id,
+                    transactionReference:
+                        'I' +
+                        registrationFee.dataValues.invoice_number
+                            .toString()
+                            .padStart(6, '0'),
                 })
                 .then((response) => {
-                    const { paymentPageId, paymentPageUrl } = response.data
+                    const { paymentPageUrl } = response.data
+
+                    const tuitionHTML = tuitionFee
+                        ? `<tr>
+                        <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
+                            <strong>English course - 4 weeks</strong><br/>
+                            <span style="font-size: 12px;">1 X $ ${tuitionFee.dataValues.amount.toFixed(
+                                2
+                            )}</span>
+                        </td>
+                        <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                            $ ${tuitionFee.dataValues.amount.toFixed(2)}
+                        </td>
+                    </tr>`
+                        : ''
                     mailer
                         .sendMail({
                             from: '"MILA Plus" <development@pharosit.com.br>',
@@ -222,7 +213,7 @@ class ProspectPaymentController {
                                                 <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 6px; overflow: hidden; border: 1px solid #e0e0e0;">
                                                     <tr>
                                                         <td style="background-color: #fff;  text-align: center; padding: 20px;">
-                                                            <h1 style="margin: 0; font-size: 24px;">INVOICE I${receivable.dataValues.invoice_number
+                                                            <h1 style="margin: 0; font-size: 24px;">INVOICE I${registrationFee.dataValues.invoice_number
                                                                 .toString()
                                                                 .padStart(
                                                                     6,
@@ -251,7 +242,7 @@ class ProspectPaymentController {
                                                                 <tr>
                                                                     <td style="font-weight: bold;text-align: center;color: #444;">DUE ${format(
                                                                         parseISO(
-                                                                            receivable
+                                                                            registrationFee
                                                                                 .dataValues
                                                                                 .due_date
                                                                         ),
@@ -259,7 +250,7 @@ class ProspectPaymentController {
                                                                     )}</td>
                                                                 </tr>
                                                                 <tr>
-                                                                    <td style="font-weight: bold;text-align: center;font-size: 36px;color: #444;">$ ${receivable.dataValues.amount.toFixed(
+                                                                    <td style="font-weight: bold;text-align: center;font-size: 36px;color: #444;">$ ${amount.toFixed(
                                                                         2
                                                                     )}</td>
                                                                 </tr>
@@ -305,19 +296,20 @@ class ProspectPaymentController {
                                                                 <tr>
                                                                     <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
                                                                         <strong>English course - Registration fee</strong><br/>
-                                                                        <span style="font-size: 12px;">1 X $ ${receivable.dataValues.amount.toFixed(
+                                                                        <span style="font-size: 12px;">1 X $ ${registrationFee.dataValues.amount.toFixed(
                                                                             2
                                                                         )}</span>
                                                                     </td>
                                                                     <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                                        $ ${receivable.dataValues.amount.toFixed(
+                                                                        $ ${registrationFee.dataValues.amount.toFixed(
                                                                             2
                                                                         )}
                                                                     </td>
                                                                 </tr>
+                                                                ${tuitionHTML}
                                                                 <tr>
                                                                     <td colspan="2" style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                                        Balance due <span style="margin-left: 10px;">$ ${receivable.dataValues.amount.toFixed(
+                                                                        Balance due <span style="margin-left: 10px;">$ ${amount.toFixed(
                                                                             2
                                                                         )}</span>
                                                                     </td>

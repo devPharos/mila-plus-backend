@@ -9,6 +9,143 @@ import Filial from '../models/Filial'
 import ReceivableInstallment from '../models/ReceivableInstallment'
 import Issuer from '../models/Issuer'
 import ReceivableInstallmentController from './ReceivableInstallmentController'
+import FilialPriceList from '../models/FilialPriceList'
+import Student from '../models/Student'
+import { addDays, format } from 'date-fns'
+
+export async function createRegistrationFeeReceivable({
+    issuer_id,
+    created_by = null,
+}) {
+    try {
+        const issuer = await Issuer.findByPk(issuer_id)
+        if (!issuer) {
+            return null
+        }
+        const { company_id, filial_id, name, student_id } = issuer.dataValues
+
+        const student = await Student.findByPk(student_id)
+
+        if (!student) {
+            return null
+        }
+
+        const filialPriceList = await FilialPriceList.findOne({
+            where: {
+                filial_id,
+                processsubstatus_id: student.dataValues.processsubstatus_id,
+                canceled_at: null,
+            },
+        })
+
+        if (!filialPriceList) {
+            return null
+        }
+
+        const receivable = await Receivable.create({
+            company_id,
+            filial_id,
+            issuer_id,
+            entry_date: format(addDays(new Date(), 0), 'yyyyMMdd'),
+            due_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+            type: 'Invoice',
+            type_detail: 'Registration fee',
+            first_due_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+            status: 'Open',
+            status_date: format(addDays(new Date(), 0), 'yyyyMMdd'),
+            memo: `Registration fee - ${name}`,
+            fee: 0,
+            authorization_code: null,
+            chartofaccount_id: 8,
+            is_recurrency: false,
+            contract_number: '',
+            amount: filialPriceList.dataValues.registration_fee,
+            total: filialPriceList.dataValues.registration_fee,
+            paymentmethod_id: 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
+            paymentcriteria_id: '97db98d7-6ce3-4fe1-83e8-9042d41404ce',
+            created_at: new Date(),
+            created_by: created_by || 2,
+        })
+        return receivable
+    } catch (err) {
+        const className = 'ReceivableController'
+        const functionName = 'createRegistrationFeeReceivable'
+        MailLog({ className, functionName, req: null, err })
+        return null
+    }
+}
+
+export async function createTuitionFeeReceivable({
+    issuer_id,
+    in_advance = false,
+    created_by = null,
+    invoice_number = null,
+}) {
+    try {
+        const issuer = await Issuer.findByPk(issuer_id)
+        if (!issuer) {
+            return null
+        }
+        const { company_id, filial_id, name, student_id } = issuer.dataValues
+
+        const student = await Student.findByPk(student_id)
+
+        if (!student) {
+            console.log('Student not found')
+            return null
+        }
+
+        const filialPriceList = await FilialPriceList.findOne({
+            where: {
+                filial_id,
+                processsubstatus_id: student.dataValues.processsubstatus_id,
+                canceled_at: null,
+            },
+        })
+
+        if (!filialPriceList) {
+            console.log('FilialPriceList not found')
+            return null
+        }
+
+        if (in_advance && !filialPriceList.dataValues.tuition_in_advance) {
+            console.log('Tuition fee not in advance')
+            return null
+        }
+
+        const receivable = await Receivable.create({
+            company_id,
+            filial_id,
+            issuer_id,
+            entry_date: format(addDays(new Date(), 0), 'yyyyMMdd'),
+            due_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+            type: 'Invoice',
+            type_detail: 'Tuition fee',
+            invoice_number,
+            first_due_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
+            status: 'Open',
+            status_date: format(addDays(new Date(), 0), 'yyyyMMdd'),
+            memo: `Tuition fee ${in_advance ? '(in advance) ' : ''}- ${name}`,
+            fee: 0,
+            authorization_code: null,
+            chartofaccount_id: 8,
+            is_recurrency: false,
+            contract_number: '',
+            amount: filialPriceList.dataValues.tuition,
+            total: filialPriceList.dataValues.tuition,
+            paymentmethod_id: 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
+            paymentcriteria_id: '97db98d7-6ce3-4fe1-83e8-9042d41404ce',
+            created_at: new Date(),
+            created_by: created_by || 2,
+        })
+        return receivable
+    } catch (err) {
+        const className = 'ReceivableController'
+        const functionName = 'createRegistrationFeeReceivable'
+        MailLog({ className, functionName, req: null, err })
+        return null
+    }
+}
 
 class ReceivableController {
     async index(req, res) {
