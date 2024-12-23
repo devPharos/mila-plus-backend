@@ -73,7 +73,13 @@ class StudentController {
 
     async index(req, res) {
         try {
-            const { page = 1 } = req.params
+            const {
+                page = 1,
+                limit = 20,
+                orderBy = 'registration_number',
+                orderASC = true,
+                search = '',
+            } = req.query
             const students = await Student.findAll({
                 include: [
                     {
@@ -90,9 +96,38 @@ class StudentController {
                     category: {
                         [Op.in]: ['Student', 'Ex-student'],
                     },
+                    [Op.or]: [
+                        {
+                            registration_number: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                        {
+                            name: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                        {
+                            last_name: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                        {
+                            email: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                        {
+                            phone: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                    ],
                     canceled_at: null,
                 },
-                order: [['registration_number', 'DESC']],
+                order: [[orderBy, orderASC]],
+                // offset: page * limit,
+                // limit,
             })
 
             return res.json(students)
