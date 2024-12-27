@@ -136,8 +136,8 @@ class PayeeController {
                 {
                     ...req.body,
                     fee: req.body.fee ? req.body.fee : 0,
-                    is_recurrency: req.body.is_recurrency
-                        ? req.body.is_recurrency
+                    is_recurrence: req.body.is_recurrence
+                        ? req.body.is_recurrence
                         : false,
                     total: req.body.total
                         ? req.body.total

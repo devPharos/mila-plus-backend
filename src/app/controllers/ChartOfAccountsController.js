@@ -13,9 +13,6 @@ async function getAllChartOfAccountsByIssuer(issuer_id) {
             return []
         }
 
-
-        console.log('issuer_id', issuer_id)
-
         const issurer = await Issuer.findByPk(issuer_id)
 
         if (!issurer) {
@@ -131,6 +128,60 @@ class ChartOfAccountsController {
         }
     }
 
+    async list(req, res) {
+        try {
+            const { type = '' } = req.query
+
+            const chartofaccounts = await Chartofaccount.findAll({
+                where: {
+                    canceled_at: null,
+                    company_id: req.companyId,
+                    code: {
+                        [Op.and]: [
+                            {
+                                [Op.notIn]: ['01', '02'],
+                            },
+                            {
+                                [Op.like]: `${type}%`,
+                            },
+                        ],
+                    },
+                },
+                include: [
+                    {
+                        model: Chartofaccount,
+                        as: 'Father',
+                        required: false,
+                        include: [
+                            {
+                                model: Chartofaccount,
+                                as: 'Father',
+                                required: false,
+                                include: [
+                                    {
+                                        model: Chartofaccount,
+                                        as: 'Father',
+                                        required: false,
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+                order: [['code']],
+            })
+
+            return res.json(chartofaccounts)
+        } catch (err) {
+            const className = 'ChartsOfAccountController'
+            const functionName = 'index'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
     async index(req, res) {
         try {
             const { type, issuer } = req.query
@@ -185,8 +236,9 @@ class ChartOfAccountsController {
             }
 
             if (issuer) {
-                const chartofaccounts =
-                    await getAllChartOfAccountsByIssuer(issuer)
+                const chartofaccounts = await getAllChartOfAccountsByIssuer(
+                    issuer
+                )
 
                 if (!chartofaccounts) {
                     return res.status(400).json({

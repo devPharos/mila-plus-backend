@@ -1,6 +1,6 @@
 import Sequelize, { Model } from 'sequelize'
 
-class Recurency extends Model {
+class Recurrence extends Model {
     static init(sequelize) {
         super.init(
             {
@@ -96,7 +96,6 @@ class Recurency extends Model {
             },
             {
                 sequelize,
-                tableName: 'receivables', // Nome da tabela
             }
         )
 
@@ -131,4 +130,4 @@ class Recurency extends Model {
     }
 }
 
-export default Recurency
+export default Recurrence

@@ -54,7 +54,7 @@ class Receivable extends Model {
                     type: Sequelize.TEXT,
                     allowNull: true,
                 },
-                is_recurrency: {
+                is_recurrence: {
                     type: Sequelize.BOOLEAN,
                     defaultValue: false,
                 },

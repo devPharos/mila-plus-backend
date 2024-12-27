@@ -50,6 +50,7 @@ import ProspectPaymentController from './app/controllers/ProspectPaymentControll
 import EmergepayController from './app/controllers/EmergepayController'
 import DataSyncController from './app/controllers/DataSyncController'
 import multer from 'multer'
+import RecurrenceController from './app/controllers/RecurrenceController'
 
 const routes = new Router()
 
@@ -200,6 +201,7 @@ routes.post('/parameters', ParameterController.store)
 routes.put('/parameters/:parameter_id', ParameterController.update)
 
 routes.get('/chartofaccounts', ChartOfAccountsController.index)
+routes.get('/chartofaccounts/list', ChartOfAccountsController.list)
 routes.get(
     '/chartofaccounts/:chartofaccount_id',
     ChartOfAccountsController.show
@@ -433,5 +435,10 @@ routes.get('/issuers/:issuer_id', IssuerController.show)
 routes.post('/issuers', IssuerController.store)
 routes.put('/issuers/:issuer_id', IssuerController.update)
 routes.delete('/issuers/:issuer_id', IssuerController.delete)
+
+routes.get('/recurrence', RecurrenceController.index)
+routes.get('/recurrence/:student_id', RecurrenceController.show)
+
+routes.post('/recurrence', RecurrenceController.store)
 
 export default routes

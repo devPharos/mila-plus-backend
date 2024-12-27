@@ -40,6 +40,18 @@ export async function createIssuerFromStudent({
         }
         fullName += ' ' + last_name
 
+        const issuerExists = await Issuer.findOne({
+            where: {
+                company_id,
+                filial_id,
+                student_id,
+            },
+        })
+
+        if (issuerExists) {
+            return issuerExists
+        }
+
         const issuer = await Issuer.create({
             company_id,
             filial_id,

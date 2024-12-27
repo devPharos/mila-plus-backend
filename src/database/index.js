@@ -50,8 +50,8 @@ import Receivable from '../app/models/Receivable'
 import ReceivableInstallment from '../app/models/ReceivableInstallment'
 import Enrollmentsponsordocument from '../app/models/Enrollmentsponsordocument'
 import Enrollmentdependentdocument from '../app/models/Enrollmentdependentdocument'
-import Recurency from '../app/models/Recurency.js'
 import Emergepaytransaction from '../app/models/Emergepaytransaction.js'
+import Recurrence from '../app/models/Recurrence.js'
 // import UserGroup from '../app/models/usergroup'
 
 const models = [
@@ -105,7 +105,7 @@ const models = [
     PaymentMethod,
     Receivable,
     ReceivableInstallment,
-    Recurency,
+    Recurrence,
 ]
 
 class Database {

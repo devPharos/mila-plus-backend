@@ -74,10 +74,8 @@ class StudentController {
     async index(req, res) {
         try {
             const {
-                page = 1,
-                limit = 20,
                 orderBy = 'registration_number',
-                orderASC = true,
+                orderASC = 'ASC',
                 search = '',
             } = req.query
             const students = await Student.findAll({

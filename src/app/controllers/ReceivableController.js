@@ -57,7 +57,7 @@ export async function createRegistrationFeeReceivable({
             fee: 0,
             authorization_code: null,
             chartofaccount_id: 8,
-            is_recurrency: false,
+            is_recurrence: false,
             contract_number: '',
             amount: filialPriceList.dataValues.registration_fee,
             total: filialPriceList.dataValues.registration_fee,
@@ -129,7 +129,7 @@ export async function createTuitionFeeReceivable({
             fee: 0,
             authorization_code: null,
             chartofaccount_id: 8,
-            is_recurrency: false,
+            is_recurrence: false,
             contract_number: '',
             amount: filialPriceList.dataValues.tuition,
             total: filialPriceList.dataValues.tuition,
@@ -271,8 +271,8 @@ class ReceivableController {
                 {
                     ...req.body,
                     fee: req.body.fee ? req.body.fee : 0,
-                    is_recurrency: req.body.is_recurrency
-                        ? req.body.is_recurrency
+                    is_recurrence: req.body.is_recurrence
+                        ? req.body.is_recurrence
                         : false,
                     total: req.body.total
                         ? req.body.total
