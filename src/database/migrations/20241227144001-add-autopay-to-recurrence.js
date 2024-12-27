@@ -3,12 +3,12 @@
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.addColumn('recurrence', 'is_autopay', {
+        await queryInterface.addColumn('recurrences', 'is_autopay', {
             type: Sequelize.BOOLEAN,
             defaultValue: false,
         })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.removeColumn('recurrence', 'is_autopay')
+        await queryInterface.removeColumn('recurrences', 'is_autopay')
     },
 }
