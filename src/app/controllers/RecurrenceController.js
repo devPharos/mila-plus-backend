@@ -248,7 +248,7 @@ class RecurrenceController {
 
             if (!recurrences) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Student does not exist.' })
             }
 
@@ -345,9 +345,12 @@ class RecurrenceController {
                 {
                     is_autopay: true,
                     card_number: maskedAccount,
-                    card_expiration_date: accountExpiryDate,
+                    card_expiration_date:
+                        accountExpiryDate.substring(0, 2) +
+                        '/' +
+                        accountExpiryDate.substring(2, 4),
                     card_type: accountCardType,
-                    billing_name: billingName,
+                    card_holder_name: billingName,
                     updated_by: req.userId,
                     updated_at: new Date(),
                 },
