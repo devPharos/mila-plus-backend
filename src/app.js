@@ -61,7 +61,7 @@ class App {
     }
 
     schedule() {
-        schedule.scheduleJob('0 9 18 * * *', sendInvoiceRecurrenceJob)
+        schedule.scheduleJob('0 0 8 * * *', sendInvoiceRecurrenceJob)
         // sendInvoiceRecurrenceJob()
     }
 }
