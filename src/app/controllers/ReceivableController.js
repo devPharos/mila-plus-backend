@@ -156,6 +156,7 @@ export async function createTuitionFeeReceivable({
 
 export async function sendInvoiceRecurrenceJob() {
     try {
+        console.log('Verifying Invoice Recurrence Job')
         const receivables = await Receivable.findAll({
             include: [
                 {
@@ -187,6 +188,8 @@ export async function sendInvoiceRecurrenceJob() {
                 entry_date: format(new Date(), 'yyyyMMdd'),
             },
         })
+
+        console.log(receivables.length + ' receivables found')
 
         receivables.map(async (receivable) => {
             const issuerExists = await Issuer.findByPk(
