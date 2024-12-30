@@ -3,6 +3,7 @@ import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Student from '../models/Student'
 import Filial from '../models/Filial'
+import { searchPromise } from '../functions/searchPromise'
 
 const { Op } = Sequelize
 
@@ -94,41 +95,17 @@ class StudentController {
                     category: {
                         [Op.in]: ['Student', 'Ex-student'],
                     },
-                    [Op.or]: [
-                        {
-                            registration_number: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                        {
-                            name: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                        {
-                            last_name: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                        {
-                            email: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                        {
-                            phone: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                    ],
                     canceled_at: null,
                 },
                 order: [[orderBy, orderASC]],
-                // offset: page * limit,
-                // limit,
             })
 
-            return res.json(students)
+            const fields = ['registration_number', 'name', 'last_name']
+            Promise.all([searchPromise(search, students, fields)]).then(
+                (students) => {
+                    return res.json(students[0])
+                }
+            )
         } catch (err) {
             const className = 'StudentController'
             const functionName = 'index'

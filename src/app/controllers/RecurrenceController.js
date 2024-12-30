@@ -16,6 +16,7 @@ import {
     parseISO,
 } from 'date-fns'
 import PaymentCriteria from '../models/PaymentCriteria'
+import { searchPromise } from '../functions/searchPromise'
 
 export async function generateRecurrenceReceivables(recurrence) {
     try {
@@ -150,28 +151,12 @@ class RecurrenceController {
                 orderASC = 'ASC',
                 search = '',
             } = req.query
-            const recurrences = await Student.findAll({
+
+            const students = await Student.findAll({
                 where: {
                     canceled_at: null,
                     category: 'Student',
                     status: 'In Class',
-                    [Op.or]: [
-                        {
-                            registration_number: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                        {
-                            name: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                        {
-                            last_name: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                    ],
                 },
                 attributes: [
                     'id',
@@ -204,7 +189,12 @@ class RecurrenceController {
                 order: [[orderBy, orderASC]],
             })
 
-            return res.json(recurrences)
+            const fields = ['registration_number', 'name', 'last_name']
+            Promise.all([searchPromise(search, students, fields)]).then(
+                (students) => {
+                    return res.json(students[0])
+                }
+            )
         } catch (err) {
             const className = 'RecurrenceController'
             const functionName = 'index'

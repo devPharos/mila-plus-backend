@@ -12,6 +12,7 @@ import ReceivableInstallmentController from './ReceivableInstallmentController'
 import FilialPriceList from '../models/FilialPriceList'
 import Student from '../models/Student'
 import { addDays, format } from 'date-fns'
+import { searchPromise } from '../functions/searchPromise'
 
 export async function createRegistrationFeeReceivable({
     issuer_id,
@@ -176,13 +177,6 @@ class ReceivableController {
                         where: { canceled_at: null },
                     },
                     {
-                        model: ReceivableInstallment,
-                        as: 'installments',
-                        required: false,
-                        where: { canceled_at: null },
-                        order: [['installment', 'ASC']],
-                    },
-                    {
                         model: Filial,
                         as: 'filial',
                         required: false,
@@ -194,55 +188,26 @@ class ReceivableController {
                         required: false,
                         where: {
                             canceled_at: null,
-                            [Op.or]: [
-                                {
-                                    name: {
-                                        [Op.iLike]: `%${search}%`,
-                                    },
-                                },
-                            ],
                         },
                     },
                 ],
                 where: {
                     canceled_at: null,
-                    [Op.or]: [
-                        {
-                            first_due_date: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                        {
-                            due_date: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                        {
-                            memo: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                        {
-                            contract_number: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                        {
-                            authorization_code: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                        {
-                            status: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                    ],
                 },
                 order: [[orderBy, orderASC]],
             })
 
-            return res.json(receivables)
+            const fields = [
+                'status',
+                ['filial', 'name'],
+                ['issuer', 'name'],
+                'amount',
+            ]
+            Promise.all([searchPromise(search, receivables, fields)]).then(
+                (data) => {
+                    return res.json(data[0])
+                }
+            )
         } catch (err) {
             const className = 'ReceivableController'
             const functionName = 'index'

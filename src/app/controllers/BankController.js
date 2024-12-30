@@ -2,10 +2,16 @@ import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Bank from '../models/Bank'
+import { searchPromise } from '../functions/searchPromise'
 
 class BankController {
     async index(req, res) {
         try {
+            const {
+                orderBy = 'created_at',
+                orderASC = 'ASC',
+                search = '',
+            } = req.query
             const banks = await Bank.findAll({
                 include: [
                     {
@@ -16,11 +22,15 @@ class BankController {
                 where: {
                     canceled_at: null,
                 },
-                order: [['created_at']],
+                order: [[orderBy, orderASC]],
             })
 
-
-            return res.json(banks)
+            const fields = ['bank_name', 'bank_alias']
+            Promise.all([searchPromise(search, banks, fields)]).then(
+                (banks) => {
+                    return res.json(banks[0])
+                }
+            )
         } catch (err) {
             const className = 'BankController'
             const functionName = 'index'
@@ -66,7 +76,7 @@ class BankController {
     async store(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
-        const data = req.body;
+        const data = req.body
 
         try {
             const new_bank = await Bank.create(

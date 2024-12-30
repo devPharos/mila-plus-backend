@@ -6,6 +6,7 @@ import Company from '../models/Company'
 import Filial from '../models/Filial'
 import Student from '../models/Student'
 import Merchants from '../models/Merchants'
+import { searchPromise } from '../functions/searchPromise'
 
 const { Op } = Sequelize
 
@@ -80,6 +81,11 @@ export async function createIssuerFromStudent({
 class IssuerController {
     async index(req, res) {
         try {
+            const {
+                orderBy = 'created_at',
+                orderASC = 'DESC',
+                search = '',
+            } = req.query
             const issuers = await Issuer.findAll({
                 include: [
                     {
@@ -108,10 +114,15 @@ class IssuerController {
                     },
                 ],
                 where: { canceled_at: null },
-                order: [['created_at', 'DESC']],
+                order: [[orderBy, orderASC]],
             })
 
-            return res.json(issuers)
+            const fields = ['name', 'email', 'address']
+            Promise.all([searchPromise(search, issuers, fields)]).then(
+                (issuers) => {
+                    return res.json(issuers[0])
+                }
+            )
         } catch (err) {
             const className = 'IssuerController'
             const functionName = 'index'

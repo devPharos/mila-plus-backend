@@ -2,29 +2,49 @@ import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Bankaccounts from '../models/BankAccount'
-
+import { searchPromise } from '../functions/searchPromise'
+import Bank from '../models/Bank'
+import Filial from '../models/Filial'
 
 class BankAccountController {
     async index(req, res) {
         try {
+            const {
+                orderBy = 'account',
+                orderASC = 'ASC',
+                search = '',
+            } = req.query
+
             const bankAccounts = await Bankaccounts.findAll({
                 include: [
                     {
-                        association: 'filial',
+                        model: Filial,
+                        as: 'filial',
                         attributes: ['name'],
                     },
                     {
-                        association: 'bank',
+                        model: Bank,
+                        as: 'bank',
                         attributes: ['bank_name'],
                     },
                 ],
                 where: {
                     canceled_at: null,
                 },
-                order: [['account']],
+                order: [[orderBy, orderASC]],
             })
 
-            return res.json(bankAccounts)
+            const fields = [
+                'routing_number',
+                'account',
+                ['bank', 'bank_name'],
+                ['filial', 'name'],
+            ]
+            Promise.all([searchPromise(search, bankAccounts, fields)]).then(
+                (bankAccounts) => {
+                    return res.json(bankAccounts[0])
+                }
+            )
         } catch (err) {
             const className = 'BankAccountController'
             const functionName = 'index'
@@ -79,7 +99,9 @@ class BankAccountController {
             const new_bankAccount = await Bankaccounts.create(
                 {
                     ...req.body,
-                    filial_id: req.body.filial_id ? req.body.filial_id : req.headers.filial,
+                    filial_id: req.body.filial_id
+                        ? req.body.filial_id
+                        : req.headers.filial,
                     company_id: req.companyId,
                     created_at: new Date(),
                     created_by: req.userId,

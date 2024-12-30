@@ -5,6 +5,7 @@ import Chartofaccount from '../models/Chartofaccount'
 import Issuer from '../models/Issuer'
 import Merchant from '../models/Merchants'
 import MerchantsXChartOfAccount from '../models/MerchantXChartOfAccounts'
+import { searchPromise } from '../functions/searchPromise'
 const { Op } = Sequelize
 
 async function getAllChartOfAccountsByIssuer(issuer_id) {
@@ -184,7 +185,13 @@ class ChartOfAccountsController {
 
     async index(req, res) {
         try {
-            const { type, issuer } = req.query
+            const {
+                type,
+                issuer,
+                orderBy = 'code',
+                orderASC = 'ASC',
+                search,
+            } = req.query
 
             const chartofaccounts = await Chartofaccount.findAll({
                 where: {
@@ -215,7 +222,7 @@ class ChartOfAccountsController {
                         ],
                     },
                 ],
-                order: [['code']],
+                order: [[orderBy, orderASC]],
             })
 
             if (type) {
@@ -251,7 +258,12 @@ class ChartOfAccountsController {
                 }
             }
 
-            return res.json(chartofaccounts)
+            const fields = ['code', 'name']
+            Promise.all([searchPromise(search, chartofaccounts, fields)]).then(
+                (chartofaccounts) => {
+                    return res.json(chartofaccounts[0])
+                }
+            )
         } catch (err) {
             const className = 'ChartsOfAccountController'
             const functionName = 'index'

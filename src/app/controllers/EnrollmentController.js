@@ -25,6 +25,7 @@ import mailTransferToStudent from '../../Mails/Processes/Transfer Eligibility/to
 import mailPlacementTestToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent'
 import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument'
 import Enrollmentsponsordocument from '../models/Enrollmentsponsordocument'
+import { searchPromise } from '../functions/searchPromise'
 const client = require('https')
 const fs = require('fs')
 
@@ -635,9 +636,13 @@ class EnrollmentController {
 
     async index(req, res) {
         try {
+            const {
+                orderBy = 'created_at',
+                orderASC = 'DESC',
+                search = '',
+            } = req.query
             const enrollments = await Enrollment.findAll({
                 where: {
-                    // company_id: req.companyId,
                     [Op.or]: [
                         {
                             filial_id: {
@@ -707,12 +712,22 @@ class EnrollmentController {
                         where: {
                             canceled_at: null,
                         },
-                        order: [['created_at', 'DESC']],
+                        order: [[orderBy, orderASC]],
                     },
                 ],
             })
 
-            return res.json(enrollments)
+            const fields = [
+                'application',
+                ['students', 'name'],
+                ['students', ['processtypes', 'name']],
+                ['students', ['processsubstatuses', 'name']],
+            ]
+            Promise.all([searchPromise(search, enrollments, fields)]).then(
+                (enrollments) => {
+                    return res.json(enrollments[0])
+                }
+            )
         } catch (err) {
             const className = 'EnrollmentController'
             const functionName = 'index'
