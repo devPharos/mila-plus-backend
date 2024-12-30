@@ -12,19 +12,19 @@ import { format } from 'date-fns'
 
 class EmergepayController {
     async simpleForm(req, res) {
+        const { receivable_id, amount } = req.body
         try {
-            var amount = '0.01'
             var config = {
                 transactionType: TransactionType.CreditSale,
                 method: 'modal',
                 fields: [
                     {
                         id: 'base_amount',
-                        value: amount,
+                        value: amount.toFixed(2),
                     },
                     {
                         id: 'external_tran_id',
-                        value: emergepay.getExternalTransactionId(),
+                        value: receivable_id,
                     },
                 ],
             }
@@ -37,7 +37,13 @@ class EmergepayController {
                     })
                 })
                 .catch(function (err) {
-                    res.send(err.message)
+                    console.log(err)
+                    const className = 'EmergepayController'
+                    const functionName = 'simpleForm'
+                    MailLog({ className, functionName, req, err })
+                    return res.status(500).json({
+                        error: err,
+                    })
                 })
         } catch (err) {
             console.log({ err })
@@ -263,12 +269,70 @@ class EmergepayController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            emergepay.tokenizedRefundTransaction({
-                uniqueTransId:
-                    'c854c2d0ed33413db164ed3f14294b88-7cffd2e521934f0bab52b4f33ccd2a41',
-                externalTransactionId: emergepay.getExternalTransactionId(),
-                amount: '749.00',
-            })
+            emergepay
+                .tokenizedRefundTransaction({
+                    uniqueTransId:
+                        'b5d6b27470e5459f8acf3223de18589e-33cf1b1295b842fd9bdededff610a0fa',
+                    externalTransactionId: emergepay.getExternalTransactionId(),
+                    amount: '100',
+                })
+                .then(async (response) => {
+                    const {
+                        accountCardType,
+                        accountEntryMethod,
+                        accountExpiryDate,
+                        amount,
+                        amountBalance,
+                        amountProcessed,
+                        amountTaxed,
+                        amountTipped,
+                        approvalNumberResult,
+                        avsResponseCode,
+                        avsResponseText,
+                        batchNumber,
+                        billingName,
+                        cashier,
+                        cvvResponseCode,
+                        cvvResponseText,
+                        externalTransactionId,
+                        isPartialApproval,
+                        maskedAccount,
+                        resultMessage,
+                        resultStatus,
+                        transactionReference,
+                        transactionType,
+                        uniqueTransId,
+                    } = response.data
+
+                    await Emergepaytransaction.create({
+                        account_card_type: accountCardType,
+                        account_entry_method: accountEntryMethod,
+                        account_expiry_date: accountExpiryDate,
+                        amount: parseFloat(amount),
+                        amount_balance: parseFloat(amountBalance || 0),
+                        amount_processed: parseFloat(amountProcessed || 0),
+                        amount_taxed: parseFloat(amountTaxed || 0),
+                        amount_tipped: parseFloat(amountTipped || 0),
+                        approval_number_result: approvalNumberResult,
+                        avs_response_code: avsResponseCode,
+                        avs_response_text: avsResponseText,
+                        batch_number: batchNumber,
+                        billing_name: billingName,
+                        cashier: cashier,
+                        cvv_response_code: cvvResponseCode,
+                        cvv_response_text: cvvResponseText,
+                        external_transaction_id: externalTransactionId,
+                        is_partial_approval: isPartialApproval,
+                        masked_account: maskedAccount,
+                        result_message: resultMessage,
+                        result_status: resultStatus,
+                        transaction_reference: transactionReference,
+                        transaction_type: transactionType,
+                        unique_trans_id: uniqueTransId,
+                        created_at: new Date(),
+                        created_by: 2,
+                    })
+                })
         } catch (err) {
             await t.rollback()
             const className = 'EmergepayController'

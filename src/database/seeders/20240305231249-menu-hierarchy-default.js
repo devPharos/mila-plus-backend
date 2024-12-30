@@ -124,7 +124,7 @@ module.exports = {
                     name: 'Pace Guides',
                 },
                 {
-                    father_id: 2,
+                    father_id: 1,
                     alias: 'students',
                     name: 'Students',
                 },

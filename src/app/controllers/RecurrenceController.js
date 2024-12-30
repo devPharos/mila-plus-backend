@@ -7,7 +7,15 @@ import { Op, Sequelize } from 'sequelize'
 import { createIssuerFromStudent } from './IssuerController'
 import FilialPriceList from '../models/FilialPriceList'
 import Receivable from '../models/Receivable'
-import { addDays, addMonths, format, parseISO } from 'date-fns'
+import {
+    addDays,
+    addMonths,
+    addWeeks,
+    addYears,
+    format,
+    parseISO,
+} from 'date-fns'
+import PaymentCriteria from '../models/PaymentCriteria'
 
 export async function generateRecurrenceReceivables(recurrence) {
     try {
@@ -35,7 +43,15 @@ export async function generateRecurrenceReceivables(recurrence) {
             return null
         }
 
-        const openedReceivables = await Receivable.findAndCountAll({
+        const paymentCriteria = await PaymentCriteria.findByPk(
+            recurrence.dataValues.paymentcriteria_id
+        )
+
+        if (!paymentCriteria) {
+            return null
+        }
+
+        const openedReceivables = await Receivable.findAll({
             where: {
                 company_id,
                 filial_id,
@@ -46,35 +62,61 @@ export async function generateRecurrenceReceivables(recurrence) {
             },
         })
 
-        for (let i = 0; i < 12 - openedReceivables.count; i++) {
+        openedReceivables.map((receivable) => {
+            receivable.update({
+                canceled_at: new Date(),
+                canceled_by: recurrence.dataValues.created_by,
+            })
+        })
+
+        const { recurring_metric, recurring_qt } = paymentCriteria.dataValues
+
+        for (let i = 0; i < 12; i++) {
+            let entry_date = null
+            let due_date = null
+            let first_due_date = null
+            let qt = (i + 1) * recurring_qt
+            const in_class_date = parseISO(recurrence.dataValues.in_class_date)
+
+            if (recurring_metric === 'Day') {
+                entry_date = format(addDays(in_class_date, qt), 'yyyyMMdd')
+                due_date = format(
+                    addDays(addDays(in_class_date, qt), 3),
+                    'yyyyMMdd'
+                )
+                first_due_date = format(addDays(in_class_date, qt), 'yyyyMMdd')
+            } else if (recurring_metric === 'Week') {
+                entry_date = format(addWeeks(in_class_date, qt), 'yyyyMMdd')
+                due_date = format(
+                    addDays(addWeeks(in_class_date, qt), 3),
+                    'yyyyMMdd'
+                )
+                first_due_date = format(addWeeks(in_class_date, qt), 'yyyyMMdd')
+            } else if (recurring_metric === 'Month') {
+                entry_date = format(addMonths(in_class_date, qt), 'yyyyMMdd')
+                due_date = format(
+                    addDays(addMonths(in_class_date, qt), 3),
+                    'yyyyMMdd'
+                )
+                first_due_date = format(
+                    addMonths(in_class_date, qt),
+                    'yyyyMMdd'
+                )
+            } else if (recurring_metric === 'Year') {
+                entry_date = format(addYears(in_class_date, qt), 'yyyyMMdd')
+                due_date = format(
+                    addDays(addYears(in_class_date, qt), 3),
+                    'yyyyMMdd'
+                )
+                first_due_date = format(addYears(in_class_date, qt), 'yyyyMMdd')
+            }
             await Receivable.create({
                 company_id,
                 filial_id,
                 issuer_id: issuer.id,
-                entry_date: format(
-                    addMonths(parseISO(recurrence.dataValues.in_class_date), i),
-                    'yyyyMMdd'
-                ),
-                due_date: format(
-                    addDays(
-                        addMonths(
-                            parseISO(recurrence.dataValues.in_class_date),
-                            i
-                        ),
-                        3
-                    ),
-                    'yyyyMMdd'
-                ),
-                first_due_date: format(
-                    addDays(
-                        addMonths(
-                            parseISO(recurrence.dataValues.in_class_date),
-                            i
-                        ),
-                        3
-                    ),
-                    'yyyyMMdd'
-                ),
+                entry_date,
+                due_date,
+                first_due_date,
                 type: 'Invoice',
                 type_detail: 'Tuition fee',
                 status: 'Open',

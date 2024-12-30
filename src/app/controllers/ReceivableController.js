@@ -1,4 +1,4 @@
-import Sequelize from 'sequelize'
+import Sequelize, { Op } from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Receivable from '../models/Receivable'
@@ -150,6 +150,11 @@ export async function createTuitionFeeReceivable({
 class ReceivableController {
     async index(req, res) {
         try {
+            const {
+                orderBy = 'due_date',
+                orderASC = 'DESC',
+                search = '',
+            } = req.query
             const receivables = await Receivable.findAll({
                 include: [
                     {
@@ -187,11 +192,54 @@ class ReceivableController {
                         model: Issuer,
                         as: 'issuer',
                         required: false,
-                        where: { canceled_at: null },
+                        where: {
+                            canceled_at: null,
+                            [Op.or]: [
+                                {
+                                    name: {
+                                        [Op.iLike]: `%${search}%`,
+                                    },
+                                },
+                            ],
+                        },
                     },
                 ],
-                where: { canceled_at: null },
-                order: [['created_at', 'DESC']],
+                where: {
+                    canceled_at: null,
+                    [Op.or]: [
+                        {
+                            first_due_date: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                        {
+                            due_date: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                        {
+                            memo: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                        {
+                            contract_number: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                        {
+                            authorization_code: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                        {
+                            status: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                    ],
+                },
+                order: [[orderBy, orderASC]],
             })
 
             return res.json(receivables)
