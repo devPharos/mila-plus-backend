@@ -266,8 +266,6 @@ class EmergepayController {
                                         })
                                     })
                             })
-                    } else {
-                        console.log('Transação não paga')
                     }
                 })
             } else {

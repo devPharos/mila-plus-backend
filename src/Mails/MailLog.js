@@ -2,7 +2,12 @@ require('dotenv').config()
 import { mailer } from '../config/mailer'
 import MailLayout from './MailLayout'
 
-export default function MailLog({ className, functionName, req, err }) {
+export default function MailLog({
+    className = null,
+    functionName = null,
+    req = null,
+    err = null,
+}) {
     if (process.env.NODE_ENV === 'development') {
         console.log(`🛠️ Error @ ${className} - ${functionName}`)
         console.error('Error:', err)

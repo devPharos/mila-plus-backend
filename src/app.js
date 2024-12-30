@@ -2,8 +2,12 @@ import express from 'express'
 import cors from 'cors'
 import Youch from 'youch'
 import routes from './routes.js'
+import schedule from 'node-schedule'
 
 import './database/index.js'
+import MailLog from './Mails/MailLog.js'
+import { mailer } from './config/mailer.js'
+import { sendInvoiceRecurrenceJob } from './app/controllers/ReceivableController.js'
 
 class App {
     constructor() {
@@ -12,6 +16,7 @@ class App {
         this.middlewares()
         this.routes()
         this.exceptionHandler()
+        this.schedule()
     }
 
     middlewares() {
@@ -53,6 +58,10 @@ class App {
                         : undefined,
             })
         })
+    }
+
+    schedule() {
+        schedule.scheduleJob('* * 8 * * *', sendInvoiceRecurrenceJob)
     }
 }
 
