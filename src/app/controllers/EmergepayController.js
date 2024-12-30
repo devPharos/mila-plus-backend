@@ -9,10 +9,13 @@ import Receivable from '../models/Receivable'
 import { emergepay } from '../../config/emergepay'
 import crypto from 'crypto'
 import { format } from 'date-fns'
+import Issuer from '../models/Issuer'
 
 class EmergepayController {
     async simpleForm(req, res) {
         const { receivable_id, amount } = req.body
+        const receivable = await Receivable.findByPk(receivable_id)
+        const issuer = await Issuer.findByPk(receivable.dataValues.issuer_id)
         try {
             var config = {
                 transactionType: TransactionType.CreditSale,
@@ -25,6 +28,18 @@ class EmergepayController {
                     {
                         id: 'external_tran_id',
                         value: receivable_id,
+                    },
+                    {
+                        id: 'billing_name',
+                        value: issuer.dataValues.name,
+                    },
+                    {
+                        id: 'billing_address',
+                        value: issuer.dataValues.address,
+                    },
+                    {
+                        id: 'billing_postal_code',
+                        value: issuer.dataValues.zip,
                     },
                 ],
             }

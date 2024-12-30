@@ -326,14 +326,18 @@ class RecurrenceController {
         const t = await connection.transaction()
         try {
             const { recurrence_id } = req.params
-            const { accountCardType, accountExpiryDate, maskedAccount } =
-                req.body.autopay_fields
+            const {
+                accountCardType,
+                accountExpiryDate,
+                maskedAccount,
+                billingName,
+            } = req.body.autopay_fields
 
             const recurrence = await Recurrence.findByPk(recurrence_id)
 
             if (!recurrence) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Recurrence does not exist.' })
             }
 
@@ -343,6 +347,7 @@ class RecurrenceController {
                     card_number: maskedAccount,
                     card_expiration_date: accountExpiryDate,
                     card_type: accountCardType,
+                    billing_name: billingName,
                     updated_by: req.userId,
                     updated_at: new Date(),
                 },
