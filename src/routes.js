@@ -439,6 +439,11 @@ routes.delete('/issuers/:issuer_id', IssuerController.delete)
 routes.get('/recurrence', RecurrenceController.index)
 routes.get('/recurrence/:student_id', RecurrenceController.show)
 
+routes.post(
+    '/recurrence/fill-autopay-data/:recurrence_id',
+    RecurrenceController.fillAutopayData
+)
+
 routes.post('/recurrence', RecurrenceController.store)
 
 export default routes

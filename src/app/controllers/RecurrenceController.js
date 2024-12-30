@@ -321,6 +321,49 @@ class RecurrenceController {
             })
         }
     }
+    async fillAutopayData(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { recurrence_id } = req.params
+            const { accountCardType, accountExpiryDate, maskedAccount } =
+                req.body.autopay_fields
+
+            const recurrence = await Recurrence.findByPk(recurrence_id)
+
+            if (!recurrence) {
+                return res
+                    .status(401)
+                    .json({ error: 'Recurrence does not exist.' })
+            }
+
+            await recurrence.update(
+                {
+                    is_autopay: true,
+                    card_number: maskedAccount,
+                    card_expiration_date: accountExpiryDate,
+                    card_type: accountCardType,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            t.commit()
+
+            return res.status(200).json(recurrence)
+        } catch (err) {
+            await t.rollback()
+            const className = 'RecurrenceController'
+            const functionName = 'autopayData'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
 }
 
 export default new RecurrenceController()
