@@ -17,6 +17,8 @@ import { mailer } from '../../config/mailer'
 import MailLayout from '../../Mails/MailLayout'
 import { emergepay } from '../../config/emergepay'
 import Enrollment from '../models/Enrollment'
+import Recurrence from '../models/Recurrence'
+import Emergepaytransaction from '../models/Emergepaytransaction'
 
 export async function createRegistrationFeeReceivable({
     issuer_id,
@@ -163,6 +165,16 @@ export async function sendInvoiceRecurrenceJob() {
                     where: {
                         canceled_at: null,
                     },
+                    include: [
+                        {
+                            model: Recurrence,
+                            as: 'issuer_x_recurrence',
+                            required: true,
+                            where: {
+                                canceled_at: null,
+                            },
+                        },
+                    ],
                 },
             ],
             where: {
@@ -204,41 +216,109 @@ export async function sendInvoiceRecurrenceJob() {
                 .toString()
                 .padStart(6, '0')
 
-            emergepay
-                .startTextToPayTransaction({
-                    amount: amount.toFixed(2),
-                    externalTransactionId: receivable.id,
-                    // Optional
-                    billingName: issuerExists.dataValues.name,
-                    billingAddress: issuerExists.dataValues.address,
-                    billingPostalCode: issuerExists.dataValues.zip,
-                    promptTip: false,
-                    pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
-                    transactionReference: 'I' + invoice_number,
+            let paymentInfoHTML = ''
+            if (
+                receivable.dataValues.issuer?.dataValues?.issuer_x_recurrence
+                    ?.dataValues?.is_autopay
+            ) {
+                console.log('is autopay')
+                const firstReceivable = await Receivable.findOne({
+                    where: {
+                        company_id: receivables.dataValues.company_id,
+                        filial_id: receivables.dataValues.filial_id,
+                        issuer_id: receivables.dataValues.issuer_id,
+                        type: 'Invoice',
+                        type_detail: 'Tuition fee',
+                        status: 'Paid',
+                        canceled_at: null,
+                    },
+                    order: [['due_date', 'DESC']],
                 })
-                .then((response) => {
-                    const { paymentPageUrl } = response.data
+                const lastTransaction = await Emergepaytransaction.findOne({
+                    where: {
+                        external_transaction_id: firstReceivable.id,
+                        canceled_at: null,
+                    },
+                })
+                emergepay
+                    .tokenizedPaymentTransaction({
+                        uniqueTransId: lastTransaction.id,
+                        externalTransactionId: receivable.id,
+                        amount: amount.toFixed(2),
+                        billingName: issuerExists.dataValues.name,
+                        billingAddress: issuerExists.dataValues.address,
+                        billingPostalCode: issuerExists.dataValues.zip,
+                        promptTip: false,
+                        pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
+                        transactionReference: 'I' + invoice_number,
+                    })
+                    .then(async (response) => {
+                        paymentInfoHTML = `<tr>
+                            <td style="text-align: center;padding: 10px 0 30px;">
+                                <div style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Autopay Status: ${
+                                    response.data.resultMessage === 'Approved'
+                                        ? 'Approved'
+                                        : 'Declined'
+                                }</div>
+                            </td>
+                        </tr>`
+                        Mail(
+                            issuerExists,
+                            filial,
+                            tuitionFee,
+                            amount,
+                            invoice_number,
+                            paymentInfoHTML
+                        )
+                    })
+            } else {
+                console.log('is not autopay')
+                emergepay
+                    .startTextToPayTransaction({
+                        amount: amount.toFixed(2),
+                        externalTransactionId: receivable.id,
+                        // Optional
+                        billingName: issuerExists.dataValues.name,
+                        billingAddress: issuerExists.dataValues.address,
+                        billingPostalCode: issuerExists.dataValues.zip,
+                        promptTip: false,
+                        pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
+                        transactionReference: 'I' + invoice_number,
+                    })
+                    .then((response) => {
+                        const { paymentPageUrl } = response.data
 
-                    const tuitionHTML = tuitionFee
-                        ? `<tr>
-                        <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
-                            <strong>English course - 4 weeks</strong><br/>
-                            <span style="font-size: 12px;">1 X $ ${tuitionFee.dataValues.amount.toFixed(
-                                2
-                            )}</span>
-                        </td>
-                        <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                            $ ${tuitionFee.dataValues.amount.toFixed(2)}
-                        </td>
-                    </tr>`
-                        : ''
+                        paymentInfoHTML = `<tr>
+                    <td style="text-align: center;padding: 10px 0 30px;">
+                        <a href="${paymentPageUrl}" target="_blank" style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
+                    </td>
+                </tr>`
+                        Mail(
+                            issuerExists,
+                            filial,
+                            tuitionFee,
+                            amount,
+                            invoice_number,
+                            paymentInfoHTML
+                        )
+                    })
+            }
+        })
 
-                    mailer.sendMail({
-                        from: '"MILA Plus" <development@pharosit.com.br>',
-                        // to: issuerExists.dataValues.email,
-                        to: 'denis@pharosit.com.br;dansouz1712@gmail.com',
-                        subject: `MILA Plus - Tuition Fee - ${issuerExists.dataValues.name}`,
-                        html: `<!DOCTYPE html>
+        function Mail(
+            issuerExists,
+            filial,
+            tuitionFee,
+            amount,
+            invoice_number,
+            paymentInfoHTML
+        ) {
+            mailer.sendMail({
+                from: '"MILA Plus" <development@pharosit.com.br>',
+                // to: issuerExists.dataValues.email,
+                to: 'denis@pharosit.com.br;dansouz1712@gmail.com',
+                subject: `MILA Plus - Tuition Fee - ${issuerExists.dataValues.name}`,
+                html: `<!DOCTYPE html>
                                 <html lang="en">
                                 <head>
                                     <meta charset="UTF-8">
@@ -287,11 +367,7 @@ export async function sendInvoiceRecurrenceJob() {
                                                                         2
                                                                     )}</td>
                                                                 </tr>
-                                                                <tr>
-                                                                    <td style="font-weight: bold;text-align: center;">
-                                                                        <a href="${paymentPageUrl}" target="_blank" style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
-                                                                    </td>
-                                                                </tr>
+                                                                ${paymentInfoHTML}
                                                             </table>
                                                             <p style="margin: 20px 40px;">Have a great day,</p>
                                                             <p style="margin: 20px 40px;">MILA - Miami International Language Academy</p>
@@ -326,7 +402,17 @@ export async function sendInvoiceRecurrenceJob() {
                                                     <tr>
                                                         <td style="color: #444; text-align: center; padding: 4px;">
                                                             <table width="100%" cellpadding="0" cellspacing="0" style="overflow: hidden;padding: 0 40px;">
-                                                                ${tuitionHTML}
+                                                                <tr>
+                        <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
+                            <strong>English course - 4 weeks</strong><br/>
+                            <span style="font-size: 12px;">1 X $ ${tuitionFee.dataValues.amount.toFixed(
+                                2
+                            )}</span>
+                        </td>
+                        <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                            $ ${tuitionFee.dataValues.amount.toFixed(2)}
+                        </td>
+                    </tr>
                                                                 <tr>
                                                                     <td colspan="2" style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
                                                                         Balance due <span style="margin-left: 10px;">$ ${amount.toFixed(
@@ -343,11 +429,7 @@ export async function sendInvoiceRecurrenceJob() {
                                                             *.*This payment does not exempt previous invoices
                                                         </td>
                                                     </tr>
-                                                    <tr>
-                                                        <td style="text-align: center;padding: 10px 0 30px;">
-                                                            <a href="${paymentPageUrl}" target="_blank" style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
-                                                        </td>
-                                                    </tr>
+                                                    ${paymentInfoHTML}
                                                     <tr>
                                                         <td style="text-align: center; padding: 10px; line-height: 1.5; background-color: #f1f3f5; font-size: 12px; color: #6c757d;">
                                                             MILA INTERNATIONAL LANGUAGE ACADEMY - ${
@@ -360,10 +442,8 @@ export async function sendInvoiceRecurrenceJob() {
                                                                     .dataValues
                                                                     .address
                                                             } ${
-                            filial.dataValues.name
-                        }, ${filial.dataValues.state} ${
-                            filial.dataValues.zipcode
-                        } US
+                    filial.dataValues.name
+                }, ${filial.dataValues.state} ${filial.dataValues.zipcode} US
                                                         </td>
                                                     </tr>
                                                 </table>
@@ -372,13 +452,8 @@ export async function sendInvoiceRecurrenceJob() {
                                     </table>
                                 </body>
                                 </html>`,
-                    })
-                })
-                .catch((err) => {
-                    console.log(9)
-                    console.log(err)
-                })
-        })
+            })
+        }
     } catch (err) {
         console.log({ err })
     }
