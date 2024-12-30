@@ -45,6 +45,10 @@ class Recurrence extends Model {
                     type: Sequelize.INTEGER,
                     allowNull: false,
                 },
+                card_type: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
                 card_number: {
                     type: Sequelize.STRING,
                     allowNull: true,
