@@ -340,6 +340,27 @@ class RecurrenceController {
                     .status(400)
                     .json({ error: 'Recurrence does not exist.' })
             }
+            // Mastercard	MC
+            // Diners Club	DN
+            // Visa	VS
+            // JCB	JC
+            // American Express	AX
+            // Discover	DC
+
+            let cardType = ''
+            if (accountCardType === 'AX') {
+                cardType = 'American Express'
+            } else if (accountCardType === 'DC') {
+                cardType = 'Discover'
+            } else if (accountCardType === 'DN') {
+                cardType = 'Diners Club'
+            } else if (accountCardType === 'JC') {
+                cardType = 'JCB'
+            } else if (accountCardType === 'MC') {
+                cardType = 'Mastercard'
+            } else if (accountCardType === 'VS') {
+                cardType = 'Visa'
+            }
 
             await recurrence.update(
                 {
@@ -349,7 +370,7 @@ class RecurrenceController {
                         accountExpiryDate.substring(0, 2) +
                         '/' +
                         accountExpiryDate.substring(2, 4),
-                    card_type: accountCardType,
+                    card_type: cardType,
                     card_holder_name: billingName,
                     updated_by: req.userId,
                     updated_at: new Date(),
