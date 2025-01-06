@@ -61,6 +61,16 @@ class Student extends Model {
                 class_id: Sequelize.INTEGER,
                 expected_start_date: Sequelize.STRING,
 
+                registration_fee: Sequelize.FLOAT,
+                books: Sequelize.FLOAT,
+                tuition_original_price: Sequelize.FLOAT,
+                tuition_in_advance: Sequelize.BOOLEAN,
+                total_discount: Sequelize.FLOAT,
+                total_tuition: Sequelize.FLOAT,
+                discount_id: {
+                    type: Sequelize.UUID,
+                },
+
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,

@@ -618,9 +618,8 @@ class FilialController {
                 })
 
                 t.commit()
+                return res.json(filial)
             })
-
-            return res.json(filial)
         } catch (err) {
             await t.rollback()
             const className = 'FilialController'

@@ -307,7 +307,7 @@ class ProspectController {
                     },
                 ],
                 where: {
-                    category: 'prospect',
+                    category: 'Prospect',
                     [Op.or]: [
                         {
                             filial_id: {
