@@ -1,3 +1,4 @@
+import { format, parseISO } from 'date-fns'
 import Studentdiscount from '../models/Studentdiscount'
 
 export function randomString(length, chars) {
@@ -33,13 +34,40 @@ export async function handleStudentDiscounts({
                     d.dataValues.filial_discount_list_id ===
                     discount.filial_discount_list_id
             )
+            const { filial_discount_list_id, start_date, end_date } = discount
             if (!hasDiscount) {
                 await Studentdiscount.create({
                     student_id,
-                    ...discount,
+                    filial_discount_list_id,
+                    start_date: start_date
+                        ? start_date.replaceAll('-', '')
+                        : null,
+                    end_date: end_date ? end_date.replaceAll('-', '') : null,
                     created_by: 2,
                     created_at: new Date(),
                 })
+            } else {
+                await Studentdiscount.update(
+                    {
+                        filial_discount_list_id,
+                        start_date: start_date
+                            ? start_date.replaceAll('-', '')
+                            : null,
+                        end_date: end_date
+                            ? end_date.replaceAll('-', '')
+                            : null,
+                        updated_by: 2,
+                        updated_at: new Date(),
+                    },
+                    {
+                        where: {
+                            student_id,
+                            filial_discount_list_id:
+                                discount.filial_discount_list_id,
+                            canceled_at: null,
+                        },
+                    }
+                )
             }
         })
 

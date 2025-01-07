@@ -41,6 +41,11 @@ class ProspectController {
             t.commit()
             // });
 
+            handleStudentDiscounts({
+                student_id: newProspect.id,
+                prices: req.body.prices,
+            })
+
             return res.json(newProspect)
         } catch (err) {
             await t.rollback()

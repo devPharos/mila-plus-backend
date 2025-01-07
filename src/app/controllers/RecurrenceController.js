@@ -17,6 +17,9 @@ import {
 } from 'date-fns'
 import PaymentCriteria from '../models/PaymentCriteria'
 import { searchPromise } from '../functions/searchPromise'
+import { handleStudentDiscounts } from '../functions'
+import Studentdiscount from '../models/Studentdiscount'
+import FilialDiscountList from '../models/FilialDiscountList'
 
 export async function generateRecurrenceReceivables(recurrence) {
     try {
@@ -26,7 +29,28 @@ export async function generateRecurrenceReceivables(recurrence) {
         }
         const { company_id, filial_id, name, student_id } = issuer.dataValues
 
-        const student = await Student.findByPk(student_id)
+        const student = await Student.findByPk(student_id, {
+            include: [
+                {
+                    model: Studentdiscount,
+                    as: 'discounts',
+                    required: false,
+                    include: [
+                        {
+                            model: FilialDiscountList,
+                            as: 'discount',
+                            required: false,
+                            where: {
+                                canceled_at: null,
+                            },
+                        },
+                    ],
+                    where: {
+                        canceled_at: null,
+                    },
+                },
+            ],
+        })
 
         if (!student) {
             return null
@@ -111,6 +135,27 @@ export async function generateRecurrenceReceivables(recurrence) {
                 )
                 first_due_date = format(addYears(in_class_date, qt), 'yyyyMMdd')
             }
+
+            let receivableAmount = filialPriceList.dataValues.tuition
+
+            student.dataValues.discounts.map((discount) => {
+                if (
+                    discount.dataValues.start_date &&
+                    discount.dataValues.start_date <= due_date &&
+                    discount.dataValues.end_date &&
+                    discount.dataValues.end_date >= due_date
+                ) {
+                    if (discount.discount.percent) {
+                        receivableAmount =
+                            receivableAmount *
+                            (1 - discount.discount.value / 100)
+                    } else {
+                        receivableAmount =
+                            receivableAmount - discount.discount.value
+                    }
+                }
+            })
+
             await Receivable.create({
                 company_id,
                 filial_id,
@@ -128,8 +173,8 @@ export async function generateRecurrenceReceivables(recurrence) {
                 chartofaccount_id: recurrence.dataValues.chartofaccount_id,
                 is_recurrence: true,
                 contract_number: '',
-                amount: recurrence.dataValues.amount,
-                total: recurrence.dataValues.amount,
+                amount: receivableAmount,
+                total: receivableAmount,
                 paymentmethod_id: recurrence.dataValues.paymentmethod_id,
                 paymentcriteria_id: recurrence.dataValues.paymentcriteria_id,
                 created_at: new Date(),
@@ -290,6 +335,7 @@ class RecurrenceController {
                         company_id: req.companyId,
                         filial_id: req.body.filial_id,
                         ...req.body,
+                        amount: req.body.prices.total_tuition,
                         issuer_id: issuer.id,
                         created_at: new Date(),
                         created_by: req.userId,
@@ -303,6 +349,7 @@ class RecurrenceController {
                 await recurrence.update(
                     {
                         ...req.body,
+                        amount: req.body.prices.total_tuition,
                         issuer_id: issuer.id,
                         updated_by: req.userId,
                         updated_at: new Date(),
@@ -313,6 +360,11 @@ class RecurrenceController {
                 )
                 t.commit()
             }
+
+            await handleStudentDiscounts({
+                student_id: req.body.student_id,
+                prices: req.body.prices,
+            })
 
             generateRecurrenceReceivables(recurrence)
             return res.json(recurrence)
