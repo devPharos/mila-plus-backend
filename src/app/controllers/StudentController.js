@@ -4,6 +4,8 @@ import databaseConfig from '../../config/database'
 import Student from '../models/Student'
 import Filial from '../models/Filial'
 import { searchPromise } from '../functions/searchPromise'
+import Studentdiscount from '../models/Studentdiscount'
+import { handleStudentDiscounts } from '../functions'
 
 const { Op } = Sequelize
 
@@ -58,6 +60,12 @@ class StudentController {
                     transaction: t,
                 }
             )
+
+            handleStudentDiscounts({
+                student_id: studentExists.id,
+                prices: req.body.prices,
+            })
+
             t.commit()
 
             return res.status(200).json(studentExists)
@@ -121,6 +129,23 @@ class StudentController {
             const { student_id } = req.params
             const student = await Student.findByPk(student_id, {
                 where: { canceled_at: null },
+                include: [
+                    {
+                        association: 'discounts',
+                        include: [
+                            {
+                                association: 'discount',
+                                attributes: [
+                                    'id',
+                                    'name',
+                                    'value',
+                                    'percent',
+                                    'type',
+                                ],
+                            },
+                        ],
+                    },
+                ],
             })
 
             if (!student) {

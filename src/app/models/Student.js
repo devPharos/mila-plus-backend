@@ -105,6 +105,10 @@ class Student extends Model {
             foreignKey: 'student_id',
             as: 'issuer',
         })
+        this.hasMany(models.Studentdiscount, {
+            foreignKey: 'student_id',
+            as: 'discounts',
+        })
     }
 }
 

@@ -12,9 +12,10 @@ import { mailer } from '../../config/mailer'
 import { addDays, format } from 'date-fns'
 import MailLayout from '../../Mails/MailLayout'
 import Filial from '../models/Filial'
-import { BASEURL } from '../functions'
+import { BASEURL, handleStudentDiscounts } from '../functions'
 import Enrollmenttransfer from '../models/Enrollmenttransfer'
 import { searchPromise } from '../functions/searchPromise'
+import Studentdiscount from '../models/Studentdiscount'
 
 const { Op } = Sequelize
 
@@ -115,6 +116,7 @@ class ProspectController {
                 sub_status,
                 type,
                 userId,
+                prices,
             } = req.body
 
             const prospectExists = await Student.findByPk(prospect_id)
@@ -203,6 +205,11 @@ class ProspectController {
                     error: 'It was not possible to update this prospect, review your information.',
                 })
             }
+
+            handleStudentDiscounts({
+                student_id: prospectExists.id,
+                prices,
+            })
         } catch (err) {
             await t.rollback()
             const className = 'ProspectController'
@@ -236,6 +243,21 @@ class ProspectController {
                                 where: {
                                     canceled_at: null,
                                 },
+                            },
+                        ],
+                    },
+                    {
+                        association: 'discounts',
+                        include: [
+                            {
+                                association: 'discount',
+                                attributes: [
+                                    'id',
+                                    'name',
+                                    'value',
+                                    'percent',
+                                    'type',
+                                ],
                             },
                         ],
                     },

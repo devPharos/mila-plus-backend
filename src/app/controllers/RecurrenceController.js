@@ -233,6 +233,21 @@ class RecurrenceController {
                             },
                         ],
                     },
+                    {
+                        association: 'discounts',
+                        include: [
+                            {
+                                association: 'discount',
+                                attributes: [
+                                    'id',
+                                    'name',
+                                    'value',
+                                    'percent',
+                                    'type',
+                                ],
+                            },
+                        ],
+                    },
                 ],
             })
 
