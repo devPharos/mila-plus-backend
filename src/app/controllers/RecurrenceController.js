@@ -139,12 +139,21 @@ export async function generateRecurrenceReceivables(recurrence) {
             let receivableAmount = filialPriceList.dataValues.tuition
 
             student.dataValues.discounts.map((discount) => {
+                let applyDiscount = true
                 if (
                     discount.dataValues.start_date &&
-                    discount.dataValues.start_date <= due_date &&
-                    discount.dataValues.end_date &&
-                    discount.dataValues.end_date >= due_date
+                    due_date < discount.dataValues.start_date
                 ) {
+                    applyDiscount = false
+                }
+
+                if (
+                    discount.dataValues.end_date &&
+                    due_date > discount.dataValues.end_date
+                ) {
+                    applyDiscount = false
+                }
+                if (applyDiscount) {
                     if (discount.discount.percent) {
                         receivableAmount =
                             receivableAmount *
