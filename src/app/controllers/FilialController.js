@@ -129,6 +129,19 @@ class FilialController {
                     canceled_at: null,
                     // company_id: req.companyId,
                     [Op.not]: { alias: 'AAA' },
+                    [Op.or]: [
+                        {
+                            id: {
+                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
+                            },
+                        },
+                        {
+                            id:
+                                req.headers.filial != 1
+                                    ? req.headers.filial
+                                    : 0,
+                        },
+                    ],
                 },
                 include: [
                     {

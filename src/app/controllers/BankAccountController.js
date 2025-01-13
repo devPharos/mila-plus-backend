@@ -6,6 +6,8 @@ import { searchPromise } from '../functions/searchPromise'
 import Bank from '../models/Bank'
 import Filial from '../models/Filial'
 
+const { Op } = Sequelize
+
 class BankAccountController {
     async index(req, res) {
         try {
@@ -30,6 +32,19 @@ class BankAccountController {
                 ],
                 where: {
                     canceled_at: null,
+                    [Op.or]: [
+                        {
+                            filial_id: {
+                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
+                            },
+                        },
+                        {
+                            filial_id:
+                                req.headers.filial != 1
+                                    ? req.headers.filial
+                                    : 0,
+                        },
+                    ],
                 },
                 order: [[orderBy, orderASC]],
             })

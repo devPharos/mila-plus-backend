@@ -23,7 +23,22 @@ class PaymentCriteriaController {
                         where: { canceled_at: null },
                     },
                 ],
-                where: { canceled_at: null },
+                where: {
+                    canceled_at: null,
+                    [Op.or]: [
+                        {
+                            filial_id: {
+                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
+                            },
+                        },
+                        {
+                            filial_id:
+                                req.headers.filial != 1
+                                    ? req.headers.filial
+                                    : 0,
+                        },
+                    ],
+                },
                 order: [['created_at', 'DESC']],
             })
 
@@ -42,21 +57,24 @@ class PaymentCriteriaController {
         try {
             const { paymentcriteria_id } = req.params
 
-            const criteria = await PaymentCriteria.findByPk(paymentcriteria_id, {
-                where: { canceled_at: null },
-                include: [
-                    {
-                        model: Company,
-                        as: 'company',
-                        where: { canceled_at: null },
-                    },
-                    {
-                        model: Filial,
-                        as: 'filial',
-                        where: { canceled_at: null },
-                    },
-                ],
-            })
+            const criteria = await PaymentCriteria.findByPk(
+                paymentcriteria_id,
+                {
+                    where: { canceled_at: null },
+                    include: [
+                        {
+                            model: Company,
+                            as: 'company',
+                            where: { canceled_at: null },
+                        },
+                        {
+                            model: Filial,
+                            as: 'filial',
+                            where: { canceled_at: null },
+                        },
+                    ],
+                }
+            )
 
             return res.json(criteria)
         } catch (err) {
@@ -78,7 +96,9 @@ class PaymentCriteriaController {
                     ...req.body,
                     company_id: req.companyId,
                     created_at: new Date(),
-                    filial_id: req.body.filial_id ? req.body.filial_id : req.headers.filial,
+                    filial_id: req.body.filial_id
+                        ? req.body.filial_id
+                        : req.headers.filial,
                     created_by: req.userId,
                 },
                 {
@@ -105,7 +125,9 @@ class PaymentCriteriaController {
         try {
             const { paymentcriteria_id } = req.params
 
-            const criteriaExists = await PaymentCriteria.findByPk(paymentcriteria_id)
+            const criteriaExists = await PaymentCriteria.findByPk(
+                paymentcriteria_id
+            )
 
             if (!criteriaExists) {
                 return res
@@ -144,7 +166,9 @@ class PaymentCriteriaController {
         try {
             const { paymentcriteria_id } = req.params
 
-            const criteriaExists = await PaymentCriteria.findByPk(paymentcriteria_id)
+            const criteriaExists = await PaymentCriteria.findByPk(
+                paymentcriteria_id
+            )
 
             if (!criteriaExists) {
                 return res

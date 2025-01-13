@@ -4,6 +4,8 @@ import databaseConfig from '../../config/database'
 import Bank from '../models/Bank'
 import { searchPromise } from '../functions/searchPromise'
 
+const { Op } = Sequelize
+
 class BankController {
     async index(req, res) {
         try {
