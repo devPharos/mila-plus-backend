@@ -19,6 +19,7 @@ import { emergepay } from '../../config/emergepay'
 import Enrollment from '../models/Enrollment'
 import Recurrence from '../models/Recurrence'
 import Emergepaytransaction from '../models/Emergepaytransaction'
+import Receivablediscounts from '../models/Receivablediscounts'
 
 export async function createRegistrationFeeReceivable({
     issuer_id,
@@ -558,11 +559,12 @@ class ReceivableController {
                         where: { canceled_at: null },
                     },
                     {
-                        model: ReceivableInstallment,
-                        as: 'installments',
+                        model: Receivablediscounts,
+                        as: 'discounts',
                         required: false,
-                        where: { canceled_at: null },
-                        order: [['installment', 'ASC']],
+                        where: {
+                            canceled_at: null,
+                        },
                     },
                     {
                         model: Filial,
@@ -575,6 +577,14 @@ class ReceivableController {
                         as: 'issuer',
                         required: false,
                         where: { canceled_at: null },
+                        include: [
+                            {
+                                model: Student,
+                                as: 'student',
+                                required: false,
+                                where: { canceled_at: null },
+                            },
+                        ],
                     },
                 ],
             })

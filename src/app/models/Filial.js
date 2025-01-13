@@ -40,6 +40,7 @@ class Filial extends Model {
                 active: Sequelize.BOOLEAN,
                 financial_support_student_amount: Sequelize.FLOAT,
                 financial_support_dependent_amount: Sequelize.FLOAT,
+                financial_support_year_amount: Sequelize.FLOAT,
                 sevis_school: Sequelize.STRING,
                 parking_spot_image: Sequelize.UUID,
                 created_by: Sequelize.INTEGER,

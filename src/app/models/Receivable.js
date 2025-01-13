@@ -64,15 +64,19 @@ class Receivable extends Model {
                 },
                 amount: {
                     type: Sequelize.FLOAT,
-                    allowNull: false,
+                    defaultValue: 0,
+                },
+                discount: {
+                    type: Sequelize.FLOAT,
+                    defaultValue: 0,
                 },
                 fee: {
                     type: Sequelize.FLOAT,
-                    allowNull: false,
+                    defaultValue: 0,
                 },
                 total: {
                     type: Sequelize.FLOAT,
-                    allowNull: false,
+                    defaultValue: 0,
                 },
                 paymentmethod_id: {
                     type: Sequelize.UUID,
@@ -165,9 +169,9 @@ class Receivable extends Model {
             foreignKey: 'issuer_id',
             as: 'issuer',
         })
-        this.hasMany(models.ReceivableInstallment, {
+        this.hasMany(models.Receivablediscounts, {
             foreignKey: 'receivable_id',
-            as: 'installments',
+            as: 'discounts',
         })
     }
 }

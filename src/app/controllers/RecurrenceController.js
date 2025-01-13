@@ -20,6 +20,7 @@ import { searchPromise } from '../functions/searchPromise'
 import { handleStudentDiscounts } from '../functions'
 import Studentdiscount from '../models/Studentdiscount'
 import FilialDiscountList from '../models/FilialDiscountList'
+import Receivablediscounts from '../models/Receivablediscounts'
 
 export async function generateRecurrenceReceivables(recurrence) {
     try {
@@ -85,6 +86,16 @@ export async function generateRecurrenceReceivables(recurrence) {
                 status: 'Open',
                 canceled_at: null,
             },
+            include: [
+                {
+                    model: Receivablediscounts,
+                    as: 'discounts',
+                    required: false,
+                    where: {
+                        canceled_at: null,
+                    },
+                },
+            ],
         })
 
         openedReceivables.map((receivable) => {
@@ -138,6 +149,7 @@ export async function generateRecurrenceReceivables(recurrence) {
 
             let receivableAmount = filialPriceList.dataValues.tuition
 
+            const appliedDiscounts = []
             student.dataValues.discounts.map((discount) => {
                 let applyDiscount = true
                 if (
@@ -154,6 +166,7 @@ export async function generateRecurrenceReceivables(recurrence) {
                     applyDiscount = false
                 }
                 if (applyDiscount) {
+                    appliedDiscounts.push(discount.discount)
                     if (discount.discount.percent) {
                         receivableAmount =
                             receivableAmount *
@@ -182,12 +195,26 @@ export async function generateRecurrenceReceivables(recurrence) {
                 chartofaccount_id: recurrence.dataValues.chartofaccount_id,
                 is_recurrence: true,
                 contract_number: '',
-                amount: receivableAmount,
+                amount: filialPriceList.dataValues.tuition,
+                discount: filialPriceList.dataValues.tuition - receivableAmount,
                 total: receivableAmount,
                 paymentmethod_id: recurrence.dataValues.paymentmethod_id,
                 paymentcriteria_id: recurrence.dataValues.paymentcriteria_id,
                 created_at: new Date(),
                 created_by: 2,
+            }).then((receivable) => {
+                appliedDiscounts.map((discount) => {
+                    Receivablediscounts.create({
+                        receivable_id: receivable.id,
+                        discount_id: discount.id,
+                        name: discount.name,
+                        type: discount.type,
+                        value: discount.value,
+                        percent: discount.percent,
+                        created_by: 2,
+                        created_at: new Date(),
+                    })
+                })
             })
         }
     } catch (err) {

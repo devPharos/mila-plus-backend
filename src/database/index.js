@@ -53,6 +53,7 @@ import Enrollmentdependentdocument from '../app/models/Enrollmentdependentdocume
 import Emergepaytransaction from '../app/models/Emergepaytransaction.js'
 import Recurrence from '../app/models/Recurrence.js'
 import Studentdiscount from '../app/models/Studentdiscount.js'
+import Receivablediscounts from '../app/models/Receivablediscounts.js'
 // import UserGroup from '../app/models/usergroup'
 
 const models = [
@@ -106,6 +107,7 @@ const models = [
     PaymentCriteria,
     PaymentMethod,
     Receivable,
+    Receivablediscounts,
     ReceivableInstallment,
     Recurrence,
 ]
