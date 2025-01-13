@@ -4,7 +4,7 @@ export default function MailLayout({ title = '', content = '', filial = '' }) {
     return `<body style='background-color: #f3f4f6'>
                   <div style='width: 600;padding: 20px; margin: 12px auto;'>
                         <center><img src='${
-                            process.env.PHAROS_URL
+                            process.env.FRONTEND_URL
                         }/static/media/mila.be626bc072e772066f78.png' alt='MILA' width='150' /></center>
                         <div style='background-color: #FFF; padding: 12px 24px;margin: 12px auto;border-radius: 12px;border: 1px solid #dee0e3; width: 600px;border-left: 4px solid #ff5406;'>
                             ${
