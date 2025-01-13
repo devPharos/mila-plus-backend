@@ -12,7 +12,7 @@ import UserGroupXUser from '../models/UserGroupXUser'
 import UserXFilial from '../models/UserXFilial'
 import Processsubstatus from '../models/Processsubstatus'
 import { mailer } from '../../config/mailer'
-import { FRONTEND_URL, randomString } from '../functions'
+import { FRONTEND_URL, randomPassword } from '../functions'
 import MailLayout from '../../Mails/MailLayout'
 import Filialdocument from '../models/Filialdocument'
 import { resolve } from 'path'
@@ -209,10 +209,7 @@ class FilialController {
                         })
                     }
 
-                    const password = randomString(
-                        10,
-                        '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                    )
+                    const password = randomPassword()
 
                     await Milauser.create({
                         company_id: req.companyId,
@@ -492,10 +489,7 @@ class FilialController {
                             })
                         }
 
-                        const password = randomString(
-                            10,
-                            '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                        )
+                        const password = randomPassword()
 
                         await Milauser.create(
                             {
@@ -586,10 +580,7 @@ class FilialController {
                             req.body.administrator.id
                         )
 
-                        const password = randomString(
-                            10,
-                            '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                        )
+                        const password = randomPassword()
 
                         await userExists.update(
                             {

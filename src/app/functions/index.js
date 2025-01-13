@@ -1,6 +1,9 @@
 import Studentdiscount from '../models/Studentdiscount'
 
-export function randomString(length, chars) {
+export function randomPassword() {
+    const length = 10
+    const chars =
+        '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     var result = ''
     for (var i = length; i > 0; --i)
         result += chars[Math.floor(Math.random() * chars.length)]
