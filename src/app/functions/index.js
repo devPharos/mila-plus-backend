@@ -8,10 +8,7 @@ export function randomString(length, chars) {
     return result
 }
 
-export const BASEURL =
-    process.env.NODE_ENV === 'production'
-        ? 'https://milaplus.netlify.app'
-        : 'http://localhost:3000'
+export const BASEURL = process.env.BACKEND_URL
 
 export async function handleStudentDiscounts({
     student_id = null,

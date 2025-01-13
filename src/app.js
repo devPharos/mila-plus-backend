@@ -5,8 +5,6 @@ import routes from './routes.js'
 import schedule from 'node-schedule'
 
 import './database/index.js'
-import MailLog from './Mails/MailLog.js'
-import { mailer } from './config/mailer.js'
 import { sendInvoiceRecurrenceJob } from './app/controllers/ReceivableController.js'
 
 class App {
@@ -27,6 +25,9 @@ class App {
                 origin: [
                     'http://localhost:3000',
                     'https://milaplus.netlify.app',
+                    'https://milaplus.milausa.com',
+                    'https://mphomolog.netlify.app',
+                    'https://mphomolog.milausa.com',
                 ],
                 methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
                 credentials: true, // This option is important for handling cookies and authentication headers
