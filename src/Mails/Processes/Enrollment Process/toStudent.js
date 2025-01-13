@@ -1,41 +1,41 @@
-import { BASEURL } from '../../../app/functions';
-import Enrollment from '../../../app/models/Enrollment';
-import Filial from '../../../app/models/Filial';
-import Student from '../../../app/models/Student';
-import { mailer } from '../../../config/mailer';
-import MailLayout from '../../MailLayout';
+import { FRONTEND_URL } from '../../../app/functions'
+import Enrollment from '../../../app/models/Enrollment'
+import Filial from '../../../app/models/Filial'
+import Student from '../../../app/models/Student'
+import { mailer } from '../../../config/mailer'
+import MailLayout from '../../MailLayout'
 
 export default async function mailEnrollmentToStudent({
-  enrollment_id = null,
-  student_id = null,
+    enrollment_id = null,
+    student_id = null,
 }) {
-  if (!student_id || !enrollment_id) {
-    return false;
-  }
+    if (!student_id || !enrollment_id) {
+        return false
+    }
 
-  const student = await Student.findByPk(student_id);
-  const enrollment = await Enrollment.findByPk(enrollment_id);
+    const student = await Student.findByPk(student_id)
+    const enrollment = await Enrollment.findByPk(enrollment_id)
 
-  if (!student || !enrollment) {
-    return false;
-  }
+    if (!student || !enrollment) {
+        return false
+    }
 
-  const filial = await Filial.findByPk(enrollment.filial_id);
+    const filial = await Filial.findByPk(enrollment.filial_id)
 
-  const title = 'Enrollment Process - Student';
-  const content = `<p>Dear ${student.dataValues.name},</p>
+    const title = 'Enrollment Process - Student'
+    const content = `<p>Dear ${student.dataValues.name},</p>
                       <p>You have been asked to please complete the <strong>${title}</strong>.</p>
                       <br/>
-                      <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Enrollment?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`;
+                      <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/Enrollment?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
 
-  await mailer
-    .sendMail({
-      from: '"MILA Plus" <development@pharosit.com.br>',
-      to: student.dataValues.email,
-      subject: `MILA Plus - ${title}`,
-      html: MailLayout({ title, content, filial: filial.name }),
-    })
-    .then(() => {
-      return true;
-    });
+    await mailer
+        .sendMail({
+            from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+            to: student.dataValues.email,
+            subject: `MILA Plus - ${title}`,
+            html: MailLayout({ title, content, filial: filial.name }),
+        })
+        .then(() => {
+            return true
+        })
 }

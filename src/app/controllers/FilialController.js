@@ -12,7 +12,7 @@ import UserGroupXUser from '../models/UserGroupXUser'
 import UserXFilial from '../models/UserXFilial'
 import Processsubstatus from '../models/Processsubstatus'
 import { mailer } from '../../config/mailer'
-import { BASEURL, randomString } from '../functions'
+import { FRONTEND_URL, randomString } from '../functions'
 import MailLayout from '../../Mails/MailLayout'
 import Filialdocument from '../models/Filialdocument'
 import { resolve } from 'path'
@@ -261,9 +261,12 @@ class FilialController {
                             E-mail: ${email}</br>
                             Password: ${password}</p>
                             <br/>
-                            <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
+                            <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
                             mailer.sendMail({
-                                from: '"MILA Plus" <development@pharosit.com.br>',
+                                from:
+                                    '"MILA Plus" <' +
+                                    process.env.MAIL_FROM +
+                                    '>',
                                 to: sponsor.dataValues.email,
                                 subject: `MILA Plus - ${title}`,
                                 html: MailLayout({
@@ -551,9 +554,12 @@ class FilialController {
                               E-mail: ${email}</br>
                               Password: ${password}</p>
                               <br/>
-                              <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
+                              <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
                                 mailer.sendMail({
-                                    from: '"MILA Plus" <development@pharosit.com.br>',
+                                    from:
+                                        '"MILA Plus" <' +
+                                        process.env.MAIL_FROM +
+                                        '>',
                                     to: sponsor.dataValues.email,
                                     subject: `MILA Plus - ${title}`,
                                     html: MailLayout({

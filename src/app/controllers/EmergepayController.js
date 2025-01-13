@@ -100,7 +100,7 @@ class EmergepayController {
                 .then((response) => {
                     const { paymentPageId, paymentPageUrl } = response.data
                     mailer.sendMail({
-                        from: '"MILA Plus" <development@pharosit.com.br>',
+                        from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
                         to: 'denis@pharosit.com.br',
                         subject: `MILA Plus - Payment Link`,
                         html: `<p>Payment ID: ${paymentPageId}<br/>Payment Link: ${paymentPageUrl}<br/>External Transaction ID: ${fileUuid}</p>`,

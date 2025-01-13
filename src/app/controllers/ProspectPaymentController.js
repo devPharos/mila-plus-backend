@@ -194,7 +194,7 @@ class ProspectPaymentController {
                         : ''
                     mailer
                         .sendMail({
-                            from: '"MILA Plus" <development@pharosit.com.br>',
+                            from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
                             to: issuerExists.dataValues.email,
                             subject: `MILA Plus - Registration Fee - ${issuerExists.dataValues.name}`,
                             html: `<!DOCTYPE html>

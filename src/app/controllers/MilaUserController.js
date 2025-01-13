@@ -8,7 +8,7 @@ import UserGroup from '../models/UserGroup'
 import UserXFilial from '../models/UserXFilial'
 import { mailer } from '../../config/mailer'
 import MailLayout from '../../Mails/MailLayout'
-import { BASEURL } from '../functions'
+import { FRONTEND_URL } from '../functions'
 
 const { Op } = Sequelize
 
@@ -173,9 +173,9 @@ class MilaUserController {
                         E-mail: ${email}</br>
                         Password: ${password}</p>
                         <br/>
-                        <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
+                        <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
                 mailer.sendMail({
-                    from: '"MILA Plus" <development@pharosit.com.br>',
+                    from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
                     to: email,
                     subject: `MILA Plus - ${title}`,
                     html: MailLayout({ title, content, filial: '' }),
@@ -291,9 +291,9 @@ class MilaUserController {
                         E-mail: ${email}</br>
                         Password: ${password}</p>
                         <br/>
-                        <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
+                        <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
                 mailer.sendMail({
-                    from: '"MILA Plus" <development@pharosit.com.br>',
+                    from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
                     to: email,
                     subject: `MILA Plus - ${title}`,
                     html: MailLayout({ title, content, filial: '' }),

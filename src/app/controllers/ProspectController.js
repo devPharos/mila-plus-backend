@@ -12,10 +12,8 @@ import { mailer } from '../../config/mailer'
 import { addDays, format } from 'date-fns'
 import MailLayout from '../../Mails/MailLayout'
 import Filial from '../models/Filial'
-import { BASEURL, handleStudentDiscounts } from '../functions'
-import Enrollmenttransfer from '../models/Enrollmenttransfer'
+import { FRONTEND_URL, handleStudentDiscounts } from '../functions'
 import { searchPromise } from '../functions/searchPromise'
-import Studentdiscount from '../models/Studentdiscount'
 
 const { Op } = Sequelize
 
@@ -529,10 +527,10 @@ class ProspectController {
             const content = `<p>Dear ${student.dataValues.name},</p>
                       <p>You have been asked to please complete the <strong>${title}</strong>.</p>
                       <br/>
-                      <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/${page}?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
+                      <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/${page}?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
             promise.push(
                 await mailer.sendMail({
-                    from: '"MILA Plus" <development@pharosit.com.br>',
+                    from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
                     to: student.dataValues.email,
                     subject: `MILA Plus - ${title}`,
                     html: MailLayout({ title, content, filial: filial.name }),

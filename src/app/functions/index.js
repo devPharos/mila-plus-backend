@@ -1,4 +1,3 @@
-import { format, parseISO } from 'date-fns'
 import Studentdiscount from '../models/Studentdiscount'
 
 export function randomString(length, chars) {
@@ -8,7 +7,7 @@ export function randomString(length, chars) {
     return result
 }
 
-export const BASEURL =
+export const FRONTEND_URL =
     process.env.NODE_ENV === 'production'
         ? process.env.FRONTEND_URL
         : 'http://localhost:3000'

@@ -16,7 +16,7 @@ import { mailer } from '../../config/mailer'
 import Filial from '../models/Filial'
 import Agent from '../models/Agent'
 import MailLayout from '../../Mails/MailLayout'
-import { BASEURL } from '../functions'
+import { FRONTEND_URL } from '../functions'
 import Enrollmentsponsordocument from '../models/Enrollmentsponsordocument'
 
 const { Op } = Sequelize
@@ -261,9 +261,9 @@ class EnrollmentsponsorController {
                     const content = `<p>Dear ${enrollmentExists.agents.name},</p>
                         <p>The student's sponsor has finished the <strong>Enrollment Form - Sponsor</strong>, related to the student <strong>${enrollmentExists.students.name} ${enrollmentExists.students.last_name}</strong>.</p>
                         <br/>
-                        <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Sponsor?crypt=${sponsor_id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
+                        <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/Sponsor?crypt=${sponsor_id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
                     mailer.sendMail({
-                        from: '"MILA Plus" <development@pharosit.com.br>',
+                        from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
                         to: enrollmentExists.agents.email,
                         subject: `MILA Plus - ${title}`,
                         html: MailLayout({
