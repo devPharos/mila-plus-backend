@@ -8,7 +8,10 @@ export function randomString(length, chars) {
     return result
 }
 
-export const BASEURL = process.env.BACKEND_URL
+export const BASEURL =
+    process.env.NODE_ENV === 'production'
+        ? process.env.FRONTEND_URL
+        : 'http://localhost:3000'
 
 export async function handleStudentDiscounts({
     student_id = null,
