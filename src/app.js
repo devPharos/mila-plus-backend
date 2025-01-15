@@ -11,9 +11,6 @@ class App {
     constructor() {
         this.server = express()
 
-        console.log(process.env.FRONTEND_URL)
-        console.log(process.env.PHAROS_URL)
-
         this.middlewares()
         this.routes()
         this.exceptionHandler()
@@ -64,7 +61,6 @@ class App {
 
     schedule() {
         schedule.scheduleJob('0 0 8 * * *', sendInvoiceRecurrenceJob)
-        // sendInvoiceRecurrenceJob()
     }
 }
 
