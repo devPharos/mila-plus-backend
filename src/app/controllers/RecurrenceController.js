@@ -111,40 +111,37 @@ export async function generateRecurrenceReceivables(recurrence) {
             let entry_date = null
             let due_date = null
             let first_due_date = null
-            let qt = (i + 1) * recurring_qt
-            const in_class_date = parseISO(recurrence.dataValues.in_class_date)
+            let qt = i * recurring_qt
+            const calc_date = parseISO(recurrence.dataValues.first_due_date)
 
             if (recurring_metric === 'Day') {
-                entry_date = format(addDays(in_class_date, qt), 'yyyyMMdd')
+                entry_date = format(addDays(calc_date, qt), 'yyyyMMdd')
                 due_date = format(
-                    addDays(addDays(in_class_date, qt), 3),
+                    addDays(addDays(calc_date, qt), 3),
                     'yyyyMMdd'
                 )
-                first_due_date = format(addDays(in_class_date, qt), 'yyyyMMdd')
+                first_due_date = format(addDays(calc_date, qt), 'yyyyMMdd')
             } else if (recurring_metric === 'Week') {
-                entry_date = format(addWeeks(in_class_date, qt), 'yyyyMMdd')
+                entry_date = format(addWeeks(calc_date, qt), 'yyyyMMdd')
                 due_date = format(
-                    addDays(addWeeks(in_class_date, qt), 3),
+                    addDays(addWeeks(calc_date, qt), 3),
                     'yyyyMMdd'
                 )
-                first_due_date = format(addWeeks(in_class_date, qt), 'yyyyMMdd')
+                first_due_date = format(addWeeks(calc_date, qt), 'yyyyMMdd')
             } else if (recurring_metric === 'Month') {
-                entry_date = format(addMonths(in_class_date, qt), 'yyyyMMdd')
+                entry_date = format(addMonths(calc_date, qt), 'yyyyMMdd')
                 due_date = format(
-                    addDays(addMonths(in_class_date, qt), 3),
+                    addDays(addMonths(calc_date, qt), 3),
                     'yyyyMMdd'
                 )
-                first_due_date = format(
-                    addMonths(in_class_date, qt),
-                    'yyyyMMdd'
-                )
+                first_due_date = format(addMonths(calc_date, qt), 'yyyyMMdd')
             } else if (recurring_metric === 'Year') {
-                entry_date = format(addYears(in_class_date, qt), 'yyyyMMdd')
+                entry_date = format(addYears(calc_date, qt), 'yyyyMMdd')
                 due_date = format(
-                    addDays(addYears(in_class_date, qt), 3),
+                    addDays(addYears(calc_date, qt), 3),
                     'yyyyMMdd'
                 )
-                first_due_date = format(addYears(in_class_date, qt), 'yyyyMMdd')
+                first_due_date = format(addYears(calc_date, qt), 'yyyyMMdd')
             }
 
             let receivableAmount = filialPriceList.dataValues.tuition

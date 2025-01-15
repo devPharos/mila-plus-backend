@@ -29,6 +29,10 @@ class Recurrence extends Model {
                     type: Sequelize.STRING,
                     allowNull: false,
                 },
+                first_due_date: {
+                    type: Sequelize.STRING,
+                    allowNull: false,
+                },
                 paymentmethod_id: {
                     type: Sequelize.UUID,
                     allowNull: false,

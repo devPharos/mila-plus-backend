@@ -8,7 +8,7 @@ import UserGroup from '../models/UserGroup'
 import UserXFilial from '../models/UserXFilial'
 import { mailer } from '../../config/mailer'
 import MailLayout from '../../Mails/MailLayout'
-import { BASEURL } from '../functions'
+import { FRONTEND_URL, randomPassword } from '../functions'
 
 const { Op } = Sequelize
 
@@ -31,12 +31,15 @@ class MilaUserController {
                 })
             }
 
+            const password = randomPassword()
+
             const newUser = await Milauser.create(
                 {
                     company_id: req.companyId,
                     created_at: new Date(),
                     created_by: req.userId,
                     ...req.body,
+                    password,
                 },
                 {
                     transaction: t,
@@ -57,7 +60,23 @@ class MilaUserController {
                 )
             }
 
-            t.commit()
+            Promise.all(promises).then(() => {
+                t.commit()
+
+                const title = `Account created`
+                const content = `<p>Dear ${name},</p>
+                        <p>Now you have access to MILA Plus system, please use these information on your first access:<br/>
+                        E-mail: ${email}</br>
+                        Password: ${password}</p>
+                        <br/>
+                        <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
+                mailer.sendMail({
+                    from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+                    to: email,
+                    subject: `MILA Plus - ${title}`,
+                    html: MailLayout({ title, content, filial: '' }),
+                })
+            })
 
             const { id, name, email } = newUser
             return res.json({ id, name, email })
@@ -104,17 +123,7 @@ class MilaUserController {
                 })
             }
 
-            function randomString(length, chars) {
-                var result = ''
-                for (var i = length; i > 0; --i)
-                    result += chars[Math.floor(Math.random() * chars.length)]
-                return result
-            }
-
-            const password = randomString(
-                10,
-                '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-            )
+            const password = randomPassword()
 
             const newUser = await Milauser.create(
                 {
@@ -173,9 +182,9 @@ class MilaUserController {
                         E-mail: ${email}</br>
                         Password: ${password}</p>
                         <br/>
-                        <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
+                        <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
                 mailer.sendMail({
-                    from: '"MILA Plus" <development@pharosit.com.br>',
+                    from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
                     to: email,
                     subject: `MILA Plus - ${title}`,
                     html: MailLayout({ title, content, filial: '' }),
@@ -188,7 +197,7 @@ class MilaUserController {
         } catch (err) {
             await t.rollback()
             const className = 'UserController'
-            const functionName = 'store'
+            const functionName = 'createUserToFilial'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,
@@ -291,9 +300,9 @@ class MilaUserController {
                         E-mail: ${email}</br>
                         Password: ${password}</p>
                         <br/>
-                        <p style='margin: 12px 0;'><a href="${BASEURL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
+                        <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
                 mailer.sendMail({
-                    from: '"MILA Plus" <development@pharosit.com.br>',
+                    from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
                     to: email,
                     subject: `MILA Plus - ${title}`,
                     html: MailLayout({ title, content, filial: '' }),

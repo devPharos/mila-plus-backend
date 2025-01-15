@@ -19,7 +19,7 @@ import { mailer } from '../../config/mailer'
 import Filial from '../models/Filial'
 import Enrollmenttransfer from '../models/Enrollmenttransfer'
 import MailLayout from '../../Mails/MailLayout'
-import { BASEURL } from '../functions'
+import { FRONTEND_URL } from '../functions'
 import mailEnrollmentToStudent from '../../Mails/Processes/Enrollment Process/toStudent'
 import mailTransferToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent'
 import mailPlacementTestToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent'
@@ -568,9 +568,12 @@ class EnrollmentController {
                             const content = `<p>Dear ${sponsor.dataValues.name},</p>
                                             <p>You have been asked to please complete the <strong>Enrollment Form - Sponsors</strong>, related to the student <strong>${studentExists.name} ${studentExists.last_name}</strong>.</p>
                                             <br/>
-                                            <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Sponsor?crypt=${sponsor.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
+                                            <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/Sponsor?crypt=${sponsor.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
                             mailer.sendMail({
-                                from: '"MILA Plus" <development@pharosit.com.br>',
+                                from:
+                                    '"MILA Plus" <' +
+                                    process.env.MAIL_FROM +
+                                    '>',
                                 to: sponsor.dataValues.email,
                                 subject: `MILA Plus - ${title}`,
                                 html: MailLayout({
@@ -590,9 +593,9 @@ class EnrollmentController {
                         const content = `<p>Dear ${req.body.enrollmenttransfers.previous_school_dso_name},</p>
                                     <p>You have been asked to please complete the <strong>Transfer Eligibility Form - DSO</strong>, related to the student <strong>${studentExists.dataValues.name}</strong>, Sevis ID no.: <strong>${studentExists.dataValues.nsevis}</strong>.</p>
                                     <br/>
-                                    <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/TransferDSO?crypt=${enrollmentExists.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
+                                    <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/TransferDSO?crypt=${enrollmentExists.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
                         mailer.sendMail({
-                            from: '"MILA Plus" <development@pharosit.com.br>',
+                            from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
                             to: req.body.enrollmenttransfers
                                 .previous_school_dso_email,
                             subject: `MILA Plus - ${title}`,
@@ -608,9 +611,9 @@ class EnrollmentController {
                     const content = `<p>Dear ${agent.dataValues.name},</p>
                                     <p>The DSO of the student: ${studentExists.dataValues.name}, with NSEVIS ${studentExists.dataValues.nsevis}, has completed the transfer form.</p>
                                     <br/>
-                                    <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/TransferDSO?crypt=${enrollmentExists.id}&activeMenu=transfer-dso" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
+                                    <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/TransferDSO?crypt=${enrollmentExists.id}&activeMenu=transfer-dso" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
                     mailer.sendMail({
-                        from: '"MILA Plus" <development@pharosit.com.br>',
+                        from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
                         to: agent.dataValues.email,
                         subject: `MILA Plus - ${title}`,
                         html: MailLayout({
@@ -1434,10 +1437,13 @@ class EnrollmentController {
                                 const content = `<p>Dear ${student.dataValues.name},</p>
                       <p>You have been asked to please complete the <strong>${title}</strong>.</p>
                       <br/>
-                      <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Transfer?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
+                      <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/Transfer?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
 
                                 await mailer.sendMail({
-                                    from: '"MILA Plus" <development@pharosit.com.br>',
+                                    from:
+                                        '"MILA Plus" <' +
+                                        process.env.MAIL_FROM +
+                                        '>',
                                     to: student.dataValues.email,
                                     subject: `MILA Plus - ${title}`,
                                     html: MailLayout({
@@ -1600,10 +1606,13 @@ class EnrollmentController {
                             const content = `<p>Dear ${student.dataValues.name},</p>
                       <p>You have been asked to please complete the <strong>${title}</strong>.</p>
                       <br/>
-                      <p style='margin: 12px 0;'><a href="${BASEURL}/fill-form/Enrollment?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
+                      <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/Enrollment?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
 
                             await mailer.sendMail({
-                                from: '"MILA Plus" <development@pharosit.com.br>',
+                                from:
+                                    '"MILA Plus" <' +
+                                    process.env.MAIL_FROM +
+                                    '>',
                                 to: student.dataValues.email,
                                 subject: `MILA Plus - ${title}`,
                                 html: MailLayout({

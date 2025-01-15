@@ -318,7 +318,7 @@ export async function sendInvoiceRecurrenceJob() {
             paymentInfoHTML
         ) {
             mailer.sendMail({
-                from: '"MILA Plus" <development@pharosit.com.br>',
+                from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
                 // to: issuerExists.dataValues.email,
                 to: 'denis@pharosit.com.br;dansouz1712@gmail.com',
                 subject: `MILA Plus - Tuition Fee - ${issuerExists.dataValues.name}`,
