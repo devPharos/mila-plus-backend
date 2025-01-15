@@ -11,6 +11,9 @@ class App {
     constructor() {
         this.server = express()
 
+        console.log(process.env.FRONTEND_URL)
+        console.log(process.env.PHAROS_URL)
+
         this.middlewares()
         this.routes()
         this.exceptionHandler()
@@ -24,10 +27,8 @@ class App {
             cors({
                 origin: [
                     'http://localhost:3000',
-                    'https://mphomolog.milausa.com',
-                    'https://mphomolog.netlify.app',
-                    'https://milaplus.milausa.com',
-                    'https://milaplus.netlify.app',
+                    process.env.FRONTEND_URL,
+                    process.env.PHAROS_URL,
                 ],
                 methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
                 credentials: true, // This option is important for handling cookies and authentication headers
