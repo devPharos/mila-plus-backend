@@ -24,8 +24,10 @@ class App {
             cors({
                 origin: [
                     'http://localhost:3000',
-                    process.env.FRONTEND_URL,
-                    process.env.PHAROS_URL,
+                    'https://mphomolog.milausa.com',
+                    'https://mphomolog.netlify.app',
+                    'https://milaplus.milausa.com',
+                    'https://milaplus.netlify.app',
                 ],
                 methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
                 credentials: true, // This option is important for handling cookies and authentication headers
