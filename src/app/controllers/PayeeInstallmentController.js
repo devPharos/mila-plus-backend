@@ -185,7 +185,7 @@ class PayeeInstallmentController {
                     authorization_code: resources.authorization_code,
                     chartofaccount_id: resources.chartofaccount_id,
                     paymentcriteria_id: resources.paymentcriteria_id,
-                    status: 'Open',
+                    status: 'Pending',
                     status_date: new Date().toString(),
                     due_date: new Date(newStatusDate).toString(),
                     created_at: new Date(),
@@ -250,9 +250,7 @@ class PayeeInstallmentController {
 
     async allInstallmentsByDateInterval(resources) {
         try {
-            const payee = await this.fetchpayeeWithInstallments(
-                resources.id
-            )
+            const payee = await this.fetchpayeeWithInstallments(resources.id)
             if (!payee) throw new Error('payee does not exist.')
 
             const paymentCriteria = await this.fetchPaymentCriteria(
@@ -399,7 +397,7 @@ class PayeeInstallmentController {
             authorization_code: resources.authorization_code,
             chartofaccount_id: resources.chartofaccount_id,
             paymentcriteria_id: resources.paymentcriteria_id,
-            status: 'Open',
+            status: 'Pending',
             due_date: new Date(newStatusDate).toString(),
             status_date: new Date().toString(),
         }
@@ -417,7 +415,7 @@ class PayeeInstallmentController {
 
     async cancelExtraInstallments(installmentsItems, payeeId, updatedBy) {
         const allInstallments = await PayeeInstallment.findAll({
-            where: { payee_id: payeeId, },
+            where: { payee_id: payeeId },
         })
 
         const canceledInstallments = allInstallments.filter(
@@ -485,4 +483,3 @@ class PayeeInstallmentController {
 }
 
 export default new PayeeInstallmentController()
-

@@ -184,7 +184,7 @@ class ReceivableInstallmentController {
                     authorization_code: resources.authorization_code,
                     chartofaccount_id: resources.chartofaccount_id,
                     paymentcriteria_id: resources.paymentcriteria_id,
-                    status: 'Open',
+                    status: 'Pending',
                     status_date: new Date().toString(),
                     due_date: new Date(newStatusDate).toString(),
                     created_at: new Date(),
@@ -397,7 +397,7 @@ class ReceivableInstallmentController {
             authorization_code: resources.authorization_code,
             chartofaccount_id: resources.chartofaccount_id,
             paymentcriteria_id: resources.paymentcriteria_id,
-            status: 'Open',
+            status: 'Pending',
             due_date: new Date(newStatusDate).toString(),
             status_date: new Date().toString(),
         }

@@ -5,7 +5,10 @@ import routes from './routes.js'
 import schedule from 'node-schedule'
 
 import './database/index.js'
-import { sendInvoiceRecurrenceJob } from './app/controllers/ReceivableController.js'
+import {
+    calculateFeesRecurrenceJob,
+    sendInvoiceRecurrenceJob,
+} from './app/controllers/ReceivableController.js'
 
 class App {
     constructor() {
@@ -61,6 +64,7 @@ class App {
 
     schedule() {
         schedule.scheduleJob('0 0 8 * * *', sendInvoiceRecurrenceJob)
+        schedule.scheduleJob('0 0 7 * * *', calculateFeesRecurrenceJob)
     }
 }
 

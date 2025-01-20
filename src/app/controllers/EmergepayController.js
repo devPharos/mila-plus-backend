@@ -234,7 +234,7 @@ class EmergepayController {
                                             invoice_number:
                                                 receivable.dataValues
                                                     .invoice_number,
-                                            status: 'Open',
+                                            status: 'Pending',
                                             canceled_at: null,
                                         },
                                     }).then((receivables) => {

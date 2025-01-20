@@ -83,7 +83,7 @@ export async function generateRecurrenceReceivables(recurrence) {
                 filial_id,
                 issuer_id: issuer.id,
                 type_detail: 'Tuition fee',
-                status: 'Open',
+                status: 'Pending',
                 canceled_at: null,
             },
             include: [
@@ -184,7 +184,7 @@ export async function generateRecurrenceReceivables(recurrence) {
                 first_due_date,
                 type: 'Invoice',
                 type_detail: 'Tuition fee',
-                status: 'Open',
+                status: 'Pending',
                 status_date: format(new Date(), 'yyyyMMdd'),
                 memo: `Registration fee - ${name} - ${i + 1}`,
                 fee: 0,
