@@ -126,6 +126,12 @@ class StudentController {
                 order: [[orderBy, orderASC]],
             })
 
+            if (!students) {
+                return res.status(400).json({
+                    error: 'Students not found.',
+                })
+            }
+
             const fields = ['registration_number', 'name', 'last_name']
             Promise.all([searchPromise(search, students, fields)]).then(
                 (students) => {
