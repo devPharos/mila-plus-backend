@@ -145,7 +145,7 @@ class PayeeController {
                         ? req.body.amount
                         : 0,
                     company_id: req.companyId,
-                    status: 'Open',
+                    status: 'Pending',
                     status_date: new Date().toString(),
                     filial_id: req.body.filial_id
                         ? req.body.filial_id

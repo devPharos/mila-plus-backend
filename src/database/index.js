@@ -127,6 +127,10 @@ class Database {
                 (model) =>
                     model.associate && model.associate(this.connection.models)
             )
+
+        if (!this.connection) {
+            console.log(this.connection)
+        }
     }
 
     close() {

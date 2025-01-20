@@ -11,7 +11,7 @@ import Issuer from '../models/Issuer'
 import ReceivableInstallmentController from './ReceivableInstallmentController'
 import FilialPriceList from '../models/FilialPriceList'
 import Student from '../models/Student'
-import { addDays, format, parseISO } from 'date-fns'
+import { addDays, differenceInDays, format, parseISO } from 'date-fns'
 import { searchPromise } from '../functions/searchPromise'
 import { mailer } from '../../config/mailer'
 import MailLayout from '../../Mails/MailLayout'
@@ -59,7 +59,7 @@ export async function createRegistrationFeeReceivable({
             type: 'Invoice',
             type_detail: 'Registration fee',
             first_due_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-            status: 'Open',
+            status: 'Pending',
             status_date: format(addDays(new Date(), 0), 'yyyyMMdd'),
             memo: `Registration fee - ${name}`,
             fee: 0,
@@ -131,7 +131,7 @@ export async function createTuitionFeeReceivable({
             type_detail: 'Tuition fee',
             invoice_number,
             first_due_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-            status: 'Open',
+            status: 'Pending',
             status_date: format(addDays(new Date(), 0), 'yyyyMMdd'),
             memo: `Tuition fee ${in_advance ? '(in advance) ' : ''}- ${name}`,
             fee: 0,
@@ -183,7 +183,7 @@ export async function sendInvoiceRecurrenceJob() {
                 company_id: 1,
                 is_recurrence: true,
                 canceled_at: null,
-                status: 'Open',
+                status: 'Pending',
                 type: 'Invoice',
                 type_detail: 'Tuition fee',
                 entry_date: format(new Date(), 'yyyyMMdd'),
@@ -463,6 +463,116 @@ export async function sendInvoiceRecurrenceJob() {
     }
 }
 
+export async function calculateFee(receivable = null) {
+    try {
+        if (!receivable) {
+            console.log('no receivable')
+            return 0
+        }
+
+        const paymentCriteria = await PaymentCriteria.findByPk(
+            receivable.dataValues.paymentcriteria_id
+        )
+
+        if (receivable.dataValues.due_date >= new Date()) {
+            console.log('receivable due date is greater than today')
+            return 0
+        }
+
+        if (paymentCriteria.dataValues.fee_value === 0) {
+            console.log('fee value is 0')
+            return 0
+        }
+
+        const daysPassed = differenceInDays(
+            new Date(),
+            parseISO(receivable.dataValues.due_date)
+        )
+        console.log(daysPassed)
+        let how_many_times = 0
+
+        if (daysPassed < paymentCriteria.dataValues.fee_qt) {
+            console.log('days passed is less than fee quantity')
+            return 0
+        }
+
+        if (paymentCriteria.dataValues.fee_metric === 'Day') {
+            how_many_times = Math.round(
+                daysPassed / paymentCriteria.dataValues.fee_qt
+            )
+        } else if (paymentCriteria.dataValues.fee_metric === 'Week') {
+            how_many_times = Math.round(
+                (daysPassed / paymentCriteria.dataValues.fee_qt) * 7
+            )
+        } else if (paymentCriteria.dataValues.fee_metric === 'Month') {
+            how_many_times = Math.round(
+                (daysPassed / paymentCriteria.dataValues.fee_qt) * 30
+            )
+        } else if (paymentCriteria.dataValues.fee_metric === 'Year') {
+            how_many_times = Math.round(
+                (daysPassed / paymentCriteria.dataValues.fee_qt) * 365
+            )
+        }
+
+        let receivableTotalWithFees = receivable.dataValues.total
+        let feesAmount = 0
+
+        for (let i = 0; i < how_many_times; i++) {
+            if (paymentCriteria.dataValues.fee_type === 'Flat Fee') {
+                receivableTotalWithFees += paymentCriteria.dataValues.fee_value
+                feesAmount += paymentCriteria.dataValues.fee_value
+            } else if (paymentCriteria.dataValues.fee_type === 'Percentage') {
+                receivableTotalWithFees +=
+                    (receivableTotalWithFees *
+                        paymentCriteria.dataValues.fee_value) /
+                    100
+                feesAmount =
+                    receivableTotalWithFees - receivable.dataValues.total
+            }
+        }
+
+        console.log(receivableTotalWithFees)
+        console.log(feesAmount)
+
+        receivable.update({
+            total: receivableTotalWithFees,
+            fee: feesAmount,
+            updated_at: new Date(),
+            updated_by: 2,
+        })
+
+        return receivable
+    } catch (err) {
+        const className = 'ReceivableController'
+        const functionName = 'calculateFee'
+        MailLog({ className, functionName, req: null, err })
+    }
+}
+
+export async function calculateFeesRecurrenceJob() {
+    try {
+        const receivables = await Receivable.findAll({
+            where: {
+                status: 'Pending',
+                due_date: {
+                    [Op.lt]: format(new Date(), 'yyyyMMdd'),
+                },
+            },
+        })
+        console.log(receivables.length)
+        receivables.forEach(async (receivable) => {
+            calculateFee(receivable)
+        })
+    } catch (err) {
+        MailLog({
+            className: 'ReceivableController',
+            functionName: 'calculateFeeRecurrenceJob',
+            req: null,
+            err,
+        })
+    }
+}
+
 class ReceivableController {
     async index(req, res) {
         try {
@@ -630,7 +740,7 @@ class ReceivableController {
                         ? req.body.amount
                         : 0,
                     company_id: req.companyId,
-                    status: 'Open',
+                    status: 'Pending',
                     status_date: new Date().toString(),
                     filial_id: req.body.filial_id
                         ? req.body.filial_id
