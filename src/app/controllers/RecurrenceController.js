@@ -199,7 +199,7 @@ export async function generateRecurrenceReceivables(recurrence) {
                 company_id: 1,
                 filial_id,
                 issuer_id: issuer.id,
-                entry_date,
+                entry_date: recurrence.dataValues.entry_date,
                 due_date,
                 type: 'Invoice',
                 type_detail: 'Tuition fee',
