@@ -85,7 +85,7 @@ class BankController {
                 {
                     bank_alias: data.bank_alias,
                     bank_name: data.bank_name,
-                    company_id: req.companyId,
+                    company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
                 },

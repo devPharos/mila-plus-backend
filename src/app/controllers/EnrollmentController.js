@@ -51,7 +51,7 @@ class EnrollmentController {
                 await Enrollment.create(
                     {
                         filial_id: newProspect.filial_id,
-                        company_id: req.companyId,
+                        company_id: 1,
                         student_id: newProspect.id,
                         form_step:
                             substatus.dataValues.name === 'Transfer'
@@ -88,7 +88,7 @@ class EnrollmentController {
                                 await Enrollmenttransfer.create(
                                     {
                                         enrollment_id: enrollment.id,
-                                        company_id: req.companyId,
+                                        company_id: 1,
                                         created_at: new Date(),
                                         created_by: req.userId,
                                     },
@@ -105,7 +105,7 @@ class EnrollmentController {
             const new_enrollment = await Enrollment.create(
                 {
                     ...req.body,
-                    company_id: req.companyId,
+                    company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -1097,7 +1097,7 @@ class EnrollmentController {
 
             const signatureFile = await File.create(
                 {
-                    company_id: req.companyId || 1,
+                    company_id: 1,
                     name: req.body.files.name,
                     size: req.body.files.size,
                     url: req.body.files.url,
@@ -1192,7 +1192,7 @@ class EnrollmentController {
 
             const signatureFile = await File.create(
                 {
-                    company_id: req.companyId || 1,
+                    company_id: 1,
                     name: req.body.files.name,
                     size: req.body.files.size,
                     url: req.body.files.url,
@@ -1281,7 +1281,7 @@ class EnrollmentController {
 
             const signatureFile = await File.create(
                 {
-                    company_id: req.companyId || 1,
+                    company_id: 1,
                     name: req.body.files.name,
                     size: req.body.files.size,
                     url: req.body.files.url,
@@ -1385,7 +1385,7 @@ class EnrollmentController {
                     await Enrollment.create(
                         {
                             filial_id: student.filial_id,
-                            company_id: req.companyId,
+                            company_id: 1,
                             student_id: student.id,
                             application: 'Transfer Eligibility',
                             form_step: 'transfer-request',
@@ -1422,7 +1422,7 @@ class EnrollmentController {
                             await Enrollmenttransfer.create(
                                 {
                                     enrollment_id: enrollment.id,
-                                    company_id: req.companyId,
+                                    company_id: 1,
                                     created_at: new Date(),
                                     created_by: req.userId,
                                 },
@@ -1490,7 +1490,7 @@ class EnrollmentController {
                     await Enrollment.create(
                         {
                             filial_id: student.filial_id,
-                            company_id: req.companyId,
+                            company_id: 1,
                             student_id: student.id,
                             application: 'Enrollment Process',
                             form_step: 'student-information',
@@ -1565,7 +1565,7 @@ class EnrollmentController {
                     await Enrollment.create(
                         {
                             filial_id: student.filial_id,
-                            company_id: req.companyId,
+                            company_id: 1,
                             student_id: student.id,
                             application: 'Placement Test',
                             form_step: 'student-information',

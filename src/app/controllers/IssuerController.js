@@ -202,7 +202,7 @@ class IssuerController {
                     filial_id: req.body.filial_id
                         ? req.body.filial_id
                         : req.headers.filial,
-                    company_id: req.companyId,
+                    company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -240,7 +240,7 @@ class IssuerController {
             await issuerExists.update(
                 {
                     ...req.body,
-                    company_id: req.companyId,
+                    company_id: 1,
                     updated_by: req.userId,
                     updated_at: new Date(),
                 },

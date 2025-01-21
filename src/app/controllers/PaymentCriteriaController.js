@@ -94,7 +94,7 @@ class PaymentCriteriaController {
             const newCriteria = await PaymentCriteria.create(
                 {
                     ...req.body,
-                    company_id: req.companyId,
+                    company_id: 1,
                     created_at: new Date(),
                     filial_id: req.body.filial_id
                         ? req.body.filial_id
@@ -138,7 +138,7 @@ class PaymentCriteriaController {
             await criteriaExists.update(
                 {
                     ...req.body,
-                    company_id: req.companyId,
+                    company_id: 1,
                     updated_by: req.userId,
                     updated_at: new Date(),
                 },

@@ -33,7 +33,7 @@ class ProspectPaymentController {
 
             let issuerExists = await Issuer.findOne({
                 where: {
-                    company_id: req.companyId,
+                    company_id: 1,
                     filial_id,
                     student_id,
                     canceled_at: null,
@@ -60,7 +60,7 @@ class ProspectPaymentController {
 
             registrationFee = await Receivable.findOne({
                 where: {
-                    company_id: req.companyId,
+                    company_id: 1,
                     filial_id,
                     issuer_id: issuerExists.id,
                     type: 'Invoice',
@@ -78,7 +78,7 @@ class ProspectPaymentController {
 
             tuitionFee = await Receivable.findOne({
                 where: {
-                    company_id: req.companyId,
+                    company_id: 1,
                     filial_id,
                     issuer_id: issuerExists.id,
                     type: 'Invoice',

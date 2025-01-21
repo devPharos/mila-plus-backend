@@ -20,7 +20,7 @@ class StaffController {
                 {
                     filial_id: req.headers.filial,
                     ...req.body,
-                    company_id: req.companyId,
+                    company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -59,7 +59,7 @@ class StaffController {
                 if (files) {
                     const fileCreated = await File.create(
                         {
-                            company_id: req.companyId,
+                            company_id: 1,
                             name: files.name,
                             size: files.size || 0,
                             url: files.url,
@@ -77,7 +77,7 @@ class StaffController {
                     if (fileCreated) {
                         await Staffdocument.create(
                             {
-                                company_id: req.companyId,
+                                company_id: 1,
                                 staff_id,
                                 file_id: fileCreated.id,
                                 document_id: files.document_id,
@@ -123,7 +123,7 @@ class StaffController {
                     },
                 ],
                 where: {
-                    company_id: req.companyId,
+                    company_id: 1,
                     [Op.or]: [
                         {
                             filial_id: {

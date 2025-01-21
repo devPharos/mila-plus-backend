@@ -117,7 +117,7 @@ class BankAccountController {
                     filial_id: req.body.filial_id
                         ? req.body.filial_id
                         : req.headers.filial,
-                    company_id: req.companyId,
+                    company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
                 },

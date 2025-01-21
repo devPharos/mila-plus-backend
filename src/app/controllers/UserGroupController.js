@@ -17,7 +17,7 @@ class UserGroupController {
                 where: {
                     name,
                     filialtype_id,
-                    company_id: req.companyId,
+                    company_id: 1,
                     canceled_at: null,
                 },
                 include: [
@@ -35,7 +35,7 @@ class UserGroupController {
 
             const newGroup = await UserGroup.create(
                 {
-                    company_id: req.companyId,
+                    company_id: 1,
                     filialtype_id,
                     name,
                     created_at: new Date(),
@@ -124,7 +124,7 @@ class UserGroupController {
         try {
             const groups = await UserGroup.findAll({
                 where: {
-                    company_id: req.companyId,
+                    company_id: 1,
                     [Op.not]: {
                         filialtype_id:
                             req.headers.filial !=

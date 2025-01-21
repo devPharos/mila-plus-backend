@@ -129,7 +129,7 @@ class MerchantController {
                     late_payees: req.body.late_payees
                         ? req.body.late_payees
                         : 0,
-                    company_id: req.companyId,
+                    company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -198,7 +198,7 @@ class MerchantController {
             await merchantExists.update(
                 {
                     ...req.body,
-                    company_id: req.companyId,
+                    company_id: 1,
                     updated_by: req.userId,
                     updated_at: new Date(),
                 },

@@ -35,7 +35,7 @@ class MilaUserController {
 
             const newUser = await Milauser.create(
                 {
-                    company_id: req.companyId,
+                    company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
                     ...req.body,
@@ -132,7 +132,7 @@ class MilaUserController {
 
             const newUser = await Milauser.create(
                 {
-                    company_id: req.companyId,
+                    company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
                     ...req.body,
@@ -397,7 +397,7 @@ class MilaUserController {
         const userExists = await Milauser.findAll({
             attributes: ['id', 'name', 'email', 'avatar_id'],
             where: {
-                company_id: req.companyId,
+                company_id: 1,
                 canceled_at: null,
             },
             include: [
@@ -498,7 +498,7 @@ class MilaUserController {
         const user = await Milauser.findByPk(user_id, {
             attributes: ['id', 'name'],
             where: {
-                company_id: req.companyId,
+                company_id: 1,
                 canceled_at: null,
             },
         })
@@ -515,7 +515,7 @@ class MilaUserController {
     async show(req, res) {
         const { user_id } = req.params
         const userExists = await Milauser.findByPk(user_id, {
-            where: { canceled_at: null, company_id: req.companyId },
+            where: { canceled_at: null, company_id: 1 },
             include: [
                 {
                     model: UserXFilial,

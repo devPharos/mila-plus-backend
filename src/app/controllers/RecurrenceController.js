@@ -390,7 +390,7 @@ class RecurrenceController {
             })
             let recurrence = await Recurrence.findOne({
                 where: {
-                    company_id: req.companyId,
+                    company_id: 1,
                     filial_id: req.body.filial_id,
                     issuer_id: issuer.id,
                     canceled_at: null,
@@ -400,7 +400,7 @@ class RecurrenceController {
             if (!recurrence) {
                 recurrence = await Recurrence.create(
                     {
-                        company_id: req.companyId,
+                        company_id: 1,
                         filial_id: req.body.filial_id,
                         ...req.body,
                         amount: req.body.prices.total_tuition,

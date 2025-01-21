@@ -854,7 +854,7 @@ class ReceivableController {
                         : req.body.amount
                         ? req.body.amount
                         : 0,
-                    company_id: req.companyId,
+                    company_id: 1,
                     status: 'Pending',
                     status_date: new Date().toString(),
                     filial_id: req.body.filial_id

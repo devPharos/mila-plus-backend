@@ -28,12 +28,11 @@ class MerchantXChartOfAccountController {
                             model: Filial,
                             as: 'filial',
                             where: { canceled_at: null },
-                        }
+                        },
                     ],
                     where: { canceled_at: null },
                     order: [['created_at', 'DESC']],
                 })
-
 
             return res.json(merchantXChartOfAccounts)
         } catch (err) {
@@ -51,26 +50,29 @@ class MerchantXChartOfAccountController {
             const { merchantxchartofaccount_id } = req.params
 
             const merchantXChartOfAccount =
-                await MerchantXChartOfAccount.findByPk(merchantxchartofaccount_id, {
-                    where: { canceled_at: null },
-                    include: [
-                        {
-                            model: Merchant,
-                            as: 'merchant',
-                            where: { canceled_at: null },
-                        },
-                        {
-                            model: ChartOfAccount,
-                            as: 'chartOfAccount',
-                            where: { canceled_at: null },
-                        },
-                        {
-                            model: Filial,
-                            as: 'filial',
-                            where: { canceled_at: null },
-                        },
-                    ],
-                })
+                await MerchantXChartOfAccount.findByPk(
+                    merchantxchartofaccount_id,
+                    {
+                        where: { canceled_at: null },
+                        include: [
+                            {
+                                model: Merchant,
+                                as: 'merchant',
+                                where: { canceled_at: null },
+                            },
+                            {
+                                model: ChartOfAccount,
+                                as: 'chartOfAccount',
+                                where: { canceled_at: null },
+                            },
+                            {
+                                model: Filial,
+                                as: 'filial',
+                                where: { canceled_at: null },
+                            },
+                        ],
+                    }
+                )
 
             if (!merchantXChartOfAccount) {
                 return res.status(400).json({
@@ -97,8 +99,10 @@ class MerchantXChartOfAccountController {
                 await MerchantXChartOfAccount.create(
                     {
                         ...req.body,
-                        company_id: req.companyId,
-                        filial_id: req.body.filial_id ? req.body.filial_id : req.headers.filial,
+                        company_id: 1,
+                        filial_id: req.body.filial_id
+                            ? req.body.filial_id
+                            : req.headers.filial,
                         created_at: new Date(),
                         created_by: req.userId,
                     },
@@ -127,7 +131,9 @@ class MerchantXChartOfAccountController {
             const { merchantxchartofaccount_id } = req.params
 
             const merchantXChartOfAccountExists =
-                await MerchantXChartOfAccount.findByPk(merchantxchartofaccount_id)
+                await MerchantXChartOfAccount.findByPk(
+                    merchantxchartofaccount_id
+                )
 
             if (!merchantXChartOfAccountExists) {
                 return res.status(401).json({
@@ -136,7 +142,12 @@ class MerchantXChartOfAccountController {
             }
 
             await merchantXChartOfAccountExists.update(
-                { ...req.body, company_id: req.companyId, updated_by: req.userId, updated_at: new Date() },
+                {
+                    ...req.body,
+                    company_id: 1,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
                 {
                     transaction: t,
                 }
@@ -162,7 +173,9 @@ class MerchantXChartOfAccountController {
             const { merchantxchartofaccount_id } = req.params
 
             const merchantXChartOfAccountExists =
-                await MerchantXChartOfAccount.findByPk(merchantxchartofaccount_id)
+                await MerchantXChartOfAccount.findByPk(
+                    merchantxchartofaccount_id
+                )
 
             if (!merchantXChartOfAccountExists) {
                 return res.status(401).json({
