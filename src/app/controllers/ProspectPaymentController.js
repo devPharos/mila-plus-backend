@@ -155,9 +155,9 @@ class ProspectPaymentController {
                 })
             }
 
-            let amount = registrationFee.dataValues.amount
+            let amount = registrationFee.dataValues.total
             if (tuitionFee) {
-                amount += tuitionFee.dataValues.amount
+                amount += tuitionFee.dataValues.total
             }
 
             emergepay
@@ -183,12 +183,12 @@ class ProspectPaymentController {
                         ? `<tr>
                         <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
                             <strong>English course - 4 weeks</strong><br/>
-                            <span style="font-size: 12px;">1 X $ ${tuitionFee.dataValues.amount.toFixed(
+                            <span style="font-size: 12px;">1 X $ ${tuitionFee.dataValues.total.toFixed(
                                 2
                             )}</span>
                         </td>
                         <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                            $ ${tuitionFee.dataValues.amount.toFixed(2)}
+                            $ ${tuitionFee.dataValues.total.toFixed(2)}
                         </td>
                     </tr>`
                         : ''
@@ -293,12 +293,12 @@ class ProspectPaymentController {
                                                                 <tr>
                                                                     <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
                                                                         <strong>English course - Registration fee</strong><br/>
-                                                                        <span style="font-size: 12px;">1 X $ ${registrationFee.dataValues.amount.toFixed(
+                                                                        <span style="font-size: 12px;">1 X $ ${registrationFee.dataValues.total.toFixed(
                                                                             2
                                                                         )}</span>
                                                                     </td>
                                                                     <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                                        $ ${registrationFee.dataValues.amount.toFixed(
+                                                                        $ ${registrationFee.dataValues.total.toFixed(
                                                                             2
                                                                         )}
                                                                     </td>

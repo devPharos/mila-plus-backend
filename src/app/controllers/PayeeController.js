@@ -206,14 +206,6 @@ class PayeeController {
             }
 
             if (
-                req.body.first_due_date &&
-                payeeExists.first_due_date &&
-                req.body.first_due_date !== payeeExists.first_due_date
-            ) {
-                oldFistDueDate = payeeExists.first_due_date
-            }
-
-            if (
                 req.body.due_date &&
                 payeeExists.due_date &&
                 req.body.due_date !== payeeExists.due_date

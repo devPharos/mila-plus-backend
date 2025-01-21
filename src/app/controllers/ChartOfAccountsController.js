@@ -136,7 +136,6 @@ class ChartOfAccountsController {
             const chartofaccounts = await Chartofaccount.findAll({
                 where: {
                     canceled_at: null,
-                    company_id: req.companyId,
                     code: {
                         [Op.and]: [
                             {

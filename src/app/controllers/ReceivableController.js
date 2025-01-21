@@ -10,16 +10,16 @@ import ReceivableInstallment from '../models/ReceivableInstallment'
 import Issuer from '../models/Issuer'
 import ReceivableInstallmentController from './ReceivableInstallmentController'
 import FilialPriceList from '../models/FilialPriceList'
+import FilialDiscountList from '../models/FilialDiscountList'
 import Student from '../models/Student'
 import { addDays, differenceInDays, format, parseISO } from 'date-fns'
 import { searchPromise } from '../functions/searchPromise'
 import { mailer } from '../../config/mailer'
-import MailLayout from '../../Mails/MailLayout'
 import { emergepay } from '../../config/emergepay'
-import Enrollment from '../models/Enrollment'
 import Recurrence from '../models/Recurrence'
 import Emergepaytransaction from '../models/Emergepaytransaction'
 import Receivablediscounts from '../models/Receivablediscounts'
+import Studentdiscount from '../models/Studentdiscount'
 
 export async function createRegistrationFeeReceivable({
     issuer_id,
@@ -32,7 +32,28 @@ export async function createRegistrationFeeReceivable({
         }
         const { company_id, filial_id, name, student_id } = issuer.dataValues
 
-        const student = await Student.findByPk(student_id)
+        const student = await Student.findByPk(student_id, {
+            include: [
+                {
+                    model: Studentdiscount,
+                    as: 'discounts',
+                    required: false,
+                    where: {
+                        canceled_at: null,
+                    },
+                    include: [
+                        {
+                            model: FilialDiscountList,
+                            as: 'discount',
+                            required: false,
+                            where: {
+                                canceled_at: null,
+                            },
+                        },
+                    ],
+                },
+            ],
+        })
 
         if (!student) {
             return null
@@ -50,6 +71,18 @@ export async function createRegistrationFeeReceivable({
             return null
         }
 
+        let totalAmount = filialPriceList.dataValues.registration_fee
+
+        totalAmount = applyDiscounts({
+            applied_at: 'Registration',
+            type: 'Admission',
+            studentDiscounts: student.discounts,
+            totalAmount,
+        })
+
+        const discount =
+            filialPriceList.dataValues.registration_fee - totalAmount
+
         const receivable = await Receivable.create({
             company_id,
             filial_id,
@@ -58,7 +91,6 @@ export async function createRegistrationFeeReceivable({
             due_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
             type: 'Invoice',
             type_detail: 'Registration fee',
-            first_due_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
             status: 'Pending',
             status_date: format(addDays(new Date(), 0), 'yyyyMMdd'),
             memo: `Registration fee - ${name}`,
@@ -67,8 +99,10 @@ export async function createRegistrationFeeReceivable({
             chartofaccount_id: 8,
             is_recurrence: false,
             contract_number: '',
+            discount: discount.toFixed(2),
             amount: filialPriceList.dataValues.registration_fee,
-            total: filialPriceList.dataValues.registration_fee,
+            total: totalAmount,
+            balance: totalAmount,
             paymentmethod_id: 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
             paymentcriteria_id: '97db98d7-6ce3-4fe1-83e8-9042d41404ce',
             created_at: new Date(),
@@ -96,7 +130,28 @@ export async function createTuitionFeeReceivable({
         }
         const { company_id, filial_id, name, student_id } = issuer.dataValues
 
-        const student = await Student.findByPk(student_id)
+        const student = await Student.findByPk(student_id, {
+            include: [
+                {
+                    model: Studentdiscount,
+                    as: 'discounts',
+                    required: false,
+                    where: {
+                        canceled_at: null,
+                    },
+                    include: [
+                        {
+                            model: FilialDiscountList,
+                            as: 'discount',
+                            required: false,
+                            where: {
+                                canceled_at: null,
+                            },
+                        },
+                    ],
+                },
+            ],
+        })
 
         if (!student) {
             console.log('Student not found')
@@ -112,14 +167,23 @@ export async function createTuitionFeeReceivable({
         })
 
         if (!filialPriceList) {
-            console.log('FilialPriceList not found')
             return null
         }
 
         if (in_advance && !filialPriceList.dataValues.tuition_in_advance) {
-            console.log('Tuition fee not in advance')
             return null
         }
+
+        let totalAmount = filialPriceList.dataValues.tuition
+
+        totalAmount = applyDiscounts({
+            applied_at: 'Tuition',
+            type: 'Admission',
+            studentDiscounts: student.discounts,
+            totalAmount,
+        })
+
+        const discount = filialPriceList.dataValues.tuition - totalAmount
 
         const receivable = await Receivable.create({
             company_id,
@@ -130,17 +194,18 @@ export async function createTuitionFeeReceivable({
             type: 'Invoice',
             type_detail: 'Tuition fee',
             invoice_number,
-            first_due_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
             status: 'Pending',
             status_date: format(addDays(new Date(), 0), 'yyyyMMdd'),
             memo: `Tuition fee ${in_advance ? '(in advance) ' : ''}- ${name}`,
             fee: 0,
+            discount: discount.toFixed(2),
             authorization_code: null,
             chartofaccount_id: 8,
             is_recurrence: false,
             contract_number: '',
             amount: filialPriceList.dataValues.tuition,
-            total: filialPriceList.dataValues.tuition,
+            total: totalAmount,
+            balance: totalAmount,
             paymentmethod_id: 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
             paymentcriteria_id: '97db98d7-6ce3-4fe1-83e8-9042d41404ce',
             created_at: new Date(),
@@ -153,6 +218,46 @@ export async function createTuitionFeeReceivable({
         MailLog({ className, functionName, req: null, err })
         return null
     }
+}
+
+export function applyDiscounts({
+    applied_at,
+    type = null,
+    studentDiscounts,
+    totalAmount,
+    due_date = null,
+}) {
+    if (studentDiscounts && studentDiscounts.length > 0) {
+        let hasDiscounts = studentDiscounts.filter(
+            ({ dataValues: discount }) =>
+                discount.discount.dataValues.applied_at.includes(applied_at) &&
+                discount.discount.dataValues.type === type &&
+                discount.discount.dataValues.active
+        )
+        if (due_date) {
+            hasDiscounts = hasDiscounts.filter(({ dataValues: discount }) => {
+                if (discount.end_date) {
+                    return (
+                        discount.start_date <= due_date &&
+                        discount.end_date >= due_date
+                    )
+                } else {
+                    return discount.start_date <= due_date
+                }
+            })
+        }
+        if (hasDiscounts.length > 0) {
+            hasDiscounts.forEach(({ dataValues: discount }) => {
+                if (discount.discount.dataValues.percent) {
+                    totalAmount -=
+                        (totalAmount * discount.discount.dataValues.value) / 100
+                } else {
+                    totalAmount -= discount.discount.dataValues.value
+                }
+            })
+        }
+    }
+    return totalAmount
 }
 
 export async function sendInvoiceRecurrenceJob() {
@@ -581,6 +686,16 @@ class ReceivableController {
                 orderASC = 'DESC',
                 search = '',
             } = req.query
+            let searchOrder = []
+            if (orderBy.includes(',')) {
+                searchOrder.push([
+                    orderBy.split(',')[0],
+                    orderBy.split(',')[1],
+                    orderASC,
+                ])
+            } else {
+                searchOrder.push([orderBy, orderASC])
+            }
             const receivables = await Receivable.findAll({
                 include: [
                     {
@@ -632,7 +747,7 @@ class ReceivableController {
                         },
                     ],
                 },
-                order: [[orderBy, orderASC]],
+                order: searchOrder,
             })
 
             const fields = [
@@ -781,13 +896,6 @@ class ReceivableController {
                 where: { canceled_at: null },
                 include: [
                     {
-                        model: ReceivableInstallment,
-                        as: 'installments',
-                        required: false,
-                        where: { canceled_at: null },
-                        order: [['installment', 'ASC']],
-                    },
-                    {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
                         required: false,
@@ -800,14 +908,6 @@ class ReceivableController {
                 return res
                     .status(401)
                     .json({ error: 'Receivable does not exist.' })
-            }
-
-            if (
-                req.body.first_due_date &&
-                receivableExists.first_due_date &&
-                req.body.first_due_date !== receivableExists.first_due_date
-            ) {
-                oldFistDueDate = receivableExists.first_due_date
             }
 
             if (
@@ -828,113 +928,6 @@ class ReceivableController {
                     transaction: t,
                 }
             )
-
-            if (
-                receivableExists?.installments &&
-                receivableExists.installments.length > 0
-            ) {
-                oldInstallments = receivableExists.installments
-            }
-
-            const { installmentsItems } =
-                await ReceivableInstallmentController.allInstallmentsByDateInterval(
-                    receivableExists
-                )
-
-            if (
-                installmentsItems &&
-                installmentsItems.length > 0 &&
-                oldInstallments.length > 0
-            ) {
-                let updatedInstallments = []
-                const allDiffs = oldInstallments.filter(
-                    (oldItem) =>
-                        !installmentsItems.some(
-                            (newItem) =>
-                                newItem.installment === oldItem.installment
-                        )
-                )
-
-                if (allDiffs.length > 0) {
-                    for (let i = 0; i < allDiffs.length; i++) {
-                        const itemDiff = allDiffs[i]
-
-                        if (!itemDiff.id) {
-                            return
-                        }
-
-                        if (oldFistDueDate && itemDiff.due_date) {
-                            const dueDate = new Date(itemDiff.due_date)
-                            const entryDate = new Date(oldFistDueDate)
-
-                            if (entryDate < dueDate) {
-                                await ReceivableInstallment.update(
-                                    {
-                                        canceled_at: new Date(),
-                                        canceled_by: req.userId,
-                                        updated_at: new Date(),
-                                        updated_by: req.userId,
-                                    },
-                                    {
-                                        where: {
-                                            receivable_id: receivableExists.id,
-                                            installment: 1,
-                                        },
-                                        transaction: t,
-                                    }
-                                )
-
-                                await t.commit()
-
-                                updatedInstallments.push(true)
-
-                                break
-                            }
-                        }
-
-                        if (oldDueDate && itemDiff.due_date) {
-                            const statusDate = new Date(itemDiff.due_date)
-
-                            if (
-                                statusDate >= new Date(oldDueDate) &&
-                                statusDate <=
-                                    new Date(receivableExists.due_date)
-                            ) {
-                                await ReceivableInstallment.update(
-                                    {
-                                        canceled_at: new Date(),
-                                        canceled_by: req.userId,
-                                        updated_at: new Date(),
-                                        updated_by: req.userId,
-                                    },
-                                    {
-                                        transaction: t,
-                                        where: {
-                                            receivable_id: receivableExists.id,
-                                            installment: itemDiff.installment,
-                                        },
-                                    }
-                                )
-
-                                updatedInstallments.push(true)
-                                break
-                            }
-                        }
-                    }
-                }
-
-                if (updatedInstallments.length > 0) {
-                    const newInstallmentsItens =
-                        await ReceivableInstallmentController.allInstallmentsByDateInterval(
-                            receivableExists
-                        )
-
-                    receivableExists.installments =
-                        newInstallmentsItens.installmentsItems || []
-                } else {
-                    receivableExists.installments = installmentsItems || []
-                }
-            }
 
             await t.commit()
 

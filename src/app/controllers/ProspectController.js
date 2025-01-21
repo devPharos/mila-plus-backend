@@ -260,6 +260,8 @@ class ProspectController {
                                     'value',
                                     'percent',
                                     'type',
+                                    'applied_at',
+                                    'active',
                                 ],
                             },
                         ],

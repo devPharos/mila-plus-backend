@@ -165,6 +165,8 @@ class StudentController {
                                     'value',
                                     'percent',
                                     'type',
+                                    'applied_at',
+                                    'active',
                                 ],
                             },
                         ],

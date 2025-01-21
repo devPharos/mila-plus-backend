@@ -36,7 +36,12 @@ export async function handleStudentDiscounts({
                     d.dataValues.filial_discount_list_id ===
                     discount.filial_discount_list_id
             )
-            const { filial_discount_list_id, start_date, end_date } = discount
+            const {
+                filial_discount_list_id,
+                start_date,
+                end_date,
+                applied_at,
+            } = discount
             if (!hasDiscount) {
                 await Studentdiscount.create({
                     student_id,
@@ -45,6 +50,7 @@ export async function handleStudentDiscounts({
                         ? start_date.replaceAll('-', '')
                         : null,
                     end_date: end_date ? end_date.replaceAll('-', '') : null,
+                    applied_at,
                     created_by: 2,
                     created_at: new Date(),
                 })
@@ -58,6 +64,7 @@ export async function handleStudentDiscounts({
                         end_date: end_date
                             ? end_date.replaceAll('-', '')
                             : null,
+                        applied_at,
                         updated_by: 2,
                         updated_at: new Date(),
                     },
