@@ -18,7 +18,7 @@ class StudentController {
                 {
                     filial_id: req.headers.filial,
                     ...req.body,
-                    company_id: req.companyId,
+                    company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -99,7 +99,7 @@ class StudentController {
                         as: 'filial',
                         required: true,
                         where: {
-                            company_id: req.companyId,
+                            company_id: 1,
                             canceled_at: null,
                         },
                     },
@@ -165,6 +165,8 @@ class StudentController {
                                     'value',
                                     'percent',
                                     'type',
+                                    'applied_at',
+                                    'active',
                                 ],
                             },
                         ],

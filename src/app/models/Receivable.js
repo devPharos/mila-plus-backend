@@ -42,10 +42,6 @@ class Receivable extends Model {
                     type: Sequelize.STRING,
                     allowNull: false,
                 },
-                first_due_date: {
-                    type: Sequelize.STRING,
-                    allowNull: false,
-                },
                 due_date: {
                     type: Sequelize.STRING,
                     allowNull: false,
@@ -75,6 +71,10 @@ class Receivable extends Model {
                     defaultValue: 0,
                 },
                 total: {
+                    type: Sequelize.FLOAT,
+                    defaultValue: 0,
+                },
+                balance: {
                     type: Sequelize.FLOAT,
                     defaultValue: 0,
                 },

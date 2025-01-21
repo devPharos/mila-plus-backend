@@ -15,6 +15,7 @@ class Receivablediscounts extends Model {
                 type: Sequelize.STRING,
                 value: Sequelize.FLOAT,
                 percent: Sequelize.BOOLEAN,
+                applied_at: Sequelize.STRING,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,

@@ -125,7 +125,7 @@ class ReceivableInstallmentController {
             }
 
             const installmentsItens = []
-            const enTryDate = new Date(resources.first_due_date)
+            const enTryDate = new Date(resources.due_date)
             const dueDate = new Date(resources.due_date)
 
             const paymentCriteria = resources.paymentcriteria_id
@@ -262,7 +262,7 @@ class ReceivableInstallmentController {
             const recurringQt = paymentCriteria.recurring_qt || 1
 
             const diffDate = this.calculateDateDifference(
-                new Date(resources.first_due_date),
+                new Date(resources.due_date),
                 new Date(resources.due_date),
                 recurringQt,
                 recurringMetric
@@ -340,7 +340,7 @@ class ReceivableInstallmentController {
         diffDate
     ) {
         let installmentsItems = []
-        let oldStatusDate = new Date(resources.first_due_date)
+        let oldStatusDate = new Date(resources.due_date)
 
         for (let i = 0; i < diffDate; i++) {
             const newStatusDate = this.getNextStatusDate(

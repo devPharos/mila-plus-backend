@@ -12,10 +12,8 @@ class Studentdiscount extends Model {
                 },
                 student_id: Sequelize.UUID,
                 filial_discount_list_id: Sequelize.UUID,
-
                 start_date: Sequelize.STRING,
                 end_date: Sequelize.STRING,
-
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,

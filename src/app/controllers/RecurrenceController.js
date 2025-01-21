@@ -14,6 +14,7 @@ import {
     addYears,
     format,
     parseISO,
+    subDays,
 } from 'date-fns'
 import PaymentCriteria from '../models/PaymentCriteria'
 import { searchPromise } from '../functions/searchPromise'
@@ -21,6 +22,7 @@ import { handleStudentDiscounts } from '../functions'
 import Studentdiscount from '../models/Studentdiscount'
 import FilialDiscountList from '../models/FilialDiscountList'
 import Receivablediscounts from '../models/Receivablediscounts'
+import { applyDiscounts } from './ReceivableController'
 
 export async function generateRecurrenceReceivables(recurrence) {
     try {
@@ -28,7 +30,7 @@ export async function generateRecurrenceReceivables(recurrence) {
         if (!issuer) {
             return null
         }
-        const { company_id, filial_id, name, student_id } = issuer.dataValues
+        const { filial_id, name, student_id } = issuer.dataValues
 
         const student = await Student.findByPk(student_id, {
             include: [
@@ -77,13 +79,11 @@ export async function generateRecurrenceReceivables(recurrence) {
             return null
         }
 
-        const openedReceivables = await Receivable.findAll({
+        const receivables = await Receivable.findAll({
             where: {
-                company_id,
                 filial_id,
                 issuer_id: issuer.id,
                 type_detail: 'Tuition fee',
-                status: 'Pending',
                 canceled_at: null,
             },
             include: [
@@ -98,53 +98,62 @@ export async function generateRecurrenceReceivables(recurrence) {
             ],
         })
 
-        openedReceivables.map((receivable) => {
-            receivable.update({
-                canceled_at: new Date(),
-                canceled_by: recurrence.dataValues.created_by,
+        receivables
+            .filter((receivable) => receivable.status === 'Pending')
+            .map((receivable) => {
+                receivable.update({
+                    canceled_at: new Date(),
+                    canceled_by: recurrence.dataValues.created_by,
+                })
             })
-        })
+
+        let lastPaidReceivable = null
+        const paid = receivables.filter(
+            (receivable) => receivable.status === 'Paid'
+        )
+
+        if (paid.length > 0) {
+            lastPaidReceivable = paid.sort((a, b) => a.due_date - b.due_date)[0]
+        }
 
         const { recurring_metric, recurring_qt } = paymentCriteria.dataValues
 
-        for (let i = 0; i < 12; i++) {
+        const calc_date = lastPaidReceivable
+            ? parseISO(lastPaidReceivable.dataValues.due_date)
+            : parseISO(recurrence.dataValues.first_due_date)
+
+        for (let i = paid.length; i < 12 + paid.length; i++) {
             let entry_date = null
             let due_date = null
-            let first_due_date = null
             let qt = i * recurring_qt
-            const calc_date = parseISO(recurrence.dataValues.first_due_date)
 
             if (recurring_metric === 'Day') {
-                entry_date = format(addDays(calc_date, qt), 'yyyyMMdd')
-                due_date = format(
-                    addDays(addDays(calc_date, qt), 3),
+                entry_date = format(
+                    subDays(addDays(calc_date, qt), 3),
                     'yyyyMMdd'
                 )
-                first_due_date = format(addDays(calc_date, qt), 'yyyyMMdd')
+                due_date = format(addDays(calc_date, qt), 'yyyyMMdd')
             } else if (recurring_metric === 'Week') {
-                entry_date = format(addWeeks(calc_date, qt), 'yyyyMMdd')
-                due_date = format(
-                    addDays(addWeeks(calc_date, qt), 3),
+                entry_date = format(
+                    subDays(addWeeks(calc_date, qt), 3),
                     'yyyyMMdd'
                 )
-                first_due_date = format(addWeeks(calc_date, qt), 'yyyyMMdd')
+                due_date = format(addWeeks(calc_date, qt), 'yyyyMMdd')
             } else if (recurring_metric === 'Month') {
-                entry_date = format(addMonths(calc_date, qt), 'yyyyMMdd')
-                due_date = format(
-                    addDays(addMonths(calc_date, qt), 3),
+                entry_date = format(
+                    subDays(addMonths(calc_date, qt), 3),
                     'yyyyMMdd'
                 )
-                first_due_date = format(addMonths(calc_date, qt), 'yyyyMMdd')
+                due_date = format(addMonths(calc_date, qt), 'yyyyMMdd')
             } else if (recurring_metric === 'Year') {
-                entry_date = format(addYears(calc_date, qt), 'yyyyMMdd')
-                due_date = format(
-                    addDays(addYears(calc_date, qt), 3),
+                entry_date = format(
+                    subDays(addYears(calc_date, qt), 3),
                     'yyyyMMdd'
                 )
-                first_due_date = format(addYears(calc_date, qt), 'yyyyMMdd')
+                due_date = format(addYears(calc_date, qt), 'yyyyMMdd')
             }
 
-            let receivableAmount = filialPriceList.dataValues.tuition
+            let totalAmount = filialPriceList.dataValues.tuition
 
             const appliedDiscounts = []
             student.dataValues.discounts.map((discount) => {
@@ -153,6 +162,7 @@ export async function generateRecurrenceReceivables(recurrence) {
                     discount.dataValues.start_date &&
                     due_date < discount.dataValues.start_date
                 ) {
+                    console.log('Not after start date')
                     applyDiscount = false
                 }
 
@@ -162,26 +172,35 @@ export async function generateRecurrenceReceivables(recurrence) {
                 ) {
                     applyDiscount = false
                 }
+
+                // Contains Tuition
+                if (
+                    !discount.dataValues.discount.dataValues.applied_at.includes(
+                        'Tuition'
+                    )
+                ) {
+                    applyDiscount = false
+                }
+
                 if (applyDiscount) {
                     appliedDiscounts.push(discount.discount)
-                    if (discount.discount.percent) {
-                        receivableAmount =
-                            receivableAmount *
-                            (1 - discount.discount.value / 100)
-                    } else {
-                        receivableAmount =
-                            receivableAmount - discount.discount.value
-                    }
                 }
             })
 
+            totalAmount = applyDiscounts({
+                applied_at: 'Tuition',
+                type: 'Financial',
+                studentDiscounts: student.dataValues.discounts,
+                totalAmount,
+                due_date,
+            })
+
             await Receivable.create({
-                company_id,
+                company_id: 1,
                 filial_id,
                 issuer_id: issuer.id,
                 entry_date,
                 due_date,
-                first_due_date,
                 type: 'Invoice',
                 type_detail: 'Tuition fee',
                 status: 'Pending',
@@ -193,8 +212,9 @@ export async function generateRecurrenceReceivables(recurrence) {
                 is_recurrence: true,
                 contract_number: '',
                 amount: filialPriceList.dataValues.tuition,
-                discount: filialPriceList.dataValues.tuition - receivableAmount,
-                total: receivableAmount,
+                discount: filialPriceList.dataValues.tuition - totalAmount,
+                total: totalAmount,
+                balance: totalAmount,
                 paymentmethod_id: recurrence.dataValues.paymentmethod_id,
                 paymentcriteria_id: recurrence.dataValues.paymentcriteria_id,
                 created_at: new Date(),
@@ -335,6 +355,8 @@ class RecurrenceController {
                                     'value',
                                     'percent',
                                     'type',
+                                    'applied_at',
+                                    'active',
                                 ],
                             },
                         ],
@@ -368,7 +390,7 @@ class RecurrenceController {
             })
             let recurrence = await Recurrence.findOne({
                 where: {
-                    company_id: req.companyId,
+                    company_id: 1,
                     filial_id: req.body.filial_id,
                     issuer_id: issuer.id,
                     canceled_at: null,
@@ -378,7 +400,7 @@ class RecurrenceController {
             if (!recurrence) {
                 recurrence = await Recurrence.create(
                     {
-                        company_id: req.companyId,
+                        company_id: 1,
                         filial_id: req.body.filial_id,
                         ...req.body,
                         amount: req.body.prices.total_tuition,

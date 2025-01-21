@@ -144,7 +144,7 @@ class PayeeController {
                         : req.body.amount
                         ? req.body.amount
                         : 0,
-                    company_id: req.companyId,
+                    company_id: 1,
                     status: 'Pending',
                     status_date: new Date().toString(),
                     filial_id: req.body.filial_id
@@ -203,14 +203,6 @@ class PayeeController {
 
             if (!payeeExists) {
                 return res.status(401).json({ error: 'Payee does not exist.' })
-            }
-
-            if (
-                req.body.first_due_date &&
-                payeeExists.first_due_date &&
-                req.body.first_due_date !== payeeExists.first_due_date
-            ) {
-                oldFistDueDate = payeeExists.first_due_date
             }
 
             if (

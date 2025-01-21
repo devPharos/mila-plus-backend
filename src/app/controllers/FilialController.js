@@ -127,7 +127,7 @@ class FilialController {
             const filials = await Filial.findAll({
                 where: {
                     canceled_at: null,
-                    // company_id: req.companyId,
+                    // company_id: 1,
                     [Op.not]: { alias: 'AAA' },
                     [Op.or]: [
                         {
@@ -168,7 +168,7 @@ class FilialController {
         try {
             const filialExist = await Filial.findOne({
                 where: {
-                    company_id: req.companyId,
+                    company_id: 1,
                     ein: req.body.ein,
                     canceled_at: null,
                 },
@@ -182,7 +182,7 @@ class FilialController {
 
             const newFilial = await Filial.create(
                 {
-                    company_id: req.companyId,
+                    company_id: 1,
                     ...req.body,
                     created_by: req.userId,
                     created_at: new Date(),
@@ -212,7 +212,7 @@ class FilialController {
                     const password = randomPassword()
 
                     await Milauser.create({
-                        company_id: req.companyId,
+                        company_id: 1,
                         name,
                         email,
                         password,
@@ -318,7 +318,7 @@ class FilialController {
             if (req.body.parking_spot_image) {
                 const fileCreated = await File.create(
                     {
-                        company_id: req.companyId || 1,
+                        company_id: 1,
                         name: req.body.parking_spot_image.name,
                         size: req.body.parking_spot_image.size || 0,
                         url: req.body.parking_spot_image.url,
@@ -498,7 +498,7 @@ class FilialController {
 
                         await Milauser.create(
                             {
-                                company_id: req.companyId,
+                                company_id: 1,
                                 name,
                                 email,
                                 password,

@@ -26,7 +26,7 @@ class ProspectController {
                 {
                     filial_id: req.headers.filial,
                     ...req.body,
-                    company_id: req.companyId,
+                    company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -260,6 +260,8 @@ class ProspectController {
                                     'value',
                                     'percent',
                                     'type',
+                                    'applied_at',
+                                    'active',
                                 ],
                             },
                         ],
@@ -299,7 +301,7 @@ class ProspectController {
                         as: 'filial',
                         required: true,
                         where: {
-                            company_id: req.companyId,
+                            company_id: 1,
                             canceled_at: null,
                         },
                     },

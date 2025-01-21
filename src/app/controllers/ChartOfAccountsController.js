@@ -136,7 +136,6 @@ class ChartOfAccountsController {
             const chartofaccounts = await Chartofaccount.findAll({
                 where: {
                     canceled_at: null,
-                    company_id: req.companyId,
                     code: {
                         [Op.and]: [
                             {
@@ -196,7 +195,7 @@ class ChartOfAccountsController {
             const chartofaccounts = await Chartofaccount.findAll({
                 where: {
                     canceled_at: null,
-                    company_id: req.companyId,
+                    company_id: 1,
                     code: {
                         [Op.notIn]: ['01', '02'],
                     },
@@ -280,7 +279,7 @@ class ChartOfAccountsController {
         try {
             const chartofaccountExist = await Chartofaccount.findOne({
                 where: {
-                    company_id: req.companyId,
+                    company_id: 1,
                     father_id: req.body.father_id,
                     name: req.body.name,
                     canceled_at: null,
@@ -323,7 +322,7 @@ class ChartOfAccountsController {
 
             const newChartofaccount = await Chartofaccount.create(
                 {
-                    company_id: req.companyId,
+                    company_id: 1,
                     code: nextCode,
                     ...req.body,
                     created_by: req.userId,
