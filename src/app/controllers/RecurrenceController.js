@@ -162,7 +162,6 @@ export async function generateRecurrenceReceivables(recurrence) {
                     discount.dataValues.start_date &&
                     due_date < discount.dataValues.start_date
                 ) {
-                    console.log('Not after start date')
                     applyDiscount = false
                 }
 

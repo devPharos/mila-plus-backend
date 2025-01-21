@@ -12,7 +12,7 @@ import ReceivableInstallmentController from './ReceivableInstallmentController'
 import FilialPriceList from '../models/FilialPriceList'
 import FilialDiscountList from '../models/FilialDiscountList'
 import Student from '../models/Student'
-import { addDays, differenceInDays, format, parseISO } from 'date-fns'
+import { addDays, differenceInDays, format, parseISO, subDays } from 'date-fns'
 import { searchPromise } from '../functions/searchPromise'
 import { mailer } from '../../config/mailer'
 import { emergepay } from '../../config/emergepay'
@@ -262,7 +262,12 @@ export function applyDiscounts({
 
 export async function sendInvoiceRecurrenceJob() {
     try {
-        console.log('Verifying Invoice Recurrence Job')
+        const date = subDays(new Date(), 2)
+        const searchDate =
+            date.getFullYear() +
+            (date.getMonth() + 1).toString().padStart(2, '0') +
+            date.getDate()
+        console.log(`Verifying Invoice Recurrence Job on date: ${searchDate}`)
         const receivables = await Receivable.findAll({
             include: [
                 {
@@ -285,17 +290,16 @@ export async function sendInvoiceRecurrenceJob() {
                 },
             ],
             where: {
-                company_id: 1,
                 is_recurrence: true,
                 canceled_at: null,
                 status: 'Pending',
                 type: 'Invoice',
                 type_detail: 'Tuition fee',
-                entry_date: format(new Date(), 'yyyyMMdd'),
+                due_date: `${searchDate}`,
             },
         })
 
-        console.log(receivables.length + ' receivables found')
+        console.log(`Receivables found:`, receivables.length)
 
         receivables.map(async (receivable) => {
             const issuerExists = await Issuer.findByPk(
@@ -320,38 +324,38 @@ export async function sendInvoiceRecurrenceJob() {
                 })
             }
 
-            let amount = tuitionFee.dataValues.amount
+            let amount = tuitionFee.dataValues.total
             const invoice_number = tuitionFee.dataValues.invoice_number
                 .toString()
                 .padStart(6, '0')
 
             let paymentInfoHTML = ''
+            const firstReceivable = await Receivable.findOne({
+                where: {
+                    company_id: receivable.dataValues.company_id,
+                    filial_id: receivable.dataValues.filial_id,
+                    issuer_id: receivable.dataValues.issuer_id,
+                    type: 'Invoice',
+                    type_detail: 'Tuition fee',
+                    status: 'Paid',
+                    canceled_at: null,
+                },
+                order: [['due_date', 'DESC']],
+            })
+            const tokenizedTransaction = await Emergepaytransaction.findOne({
+                where: {
+                    external_transaction_id: firstReceivable.id,
+                    canceled_at: null,
+                },
+            })
             if (
                 receivable.dataValues.issuer?.dataValues?.issuer_x_recurrence
-                    ?.dataValues?.is_autopay
+                    ?.dataValues?.is_autopay &&
+                tokenizedTransaction
             ) {
-                console.log('is autopay')
-                const firstReceivable = await Receivable.findOne({
-                    where: {
-                        company_id: receivables.dataValues.company_id,
-                        filial_id: receivables.dataValues.filial_id,
-                        issuer_id: receivables.dataValues.issuer_id,
-                        type: 'Invoice',
-                        type_detail: 'Tuition fee',
-                        status: 'Paid',
-                        canceled_at: null,
-                    },
-                    order: [['due_date', 'DESC']],
-                })
-                const lastTransaction = await Emergepaytransaction.findOne({
-                    where: {
-                        external_transaction_id: firstReceivable.id,
-                        canceled_at: null,
-                    },
-                })
                 emergepay
                     .tokenizedPaymentTransaction({
-                        uniqueTransId: lastTransaction.id,
+                        uniqueTransId: tokenizedTransaction.dataValues.id,
                         externalTransactionId: receivable.id,
                         amount: amount.toFixed(2),
                         billingName: issuerExists.dataValues.name,
@@ -379,13 +383,14 @@ export async function sendInvoiceRecurrenceJob() {
                             invoice_number,
                             paymentInfoHTML
                         )
+                        console.log('Payment sent to student successfully!')
                     })
             } else {
                 console.log('is not autopay')
                 emergepay
                     .startTextToPayTransaction({
                         amount: amount.toFixed(2),
-                        externalTransactionId: receivable.id,
+                        externalTransactionId: receivable.dataValues.id,
                         // Optional
                         billingName: issuerExists.dataValues.name,
                         billingAddress: issuerExists.dataValues.address,
@@ -410,6 +415,7 @@ export async function sendInvoiceRecurrenceJob() {
                             invoice_number,
                             paymentInfoHTML
                         )
+                        console.log('Payment sent to student successfully!')
                     })
             }
         })
@@ -512,16 +518,18 @@ export async function sendInvoiceRecurrenceJob() {
                                                         <td style="color: #444; text-align: center; padding: 4px;">
                                                             <table width="100%" cellpadding="0" cellspacing="0" style="overflow: hidden;padding: 0 40px;">
                                                                 <tr>
-                        <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
-                            <strong>English course - 4 weeks</strong><br/>
-                            <span style="font-size: 12px;">1 X $ ${tuitionFee.dataValues.amount.toFixed(
-                                2
-                            )}</span>
-                        </td>
-                        <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                            $ ${tuitionFee.dataValues.amount.toFixed(2)}
-                        </td>
-                    </tr>
+                                                                    <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                        <strong>English course - 4 weeks</strong><br/>
+                                                                        <span style="font-size: 12px;">1 X $ ${tuitionFee.dataValues.total.toFixed(
+                                                                            2
+                                                                        )}</span>
+                                                                    </td>
+                                                                    <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                        $ ${tuitionFee.dataValues.total.toFixed(
+                                                                            2
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
                                                                 <tr>
                                                                     <td colspan="2" style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
                                                                         Balance due <span style="margin-left: 10px;">$ ${amount.toFixed(
