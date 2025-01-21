@@ -30,7 +30,7 @@ export async function generateRecurrenceReceivables(recurrence) {
         if (!issuer) {
             return null
         }
-        const { company_id, filial_id, name, student_id } = issuer.dataValues
+        const { filial_id, name, student_id } = issuer.dataValues
 
         const student = await Student.findByPk(student_id, {
             include: [
@@ -81,7 +81,6 @@ export async function generateRecurrenceReceivables(recurrence) {
 
         const receivables = await Receivable.findAll({
             where: {
-                company_id,
                 filial_id,
                 issuer_id: issuer.id,
                 type_detail: 'Tuition fee',
@@ -197,7 +196,7 @@ export async function generateRecurrenceReceivables(recurrence) {
             })
 
             await Receivable.create({
-                company_id,
+                company_id: 1,
                 filial_id,
                 issuer_id: issuer.id,
                 entry_date,
