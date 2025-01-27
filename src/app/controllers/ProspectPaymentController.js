@@ -228,9 +228,9 @@ class ProspectPaymentController {
                         amount: amount.toFixed(2),
                         externalTransactionId: registrationFee_id,
                         // Optional
-                        billingName: issuerExists.dataValues.name,
-                        billingAddress: issuerExists.dataValues.address,
-                        billingPostalCode: issuerExists.dataValues.zip,
+                        // billingName: issuerExists.dataValues.name,
+                        // billingAddress: issuerExists.dataValues.address,
+                        // billingPostalCode: issuerExists.dataValues.zip,
                         promptTip: false,
                         pageDescription: `Registration Fee - ${issuerExists.dataValues.name}`,
                         transactionReference:
