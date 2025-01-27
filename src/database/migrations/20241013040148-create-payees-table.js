@@ -37,10 +37,6 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: true,
             },
-            first_due_date: {
-                type: Sequelize.STRING,
-                allowNull: true,
-            },
             due_date: {
                 type: Sequelize.STRING,
                 allowNull: true,
