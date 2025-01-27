@@ -24,6 +24,7 @@ import Studentdiscount from '../models/Studentdiscount'
 export async function createRegistrationFeeReceivable({
     issuer_id,
     created_by = null,
+    paymentmethod_id = null,
 }) {
     try {
         const issuer = await Issuer.findByPk(issuer_id)
@@ -103,7 +104,7 @@ export async function createRegistrationFeeReceivable({
             amount: filialPriceList.dataValues.registration_fee,
             total: totalAmount,
             balance: totalAmount,
-            paymentmethod_id: 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
+            paymentmethod_id,
             paymentcriteria_id: '97db98d7-6ce3-4fe1-83e8-9042d41404ce',
             created_at: new Date(),
             created_by: created_by || 2,
@@ -122,6 +123,7 @@ export async function createTuitionFeeReceivable({
     in_advance = false,
     created_by = null,
     invoice_number = null,
+    paymentmethod_id = null,
 }) {
     try {
         const issuer = await Issuer.findByPk(issuer_id)
@@ -154,7 +156,6 @@ export async function createTuitionFeeReceivable({
         })
 
         if (!student) {
-            console.log('Student not found')
             return null
         }
 
@@ -206,7 +207,7 @@ export async function createTuitionFeeReceivable({
             amount: filialPriceList.dataValues.tuition,
             total: totalAmount,
             balance: totalAmount,
-            paymentmethod_id: 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
+            paymentmethod_id,
             paymentcriteria_id: '97db98d7-6ce3-4fe1-83e8-9042d41404ce',
             created_at: new Date(),
             created_by: created_by || 2,
