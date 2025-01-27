@@ -29,18 +29,18 @@ class EmergepayController {
                         id: 'external_tran_id',
                         value: receivable_id,
                     },
-                    {
-                        id: 'billing_name',
-                        value: issuer.dataValues.name,
-                    },
-                    {
-                        id: 'billing_address',
-                        value: issuer.dataValues.address,
-                    },
-                    {
-                        id: 'billing_postal_code',
-                        value: issuer.dataValues.zip,
-                    },
+                    // {
+                    //     id: 'billing_name',
+                    //     value: issuer.dataValues.name,
+                    // },
+                    // {
+                    //     id: 'billing_address',
+                    //     value: issuer.dataValues.address,
+                    // },
+                    // {
+                    //     id: 'billing_postal_code',
+                    //     value: issuer.dataValues.zip,
+                    // },
                 ],
             }
 
