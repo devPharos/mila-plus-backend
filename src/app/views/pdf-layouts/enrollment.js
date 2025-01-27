@@ -270,7 +270,7 @@ export default async function enrollment(doc = null, id = '') {
     helperHeight += 30
 
     doc.font('Helvetica-Bold')
-        .text('ADDRESS IN THE USA (IF AVAIABLE)', 30, helperHeight)
+        .text('ADDRESS IN THE USA (IF AVAILABLE)', 30, helperHeight)
         .font('Helvetica')
 
     helperHeight += 12
