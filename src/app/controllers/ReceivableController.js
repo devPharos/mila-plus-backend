@@ -393,9 +393,9 @@ export async function sendInvoiceRecurrenceJob() {
                         amount: amount.toFixed(2),
                         externalTransactionId: receivable.dataValues.id,
                         // Optional
-                        billingName: issuerExists.dataValues.name,
-                        billingAddress: issuerExists.dataValues.address,
-                        billingPostalCode: issuerExists.dataValues.zip,
+                        // billingName: issuerExists.dataValues.name,
+                        // billingAddress: issuerExists.dataValues.address,
+                        // billingPostalCode: issuerExists.dataValues.zip,
                         promptTip: false,
                         pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
                         transactionReference: 'I' + invoice_number,
