@@ -2898,26 +2898,28 @@ export default async function enrollment(doc = null, id = '') {
 
     helperHeight += 90
 
-    const parkingSpotImagePath = resolve(
-        __dirname,
-        '..',
-        '..',
-        '..',
-        '..',
-        'tmp',
-        'branches',
-        'parking_spot_images',
-        `parking-spot-${parking_spot.dataValues.id}.${
-            parking_spot.dataValues.name.split('.')[
-                parking_spot.dataValues.name.split('.').length - 1
-            ]
-        }`
-    )
+    if (parking_spot) {
+        const parkingSpotImagePath = resolve(
+            __dirname,
+            '..',
+            '..',
+            '..',
+            '..',
+            'tmp',
+            'branches',
+            'parking_spot_images',
+            `parking-spot-${parking_spot.dataValues.id}.${
+                parking_spot.dataValues.name.split('.')[
+                    parking_spot.dataValues.name.split('.').length - 1
+                ]
+            }`
+        )
 
-    if (fs.existsSync(parkingSpotImagePath)) {
-        doc.image(parkingSpotImagePath, 80, helperHeight - 2, {
-            width: 450,
-        })
+        if (fs.existsSync(parkingSpotImagePath)) {
+            doc.image(parkingSpotImagePath, 80, helperHeight - 2, {
+                width: 450,
+            })
+        }
     }
 
     helperHeight = 660
