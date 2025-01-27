@@ -44,6 +44,7 @@ class EmergepayController {
                 ],
             }
 
+            console.log(config)
             emergepay
                 .startTransaction(config)
                 .then(function (transactionToken) {
