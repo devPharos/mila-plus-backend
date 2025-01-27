@@ -52,6 +52,7 @@ import DataSyncController from './app/controllers/DataSyncController'
 import multer from 'multer'
 import RecurrenceController from './app/controllers/RecurrenceController'
 import FilialDiscountListController from './app/controllers/FilialDiscountListController'
+import FileController from './app/controllers/FileController'
 
 const routes = new Router()
 
@@ -448,5 +449,6 @@ routes.post(
 routes.post('/recurrence', RecurrenceController.store)
 
 routes.get('/filialdiscounts', FilialDiscountListController.index)
+routes.get('/files', FileController.index)
 
 export default routes
