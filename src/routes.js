@@ -51,6 +51,7 @@ import EmergepayController from './app/controllers/EmergepayController'
 import DataSyncController from './app/controllers/DataSyncController'
 import multer from 'multer'
 import RecurrenceController from './app/controllers/RecurrenceController'
+import FilialDiscountListController from './app/controllers/FilialDiscountListController'
 
 const routes = new Router()
 
@@ -445,5 +446,7 @@ routes.post(
 )
 
 routes.post('/recurrence', RecurrenceController.store)
+
+routes.get('/filialdiscounts', FilialDiscountListController.index)
 
 export default routes

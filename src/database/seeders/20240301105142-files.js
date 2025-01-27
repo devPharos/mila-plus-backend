@@ -1,0 +1,86 @@
+module.exports = {
+    up: (queryInterface) => {
+        return queryInterface.bulkInsert(
+            'files',
+            [
+                {
+                    company_id: 1,
+                    id: 'c5759f2c-e958-4378-bbad-e2eceae58e24',
+                    registry_type: 'Branches',
+                    registry_idkey: 2,
+                    document_id: 'e173aba1-2ae4-4777-a447-237bbac1b124',
+                    name: 'enrollment_nonf1_orlando_may_2024.pdf',
+                    size: 1753118,
+                    url: 'https://firebasestorage.googleapis.com/v0/b/milaplus-pharosit.appspot.com/o/Branches%2Fb0f83745-da07-439d-8b50-1f1fe9d064c9.pdf?alt=media&token=afeb29d7-1699-441f-946c-eb57cd1f3dfc',
+                    created_by: 1,
+                    created_at: new Date(),
+                },
+                {
+                    company_id: 1,
+                    id: '85af2a28-c6e7-4f3a-81bb-8441583fe1f2',
+                    registry_type: 'Branches',
+                    registry_idkey: 2,
+                    document_id: '406b914c-f389-4a7a-92a2-2d01a269a114',
+                    name: 'enrollment_orlando_may_2024_DRAFT.pdf',
+                    size: 2157319,
+                    url: 'https://firebasestorage.googleapis.com/v0/b/milaplus-pharosit.appspot.com/o/Branches%2Fbd462a57-e75d-4bcc-b349-a24db3110e40.pdf?alt=media&token=3b05d64c-5cc9-493e-8ea4-51881555288d',
+                    created_by: 1,
+                    created_at: new Date(),
+                },
+                {
+                    company_id: 1,
+                    id: '0bddcabf-9848-4ba3-be67-97d43f2938d7',
+                    registry_type: 'Branches',
+                    registry_idkey: 7,
+                    document_id: '406b914c-f389-4a7a-92a2-2d01a269a114',
+                    name: 'enrollment_Boston_Jul_2024 - Draft.pdf',
+                    size: 3328771,
+                    url: 'https://firebasestorage.googleapis.com/v0/b/milaplus-pharosit.appspot.com/o/Branches%2F1a567afa-37a1-4806-b6f0-c0f386ce05f1.pdf?alt=media&token=578c4dc6-a665-40cc-9d16-062b71bba803',
+                    created_by: 1,
+                    created_at: new Date(),
+                },
+                {
+                    company_id: 1,
+                    id: '6ebb934f-1686-41e7-8c75-74a35a5da6e0',
+                    registry_type: 'Branches',
+                    registry_idkey: 2,
+                    document_id: null,
+                    name: 'Parking - Orlando',
+                    size: 188592,
+                    url: 'https://firebasestorage.googleapis.com/v0/b/milaplus-pharosit.appspot.com/o/Branches%2FParking%20Spot%2F989032e0-73e7-4810-8832-6f7002872374.png?alt=media&token=20219ac8-82f4-491e-abaf-b3fe6d75b596',
+                    created_by: 1,
+                    created_at: new Date(),
+                },
+                {
+                    company_id: 1,
+                    id: 'e94c9c7e-8730-4981-9f30-76b34cce09cb',
+                    registry_type: 'Branches',
+                    registry_idkey: 7,
+                    document_id: null,
+                    name: 'Parking - Boston.png',
+                    size: 356313,
+                    url: 'https://firebasestorage.googleapis.com/v0/b/milaplus-pharosit.appspot.com/o/Branches%2FParking%20Spot%2Ff50da1a2-f9a4-4634-bb6f-8893eef46cc2.png?alt=media&token=c13723a3-dc80-4576-83f6-e18610fd0ad7',
+                    created_by: 1,
+                    created_at: new Date(),
+                },
+                {
+                    company_id: 1,
+                    id: '01b96195-7f4f-4864-8b01-ba3ca6bcf302',
+                    registry_type: 'Branches',
+                    registry_idkey: 5,
+                    document_id: null,
+                    name: 'Parking - jax.png',
+                    size: 137920,
+                    url: 'https://firebasestorage.googleapis.com/v0/b/milaplus-pharosit.appspot.com/o/Branches%2FParking%20Spot%2F4734e43b-635d-41c3-86ad-74a80e07e858.png?alt=media&token=deaa4b85-9a62-4864-b306-f1acb1d3f0c3',
+                    created_by: 1,
+                    created_at: new Date(),
+                },
+            ],
+            {}
+        )
+    },
+
+    down: (queryInterface) => {
+        return queryInterface.bulkDelete('files', [], {})
+    },
+}
