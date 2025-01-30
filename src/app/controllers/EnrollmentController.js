@@ -31,6 +31,57 @@ const fs = require('fs')
 
 const { Op } = Sequelize
 
+export async function mailSponsor({ enrollment_id, student_id }) {
+    const sponsor = await Enrollmentsponsor.findOne({
+        where: {
+            enrollment_id,
+            canceled_at: null,
+        },
+    })
+    const student = await Student.findByPk(student_id)
+    const filial = await Filial.findByPk(student.dataValues.filial_id)
+
+    const title = `Enrollment Form - Sponsors`
+    const content = `<p>Dear ${sponsor.dataValues.name},</p>
+                    <p>You have been asked to please complete the <strong>Enrollment Form - Sponsors</strong>, related to the student <strong>${student.dataValues.name} ${student.dataValues.last_name}</strong>.</p>
+                    <br/>
+                    <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/Sponsor?crypt=${sponsor.dataValues.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
+    mailer.sendMail({
+        from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+        to: sponsor.dataValues.email,
+        subject: `MILA Plus - ${title}`,
+        html: MailLayout({
+            title,
+            content,
+            filial: filial.dataValues.name,
+        }),
+    })
+    console.log('E-mail sent to sponsor.')
+}
+
+export async function mailDSO(
+    transfer,
+    filial,
+    studentExists,
+    enrollmentExists
+) {
+    const title = `Transfer Eligibility Form - DSO`
+    const content = `<p>Dear ${transfer.previous_school_dso_name},</p>
+                                <p>You have been asked to please complete the <strong>Transfer Eligibility Form - DSO</strong>, related to the student <strong>${studentExists.dataValues.name}</strong>, Sevis ID no.: <strong>${studentExists.dataValues.nsevis}</strong>.</p>
+                                <br/>
+                                <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/TransferDSO?crypt=${enrollmentExists.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
+    mailer.sendMail({
+        from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+        to: transfer.previous_school_dso_email,
+        subject: `MILA Plus - ${title}`,
+        html: MailLayout({
+            title,
+            content,
+            filial: filial.name,
+        }),
+    })
+}
+
 class EnrollmentController {
     async store(req, res) {
         const connection = new Sequelize(databaseConfig)
@@ -564,23 +615,9 @@ class EnrollmentController {
                 if (nextStep === 'sponsor-signature') {
                     existingSponsors.map((sponsor) => {
                         if (sponsor.dataValues.canceled_at === null) {
-                            const title = `Enrollment Form - Sponsors`
-                            const content = `<p>Dear ${sponsor.dataValues.name},</p>
-                                            <p>You have been asked to please complete the <strong>Enrollment Form - Sponsors</strong>, related to the student <strong>${studentExists.name} ${studentExists.last_name}</strong>.</p>
-                                            <br/>
-                                            <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/Sponsor?crypt=${sponsor.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
-                            mailer.sendMail({
-                                from:
-                                    '"MILA Plus" <' +
-                                    process.env.MAIL_FROM +
-                                    '>',
-                                to: sponsor.dataValues.email,
-                                subject: `MILA Plus - ${title}`,
-                                html: MailLayout({
-                                    title,
-                                    content,
-                                    filial: filial.name,
-                                }),
+                            mailSponsor({
+                                enrollment_id: enrollmentExists.dataValues.id,
+                                student_id: studentExists.dataValues.id,
                             })
                         }
                     })
@@ -589,22 +626,12 @@ class EnrollmentController {
                         req.body.enrollmenttransfers &&
                         req.body.enrollmenttransfers.previous_school_dso_email
                     ) {
-                        const title = `Transfer Eligibility Form - DSO`
-                        const content = `<p>Dear ${req.body.enrollmenttransfers.previous_school_dso_name},</p>
-                                    <p>You have been asked to please complete the <strong>Transfer Eligibility Form - DSO</strong>, related to the student <strong>${studentExists.dataValues.name}</strong>, Sevis ID no.: <strong>${studentExists.dataValues.nsevis}</strong>.</p>
-                                    <br/>
-                                    <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/TransferDSO?crypt=${enrollmentExists.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
-                        mailer.sendMail({
-                            from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
-                            to: req.body.enrollmenttransfers
-                                .previous_school_dso_email,
-                            subject: `MILA Plus - ${title}`,
-                            html: MailLayout({
-                                title,
-                                content,
-                                filial: filial.name,
-                            }),
-                        })
+                        mailDSO(
+                            req.body.enrollmenttransfers,
+                            filial,
+                            studentExists,
+                            enrollmentExists
+                        )
                     }
                 } else if (activeMenu === 'transfer-dso') {
                     const title = `Transfer Eligibility Form - Agent`
@@ -1660,6 +1687,8 @@ class EnrollmentController {
                 await mailTransferToStudent({ enrollment_id, student_id })
             } else if (type === 'placement-test') {
                 await mailPlacementTestToStudent({ enrollment_id, student_id })
+            } else if (type === 'sponsor-signature') {
+                await mailSponsor({ enrollment_id, student_id })
             }
             return res.json({ ok: true })
         } catch (err) {
