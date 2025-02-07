@@ -14,6 +14,9 @@ import MailLayout from '../../Mails/MailLayout'
 import Filial from '../models/Filial'
 import { FRONTEND_URL, handleStudentDiscounts } from '../functions'
 import { searchPromise } from '../functions/searchPromise'
+import Enrollmentsponsor from '../models/Enrollmentsponsor'
+import Receivable from '../models/Receivable'
+import Issuer from '../models/Issuer'
 
 const { Op } = Sequelize
 
@@ -242,8 +245,44 @@ class ProspectController {
                             {
                                 model: Enrollmenttimeline,
                                 as: 'enrollmenttimelines',
+                                attributes: [
+                                    'id',
+                                    'created_at',
+                                    'phase',
+                                    'phase_step',
+                                    'step_status',
+                                    'expected_date',
+                                ],
                                 required: false,
                                 where: {
+                                    canceled_at: null,
+                                },
+                                order: [['created_at', 'DESC']],
+                            },
+                            {
+                                model: Enrollmentsponsor,
+                                as: 'enrollmentsponsors',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
+                    },
+                    {
+                        model: Issuer,
+                        as: 'issuer',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                        include: [
+                            {
+                                model: Receivable,
+                                as: 'receivables',
+                                required: false,
+                                where: {
+                                    type: 'Invoice',
                                     canceled_at: null,
                                 },
                             },
@@ -415,7 +454,7 @@ class ProspectController {
             if (student.processsubstatus_id === 1) {
                 // Initial Visa
                 page = 'Enrollment'
-                title = 'Enrollment Form - Student'
+                title = 'Enrollment Process - Student'
                 nextTimeline = {
                     phase: 'Student Application',
                     phase_step: 'Form link has been sent to student',
@@ -439,7 +478,7 @@ class ProspectController {
             } else if (student.processsubstatus_id === 3) {
                 // Reinstatement
                 page = 'Reinstatement'
-                title = 'Reinstatement Form - Student'
+                title = 'Reinstatement Process - Student'
                 nextTimeline = {
                     phase: 'Student Application',
                     phase_step: 'Form link has been sent to student',
@@ -451,7 +490,7 @@ class ProspectController {
             } else if (student.processsubstatus_id === 4) {
                 // Transfer
                 page = 'Transfer'
-                title = 'Transfer Form - Student'
+                title = 'Transfer Process - Student'
                 nextTimeline = {
                     phase: 'Transfer Eligibility',
                     phase_step:
@@ -465,7 +504,7 @@ class ProspectController {
                 }
                 if (phase_step === 'DSO Signature') {
                     page = 'Enrollment'
-                    title = 'Enrollment Form - Student'
+                    title = 'Enrollment Process - Student'
                     nextTimeline = {
                         phase: 'Student Application',
                         phase_step:
@@ -484,7 +523,7 @@ class ProspectController {
             } else if (student.processsubstatus_id === 5) {
                 // Private
                 page = 'Private'
-                title = 'Private Form - Student'
+                title = 'Private Process - Student'
                 nextTimeline = {
                     phase: 'Student Application',
                     phase_step: 'Form link has been sent to student',
@@ -496,7 +535,7 @@ class ProspectController {
             } else if (student.processsubstatus_id === 6) {
                 // Regular
                 page = 'Regular'
-                title = 'Regular Form - Student'
+                title = 'Regular Process - Student'
                 nextTimeline = {
                     phase: 'Student Application',
                     phase_step: 'Form link has been sent to student',

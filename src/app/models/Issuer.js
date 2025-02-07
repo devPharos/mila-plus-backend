@@ -121,6 +121,10 @@ class Issuer extends Model {
             foreignKey: 'merchant_id',
             as: 'merchant',
         })
+        this.hasMany(models.Receivable, {
+            foreignKey: 'issuer_id',
+            as: 'receivables',
+        })
         this.hasOne(models.Recurrence, {
             foreignKey: 'issuer_id',
             as: 'issuer_x_recurrence',

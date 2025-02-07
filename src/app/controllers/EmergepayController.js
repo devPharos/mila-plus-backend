@@ -10,6 +10,79 @@ import { emergepay } from '../../config/emergepay'
 import crypto from 'crypto'
 import { format } from 'date-fns'
 import Issuer from '../models/Issuer'
+import Settlement from '../models/Settlement'
+
+export async function settlement({
+    receivable_id = null,
+    amountPaidBalance = 0,
+}) {
+    const receivable = await Receivable.findByPk(receivable_id)
+
+    if (!receivable || !amountPaidBalance) {
+        return false
+    }
+
+    const parcial = amountPaidBalance < receivable.dataValues.balance
+
+    await Settlement.create({
+        receivable_id: receivable.id,
+        amount: parcial ? amountPaidBalance : receivable.dataValues.balance,
+        paymentmethod_id: 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
+        created_at: new Date(),
+        created_by: 2,
+    })
+    await receivable
+        .update({
+            status: parcial ? 'Parcial Paid' : 'Paid',
+            status_date: format(new Date(), 'yyyyMMdd'),
+            updated_at: new Date(),
+            updated_by: 2,
+        })
+        .then(async () => {
+            amountPaidBalance -=
+                receivable.dataValues.balance > amountPaidBalance
+                    ? amountPaidBalance
+                    : receivable.dataValues.balance
+            if (amountPaidBalance <= 0) {
+                return
+            }
+            await Receivable.findAll({
+                where: {
+                    company_id: receivable.dataValues.company_id,
+                    filial_id: receivable.dataValues.filial_id,
+                    invoice_number: receivable.dataValues.invoice_number,
+                    status: 'Pending',
+                    canceled_at: null,
+                },
+            }).then((receivables) => {
+                receivables.forEach(async (receivable) => {
+                    const parcial =
+                        amountPaidBalance < receivable.dataValues.balance
+                    await Settlement.create({
+                        receivable_id: receivable.id,
+                        amount: parcial
+                            ? amountPaidBalance
+                            : receivable.dataValues.balance,
+                        paymentmethod_id:
+                            'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
+                        created_at: new Date(),
+                        created_by: 2,
+                    })
+                    await receivable.update({
+                        status: parcial ? 'Parcial Paid' : 'Paid',
+                        status_date: format(new Date(), 'yyyyMMdd'),
+                        authorization_code: approvalNumberResult,
+                        updated_at: new Date(),
+                        updated_by: 2,
+                    })
+                    amountPaidBalance -=
+                        receivable.dataValues.balance > amountPaidBalance
+                            ? amountPaidBalance
+                            : receivable.dataValues.balance
+                })
+            })
+        })
+}
 
 class EmergepayController {
     async simpleForm(req, res) {
@@ -215,58 +288,11 @@ class EmergepayController {
                         externalTransactionId
                     )
                     if (receivable && resultMessage === 'Approved') {
-                        await receivable
-                            .update({
-                                status: 'Paid',
-                                status_date: format(new Date(), 'yyyyMMdd'),
-                                authorization_code: approvalNumberResult,
-                                updated_at: new Date(),
-                                updated_by: 2,
-                            })
-                            .then(async () => {
-                                const otherReceivables =
-                                    await Receivable.findAll({
-                                        where: {
-                                            company_id:
-                                                receivable.dataValues
-                                                    .company_id,
-                                            filial_id:
-                                                receivable.dataValues.filial_id,
-                                            invoice_number:
-                                                receivable.dataValues
-                                                    .invoice_number,
-                                            status: 'Pending',
-                                            canceled_at: null,
-                                        },
-                                    }).then((receivables) => {
-                                        receivables.forEach((receivable) => {
-                                            receivable
-                                                .update({
-                                                    status: 'Paid',
-                                                    status_date: format(
-                                                        new Date(),
-                                                        'yyyyMMdd'
-                                                    ),
-                                                    authorization_code:
-                                                        approvalNumberResult,
-                                                    updated_at: new Date(),
-                                                    updated_by: 2,
-                                                })
-                                                .catch((err) => {
-                                                    const className =
-                                                        'EmergepayController'
-                                                    const functionName =
-                                                        'refund'
-                                                    MailLog({
-                                                        className,
-                                                        functionName,
-                                                        req,
-                                                        err,
-                                                    })
-                                                })
-                                        })
-                                    })
-                            })
+                        const amountPaidBalance = parseFloat(amountProcessed)
+                        settlement({
+                            receivable_id: receivable.id,
+                            amountPaidBalance,
+                        })
                     }
                 })
             } else {
