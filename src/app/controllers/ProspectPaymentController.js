@@ -84,15 +84,16 @@ class ProspectPaymentController {
                 },
             })
 
-            let create_tuition_fee = false
+            let create_tuition_fee = true
 
             if (tuitionFee && tuitionFee.dataValues.status === 'Pending') {
-                create_tuition_fee = true
                 used_invoice = tuitionFee.dataValues.invoice_number
                 await tuitionFee.destroy()
+            } else if (tuitionFee && tuitionFee.dataValues.status === 'Paid') {
+                create_tuition_fee = false
             }
 
-            let create_registration_fee = false
+            let create_registration_fee = true
 
             if (
                 registrationFee &&
@@ -129,6 +130,11 @@ class ProspectPaymentController {
                     await registrationFee.destroy()
                     registrationFee = null
                 }
+            } else if (
+                registrationFee &&
+                registrationFee.dataValues.status === 'Paid'
+            ) {
+                create_registration_fee = false
             }
 
             if (create_registration_fee) {
