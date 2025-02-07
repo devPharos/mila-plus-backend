@@ -137,43 +137,44 @@ class ProspectPaymentController {
             ) {
                 create_registration_fee = false
             }
+            setTimeout(async () => {
+                if (create_registration_fee) {
+                    console.log(
+                        'creating registration fee receivable, invoice number:',
+                        used_invoice
+                    )
+                    registrationFee = await createRegistrationFeeReceivable({
+                        issuer_id: issuerExists.id,
+                        created_by: req.userId,
+                        paymentmethod_id,
+                        invoice_number: used_invoice,
+                    })
+                }
 
-            if (create_registration_fee) {
-                console.log(
-                    'creating registration fee receivable, invoice number:',
-                    used_invoice
-                )
-                registrationFee = await createRegistrationFeeReceivable({
-                    issuer_id: issuerExists.id,
-                    created_by: req.userId,
-                    paymentmethod_id,
-                    invoice_number: used_invoice,
+                if (create_tuition_fee) {
+                    console.log(
+                        'creating tuition fee receivable, invoice number:',
+                        used_invoice
+                    )
+                    tuitionFee = await createTuitionFeeReceivable({
+                        issuer_id: issuerExists.id,
+                        in_advance: true,
+                        created_by: req.userId,
+                        invoice_number: registrationFee
+                            ? registrationFee.invoice_number
+                            : used_invoice,
+                        paymentmethod_id,
+                        t,
+                    })
+                }
+
+                t.commit()
+                return res.json({
+                    issuer: issuerExists,
+                    registrationFee,
+                    tuitionFee,
                 })
-            }
-
-            if (create_tuition_fee) {
-                console.log(
-                    'creating tuition fee receivable, invoice number:',
-                    used_invoice
-                )
-                tuitionFee = await createTuitionFeeReceivable({
-                    issuer_id: issuerExists.id,
-                    in_advance: true,
-                    created_by: req.userId,
-                    invoice_number: registrationFee
-                        ? registrationFee.invoice_number
-                        : used_invoice,
-                    paymentmethod_id,
-                    t,
-                })
-            }
-
-            t.commit()
-            return res.json({
-                issuer: issuerExists,
-                registrationFee,
-                tuitionFee,
-            })
+            }, 1500)
         } catch (err) {
             await t.rollback()
             const className = 'ProspectPaymentController'
