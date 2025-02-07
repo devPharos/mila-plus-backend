@@ -174,7 +174,7 @@ class ProspectPaymentController {
                     registrationFee,
                     tuitionFee,
                 })
-            }, 1500)
+            }, 3000)
         } catch (err) {
             await t.rollback()
             const className = 'ProspectPaymentController'
