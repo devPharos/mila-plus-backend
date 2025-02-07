@@ -6,9 +6,7 @@ import PaymentMethod from '../models/PaymentMethod'
 import ChartOfAccount from '../models/Chartofaccount'
 import PaymentCriteria from '../models/PaymentCriteria'
 import Filial from '../models/Filial'
-import ReceivableInstallment from '../models/ReceivableInstallment'
 import Issuer from '../models/Issuer'
-import ReceivableInstallmentController from './ReceivableInstallmentController'
 import FilialPriceList from '../models/FilialPriceList'
 import FilialDiscountList from '../models/FilialDiscountList'
 import Student from '../models/Student'
@@ -20,11 +18,13 @@ import Recurrence from '../models/Recurrence'
 import Emergepaytransaction from '../models/Emergepaytransaction'
 import Receivablediscounts from '../models/Receivablediscounts'
 import Studentdiscount from '../models/Studentdiscount'
+import Settlement from '../models/Settlement'
 
 export async function createRegistrationFeeReceivable({
     issuer_id,
     created_by = null,
     paymentmethod_id = null,
+    invoice_number = null,
 }) {
     try {
         const issuer = await Issuer.findByPk(issuer_id)
@@ -88,6 +88,7 @@ export async function createRegistrationFeeReceivable({
             company_id,
             filial_id,
             issuer_id,
+            invoice_number,
             entry_date: format(addDays(new Date(), 0), 'yyyyMMdd'),
             due_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
             type: 'Invoice',
@@ -186,6 +187,8 @@ export async function createTuitionFeeReceivable({
 
         const discount = filialPriceList.dataValues.tuition - totalAmount
 
+        console.log({ invoice_number })
+
         const receivable = await Receivable.create({
             company_id,
             filial_id,
@@ -230,10 +233,18 @@ export function applyDiscounts({
 }) {
     if (studentDiscounts && studentDiscounts.length > 0) {
         let hasDiscounts = studentDiscounts.filter(
-            ({ dataValues: discount }) =>
-                discount.discount.dataValues.applied_at.includes(applied_at) &&
-                discount.discount.dataValues.type === type &&
-                discount.discount.dataValues.active
+            ({ dataValues: discount }) => {
+                if (
+                    discount.discount.dataValues.applied_at.includes(
+                        applied_at
+                    ) &&
+                    discount.discount.dataValues.type === type &&
+                    discount.discount.dataValues.active
+                ) {
+                    console.log('Discount founded')
+                    return true
+                }
+            }
         )
         if (due_date) {
             hasDiscounts = hasDiscounts.filter(({ dataValues: discount }) => {
@@ -584,6 +595,14 @@ export async function calculateFee(receivable = null) {
             return 0
         }
 
+        if (
+            receivable.dataValues.id !== '4600995c-0f87-4ef3-bd1d-b70e85d9d87a'
+        ) {
+            return 0
+        } else {
+            console.log('Test')
+        }
+
         const paymentCriteria = await PaymentCriteria.findByPk(
             receivable.dataValues.paymentcriteria_id
         )
@@ -602,7 +621,6 @@ export async function calculateFee(receivable = null) {
             new Date(),
             parseISO(receivable.dataValues.due_date)
         )
-        console.log(daysPassed)
         let how_many_times = 0
 
         if (daysPassed < paymentCriteria.dataValues.fee_qt) {
@@ -645,11 +663,22 @@ export async function calculateFee(receivable = null) {
             }
         }
 
-        console.log(receivableTotalWithFees)
-        console.log(feesAmount)
-
+        const { amount, discount } = receivable.dataValues
+        const settled = Settlement.findAll({
+            where: {
+                receivable_id: receivable.id,
+                canceled_at: null,
+            },
+        })
+        let settledAmount = 0
+        settled.length > 0 &&
+            settled.reduce((acc, curr) => {
+                settledAmount += curr.dataValues.amount
+                return acc + curr.dataValues.amount
+            }, 0)
         receivable.update({
-            total: receivableTotalWithFees,
+            total: amount - discount + feesAmount,
+            balance: amount - discount + feesAmount - settledAmount,
             fee: feesAmount,
             updated_at: new Date(),
             updated_by: 2,
@@ -692,7 +721,7 @@ class ReceivableController {
         try {
             const {
                 orderBy = 'due_date',
-                orderASC = 'DESC',
+                orderASC = 'ASC',
                 search = '',
             } = req.query
             let searchOrder = []
@@ -833,6 +862,12 @@ class ReceivableController {
                             },
                         ],
                     },
+                    {
+                        model: Settlement,
+                        as: 'settlements',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
                 ],
             })
 
@@ -891,12 +926,55 @@ class ReceivableController {
         }
     }
 
+    async refund(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { receivable_id } = req.params
+            const { refund_amount, refund_reason } = req.body
+
+            const receivableExists = await Receivable.findByPk(receivable_id)
+
+            if (!receivableExists) {
+                return res
+                    .status(401)
+                    .json({ error: 'Receivable does not exist.' })
+            }
+
+            if (receivableExists.dataValues.status !== 'Paid') {
+                return res
+                    .status(401)
+                    .json({ error: 'Receivable is not paid yet.' })
+            }
+
+            await receivableExists.update(
+                {
+                    status: 'Pending',
+                    updated_at: new Date(),
+                    updated_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            await t.commit()
+
+            return res.json(receivableExists)
+        } catch (err) {
+            await t.rollback()
+            const className = 'ReceivableController'
+            const functionName = 'refund'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
     async update(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
-        let oldInstallments = []
-        let oldFistDueDate = null
-        let oldDueDate = null
 
         try {
             const { receivable_id } = req.params
@@ -986,6 +1064,111 @@ class ReceivableController {
             await t.rollback()
             const className = 'ReceivableController'
             const functionName = 'delete'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async settlement(req, res) {
+        try {
+            const {
+                receivables,
+                prices,
+                paymentmethod_id,
+                settlement_date,
+                total_amount,
+            } = req.body
+
+            receivables.map(async (rec, index) => {
+                const receivable = await Receivable.findByPk(rec.id)
+
+                if (!receivable) {
+                    return res.status(401).json({
+                        error: 'Receivable not found.',
+                    })
+                }
+
+                let totalAmount = receivable.dataValues.total
+
+                if (prices.discounts.length > 0) {
+                    const discount = await FilialDiscountList.findByPk(
+                        prices.discounts[0].filial_discount_list_id
+                    )
+
+                    if (discount) {
+                        totalAmount = applyDiscounts({
+                            applied_at: 'Settlement',
+                            type: 'Financial',
+                            studentDiscounts: [
+                                {
+                                    dataValues: {
+                                        discount,
+                                    },
+                                },
+                            ],
+                            totalAmount,
+                        })
+                    }
+                }
+
+                const difference = receivable.dataValues.total - totalAmount
+
+                const settledAmount =
+                    totalAmount > rec.total ? rec.total : totalAmount
+
+                if (receivable.dataValues.status !== 'Paid') {
+                    Settlement.create({
+                        receivable_id: receivable.id,
+                        amount: settledAmount,
+                        paymentmethod_id,
+                        created_at: settlement_date,
+                        created_by: req.userId,
+                    }).then(() => {
+                        receivable
+                            .update({
+                                status: 'Paid',
+                                discount:
+                                    receivable.dataValues.discount + difference,
+                                total: receivable.dataValues.total - difference,
+                                balance: 0,
+                                updated_at: new Date(),
+                                updated_by: req.userId,
+                            })
+                            .then(async (receivable) => {
+                                const discount =
+                                    await FilialDiscountList.findByPk(
+                                        prices.discounts[0]
+                                            .filial_discount_list_id
+                                    )
+                                Receivablediscounts.create({
+                                    receivable_id: receivable.id,
+                                    discount_id: discount.id,
+                                    name: discount.name,
+                                    type: discount.type,
+                                    value: discount.value,
+                                    percent: discount.percent,
+                                    created_by: 2,
+                                    created_at: new Date(),
+                                })
+                                console.log('receivable updated')
+                            })
+                    })
+                } else {
+                    return res.status(401).json({
+                        error: 'Receivable already settled.',
+                    })
+                }
+            })
+
+            return res.json({
+                message: 'Settlements created successfully.',
+            })
+        } catch (err) {
+            await t.rollback()
+            const className = 'ReceivableController'
+            const functionName = 'settlement'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

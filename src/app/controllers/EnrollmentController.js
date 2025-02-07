@@ -41,9 +41,9 @@ export async function mailSponsor({ enrollment_id, student_id }) {
     const student = await Student.findByPk(student_id)
     const filial = await Filial.findByPk(student.dataValues.filial_id)
 
-    const title = `Enrollment Form - Sponsors`
+    const title = `Enrollment Process - Sponsors`
     const content = `<p>Dear ${sponsor.dataValues.name},</p>
-                    <p>You have been asked to please complete the <strong>Enrollment Form - Sponsors</strong>, related to the student <strong>${student.dataValues.name} ${student.dataValues.last_name}</strong>.</p>
+                    <p>You have been asked to please complete the <strong>Enrollment Process - Sponsors</strong>, related to the student <strong>${student.dataValues.name} ${student.dataValues.last_name}</strong>.</p>
                     <br/>
                     <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/Sponsor?crypt=${sponsor.dataValues.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
     mailer.sendMail({

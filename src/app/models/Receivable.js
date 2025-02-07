@@ -173,6 +173,10 @@ class Receivable extends Model {
             foreignKey: 'receivable_id',
             as: 'discounts',
         })
+        this.hasMany(models.Settlement, {
+            foreignKey: 'receivable_id',
+            as: 'settlements',
+        })
     }
 }
 

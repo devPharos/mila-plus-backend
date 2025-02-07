@@ -60,6 +60,7 @@ class ProspectPaymentController {
 
             let tuitionFee = null
             let registrationFee = null
+            let used_invoice = null
 
             registrationFee = await Receivable.findOne({
                 where: {
@@ -72,10 +73,30 @@ class ProspectPaymentController {
                 },
             })
 
+            tuitionFee = await Receivable.findOne({
+                where: {
+                    company_id: 1,
+                    filial_id,
+                    issuer_id: issuerExists.id,
+                    type: 'Invoice',
+                    type_detail: 'Tuition fee',
+                    canceled_at: null,
+                },
+            })
+
+            if (tuitionFee && tuitionFee.dataValues.status === 'Pending') {
+                used_invoice = tuitionFee.dataValues.invoice_number
+                await tuitionFee.destroy()
+                tuitionFee = null
+            }
+
             if (
                 registrationFee &&
                 registrationFee.dataValues.status === 'Pending'
             ) {
+                if (!used_invoice) {
+                    used_invoice = registrationFee.dataValues.invoice_number
+                }
                 const textPaymentTransaction =
                     await Textpaymenttransaction.findOne({
                         where: {
@@ -92,58 +113,45 @@ class ProspectPaymentController {
                                     .payment_page_id,
                         })
                         .then(async () => {
-                            await textPaymentTransaction.update({
-                                canceled_by: req.userId,
-                                canceled_at: new Date(),
-                            })
-                            await registrationFee.update({
-                                canceled_by: req.userId,
-                                canceled_at: new Date(),
-                            })
+                            await textPaymentTransaction.destroy()
+                            await registrationFee.destroy()
                             registrationFee = null
                         })
                         .catch((error) => {
+                            registrationFee = null
                             console.log(error)
                         })
                 } else {
+                    await registrationFee.destroy()
                     registrationFee = null
-                    await registrationFee.update({
-                        canceled_by: req.userId,
-                        canceled_at: new Date(),
-                    })
                 }
             }
 
             if (!registrationFee) {
+                console.log(
+                    'creating registration fee receivable, invoice number:',
+                    used_invoice
+                )
                 registrationFee = await createRegistrationFeeReceivable({
                     issuer_id: issuerExists.id,
                     created_by: req.userId,
                     paymentmethod_id,
+                    invoice_number: used_invoice,
                 })
             }
 
-            tuitionFee = await Receivable.findOne({
-                where: {
-                    company_id: 1,
-                    filial_id,
-                    issuer_id: issuerExists.id,
-                    type: 'Invoice',
-                    type_detail: 'Tuition fee',
-                    canceled_at: null,
-                },
-            })
-
-            if (tuitionFee && tuitionFee.dataValues.status === 'Pending') {
-                await tuitionFee.destroy()
-                tuitionFee = null
-            }
-
             if (!tuitionFee) {
+                console.log(
+                    'creating tuition fee receivable, invoice number:',
+                    used_invoice
+                )
                 tuitionFee = await createTuitionFeeReceivable({
                     issuer_id: issuerExists.id,
                     in_advance: true,
                     created_by: req.userId,
-                    invoice_number: registrationFee.dataValues.invoice_number,
+                    invoice_number: registrationFee
+                        ? registrationFee.invoice_number
+                        : used_invoice,
                     paymentmethod_id,
                     t,
                 })

@@ -36,11 +36,11 @@ class EnrollmentsponsorController {
                 })
             }
 
-            if (enrollment.form_step.includes('signature')) {
-                return res.status(400).json({
-                    error: 'You cannot add a sponsor to this enrollment.',
-                })
-            }
+            // if (enrollment.form_step.includes('signature')) {
+            //     return res.status(400).json({
+            //         error: 'You cannot add a sponsor to this enrollment.',
+            //     })
+            // }
 
             const sponsor = await Enrollmentsponsor.create(
                 {
@@ -257,9 +257,9 @@ class EnrollmentsponsorController {
             Promise.all(promises).then(() => {
                 t.commit()
                 if (notifyAgent) {
-                    const title = `Enrollment Form - Agent`
+                    const title = `Enrollment Process - Agent`
                     const content = `<p>Dear ${enrollmentExists.agents.name},</p>
-                        <p>The student's sponsor has finished the <strong>Enrollment Form - Sponsor</strong>, related to the student <strong>${enrollmentExists.students.name} ${enrollmentExists.students.last_name}</strong>.</p>
+                        <p>The student's sponsor has finished the <strong>Enrollment Process - Sponsor</strong>, related to the student <strong>${enrollmentExists.students.name} ${enrollmentExists.students.last_name}</strong>.</p>
                         <br/>
                         <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/Sponsor?crypt=${sponsor_id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
                     mailer.sendMail({

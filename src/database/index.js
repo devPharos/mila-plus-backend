@@ -55,6 +55,8 @@ import Recurrence from '../app/models/Recurrence'
 import Studentdiscount from '../app/models/Studentdiscount'
 import Receivablediscounts from '../app/models/Receivablediscounts'
 import Textpaymenttransaction from '../app/models/Textpaymenttransaction'
+import Refund from '../app/models/Refund.js'
+import Settlement from '../app/models/Settlement'
 // import UserGroup from '../app/models/usergroup'
 
 const models = [
@@ -111,6 +113,8 @@ const models = [
     Receivablediscounts,
     ReceivableInstallment,
     Recurrence,
+    Refund,
+    Settlement,
     Textpaymenttransaction,
 ]
 

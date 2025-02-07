@@ -416,6 +416,8 @@ routes.get('/receivables/:receivable_id', ReceivableController.show)
 routes.post('/receivables', ReceivableController.store)
 routes.put('/receivables/:receivable_id', ReceivableController.update)
 routes.delete('/receivables/:receivable_id', ReceivableController.delete)
+routes.post('/receivables/refund/:receivable_id', ReceivableController.refund)
+routes.post('/receivables/settlement', ReceivableController.settlement)
 
 // receivable installment
 routes.get('/receivableinstallments', ReceivableInstallmentController.index)
