@@ -119,8 +119,9 @@ class ProspectPaymentController {
                                     .payment_page_id,
                         })
                         .then(async () => {
-                            await textPaymentTransaction.destroy()
-                            await registrationFee.destroy()
+                            textPaymentTransaction.destroy().then(() => {
+                                registrationFee.destroy()
+                            })
                         })
                         .catch((error) => {
                             registrationFee = null
