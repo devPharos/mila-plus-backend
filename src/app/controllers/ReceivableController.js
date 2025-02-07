@@ -702,7 +702,6 @@ export async function calculateFeesRecurrenceJob() {
                 },
             },
         })
-        console.log(receivables.length)
         receivables.forEach(async (receivable) => {
             calculateFee(receivable)
         })
