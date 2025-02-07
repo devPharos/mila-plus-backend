@@ -1092,7 +1092,7 @@ class ReceivableController {
 
                 let totalAmount = receivable.dataValues.total
 
-                if (prices.discounts.length > 0) {
+                if (prices.discounts && prices.discounts.length > 0) {
                     const discount = await FilialDiscountList.findByPk(
                         prices.discounts[0].filial_discount_list_id
                     )
@@ -1137,21 +1137,26 @@ class ReceivableController {
                                 updated_by: req.userId,
                             })
                             .then(async (receivable) => {
-                                const discount =
-                                    await FilialDiscountList.findByPk(
-                                        prices.discounts[0]
-                                            .filial_discount_list_id
-                                    )
-                                Receivablediscounts.create({
-                                    receivable_id: receivable.id,
-                                    discount_id: discount.id,
-                                    name: discount.name,
-                                    type: discount.type,
-                                    value: discount.value,
-                                    percent: discount.percent,
-                                    created_by: 2,
-                                    created_at: new Date(),
-                                })
+                                if (
+                                    prices.discounts &&
+                                    prices.discounts.length > 0
+                                ) {
+                                    const discount =
+                                        await FilialDiscountList.findByPk(
+                                            prices.discounts[0]
+                                                .filial_discount_list_id
+                                        )
+                                    Receivablediscounts.create({
+                                        receivable_id: receivable.id,
+                                        discount_id: discount.id,
+                                        name: discount.name,
+                                        type: discount.type,
+                                        value: discount.value,
+                                        percent: discount.percent,
+                                        created_by: 2,
+                                        created_at: new Date(),
+                                    })
+                                }
                                 console.log('receivable updated')
                             })
                     })
