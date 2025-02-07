@@ -84,16 +84,21 @@ class ProspectPaymentController {
                 },
             })
 
+            let create_tuition_fee = false
+
             if (tuitionFee && tuitionFee.dataValues.status === 'Pending') {
+                create_tuition_fee = true
                 used_invoice = tuitionFee.dataValues.invoice_number
                 await tuitionFee.destroy()
-                tuitionFee = null
             }
+
+            let create_registration_fee = false
 
             if (
                 registrationFee &&
                 registrationFee.dataValues.status === 'Pending'
             ) {
+                create_registration_fee = true
                 if (!used_invoice) {
                     used_invoice = registrationFee.dataValues.invoice_number
                 }
@@ -115,7 +120,6 @@ class ProspectPaymentController {
                         .then(async () => {
                             await textPaymentTransaction.destroy()
                             await registrationFee.destroy()
-                            registrationFee = null
                         })
                         .catch((error) => {
                             registrationFee = null
@@ -127,7 +131,7 @@ class ProspectPaymentController {
                 }
             }
 
-            if (!registrationFee) {
+            if (create_registration_fee) {
                 console.log(
                     'creating registration fee receivable, invoice number:',
                     used_invoice
@@ -140,7 +144,7 @@ class ProspectPaymentController {
                 })
             }
 
-            if (!tuitionFee) {
+            if (create_tuition_fee) {
                 console.log(
                     'creating tuition fee receivable, invoice number:',
                     used_invoice
