@@ -257,7 +257,6 @@ class ProspectController {
                                 where: {
                                     canceled_at: null,
                                 },
-                                order: [['created_at', 'DESC']],
                             },
                             {
                                 model: Enrollmentsponsor,
@@ -307,6 +306,14 @@ class ProspectController {
                     },
                 ],
                 where: { canceled_at: null },
+                order: [
+                    [
+                        'enrollments',
+                        'enrollmenttimelines',
+                        'created_at',
+                        'DESC',
+                    ],
+                ],
             })
 
             if (!prospect) {

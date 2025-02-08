@@ -1868,17 +1868,23 @@ export default async function enrollment(doc = null, id = '') {
             }
         )
 
-    helperHeight += 40
+    helperHeight += 50
 
     signatureLine({
         doc,
         maxWidth,
         text: 'SIGNATURE',
-        width: '1/4',
+        width: '1/2',
         topPos: helperHeight,
-        leftPos: 0,
+        leftPos: '1',
         height: 40,
     })
+
+    if (fs.existsSync(studentSignatureFile)) {
+        doc.image(studentSignatureFile, 130, helperHeight - 2, {
+            width: 82,
+        })
+    }
 
     signatureLine({
         doc,
@@ -1886,9 +1892,17 @@ export default async function enrollment(doc = null, id = '') {
         text: 'DATE (MM/DD/YYYY)',
         width: '1/4',
         topPos: helperHeight,
-        leftPos: '2',
+        leftPos: '3',
         height: 40,
     })
+
+    doc.fontSize(8)
+        .fillColor('#111')
+        .text(
+            format(signature.dataValues.created_at, 'MM/dd/yyyy'),
+            360,
+            helperHeight + 28
+        )
 
     helperHeight += 80
 
@@ -1907,17 +1921,23 @@ export default async function enrollment(doc = null, id = '') {
             }
         )
 
-    helperHeight += 28
+    helperHeight += 50
 
     signatureLine({
         doc,
         maxWidth,
         text: 'SIGNATURE',
-        width: '1/4',
+        width: '1/2',
         topPos: helperHeight,
-        leftPos: 0,
+        leftPos: '1',
         height: 40,
     })
+
+    if (fs.existsSync(studentSignatureFile)) {
+        doc.image(studentSignatureFile, 130, helperHeight - 2, {
+            width: 82,
+        })
+    }
 
     signatureLine({
         doc,
@@ -1925,9 +1945,17 @@ export default async function enrollment(doc = null, id = '') {
         text: 'DATE (MM/DD/YYYY)',
         width: '1/4',
         topPos: helperHeight,
-        leftPos: '2',
+        leftPos: '3',
         height: 40,
     })
+
+    doc.fontSize(8)
+        .fillColor('#111')
+        .text(
+            format(signature.dataValues.created_at, 'MM/dd/yyyy'),
+            360,
+            helperHeight + 28
+        )
 
     helperHeight += 60
 
@@ -1941,17 +1969,23 @@ export default async function enrollment(doc = null, id = '') {
         }
     )
 
-    helperHeight += 28
+    helperHeight += 50
 
     signatureLine({
         doc,
         maxWidth,
         text: 'SIGNATURE',
-        width: '1/4',
+        width: '1/2',
         topPos: helperHeight,
-        leftPos: 0,
+        leftPos: '1',
         height: 40,
     })
+
+    if (fs.existsSync(studentSignatureFile)) {
+        doc.image(studentSignatureFile, 130, helperHeight - 2, {
+            width: 82,
+        })
+    }
 
     signatureLine({
         doc,
@@ -1959,9 +1993,17 @@ export default async function enrollment(doc = null, id = '') {
         text: 'DATE (MM/DD/YYYY)',
         width: '1/4',
         topPos: helperHeight,
-        leftPos: '2',
+        leftPos: '3',
         height: 40,
     })
+
+    doc.fontSize(8)
+        .fillColor('#111')
+        .text(
+            format(signature.dataValues.created_at, 'MM/dd/yyyy'),
+            360,
+            helperHeight + 28
+        )
 
     footer({ doc, maxWidth, id, page: 4, pages: 6 + enrollmentSponsor.length })
 
@@ -1989,7 +2031,7 @@ export default async function enrollment(doc = null, id = '') {
         //     )
         //     .font('Helvetica')
 
-        // helperHeight += 24
+        helperHeight += 24
 
         headerLine({
             doc,
@@ -2323,49 +2365,51 @@ export default async function enrollment(doc = null, id = '') {
 
         // helperHeight += 30
 
-        headerLine({
-            doc,
-            maxWidth,
-            width: 350,
-            topPos: helperHeight,
-            text: `DEPENDENT INFORMATION (F-2 VISA - SPOUSE AND CHILDREN)`,
-        })
+        if (enrollmentDependents.length > 0) {
+            headerLine({
+                doc,
+                maxWidth,
+                width: 350,
+                topPos: helperHeight,
+                text: `DEPENDENT INFORMATION (F-2 VISA - SPOUSE AND CHILDREN)`,
+            })
 
-        enrollmentDependents.map((dependent, index) => {
-            // console.log(dependent.dataValues)
-            if (dependent) {
-                helperHeight += 28
-                inputLine({
-                    doc,
-                    maxWidth,
-                    text: 'DEPENDENT FULL NAME',
-                    width: '1/4',
-                    topPos: helperHeight,
-                    leftPos: '1',
-                    answer: dependent.dataValues.name,
-                })
+            enrollmentDependents.map((dependent, index) => {
+                // console.log(dependent.dataValues)
+                if (dependent) {
+                    helperHeight += 28
+                    inputLine({
+                        doc,
+                        maxWidth,
+                        text: 'DEPENDENT FULL NAME',
+                        width: '1/4',
+                        topPos: helperHeight,
+                        leftPos: '1',
+                        answer: dependent.dataValues.name,
+                    })
 
-                // inputLine({
-                //     doc,
-                //     maxWidth,
-                //     text: 'DEPENDENT TYPE',
-                //     width: '1/4',
-                //     topPos: helperHeight,
-                //     leftPos: '2',
-                //     answer: dependent.dataValues.dept1_type,
-                // })
+                    // inputLine({
+                    //     doc,
+                    //     maxWidth,
+                    //     text: 'DEPENDENT TYPE',
+                    //     width: '1/4',
+                    //     topPos: helperHeight,
+                    //     leftPos: '2',
+                    //     answer: dependent.dataValues.dept1_type,
+                    // })
 
-                inputLine({
-                    doc,
-                    maxWidth,
-                    text: 'GENDER',
-                    width: '1/2',
-                    topPos: helperHeight,
-                    leftPos: '3',
-                    answer: dependent.dataValues.gender,
-                })
-            }
-        })
+                    inputLine({
+                        doc,
+                        maxWidth,
+                        text: 'GENDER',
+                        width: '1/2',
+                        topPos: helperHeight,
+                        leftPos: '3',
+                        answer: dependent.dataValues.gender,
+                    })
+                }
+            })
+        }
 
         helperHeight += 30
 
@@ -2937,22 +2981,19 @@ export default async function enrollment(doc = null, id = '') {
     signatureLine({
         doc,
         maxWidth,
-        text: 'DATE (MM/DD/YYYY)',
+        text: 'NAME',
         width: '1/4',
         topPos: helperHeight,
         leftPos: '1',
         height: 40,
     })
 
-    signatureLine({
-        doc,
-        maxWidth,
-        text: 'NAME',
-        width: '1/4',
-        topPos: helperHeight,
-        leftPos: '2',
-        height: 40,
-    })
+    doc.fontSize(8)
+        .fillColor('#111')
+        .text(fullName, 0, helperHeight + 28, {
+            width: 200,
+            align: 'center',
+        })
 
     signatureLine({
         doc,
@@ -2960,9 +3001,33 @@ export default async function enrollment(doc = null, id = '') {
         text: 'SIGNATURE',
         width: '1/2',
         topPos: helperHeight,
-        leftPos: '3',
+        leftPos: '2',
         height: 40,
     })
+
+    if (fs.existsSync(studentSignatureFile)) {
+        doc.image(studentSignatureFile, 260, helperHeight - 2, {
+            width: 82,
+        })
+    }
+
+    signatureLine({
+        doc,
+        maxWidth,
+        text: 'DATE (MM/DD/YYYY)',
+        width: '1/4',
+        topPos: helperHeight,
+        leftPos: '4',
+        height: 40,
+    })
+
+    doc.fontSize(8)
+        .fillColor('#111')
+        .text(
+            format(signature.dataValues.created_at, 'MM/dd/yyyy'),
+            495,
+            helperHeight + 28
+        )
 
     footer({ doc, maxWidth, id, page: 7, pages: 6 + enrollmentSponsor.length })
 
