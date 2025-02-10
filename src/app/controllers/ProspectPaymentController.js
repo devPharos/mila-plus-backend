@@ -529,7 +529,8 @@ class ProspectPaymentController {
                                 student.dataValues.processsubstatus_id,
                             phase: 'Student Application',
                             phase_step: 'Payment Link Sent',
-                            step_status: 'The link has been sent to student.',
+                            step_status:
+                                'Payment link has been sent to student.',
                             expected_date: format(
                                 addDays(new Date(), 3),
                                 'yyyyMMdd'

@@ -1550,12 +1550,7 @@ class EnrollmentController {
                             {
                                 transaction: t,
                             }
-                        ).then(async () => {
-                            await mailEnrollmentToStudent({
-                                enrollment_id: enrollment.id,
-                                student_id: student.id,
-                            })
-                        })
+                        )
                     })
                 )
 

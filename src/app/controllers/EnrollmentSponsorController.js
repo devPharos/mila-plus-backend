@@ -96,6 +96,12 @@ class EnrollmentsponsorController {
                 })
             }
 
+            if (enrollmentsponsor.dataValues.signature) {
+                return res.status(400).json({
+                    error: 'You cannot remove a sponsor from this enrollment.',
+                })
+            }
+
             const enrollment = await Enrollment.findByPk(
                 enrollmentsponsor.dataValues.enrollment_id
             )

@@ -284,9 +284,12 @@ class EmergepayController {
                     created_at: new Date(),
                     created_by: 2,
                 }).then(async (emergepaytransaction) => {
+                    console.log('emergepaytransaction', emergepaytransaction)
+                    console.log('resultMessage', resultMessage)
                     const receivable = await Receivable.findByPk(
                         externalTransactionId
                     )
+                    console.log('receivable', receivable)
                     if (receivable && resultMessage === 'Approved') {
                         const amountPaidBalance = parseFloat(amountProcessed)
                         settlement({
