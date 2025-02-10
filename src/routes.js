@@ -53,6 +53,7 @@ import multer from 'multer'
 import RecurrenceController from './app/controllers/RecurrenceController'
 import FilialDiscountListController from './app/controllers/FilialDiscountListController'
 import FileController from './app/controllers/FileController'
+import SettlementController from './app/controllers/SettlementController'
 
 const routes = new Router()
 
@@ -418,6 +419,11 @@ routes.put('/receivables/:receivable_id', ReceivableController.update)
 routes.delete('/receivables/:receivable_id', ReceivableController.delete)
 routes.post('/receivables/refund/:receivable_id', ReceivableController.refund)
 routes.post('/receivables/settlement', ReceivableController.settlement)
+
+// settlements
+routes.get('/settlements', SettlementController.index)
+routes.get('/settlements/:receivable_id', SettlementController.show)
+routes.delete('/settlements/:settlement_id', SettlementController.delete)
 
 // receivable installment
 routes.get('/receivableinstallments', ReceivableInstallmentController.index)

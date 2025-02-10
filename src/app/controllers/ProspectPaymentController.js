@@ -13,10 +13,14 @@ import { addDays, format, parseISO } from 'date-fns'
 import { emergepay } from '../../config/emergepay'
 import { createIssuerFromStudent } from './IssuerController'
 import {
+    cancelInvoice,
     createRegistrationFeeReceivable,
     createTuitionFeeReceivable,
 } from './ReceivableController'
 import PaymentMethod from '../models/PaymentMethod'
+import axios from 'axios'
+import Parcelowpaymentlink from '../models/Parcelowpaymentlink'
+import { parcelowAPI } from '../../config/parcelowAPI'
 
 const { Op } = Sequelize
 
@@ -103,34 +107,9 @@ class ProspectPaymentController {
                 if (!used_invoice) {
                     used_invoice = registrationFee.dataValues.invoice_number
                 }
-                const textPaymentTransaction =
-                    await Textpaymenttransaction.findOne({
-                        where: {
-                            receivable_id: registrationFee.id,
-                            canceled_at: null,
-                        },
-                    })
-
-                if (textPaymentTransaction) {
-                    emergepay
-                        .cancelTextToPayTransaction({
-                            paymentPageId:
-                                textPaymentTransaction.dataValues
-                                    .payment_page_id,
-                        })
-                        .then(async () => {
-                            textPaymentTransaction.destroy().then(() => {
-                                registrationFee.destroy()
-                            })
-                        })
-                        .catch((error) => {
-                            registrationFee = null
-                            console.log(error)
-                        })
-                } else {
-                    await registrationFee.destroy()
-                    registrationFee = null
-                }
+                await cancelInvoice(registrationFee.dataValues.invoice_number)
+                await registrationFee.destroy()
+                registrationFee = null
             } else if (
                 registrationFee &&
                 registrationFee.dataValues.status === 'Paid'
@@ -286,6 +265,98 @@ class ProspectPaymentController {
                         t.rollback()
                         const className = 'EmergepayController'
                         const functionName = 'textToPay'
+                        MailLog({ className, functionName, req, err })
+                        return res.status(500).json({
+                            error: err,
+                        })
+                    })
+            } else if (
+                paymentMethod.dataValues.description
+                    .toUpperCase()
+                    .includes('PARCELOW')
+            ) {
+                parcelowAPI
+                    .post(`/oauth/token`, {
+                        client_id: process.env.PARCELOW_CLIENT_ID,
+                        client_secret: process.env.PARCELOW_CLIENT_SECRET,
+                        grant_type: 'client_credentials',
+                    })
+                    .then(async (response) => {
+                        console.log('Conectou')
+                        const { access_token } = response.data
+                        parcelowAPI.defaults.headers.common[
+                            'Authorization'
+                        ] = `Bearer ${access_token}`
+
+                        await parcelowAPI
+                            .post(`/api/orders`, {
+                                reference: 'OrderReference01',
+                                partner_reference: 'Reference_partner',
+                                client: {
+                                    cpf: '999.879.546-87',
+                                    name: 'John Doe',
+                                    email: 'john@doe.com',
+                                    birthdate: '1982-01-14',
+                                    cep: '12345698',
+                                    phone: '15985698569',
+                                    address_street: null,
+                                    address_number: null,
+                                    address_neighborhood: null,
+                                    address_city: null,
+                                    address_state: null,
+                                    address_complement: null,
+                                },
+                                items: [
+                                    {
+                                        reference: 'ItemReference01',
+                                        description: 'Registration fee',
+                                        quantity: 1,
+                                        amount: 260,
+                                    },
+                                    {
+                                        reference: 'ItemReference02',
+                                        description: 'Tuition Fee',
+                                        quantity: 1,
+                                        amount: 489,
+                                    },
+                                ],
+                                redirect: {
+                                    success:
+                                        'https://milaplus-tst.pharosit.com.br/parcelow_postback?success',
+                                    failed: 'https://milaplus-tst.pharosit.com.br/parcelow_postback?success',
+                                },
+                            })
+                            .then(async (response) => {
+                                console.log('Gerou link')
+                                const { order_id, url_checkout } = response.data
+                                await Parcelowpaymentlink.create({
+                                    receivable_id: registrationFee.id,
+                                    payment_page_url: url_checkout,
+                                    payment_page_id: url_checkout.substring(
+                                        url_checkout.lastIndexOf('/') + 1
+                                    ),
+                                    order_id,
+                                    created_by: req.userId,
+                                    created_at: new Date(),
+                                }).then(async () => {
+                                    generateEmail({
+                                        filial,
+                                        tuitionFee,
+                                        registrationFee,
+                                        amount,
+                                        paymentPageUrl,
+                                        issuerExists,
+                                        enrollment,
+                                        student,
+                                        paymentMethod,
+                                    })
+                                })
+                            })
+                    })
+                    .catch((err) => {
+                        t.rollback()
+                        const className = 'ParcelowController'
+                        const functionName = 'ParcelowPaymentLink'
                         MailLog({ className, functionName, req, err })
                         return res.status(500).json({
                             error: err,

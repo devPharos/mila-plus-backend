@@ -14,6 +14,7 @@ import Settlement from '../models/Settlement'
 import Student from '../models/Student'
 import Enrollment from '../models/Enrollment'
 import Enrollmenttimeline from '../models/Enrollmenttimeline'
+import Textpaymenttransaction from '../models/Textpaymenttransaction'
 
 export async function createPaidTimeline(receivable_id = null) {
     const receivable = await Receivable.findByPk(receivable_id)
@@ -156,6 +157,40 @@ export async function settlement(
         const className = 'EmergepayController'
         const functionName = 'settlement'
         MailLog({ className, functionName, req, err })
+    }
+}
+
+export async function verifyAndCancelTextToPayTransaction(
+    receivable_id = null
+) {
+    try {
+        if (!receivable_id) {
+            return
+        }
+        const receivable = await Receivable.findByPk(receivable_id)
+        if (!receivable) {
+            return
+        }
+        const textPaymentTransaction = await Textpaymenttransaction.findOne({
+            where: {
+                receivable_id: receivable.id,
+                canceled_at: null,
+            },
+        })
+        if (textPaymentTransaction) {
+            emergepay
+                .cancelTextToPayTransaction({
+                    paymentPageId:
+                        textPaymentTransaction.dataValues.payment_page_id,
+                })
+                .then(async () => {
+                    textPaymentTransaction.destroy()
+                })
+        }
+    } catch (err) {
+        const className = 'EmergepayController'
+        const functionName = 'verifyAndCancelTextToPayTransaction'
+        MailLog({ className, functionName, req: null, err })
     }
 }
 
