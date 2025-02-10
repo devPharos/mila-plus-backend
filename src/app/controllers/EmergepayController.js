@@ -58,6 +58,7 @@ export async function settlement(
 
             await Enrollmenttimeline.create({
                 ...lastTimeline.dataValues,
+                id: null,
                 phase_step: 'Payment Link Sent',
                 step_status: `Paid by the student.`,
                 expected_date: null,
@@ -143,9 +144,6 @@ export async function settlement(
         const className = 'EmergepayController'
         const functionName = 'settlement'
         MailLog({ className, functionName, req, err })
-        return res.status(500).json({
-            error: err,
-        })
     }
 }
 
