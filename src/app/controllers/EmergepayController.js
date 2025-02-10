@@ -27,8 +27,8 @@ export async function settlement({
         }
 
         if (
-            receivable.dataValues.type === 'Registration fee' ||
-            receivable.dataValues.type === 'Tuition fee'
+            receivable.dataValues.type_detail === 'Registration fee' ||
+            receivable.dataValues.type_detail === 'Tuition fee'
         ) {
             const student = await Student.findByPk(
                 receivable.dataValues.student_id
