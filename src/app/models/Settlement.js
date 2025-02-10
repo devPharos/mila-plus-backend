@@ -29,6 +29,10 @@ class Settlement extends Model {
                         key: 'id',
                     },
                 },
+                settlement_date: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
                 created_at: {
                     type: Sequelize.DATE,
                     allowNull: false,

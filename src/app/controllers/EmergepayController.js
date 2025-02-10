@@ -16,7 +16,7 @@ import Enrollment from '../models/Enrollment'
 import Enrollmenttimeline from '../models/Enrollmenttimeline'
 
 export async function createPaidTimeline(receivable_id = null) {
-    const receivable = Receivable.findByPk(receivable_id)
+    const receivable = await Receivable.findByPk(receivable_id)
 
     if (!receivable) return false
 
@@ -84,6 +84,7 @@ export async function settlement(
             receivable_id: receivable.id,
             amount: parcial ? amountPaidBalance : receivable.dataValues.balance,
             paymentmethod_id: 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
+            settlement_date: format(new Date(), 'yyyyMMdd'),
             created_at: new Date(),
             created_by: 2,
         })
@@ -127,6 +128,7 @@ export async function settlement(
                                 : receivable.dataValues.balance,
                             paymentmethod_id:
                                 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
+                            settlement_date: format(new Date(), 'yyyyMMdd'),
                             created_at: new Date(),
                             created_by: 2,
                         }).then(() => {
@@ -161,7 +163,7 @@ class EmergepayController {
     async simpleForm(req, res) {
         const { receivable_id, amount } = req.body
         const receivable = await Receivable.findByPk(receivable_id)
-        const issuer = await Issuer.findByPk(receivable.dataValues.issuer_id)
+        // const issuer = await Issuer.findByPk(receivable.dataValues.issuer_id)
         try {
             var config = {
                 transactionType: TransactionType.CreditSale,
@@ -190,7 +192,6 @@ class EmergepayController {
                 ],
             }
 
-            console.log(config)
             emergepay
                 .startTransaction(config)
                 .then(function (transactionToken) {
