@@ -82,7 +82,6 @@ export async function settlement({
                                         ? amountPaidBalance
                                         : receivable.dataValues.balance),
                                 status_date: format(new Date(), 'yyyyMMdd'),
-                                authorization_code: approvalNumberResult,
                                 updated_at: new Date(),
                                 updated_by: 2,
                             })
