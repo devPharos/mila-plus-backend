@@ -1136,6 +1136,7 @@ class ReceivableController {
                                 updated_by: req.userId,
                             })
                             .then(async (receivable) => {
+                                createPaidTimeline(receivable.id)
                                 if (
                                     prices.discounts &&
                                     prices.discounts.length > 0
