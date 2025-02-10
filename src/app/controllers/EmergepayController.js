@@ -15,10 +15,10 @@ import Student from '../models/Student'
 import Enrollment from '../models/Enrollment'
 import Enrollmenttimeline from '../models/Enrollmenttimeline'
 
-export async function settlement({
-    receivable_id = null,
-    amountPaidBalance = 0,
-}) {
+export async function settlement(
+    { receivable_id = null, amountPaidBalance = 0 },
+    req = null
+) {
     try {
         const receivable = await Receivable.findByPk(receivable_id)
 
@@ -136,7 +136,7 @@ export async function settlement({
                     })
                 })
             })
-    } catch (error) {
+    } catch (err) {
         const className = 'EmergepayController'
         const functionName = 'settlement'
         MailLog({ className, functionName, req, err })
@@ -351,10 +351,13 @@ class EmergepayController {
                     )
                     if (receivable && resultMessage === 'Approved') {
                         const amountPaidBalance = parseFloat(amountProcessed)
-                        settlement({
-                            receivable_id: receivable.id,
-                            amountPaidBalance,
-                        })
+                        settlement(
+                            {
+                                receivable_id: receivable.id,
+                                amountPaidBalance,
+                            },
+                            req
+                        )
                     }
                 })
             } else {
