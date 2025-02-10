@@ -26,13 +26,15 @@ export async function settlement({
             return false
         }
 
+        console.log(receivable.dataValues.type_detail)
         if (
-            receivable.dataValues.type === 'Registration fee' ||
-            receivable.dataValues.type === 'Tuition fee'
+            receivable.dataValues.type_detail === 'Registration fee' ||
+            receivable.dataValues.type_detail === 'Tuition fee'
         ) {
             const student = await Student.findByPk(
                 receivable.dataValues.student_id
             )
+            console.log('Student', student.id)
 
             const enrollment = await Enrollment.findOne({
                 where: {
@@ -40,6 +42,7 @@ export async function settlement({
                     canceled_at: null,
                 },
             })
+            console.log('Enrollment', enrollment.id)
 
             const lastTimeline = await Enrollmenttimeline.findOne({
                 where: {
@@ -48,6 +51,7 @@ export async function settlement({
                 },
                 order: [['created_at', 'DESC']],
             })
+            console.log('lastTimeline', lastTimeline.id)
 
             await Enrollmenttimeline.create({
                 ...lastTimeline.dataValues,
@@ -56,6 +60,8 @@ export async function settlement({
                 expected_date: null,
                 created_at: new Date(),
                 created_by: 2,
+            }).then((timeline) => {
+                console.log('timeline', timeline.id)
             })
         }
 
