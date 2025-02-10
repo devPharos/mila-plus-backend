@@ -16,8 +16,6 @@ export async function settlement({
     receivable_id = null,
     amountPaidBalance = 0,
 }) {
-    const connection = new Sequelize(databaseConfig)
-    const t = await connection.transaction()
     try {
         const receivable = await Receivable.findByPk(receivable_id)
 
@@ -27,37 +25,25 @@ export async function settlement({
 
         const parcial = amountPaidBalance < receivable.dataValues.balance
 
-        await Settlement.create(
-            {
-                receivable_id: receivable.id,
-                amount: parcial
-                    ? amountPaidBalance
-                    : receivable.dataValues.balance,
-                paymentmethod_id: 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
-                created_at: new Date(),
-                created_by: 2,
-            },
-            {
-                transaction: t,
-            }
-        )
+        await Settlement.create({
+            receivable_id: receivable.id,
+            amount: parcial ? amountPaidBalance : receivable.dataValues.balance,
+            paymentmethod_id: 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
+            created_at: new Date(),
+            created_by: 2,
+        })
         receivable
-            .update(
-                {
-                    status: parcial ? 'Parcial Paid' : 'Paid',
-                    balance:
-                        receivable.balance -
-                        (parcial
-                            ? amountPaidBalance
-                            : receivable.dataValues.balance),
-                    status_date: format(new Date(), 'yyyyMMdd'),
-                    updated_at: new Date(),
-                    updated_by: 2,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            .update({
+                status: parcial ? 'Parcial Paid' : 'Paid',
+                balance:
+                    receivable.balance -
+                    (parcial
+                        ? amountPaidBalance
+                        : receivable.dataValues.balance),
+                status_date: format(new Date(), 'yyyyMMdd'),
+                updated_at: new Date(),
+                updated_by: 2,
+            })
             .then(() => {
                 amountPaidBalance -=
                     receivable.dataValues.balance > amountPaidBalance
@@ -78,21 +64,16 @@ export async function settlement({
                     receivables.forEach(async (receivable) => {
                         const parcial =
                             amountPaidBalance < receivable.dataValues.balance
-                        Settlement.create(
-                            {
-                                receivable_id: receivable.id,
-                                amount: parcial
-                                    ? amountPaidBalance
-                                    : receivable.dataValues.balance,
-                                paymentmethod_id:
-                                    'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
-                                created_at: new Date(),
-                                created_by: 2,
-                            },
-                            {
-                                transaction: t,
-                            }
-                        ).then(() => {
+                        Settlement.create({
+                            receivable_id: receivable.id,
+                            amount: parcial
+                                ? amountPaidBalance
+                                : receivable.dataValues.balance,
+                            paymentmethod_id:
+                                'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
+                            created_at: new Date(),
+                            created_by: 2,
+                        }).then(() => {
                             receivable.update({
                                 status: parcial ? 'Parcial Paid' : 'Paid',
                                 balance:
@@ -115,7 +96,6 @@ export async function settlement({
                 })
             })
     } catch (error) {
-        await t.rollback()
         const className = 'EmergepayController'
         const functionName = 'settlement'
         MailLog({ className, functionName, req, err })
@@ -325,12 +305,9 @@ class EmergepayController {
                     created_at: new Date(),
                     created_by: 2,
                 }).then(async (emergepaytransaction) => {
-                    console.log('emergepaytransaction', emergepaytransaction)
-                    console.log('resultMessage', resultMessage)
                     const receivable = await Receivable.findByPk(
                         externalTransactionId
                     )
-                    console.log('receivable', receivable)
                     if (receivable && resultMessage === 'Approved') {
                         const amountPaidBalance = parseFloat(amountProcessed)
                         settlement({
