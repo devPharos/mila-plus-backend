@@ -56,10 +56,22 @@ export async function settlement(
             })
             console.log('lastTimeline', lastTimeline.id)
 
+            const {
+                enrollment_id,
+                processtype_id,
+                status,
+                processsubstatus_id,
+                phase,
+                phase_step,
+            } = lastTimeline.dataValues
+
             await Enrollmenttimeline.create({
-                ...lastTimeline.dataValues,
-                id: null,
-                phase_step: 'Payment Link Sent',
+                enrollment_id,
+                processtype_id,
+                status,
+                processsubstatus_id,
+                phase,
+                phase_step,
                 step_status: `Paid by the student.`,
                 expected_date: null,
                 created_at: new Date(),
