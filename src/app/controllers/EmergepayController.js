@@ -11,6 +11,9 @@ import crypto from 'crypto'
 import { format } from 'date-fns'
 import Issuer from '../models/Issuer'
 import Settlement from '../models/Settlement'
+import Student from '../models/Student'
+import Enrollment from '../models/Enrollment'
+import Enrollmenttimeline from '../models/Enrollmenttimeline'
 
 export async function settlement({
     receivable_id = null,
@@ -21,6 +24,39 @@ export async function settlement({
 
         if (!receivable || !amountPaidBalance) {
             return false
+        }
+
+        if (
+            receivable.dataValues.type === 'Registration fee' ||
+            receivable.dataValues.type === 'Tuition fee'
+        ) {
+            const student = await Student.findByPk(
+                receivable.dataValues.student_id
+            )
+
+            const enrollment = await Enrollment.findOne({
+                where: {
+                    student_id: student.dataValues.id,
+                    canceled_at: null,
+                },
+            })
+
+            const lastTimeline = await Enrollmenttimeline.findOne({
+                where: {
+                    enrollment_id: enrollment.dataValues.id,
+                    canceled_at: null,
+                },
+                order: [['created_at', 'DESC']],
+            })
+
+            await Enrollmenttimeline.create({
+                ...lastTimeline.dataValues,
+                phase_step: 'Payment Link Sent',
+                step_status: `Paid by the student.`,
+                expected_date: null,
+                created_at: new Date(),
+                created_by: 2,
+            })
         }
 
         const parcial = amountPaidBalance < receivable.dataValues.balance
