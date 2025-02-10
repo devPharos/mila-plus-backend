@@ -45,6 +45,11 @@ export async function settlement({
             .update(
                 {
                     status: parcial ? 'Parcial Paid' : 'Paid',
+                    balance:
+                        receivable.balance -
+                        (parcial
+                            ? amountPaidBalance
+                            : receivable.dataValues.balance),
                     status_date: format(new Date(), 'yyyyMMdd'),
                     updated_at: new Date(),
                     updated_by: 2,
@@ -90,6 +95,11 @@ export async function settlement({
                         ).then(() => {
                             receivable.update({
                                 status: parcial ? 'Parcial Paid' : 'Paid',
+                                balance:
+                                    receivable.balance -
+                                    (parcial
+                                        ? amountPaidBalance
+                                        : receivable.dataValues.balance),
                                 status_date: format(new Date(), 'yyyyMMdd'),
                                 authorization_code: approvalNumberResult,
                                 updated_at: new Date(),
