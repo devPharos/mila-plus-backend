@@ -15,10 +15,10 @@ import Student from '../models/Student'
 import Enrollment from '../models/Enrollment'
 import Enrollmenttimeline from '../models/Enrollmenttimeline'
 
-export async function settlement({
-    receivable_id = null,
-    amountPaidBalance = 0,
-}) {
+export async function settlement(
+    { receivable_id = null, amountPaidBalance = 0 },
+    req = null
+) {
     try {
         const receivable = await Receivable.findByPk(receivable_id)
 
@@ -31,9 +31,12 @@ export async function settlement({
             receivable.dataValues.type_detail === 'Registration fee' ||
             receivable.dataValues.type_detail === 'Tuition fee'
         ) {
-            const student = await Student.findByPk(
-                receivable.dataValues.student_id
+            const issuer = await Issuer.findByPk(
+                receivable.dataValues.issuer_id
             )
+            console.log('Issuer', issuer.id)
+
+            const student = await Student.findByPk(issuer.dataValues.student_id)
             console.log('Student', student.id)
 
             const enrollment = await Enrollment.findOne({
@@ -136,7 +139,7 @@ export async function settlement({
                     })
                 })
             })
-    } catch (error) {
+    } catch (err) {
         const className = 'EmergepayController'
         const functionName = 'settlement'
         MailLog({ className, functionName, req, err })
@@ -351,10 +354,13 @@ class EmergepayController {
                     )
                     if (receivable && resultMessage === 'Approved') {
                         const amountPaidBalance = parseFloat(amountProcessed)
-                        settlement({
-                            receivable_id: receivable.id,
-                            amountPaidBalance,
-                        })
+                        settlement(
+                            {
+                                receivable_id: receivable.id,
+                                amountPaidBalance,
+                            },
+                            req
+                        )
                     }
                 })
             } else {
