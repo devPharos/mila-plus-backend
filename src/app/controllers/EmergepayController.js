@@ -15,6 +15,58 @@ import Student from '../models/Student'
 import Enrollment from '../models/Enrollment'
 import Enrollmenttimeline from '../models/Enrollmenttimeline'
 
+export async function createPaidTimeline(receivable_id = null) {
+    const receivable = Receivable.findByPk(receivable_id)
+
+    if (!receivable) return false
+
+    if (
+        receivable.dataValues.type_detail === 'Registration fee' ||
+        receivable.dataValues.type_detail === 'Tuition fee'
+    ) {
+        const issuer = await Issuer.findByPk(receivable.dataValues.issuer_id)
+
+        const student = await Student.findByPk(issuer.dataValues.student_id)
+
+        const enrollment = await Enrollment.findOne({
+            where: {
+                student_id: student.dataValues.id,
+                canceled_at: null,
+            },
+        })
+
+        const lastTimeline = await Enrollmenttimeline.findOne({
+            where: {
+                enrollment_id: enrollment.dataValues.id,
+                canceled_at: null,
+            },
+            order: [['created_at', 'DESC']],
+        })
+
+        const {
+            enrollment_id,
+            processtype_id,
+            status,
+            processsubstatus_id,
+            phase,
+            phase_step,
+        } = lastTimeline.dataValues
+
+        await Enrollmenttimeline.create({
+            enrollment_id,
+            processtype_id,
+            status,
+            processsubstatus_id,
+            phase,
+            phase_step,
+            step_status: `Paid by the student.`,
+            expected_date: null,
+            created_at: new Date(),
+            created_by: 2,
+        })
+    }
+}
+
 export async function settlement(
     { receivable_id = null, amountPaidBalance = 0 },
     req = null
@@ -24,61 +76,6 @@ export async function settlement(
 
         if (!receivable || !amountPaidBalance) {
             return false
-        }
-
-        console.log(receivable.dataValues.type_detail)
-        if (
-            receivable.dataValues.type_detail === 'Registration fee' ||
-            receivable.dataValues.type_detail === 'Tuition fee'
-        ) {
-            const issuer = await Issuer.findByPk(
-                receivable.dataValues.issuer_id
-            )
-            console.log('Issuer', issuer.id)
-
-            const student = await Student.findByPk(issuer.dataValues.student_id)
-            console.log('Student', student.id)
-
-            const enrollment = await Enrollment.findOne({
-                where: {
-                    student_id: student.dataValues.id,
-                    canceled_at: null,
-                },
-            })
-            console.log('Enrollment', enrollment.id)
-
-            const lastTimeline = await Enrollmenttimeline.findOne({
-                where: {
-                    enrollment_id: enrollment.dataValues.id,
-                    canceled_at: null,
-                },
-                order: [['created_at', 'DESC']],
-            })
-            console.log('lastTimeline', lastTimeline.id)
-
-            const {
-                enrollment_id,
-                processtype_id,
-                status,
-                processsubstatus_id,
-                phase,
-                phase_step,
-            } = lastTimeline.dataValues
-
-            await Enrollmenttimeline.create({
-                enrollment_id,
-                processtype_id,
-                status,
-                processsubstatus_id,
-                phase,
-                phase_step,
-                step_status: `Paid by the student.`,
-                expected_date: null,
-                created_at: new Date(),
-                created_by: 2,
-            }).then((timeline) => {
-                console.log('timeline', timeline.id)
-            })
         }
 
         const parcial = amountPaidBalance < receivable.dataValues.balance
@@ -102,7 +99,8 @@ export async function settlement(
                 updated_at: new Date(),
                 updated_by: 2,
             })
-            .then(() => {
+            .then(async () => {
+                createPaidTimeline()
                 amountPaidBalance -=
                     receivable.dataValues.balance > amountPaidBalance
                         ? amountPaidBalance
