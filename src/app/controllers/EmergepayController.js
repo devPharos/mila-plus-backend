@@ -31,9 +31,12 @@ export async function settlement(
             receivable.dataValues.type_detail === 'Registration fee' ||
             receivable.dataValues.type_detail === 'Tuition fee'
         ) {
-            const student = await Student.findByPk(
-                receivable.dataValues.student_id
+            const issuer = await Issuer.findByPk(
+                receivable.dataValues.issuer_id
             )
+            console.log('Issuer', issuer.id)
+
+            const student = await Student.findByPk(issuer.dataValues.student_id)
             console.log('Student', student.id)
 
             const enrollment = await Enrollment.findOne({
