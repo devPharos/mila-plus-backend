@@ -1031,7 +1031,8 @@ class ReceivableController {
                     })
                 }
                 emergepay.tokenizedRefundTransaction({
-                    uniqueTransId: emergepaytransaction.dataValues.id,
+                    uniqueTransId:
+                        emergepaytransaction.dataValues.unique_trans_id,
                     externalTransactionId: receivableExists.id,
                     amount: refund_amount.toString(),
                 })
