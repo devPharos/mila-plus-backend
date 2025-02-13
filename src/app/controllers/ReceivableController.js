@@ -1034,7 +1034,6 @@ class ReceivableController {
                     uniqueTransId: emergepaytransaction.dataValues.id,
                     externalTransactionId: receivableExists.id,
                     amount: refund_amount.toString(),
-                    billingName: req.userId,
                 })
             }
 
