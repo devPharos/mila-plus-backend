@@ -10,7 +10,14 @@ import Issuer from '../models/Issuer'
 import FilialPriceList from '../models/FilialPriceList'
 import FilialDiscountList from '../models/FilialDiscountList'
 import Student from '../models/Student'
-import { addDays, differenceInDays, format, parseISO, subDays } from 'date-fns'
+import {
+    addDays,
+    differenceInDays,
+    format,
+    parseISO,
+    set,
+    subDays,
+} from 'date-fns'
 import { searchPromise } from '../functions/searchPromise'
 import { mailer } from '../../config/mailer'
 import { emergepay } from '../../config/emergepay'
@@ -19,6 +26,12 @@ import Emergepaytransaction from '../models/Emergepaytransaction'
 import Receivablediscounts from '../models/Receivablediscounts'
 import Studentdiscount from '../models/Studentdiscount'
 import Settlement from '../models/Settlement'
+import {
+    createPaidTimeline,
+    verifyAndCancelTextToPayTransaction,
+} from './EmergepayController'
+import Refund from '../models/Refund'
+import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
 
 export async function createRegistrationFeeReceivable({
     issuer_id,
@@ -102,9 +115,9 @@ export async function createRegistrationFeeReceivable({
             is_recurrence: false,
             contract_number: '',
             discount: discount.toFixed(2),
-            amount: filialPriceList.dataValues.registration_fee,
-            total: totalAmount,
-            balance: totalAmount,
+            amount: filialPriceList.dataValues.registration_fee.toFixed(2),
+            total: totalAmount.toFixed(2),
+            balance: totalAmount.toFixed(2),
             paymentmethod_id,
             paymentcriteria_id: '97db98d7-6ce3-4fe1-83e8-9042d41404ce',
             created_at: new Date(),
@@ -207,9 +220,9 @@ export async function createTuitionFeeReceivable({
             chartofaccount_id: 8,
             is_recurrence: false,
             contract_number: '',
-            amount: filialPriceList.dataValues.tuition,
-            total: totalAmount,
-            balance: totalAmount,
+            amount: filialPriceList.dataValues.tuition.toFixed(2),
+            total: totalAmount.toFixed(2),
+            balance: totalAmount.toFixed(2),
             paymentmethod_id,
             paymentcriteria_id: '97db98d7-6ce3-4fe1-83e8-9042d41404ce',
             created_at: new Date(),
@@ -218,7 +231,7 @@ export async function createTuitionFeeReceivable({
         return receivable
     } catch (err) {
         const className = 'ReceivableController'
-        const functionName = 'createRegistrationFeeReceivable'
+        const functionName = 'createTuitionFeeReceivable'
         MailLog({ className, functionName, req: null, err })
         return null
     }
@@ -677,9 +690,11 @@ export async function calculateFee(receivable = null) {
                 return acc + curr.dataValues.amount
             }, 0)
         receivable.update({
-            total: amount - discount + feesAmount,
-            balance: amount - discount + feesAmount - settledAmount,
-            fee: feesAmount,
+            total: (amount - discount + feesAmount).toFixed(2),
+            balance: (amount - discount + feesAmount - settledAmount).toFixed(
+                2
+            ),
+            fee: feesAmount.toFixed(2),
             updated_at: new Date(),
             updated_by: 2,
         })
@@ -713,6 +728,27 @@ export async function calculateFeesRecurrenceJob() {
             err,
         })
     }
+}
+
+export async function cancelInvoice(invoice_number = null) {
+    if (!invoice_number) return false
+    const promises = []
+    await Receivable.findAll({
+        where: {
+            invoice_number,
+            canceled_at: null,
+        },
+    }).then((receivables) => {
+        receivables.map(async (receivable) => {
+            promises.push(verifyAndCancelParcelowPaymentLink(receivable.id))
+            promises.push(verifyAndCancelTextToPayTransaction(receivable.id))
+            promises.push(receivable.destroy())
+        })
+
+        Promise.all(promises).then(() => {
+            return true
+        })
+    })
 }
 
 class ReceivableController {
@@ -885,24 +921,42 @@ class ReceivableController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const {
+                amount,
+                fee,
+                discount,
+                total,
+                type,
+                type_detail,
+                issuer_id,
+                entry_date,
+                due_date,
+                paymentmethod_id,
+                memo,
+                contract_number,
+                chartofaccount_id,
+            } = req.body
             const newReceivable = await Receivable.create(
                 {
-                    ...req.body,
-                    fee: req.body.fee ? req.body.fee : 0,
-                    is_recurrence: req.body.is_recurrence
-                        ? req.body.is_recurrence
-                        : false,
-                    total: req.body.total
-                        ? req.body.total
-                        : req.body.amount
-                        ? req.body.amount
-                        : 0,
                     company_id: 1,
+                    filial_id: req.body.filial_id,
+                    amount: amount ? parseFloat(amount).toFixed(2) : 0,
+                    fee: fee ? parseFloat(fee).toFixed(2) : 0,
+                    discount: discount ? parseFloat(discount).toFixed(2) : 0,
+                    total: total ? parseFloat(total).toFixed(2) : 0,
+                    balance: total ? parseFloat(total).toFixed(2) : 0,
+                    type,
+                    type_detail,
+                    issuer_id,
+                    entry_date,
+                    due_date,
+                    paymentmethod_id,
+                    memo,
+                    contract_number,
+                    chartofaccount_id,
+                    is_recurrence: false,
                     status: 'Pending',
-                    status_date: new Date().toString(),
-                    filial_id: req.body.filial_id
-                        ? req.body.filial_id
-                        : req.headers.filial,
+                    status_date: format(new Date(), 'yyyyMMdd'),
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -930,7 +984,10 @@ class ReceivableController {
         const t = await connection.transaction()
         try {
             const { receivable_id } = req.params
-            const { refund_amount, refund_reason } = req.body
+            let { refund_amount } = req.body
+            const { refund_reason, paymentmethod_id } = req.body
+
+            refund_amount = parseFloat(refund_amount)
 
             const receivableExists = await Receivable.findByPk(receivable_id)
 
@@ -940,26 +997,81 @@ class ReceivableController {
                     .json({ error: 'Receivable does not exist.' })
             }
 
-            if (receivableExists.dataValues.status !== 'Paid') {
+            const settlements = await Settlement.findAll({
+                where: {
+                    receivable_id: receivableExists.id,
+                    canceled_at: null,
+                },
+                order: [['created_at', 'DESC']],
+            })
+
+            if (!settlements) {
                 return res
                     .status(401)
-                    .json({ error: 'Receivable is not paid yet.' })
+                    .json({ error: 'Receivable does not have a settlement.' })
+            }
+            const parcial =
+                receivableExists.dataValues.balance + refund_amount <
+                receivableExists.dataValues.total
+                    ? true
+                    : false
+
+            if (paymentmethod_id === 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161') {
+                const emergepaytransaction = await Emergepaytransaction.findOne(
+                    {
+                        where: {
+                            external_transaction_id: receivableExists.id,
+                            canceled_at: null,
+                        },
+                    }
+                )
+                if (!emergepaytransaction) {
+                    return res.status(400).json({
+                        error: 'This receivable has not been paid by Gravity - Card. Please select another payment method.',
+                    })
+                }
+                emergepay.tokenizedRefundTransaction({
+                    uniqueTransId: emergepaytransaction.dataValues.id,
+                    externalTransactionId: receivableExists.id,
+                    amount: refund_amount,
+                    billingName: req.userId,
+                })
             }
 
-            await receivableExists.update(
+            await Refund.create(
                 {
-                    status: 'Pending',
-                    updated_at: new Date(),
-                    updated_by: req.userId,
+                    receivable_id: receivableExists.id,
+                    settlement_id: settlements[0].id,
+                    amount: refund_amount,
+                    paymentmethod_id: paymentmethod_id,
+                    refund_reason: refund_reason,
+                    refund_date: format(new Date(), 'yyyyMMdd'),
+                    created_at: new Date(),
+                    created_by: req.userId,
                 },
                 {
                     transaction: t,
                 }
-            )
-
-            await t.commit()
-
-            return res.json(receivableExists)
+            ).then(async () => {
+                await receivableExists
+                    .update(
+                        {
+                            status: parcial ? 'Parcial Paid' : 'Pending',
+                            balance:
+                                receivableExists.dataValues.balance +
+                                refund_amount,
+                            updated_at: new Date(),
+                            updated_by: req.userId,
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+                    .then(() => {
+                        t.commit()
+                        return res.json(receivableExists)
+                    })
+            })
         } catch (err) {
             await t.rollback()
             const className = 'ReceivableController'
@@ -996,14 +1108,6 @@ class ReceivableController {
                     .json({ error: 'Receivable does not exist.' })
             }
 
-            if (
-                req.body.due_date &&
-                receivableExists.due_date &&
-                req.body.due_date !== receivableExists.due_date
-            ) {
-                oldDueDate = receivableExists.due_date
-            }
-
             await receivableExists.update(
                 {
                     ...req.body,
@@ -1033,14 +1137,26 @@ class ReceivableController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { id } = req.params
+            const { receivable_id } = req.params
 
-            const receivableExists = await Receivable.findByPk(id)
+            const receivableExists = await Receivable.findByPk(receivable_id)
 
             if (!receivableExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Receivable does not exist.' })
+            }
+
+            if (receivableExists.dataValues.is_recurrence) {
+                return res.status(400).json({
+                    error: 'Recurrence payments cannot be deleted.',
+                })
+            }
+
+            if (receivableExists.dataValues.status !== 'Pending') {
+                return res.status(400).json({
+                    error: 'Settled receivables cannot be deleted.',
+                })
             }
 
             await receivableExists.update(
@@ -1071,6 +1187,7 @@ class ReceivableController {
     }
 
     async settlement(req, res) {
+        const connection = new Sequelize(databaseConfig)
         try {
             const {
                 receivables,
@@ -1089,7 +1206,7 @@ class ReceivableController {
                     })
                 }
 
-                let totalAmount = receivable.dataValues.total
+                let totalAmount = receivable.dataValues.balance
 
                 if (prices.discounts && prices.discounts.length > 0) {
                     const discount = await FilialDiscountList.findByPk(
@@ -1112,29 +1229,45 @@ class ReceivableController {
                     }
                 }
 
-                const difference = receivable.dataValues.total - totalAmount
+                const difference = receivable.dataValues.balance - totalAmount
 
                 const settledAmount =
-                    totalAmount > rec.total ? rec.total : totalAmount
+                    totalAmount > rec.balance ? rec.total : totalAmount
 
                 if (receivable.dataValues.status !== 'Paid') {
-                    Settlement.create({
-                        receivable_id: receivable.id,
-                        amount: settledAmount,
-                        paymentmethod_id,
-                        created_at: settlement_date,
-                        created_by: req.userId,
-                    }).then(() => {
+                    const t = await connection.transaction()
+                    Settlement.create(
+                        {
+                            receivable_id: receivable.id,
+                            amount: settledAmount,
+                            paymentmethod_id,
+                            settlement_date: settlement_date,
+                            created_at: new Date(),
+                            created_by: req.userId,
+                        },
+                        {
+                            transaction: t,
+                        }
+                    ).then(() => {
                         receivable
-                            .update({
-                                status: 'Paid',
-                                discount:
-                                    receivable.dataValues.discount + difference,
-                                total: receivable.dataValues.total - difference,
-                                balance: 0,
-                                updated_at: new Date(),
-                                updated_by: req.userId,
-                            })
+                            .update(
+                                {
+                                    status: 'Paid',
+                                    discount: (
+                                        receivable.dataValues.discount +
+                                        difference
+                                    ).toFixed(2),
+                                    total: (
+                                        receivable.dataValues.total - difference
+                                    ).toFixed(2),
+                                    balance: 0,
+                                    updated_at: new Date(),
+                                    updated_by: req.userId,
+                                },
+                                {
+                                    transaction: t,
+                                }
+                            )
                             .then(async (receivable) => {
                                 createPaidTimeline(receivable.id)
                                 if (
@@ -1146,18 +1279,30 @@ class ReceivableController {
                                             prices.discounts[0]
                                                 .filial_discount_list_id
                                         )
-                                    Receivablediscounts.create({
-                                        receivable_id: receivable.id,
-                                        discount_id: discount.id,
-                                        name: discount.name,
-                                        type: discount.type,
-                                        value: discount.value,
-                                        percent: discount.percent,
-                                        created_by: 2,
-                                        created_at: new Date(),
-                                    })
+                                    await Receivablediscounts.create(
+                                        {
+                                            receivable_id: receivable.id,
+                                            discount_id: discount.id,
+                                            name: discount.name,
+                                            type: discount.type,
+                                            value: discount.value,
+                                            percent: discount.percent,
+                                            created_by: 2,
+                                            created_at: new Date(),
+                                        },
+                                        {
+                                            transaction: t,
+                                        }
+                                    )
                                 }
-                                console.log('receivable updated')
+                            })
+                            .finally(() => {
+                                t.commit()
+
+                                return res.json({
+                                    message:
+                                        'Settlements created successfully.',
+                                })
                             })
                     })
                 } else {
@@ -1165,10 +1310,6 @@ class ReceivableController {
                         error: 'Receivable already settled.',
                     })
                 }
-            })
-
-            return res.json({
-                message: 'Settlements created successfully.',
             })
         } catch (err) {
             await t.rollback()

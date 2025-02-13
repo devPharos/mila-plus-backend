@@ -57,6 +57,8 @@ import Receivablediscounts from '../app/models/Receivablediscounts'
 import Textpaymenttransaction from '../app/models/Textpaymenttransaction'
 import Refund from '../app/models/Refund.js'
 import Settlement from '../app/models/Settlement'
+import Parcelowpaymentlink from '../app/models/Parcelowpaymentlink.js'
+import Parcelowtransaction from '../app/models/Parcelowtransaction.js'
 // import UserGroup from '../app/models/usergroup'
 
 const models = [
@@ -105,6 +107,8 @@ const models = [
     Merchants,
     MerchantXChartOfAccount,
     Issuer,
+    Parcelowpaymentlink,
+    Parcelowtransaction,
     Payee,
     PayeeInstallment,
     PaymentCriteria,
