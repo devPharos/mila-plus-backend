@@ -367,12 +367,17 @@ export async function sendInvoiceRecurrenceJob() {
                 },
                 order: [['due_date', 'DESC']],
             })
-            const tokenizedTransaction = await Emergepaytransaction.findOne({
-                where: {
-                    external_transaction_id: firstReceivable.id,
-                    canceled_at: null,
-                },
-            })
+
+            let tokenizedTransaction = null
+            if (firstReceivable) {
+                tokenizedTransaction = await Emergepaytransaction.findOne({
+                    where: {
+                        external_transaction_id: firstReceivable.id,
+                        canceled_at: null,
+                    },
+                })
+            }
+
             if (
                 receivable.dataValues.issuer?.dataValues?.issuer_x_recurrence
                     ?.dataValues?.is_autopay &&
