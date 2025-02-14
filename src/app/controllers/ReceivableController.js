@@ -287,7 +287,7 @@ export function applyDiscounts({
 
 export async function sendInvoiceRecurrenceJob() {
     try {
-        const date = subDays(new Date(), 2)
+        const date = addDays(new Date(), 3)
         const searchDate =
             date.getFullYear() +
             (date.getMonth() + 1).toString().padStart(2, '0') +

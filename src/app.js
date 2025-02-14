@@ -65,6 +65,7 @@ class App {
     schedule() {
         schedule.scheduleJob('0 0 8 * * *', sendInvoiceRecurrenceJob)
         schedule.scheduleJob('0 0 7 * * *', calculateFeesRecurrenceJob)
+        sendInvoiceRecurrenceJob()
         console.log('✅ Schedule jobs started!')
     }
 }
