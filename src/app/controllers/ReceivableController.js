@@ -1420,7 +1420,6 @@ class ReceivableController {
                 status,
                 type,
                 type_detail,
-                registration_number,
             } = req.body
             const wb = new xl.Workbook()
             // Add Worksheets to the workbook
@@ -1489,7 +1488,6 @@ class ReceivableController {
             ws.cell(6, 1).string('Status').style(styleBold)
             ws.cell(7, 1).string('Type').style(styleBold)
             ws.cell(8, 1).string('Type Detail').style(styleBold)
-            ws.cell(9, 1).string('Registration Number').style(styleBold)
 
             ws.cell(2, 2).string(entry_date_from)
             ws.cell(3, 2).string(entry_date_to)
@@ -1498,7 +1496,6 @@ class ReceivableController {
             ws.cell(6, 2).string(status)
             ws.cell(7, 2).string(type)
             ws.cell(8, 2).string(type_detail)
-            ws.cell(9, 2).string(registration_number)
 
             ws.column(1).width = 30
             ws.column(2).width = 30
