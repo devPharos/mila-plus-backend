@@ -54,10 +54,14 @@ import RecurrenceController from './app/controllers/RecurrenceController'
 import FilialDiscountListController from './app/controllers/FilialDiscountListController'
 import FileController from './app/controllers/FileController'
 import SettlementController from './app/controllers/SettlementController'
+import PublicFileController from './app/controllers/PublicFileController'
 
 const routes = new Router()
 
 const upload = multer({ dest: 'public/uploads/' })
+
+// Public File
+routes.get('/get-file/:name', PublicFileController.show)
 
 routes.post('/emergepay/simple-form', EmergepayController.simpleForm)
 routes.post('/emergepay/text-to-pay', EmergepayController.textToPay)
@@ -419,6 +423,8 @@ routes.put('/receivables/:receivable_id', ReceivableController.update)
 routes.delete('/receivables/:receivable_id', ReceivableController.delete)
 routes.post('/receivables/refund/:receivable_id', ReceivableController.refund)
 routes.post('/receivables/settlement', ReceivableController.settlement)
+routes.post('/receivables/feeadjustment', ReceivableController.feeAdjustment)
+routes.post('/receivables/excel', ReceivableController.excel)
 
 // settlements
 routes.get('/settlements', SettlementController.index)

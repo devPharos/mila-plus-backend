@@ -10,14 +10,7 @@ import Issuer from '../models/Issuer'
 import FilialPriceList from '../models/FilialPriceList'
 import FilialDiscountList from '../models/FilialDiscountList'
 import Student from '../models/Student'
-import {
-    addDays,
-    differenceInDays,
-    format,
-    parseISO,
-    set,
-    subDays,
-} from 'date-fns'
+import { addDays, differenceInDays, format, parseISO } from 'date-fns'
 import { searchPromise } from '../functions/searchPromise'
 import { mailer } from '../../config/mailer'
 import { emergepay } from '../../config/emergepay'
@@ -32,6 +25,12 @@ import {
 } from './EmergepayController'
 import Refund from '../models/Refund'
 import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
+import Feeadjustment from '../models/Feeadjustment'
+import { resolve } from 'path'
+import Milauser from '../models/Milauser'
+
+const xl = require('excel4node')
+const fs = require('fs')
 
 export async function createRegistrationFeeReceivable({
     issuer_id,
@@ -200,8 +199,6 @@ export async function createTuitionFeeReceivable({
 
         const discount = filialPriceList.dataValues.tuition - totalAmount
 
-        console.log({ invoice_number })
-
         const receivable = await Receivable.create({
             company_id,
             filial_id,
@@ -254,7 +251,6 @@ export function applyDiscounts({
                     discount.discount.dataValues.type === type &&
                     discount.discount.dataValues.active
                 ) {
-                    console.log('Discount founded')
                     return true
                 }
             }
@@ -609,7 +605,6 @@ export async function sendInvoiceRecurrenceJob() {
 export async function calculateFee(receivable = null) {
     try {
         if (!receivable) {
-            console.log('no receivable')
             return 0
         }
 
@@ -617,8 +612,6 @@ export async function calculateFee(receivable = null) {
             receivable.dataValues.id !== '4600995c-0f87-4ef3-bd1d-b70e85d9d87a'
         ) {
             return 0
-        } else {
-            console.log('Test')
         }
 
         const paymentCriteria = await PaymentCriteria.findByPk(
@@ -626,12 +619,10 @@ export async function calculateFee(receivable = null) {
         )
 
         if (receivable.dataValues.due_date >= new Date()) {
-            console.log('receivable due date is greater than today')
             return 0
         }
 
         if (paymentCriteria.dataValues.fee_value === 0) {
-            console.log('fee value is 0')
             return 0
         }
 
@@ -642,7 +633,6 @@ export async function calculateFee(receivable = null) {
         let how_many_times = 0
 
         if (daysPassed < paymentCriteria.dataValues.fee_qt) {
-            console.log('days passed is less than fee quantity')
             return 0
         }
 
@@ -907,6 +897,19 @@ class ReceivableController {
                         as: 'settlements',
                         required: false,
                         where: { canceled_at: null },
+                    },
+                    {
+                        model: Refund,
+                        as: 'refunds',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Feeadjustment,
+                        as: 'feeadjustments',
+                        required: false,
+                        where: { canceled_at: null },
+                        order: [['created_at', 'DESC']],
                     },
                 ],
             })
@@ -1320,6 +1323,505 @@ class ReceivableController {
             await t.rollback()
             const className = 'ReceivableController'
             const functionName = 'settlement'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async feeAdjustment(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { receivable_id, fee, reason } = req.body
+
+            const receivableExists = await Receivable.findByPk(receivable_id)
+
+            if (!receivableExists) {
+                return res
+                    .status(401)
+                    .json({ error: 'Receivable does not exist.' })
+            }
+
+            Feeadjustment.create(
+                {
+                    receivable_id: receivableExists.id,
+                    old_fee: receivableExists.dataValues.fee,
+                    reason,
+                    created_by: req.userId,
+                    created_at: new Date(),
+                },
+                {
+                    transaction: t,
+                }
+            )
+                .then(async () => {
+                    const difference = receivableExists.dataValues.fee - fee
+                    receivableExists
+                        .update(
+                            {
+                                fee,
+                                balance:
+                                    receivableExists.dataValues.balance -
+                                    difference,
+                                total:
+                                    receivableExists.dataValues.total -
+                                    difference,
+                                updated_by: req.userId,
+                                updated_at: new Date(),
+                            },
+                            {
+                                transaction: t,
+                            }
+                        )
+                        .then(async (receivable) => {
+                            t.commit()
+                            return res.json(receivable)
+                        })
+                        .catch((err) => {
+                            return res.status(400).json({
+                                error: err,
+                            })
+                        })
+                })
+                .catch((err) => {
+                    return res.status(400).json({
+                        error: err,
+                    })
+                })
+        } catch (err) {
+            await t.rollback()
+            const className = 'ReceivableController'
+            const functionName = 'feeAdjustment'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async excel(req, res) {
+        try {
+            const name = `receivables_${Date.now()}`
+            const path = `${resolve(
+                __dirname,
+                '..',
+                '..',
+                '..',
+                'public',
+                'uploads'
+            )}/${name}`
+            const {
+                entry_date_from,
+                entry_date_to,
+                due_date_from,
+                due_date_to,
+                status,
+                type,
+                type_detail,
+                registration_number,
+            } = req.body
+            const wb = new xl.Workbook()
+            // Add Worksheets to the workbook
+            var ws = wb.addWorksheet('Params')
+            var ws2 = wb.addWorksheet('Receivables')
+
+            // Create a reusable style
+            var styleBold = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                    bold: true,
+                },
+            })
+
+            var styleTotal = wb.createStyle({
+                font: {
+                    color: '#00aa00',
+                    size: 12,
+                    bold: true,
+                },
+                fill: {
+                    type: 'pattern',
+                    fgColor: '#ff0000',
+                    bgColor: '#ffffff',
+                },
+                numberFormat: '$ #,##0.00; ($#,##0.00); -',
+            })
+
+            var styleTotalNegative = wb.createStyle({
+                font: {
+                    color: '#aa0000',
+                    size: 12,
+                    bold: true,
+                },
+                fill: {
+                    type: 'pattern',
+                    fgColor: '#ff0000',
+                    bgColor: '#ffffff',
+                },
+                numberFormat: '$ #,##0.00; ($#,##0.00); -',
+            })
+
+            var styleHeading = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 14,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+            })
+
+            ws.cell(1, 1).string('Params').style(styleHeading)
+            ws.cell(1, 2).string('Values').style(styleHeading)
+
+            ws.row(1).filter()
+            ws.row(1).freeze()
+
+            ws.cell(2, 1).string('Entry date from').style(styleBold)
+            ws.cell(3, 1).string('Entry date to').style(styleBold)
+            ws.cell(4, 1).string('Due date from').style(styleBold)
+            ws.cell(5, 1).string('Due date to').style(styleBold)
+            ws.cell(6, 1).string('Status').style(styleBold)
+            ws.cell(7, 1).string('Type').style(styleBold)
+            ws.cell(8, 1).string('Type Detail').style(styleBold)
+            ws.cell(9, 1).string('Registration Number').style(styleBold)
+
+            ws.cell(2, 2).string(entry_date_from)
+            ws.cell(3, 2).string(entry_date_to)
+            ws.cell(4, 2).string(due_date_from)
+            ws.cell(5, 2).string(due_date_to)
+            ws.cell(6, 2).string(status)
+            ws.cell(7, 2).string(type)
+            ws.cell(8, 2).string(type_detail)
+            ws.cell(9, 2).string(registration_number)
+
+            ws.column(1).width = 30
+            ws.column(2).width = 30
+
+            const filter = {}
+            if (status !== 'All') {
+                filter.status = status
+            }
+            if (type !== 'All') {
+                filter.type = type
+            }
+            if (type_detail !== 'All') {
+                filter.type_detail = type_detail
+            }
+            if (entry_date_from) {
+                let filterDate = entry_date_from.replace(/-/g, '')
+                filter.entry_date = {
+                    [Op.gte]: filterDate,
+                }
+            }
+            if (entry_date_to) {
+                let filterDate = entry_date_to.replace(/-/g, '')
+                filter.entry_date = {
+                    [Op.lte]: filterDate,
+                }
+            }
+            if (due_date_from) {
+                let filterDate = due_date_from.replace(/-/g, '')
+                filter.due_date = {
+                    [Op.gte]: filterDate,
+                }
+            }
+            if (due_date_to) {
+                let filterDate = due_date_to.replace(/-/g, '')
+                filter.due_date = {
+                    [Op.lte]: filterDate,
+                }
+            }
+            if (req.headers.filial != 1) {
+                filter.filial_id = req.headers.filial
+            }
+            const receivables = await Receivable.findAll({
+                where: {
+                    company_id: req.companyId,
+                    canceled_at: null,
+                    ...filter,
+                },
+                include: [
+                    {
+                        model: ChartOfAccount,
+                        as: 'chartOfAccount',
+                        required: false,
+                        where: { canceled_at: null },
+                        include: [
+                            {
+                                model: ChartOfAccount,
+                                as: 'Father',
+                                required: false,
+                                where: { canceled_at: null },
+                                include: [
+                                    {
+                                        model: ChartOfAccount,
+                                        as: 'Father',
+                                        required: false,
+                                        where: { canceled_at: null },
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    {
+                        model: PaymentMethod,
+                        as: 'paymentMethod',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Issuer,
+                        as: 'issuer',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: PaymentCriteria,
+                        as: 'paymentCriteria',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Milauser,
+                        as: 'createdBy',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Milauser,
+                        as: 'updatedBy',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                ],
+                order: [['due_date', 'DESC']],
+            })
+
+            let row = 1
+            let col = 1
+
+            row++
+            ws2.cell(row, col).string('Entry date').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Due date').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Issuer').style(styleBold)
+            ws2.column(col).width = 35
+            col++
+            ws2.cell(row, col).string('Amount').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Discount').style(styleBold)
+            ws2.column(col).width = 12
+            col++
+            ws2.cell(row, col).string('Fee').style(styleBold)
+            ws2.column(col).width = 12
+            col++
+            ws2.cell(row, col).string('Total').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Balance').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Status').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Type').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Type Detail').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            ws2.cell(row, col).string('Is Recurrence?').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            ws2.cell(row, col).string('Payment Method').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            ws2.cell(row, col).string('Payment Criteria').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            ws2.cell(row, col).string('Invoice Number').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            ws2.cell(row, col).string('Chart of Account').style(styleBold)
+            ws2.column(col).width = 40
+            col++
+            ws2.cell(row, col).string('Memo').style(styleBold)
+            ws2.column(col).width = 40
+            col++
+            ws2.cell(row, col).string('Created At').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Created By').style(styleBold)
+            ws2.column(col).width = 25
+            col++
+            ws2.cell(row, col).string('Updated At').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Updated By').style(styleBold)
+            ws2.column(col).width = 25
+            col++
+            ws2.cell(row, col).string('ID').style(styleBold)
+            ws2.column(col).width = 40
+
+            ws2.cell(1, 1, 1, col, true)
+                .string('Receivables')
+                .style(styleHeading)
+
+            ws2.row(row).filter()
+            ws2.row(row).freeze()
+
+            receivables.map((receivable, index) => {
+                let chartOfAccount = ''
+                if (receivable.chartOfAccount) {
+                    if (receivable.chartOfAccount.Father) {
+                        if (receivable.chartOfAccount.Father.Father) {
+                            chartOfAccount =
+                                receivable.chartOfAccount.Father.Father.name +
+                                ' > ' +
+                                receivable.chartOfAccount.Father.name +
+                                ' > ' +
+                                receivable.chartOfAccount.name
+                        } else {
+                            chartOfAccount =
+                                receivable.chartOfAccount.Father.name +
+                                ' > ' +
+                                receivable.chartOfAccount.name
+                        }
+                    } else {
+                        chartOfAccount = receivable.chartOfAccount.name
+                    }
+                }
+
+                ws2.cell(index + 3, 1).date(
+                    format(parseISO(receivable.entry_date), 'yyyy-MM-dd')
+                )
+                ws2.cell(index + 3, 2).date(
+                    format(parseISO(receivable.due_date), 'yyyy-MM-dd')
+                )
+                ws2.cell(index + 3, 3).string(
+                    receivable.issuer ? receivable.issuer.name : ''
+                )
+                ws2.cell(index + 3, 4)
+                    .number(receivable.amount)
+                    .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
+                ws2.cell(index + 3, 5)
+                    .number(receivable.discount * -1)
+                    .style({
+                        numberFormat: '$ #,##0.00; ($#,##0.00); -',
+                        font: { color: '#aa0000' },
+                    })
+                ws2.cell(index + 3, 6)
+                    .number(receivable.fee)
+                    .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
+                ws2.cell(index + 3, 7)
+                    .number(receivable.total)
+                    .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
+                ws2.cell(index + 3, 8)
+                    .number(receivable.balance)
+                    .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
+                ws2.cell(index + 3, 9).string(receivable.status)
+                ws2.cell(index + 3, 10).string(receivable.type)
+                ws2.cell(index + 3, 11).string(receivable.type_detail)
+                ws2.cell(index + 3, 12).bool(receivable.is_recurrence)
+                ws2.cell(index + 3, 13).string(
+                    receivable.paymentMethod
+                        ? receivable.paymentMethod.description
+                        : ''
+                )
+                ws2.cell(index + 3, 14).string(
+                    receivable.paymentCriteria
+                        ? receivable.paymentCriteria.description
+                        : ''
+                )
+                ws2.cell(index + 3, 15).string(receivable.invoice_number)
+                ws2.cell(index + 3, 16).string(chartOfAccount)
+                ws2.cell(index + 3, 17).string(receivable.memo)
+                if (receivable.created_at) {
+                    ws2.cell(index + 3, 18).date(receivable.created_at)
+                } else {
+                    ws2.cell(index + 3, 18).string('')
+                }
+                ws2.cell(index + 3, 19).string(
+                    receivable.createdBy ? receivable.createdBy.name : ''
+                )
+                if (receivable.updated_at) {
+                    ws2.cell(index + 3, 20).date(receivable.updated_at)
+                } else {
+                    ws2.cell(index + 3, 20).string('')
+                }
+                ws2.cell(index + 3, 21).string(
+                    receivable.updatedBy ? receivable.updatedBy.name : ''
+                )
+                ws2.cell(index + 3, 22).string(receivable.id)
+            })
+
+            row += receivables.length + 1
+
+            ws2.cell(row, 4)
+                .number(
+                    receivables.reduce((acc, curr) => {
+                        return acc + curr.amount
+                    }, 0)
+                )
+                .style(styleTotal)
+            ws2.cell(row, 5)
+                .number(
+                    receivables.reduce((acc, curr) => {
+                        return acc + curr.discount * -1
+                    }, 0)
+                )
+                .style(styleTotalNegative)
+            ws2.cell(row, 6)
+                .number(
+                    receivables.reduce((acc, curr) => {
+                        return acc + curr.fee
+                    }, 0)
+                )
+                .style(styleTotal)
+            ws2.cell(row, 7)
+                .number(
+                    receivables.reduce((acc, curr) => {
+                        return acc + curr.total
+                    }, 0)
+                )
+                .style(styleTotal)
+            ws2.cell(row, 8)
+                .number(
+                    receivables.reduce((acc, curr) => {
+                        return acc + curr.balance
+                    }, 0)
+                )
+                .style(styleTotal)
+
+            let ret = null
+            wb.write(path, (err, stats) => {
+                if (err) {
+                    ret = res.status(400).json({ err, stats })
+                } else {
+                    setTimeout(() => {
+                        fs.unlink(path, (err) => {
+                            if (err) {
+                                console.log(err)
+                            }
+                        })
+                    }, 10000)
+                    return res.json({ path, name })
+                }
+            })
+            return ret
+        } catch (err) {
+            const className = 'ReceivableController'
+            const functionName = 'excel'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

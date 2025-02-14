@@ -177,6 +177,22 @@ class Receivable extends Model {
             foreignKey: 'receivable_id',
             as: 'settlements',
         })
+        this.hasMany(models.Refund, {
+            foreignKey: 'receivable_id',
+            as: 'refunds',
+        })
+        this.hasMany(models.Feeadjustment, {
+            foreignKey: 'receivable_id',
+            as: 'feeadjustments',
+        })
+        this.belongsTo(models.Milauser, {
+            foreignKey: 'created_by',
+            as: 'createdBy',
+        })
+        this.belongsTo(models.Milauser, {
+            foreignKey: 'updated_by',
+            as: 'updatedBy',
+        })
     }
 }
 
