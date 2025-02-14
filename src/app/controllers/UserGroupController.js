@@ -4,6 +4,7 @@ import databaseConfig from '../../config/database'
 import UserGroup from '../models/UserGroup'
 import Filialtype from '../models/Filialtype'
 import MenuHierarchyXGroups from '../models/MenuHierarchyXGroups'
+import MenuHierarchy from '../models/MenuHierarchy'
 
 const { Op } = Sequelize
 
@@ -33,7 +34,7 @@ class UserGroupController {
                 })
             }
 
-            const newGroup = await UserGroup.create(
+            UserGroup.create(
                 {
                     company_id: 1,
                     filialtype_id,
@@ -44,10 +45,30 @@ class UserGroupController {
                 {
                     transaction: t,
                 }
-            )
-            t.commit()
-
-            return res.json(newGroup)
+            ).then((group) => {
+                t.commit()
+                MenuHierarchy.findAll({
+                    where: {
+                        canceled_at: null,
+                    },
+                }).then((menus) => {
+                    menus.map((menu) => {
+                        MenuHierarchyXGroups.create({
+                            group_id: group.id,
+                            access_id: menu.id,
+                            view: false,
+                            edit: false,
+                            create: false,
+                            inactivate: false,
+                            created_at: new Date(),
+                            created_by: req.userId,
+                        })
+                    })
+                    setTimeout(() => {
+                        return res.json(group)
+                    }, 1000)
+                })
+            })
         } catch (err) {
             await t.rollback()
             const className = 'UserGroupController'
