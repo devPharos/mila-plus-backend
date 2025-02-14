@@ -1,3 +1,4 @@
+import Student from '../models/Student'
 import Studentdiscount from '../models/Studentdiscount'
 
 export function randomPassword() {
@@ -29,6 +30,8 @@ export async function handleStudentDiscounts({
         },
     })
 
+    const student = await Student.findByPk(student_id)
+
     if (prices && prices.discounts) {
         prices.discounts.map(async (discount) => {
             const hasDiscount = studentDiscounts.find(
@@ -45,6 +48,7 @@ export async function handleStudentDiscounts({
             if (!hasDiscount) {
                 await Studentdiscount.create({
                     student_id,
+                    filial_id: student.dataValues.filial_id,
                     filial_discount_list_id,
                     start_date: start_date
                         ? start_date.replaceAll('-', '')
