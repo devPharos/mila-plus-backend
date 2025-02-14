@@ -291,7 +291,7 @@ export async function sendInvoiceRecurrenceJob() {
         const searchDate =
             date.getFullYear() +
             (date.getMonth() + 1).toString().padStart(2, '0') +
-            date.getDate()
+            date.getDate().toString().padStart(2, '0')
         console.log(`Verifying Invoice Recurrence Job on date: ${searchDate}`)
         const receivables = await Receivable.findAll({
             include: [
