@@ -59,12 +59,14 @@ import Refund from '../app/models/Refund.js'
 import Settlement from '../app/models/Settlement'
 import Parcelowpaymentlink from '../app/models/Parcelowpaymentlink.js'
 import Parcelowtransaction from '../app/models/Parcelowtransaction.js'
-// import UserGroup from '../app/models/usergroup'
+import Feeadjustment from '../app/models/Feeadjustment.js'
 
 const models = [
     Processtype,
     Processsubstatus,
     Agent,
+    Bank,
+    BankAccounts,
     Calendarday,
     Milauser,
     Company,
@@ -80,13 +82,14 @@ const models = [
     Enrollmentemergency,
     Enrollmenttimeline,
     Enrollmenttransfer,
+    Feeadjustment,
     File,
     Filial,
     Filialtype,
     FilialPriceList,
     FilialDiscountList,
     Filialdocument,
-    Parameter,
+    Issuer,
     Language,
     Languagemode,
     Level,
@@ -98,15 +101,9 @@ const models = [
     UserXFilial,
     MenuHierarchy,
     MenuHierarchyXGroups,
-    Student,
-    Studentdiscount,
-    Staff,
-    Staffdocument,
-    Bank,
-    BankAccounts,
     Merchants,
     MerchantXChartOfAccount,
-    Issuer,
+    Parameter,
     Parcelowpaymentlink,
     Parcelowtransaction,
     Payee,
@@ -119,6 +116,10 @@ const models = [
     Recurrence,
     Refund,
     Settlement,
+    Student,
+    Studentdiscount,
+    Staff,
+    Staffdocument,
     Textpaymenttransaction,
 ]
 
