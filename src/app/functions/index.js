@@ -59,7 +59,6 @@ export async function handleStudentDiscounts({
                     created_at: new Date(),
                 })
                 await Studentdiscount.create({
-                    filial_id: student.dataValues.filial_id,
                     student_id,
                     filial_discount_list_id,
                     start_date: start_date
