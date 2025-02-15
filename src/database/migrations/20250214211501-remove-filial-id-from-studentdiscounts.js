@@ -3,7 +3,7 @@
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        // await queryInterface.removeColumn('studentdiscounts', 'filial_id')
+        await queryInterface.removeColumn('studentdiscounts', 'filial_id')
     },
     async down(queryInterface, Sequelize) {
         await queryInterface.addColumn('studentdiscounts', 'filial_id', {
