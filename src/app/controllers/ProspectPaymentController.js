@@ -118,10 +118,6 @@ class ProspectPaymentController {
             }
             setTimeout(async () => {
                 if (create_registration_fee) {
-                    console.log(
-                        'creating registration fee receivable, invoice number:',
-                        used_invoice
-                    )
                     registrationFee = await createRegistrationFeeReceivable({
                         issuer_id: issuerExists.id,
                         created_by: req.userId,
@@ -131,10 +127,6 @@ class ProspectPaymentController {
                 }
 
                 if (create_tuition_fee) {
-                    console.log(
-                        'creating tuition fee receivable, invoice number:',
-                        used_invoice
-                    )
                     tuitionFee = await createTuitionFeeReceivable({
                         issuer_id: issuerExists.id,
                         in_advance: true,
@@ -217,11 +209,7 @@ class ProspectPaymentController {
                 amount += tuitionFee.dataValues.total
             }
 
-            if (
-                paymentMethod.dataValues.description
-                    .toUpperCase()
-                    .includes('GRAVITY')
-            ) {
+            if (paymentMethod.dataValues.platform === 'Gravity') {
                 emergepay
                     .startTextToPayTransaction({
                         amount: amount.toFixed(2),
@@ -239,7 +227,6 @@ class ProspectPaymentController {
                                 .padStart(6, '0'),
                     })
                     .then(async (response) => {
-                        console.log(response.data)
                         const { paymentPageUrl, paymentPageId } = response.data
                         await Textpaymenttransaction.create({
                             receivable_id: registrationFee_id,
@@ -270,11 +257,7 @@ class ProspectPaymentController {
                             error: err,
                         })
                     })
-            } else if (
-                paymentMethod.dataValues.description
-                    .toUpperCase()
-                    .includes('PARCELOW')
-            ) {
+            } else if (paymentMethod.dataValues.platform === 'Parcelow') {
                 parcelowAPI
                     .post(`/oauth/token`, {
                         client_id: process.env.PARCELOW_CLIENT_ID,
@@ -282,7 +265,6 @@ class ProspectPaymentController {
                         grant_type: 'client_credentials',
                     })
                     .then(async (response) => {
-                        console.log('Conectou')
                         const { access_token } = response.data
                         parcelowAPI.defaults.headers.common[
                             'Authorization'
@@ -327,7 +309,6 @@ class ProspectPaymentController {
                                 },
                             })
                             .then(async (response) => {
-                                console.log('Gerou link')
                                 const { order_id, url_checkout } = response.data
                                 await Parcelowpaymentlink.create({
                                     receivable_id: registrationFee.id,
@@ -516,6 +497,19 @@ class ProspectPaymentController {
                                                             }
                                                         </td>
                                                     </tr>
+                                                    ${
+                                                        paymentMethod.dataValues
+                                                            .payment_details
+                                                            ? `<tr>
+                                                        <td style=" text-align: left; padding: 20px;border-top: 1px dashed #babec5;">
+                                                            ↳ Payment Details
+                                                        </td>
+                                                        <td style=" text-align: right; padding: 20px;border-top: 1px dashed #babec5;">
+                                                            ${paymentMethod.dataValues.payment_details}
+                                                        </td>
+                                                    </tr>`
+                                                            : ``
+                                                    }
                                                 </table>
                                             </td>
                                         </tr>

@@ -214,10 +214,17 @@ class SettlementController {
                     .json({ error: 'Receivable does not exist.' })
             }
 
-            if (
-                settlement.dataValues.paymentmethod_id ===
-                'dcbe2b5b-c088-4107-ae32-efb4e7c4b161'
-            ) {
+            const paymentMethod = await PaymentMethod.findByPk(
+                settlement.dataValues.paymentmethod_id
+            )
+
+            if (!paymentMethod) {
+                return res
+                    .status(400)
+                    .json({ error: 'Payment Method does not exist.' })
+            }
+
+            if (paymentMethod.dataValues.platform === 'Gravity') {
                 return res.status(400).json({
                     error: 'Settlement paid by Gravity Card cannot be deleted. Use the refund function instead.',
                 })

@@ -15,6 +15,7 @@ import Student from '../models/Student'
 import Enrollment from '../models/Enrollment'
 import Enrollmenttimeline from '../models/Enrollmenttimeline'
 import Textpaymenttransaction from '../models/Textpaymenttransaction'
+import PaymentMethod from '../models/PaymentMethod'
 
 export async function createPaidTimeline(receivable_id = null) {
     const receivable = await Receivable.findByPk(receivable_id)
@@ -81,10 +82,19 @@ export async function settlement(
 
         const parcial = amountPaidBalance < receivable.dataValues.balance
 
+        const paymentMethod = await PaymentMethod.findOne({
+            where: {
+                company_id: receivable.dataValues.company_id,
+                filial_id: receivable.dataValues.filial_id,
+                platform: 'Gravity',
+                canceled_at: null,
+            },
+        })
+
         await Settlement.create({
             receivable_id: receivable.id,
             amount: parcial ? amountPaidBalance : receivable.dataValues.balance,
-            paymentmethod_id: 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
+            paymentmethod_id: paymentMethod.dataValues.id,
             settlement_date: format(new Date(), 'yyyyMMdd'),
             created_at: new Date(),
             created_by: 2,
@@ -127,8 +137,7 @@ export async function settlement(
                             amount: parcial
                                 ? amountPaidBalance
                                 : receivable.dataValues.balance,
-                            paymentmethod_id:
-                                'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
+                            paymentmethod_id: paymentMethod.dataValues.id,
                             settlement_date: format(new Date(), 'yyyyMMdd'),
                             created_at: new Date(),
                             created_by: 2,
