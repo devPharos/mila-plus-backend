@@ -31,6 +31,19 @@ class PaymentMethod extends Model {
                     references: { model: 'bankaccounts', key: 'id' },
                     onUpdate: 'NO ACTION',
                 },
+                type_of_payment: {
+                    type: Sequelize.STRING,
+                    defaultValue: 'All',
+                    allowNull: false,
+                },
+                payment_details: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
+                platform: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
                 created_at: {
                     type: Sequelize.DATE,
                     allowNull: false,
@@ -75,7 +88,6 @@ class PaymentMethod extends Model {
             foreignKey: 'bankaccount_id',
             as: 'bankAccount',
         })
-
     }
 }
 
