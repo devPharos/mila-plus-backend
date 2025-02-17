@@ -1418,7 +1418,7 @@ export default async function enrollment(doc = null, id = '') {
         .font('Helvetica')
         .fontSize(7)
         .text(
-            `The school is herein referred to as MILA - Miami International Language Academy, d.b.a for C.N.A. Language School LLC. Fees and Admission Terms Conditions Agreement are applicable to all MILA's available courses and are subject to Florida law and supersede all previous Terms and Conditions. Only the English language version of the Admission Terms Conditions is legally binding.`,
+            `The school is herein referred to as MILA - International Language Academy, d.b.a for C.N.A. Language School LLC. Fees and Admission Terms Conditions Agreement are applicable to all MILA's available courses and are subject to Florida law and supersede all previous Terms and Conditions. Only the English language version of the Admission Terms Conditions is legally binding.`,
             30,
             helperHeight + 12,
             {
@@ -1782,7 +1782,7 @@ export default async function enrollment(doc = null, id = '') {
             c) Tuition with special promotions: If the student decides to drop out of school during the paid period, he/she will have to pay the difference for the period studied. (Calculation will be based on regular four-week tuition X promotion tuition)
             d) There are no refunds after the start date for the tuition and the application fee, except If the class level has not been populated with a sufficient number of students, and the school cancels the class. In this circumstance, both tuition as well as registration fee will be reimbursed.
             e) There shall be no tuition reimbursement or make-up classes as a result of missed group classes or school closing days, with the exception of private one-to-one lessons that will be rescheduled in the event of a public holiday, or 24-hour notice is given.
-            f) For F1 English students, if you are terminated by CNA LANGUA E SCHOOL DBA MILA – MIAMI INTERNATIONAL LANGUA E ACADEMY due to violations of the school or federal law (including attendance policies), no refund will be given.
+            f) For F1 English students, if you are terminated by CNA LANGUA E SCHOOL DBA MILA – INTERNATIONAL LANGUA E ACADEMY due to violations of the school or federal law (including attendance policies), no refund will be given.
             g) For F-1 English students, if your visa is denied’, your tuition fee (except registration fee, mailing fee) will be refunded only after applicants present the denial letter given by the American Embassy/USCIS.
             h) Students who are accepted’ and withdraw on their own do does not qualify for refunds.
             I) Any Change of Status’ or Initial’ student who changes their mind, abandons their program, or starts another process does not qualify for a refund.`,
@@ -1801,7 +1801,7 @@ export default async function enrollment(doc = null, id = '') {
     //     .font('Helvetica')
     //     .fontSize(7)
     //     .text(
-    //         `I have received, read, and understood MILA’s Student Handbook, including the Refund Policy, Student Code of Conduct Policy, and Attendance Policy. I know that it is my responsibility to keep in accordance with these policies and that if I do not, that my I-20 is in danger of termination without notice. I also understand that if my level of English proficiency is not to the point that I can understand this, then it is my responsibility to get someone to read this to me in my native language so that I can understand it. I understand that if I move, I MUST update my current living address whenever there are any changes. I also understand that if I am sick, I must contact the PDSO immediately to arrange and provide appropriate medical documentation from a licensed medical physician, doctor of osteopathy, or licensed clinical psychologist to be considered as an excused absence. Failure to prove this documentation will result in absences, and possibly put my I-20 in danger. Finally, I understand that I am responsible for knowing the policies and procedures of Miami International Language Academy – MILA and to follow them completely. If any policies or procedures change, it is my responsibility to check my email to ensure that I am aware of the changes. I do not have to sign a new waiver to account for the change in policy or procedure.`,
+    //         `I have received, read, and understood MILA’s Student Handbook, including the Refund Policy, Student Code of Conduct Policy, and Attendance Policy. I know that it is my responsibility to keep in accordance with these policies and that if I do not, that my I-20 is in danger of termination without notice. I also understand that if my level of English proficiency is not to the point that I can understand this, then it is my responsibility to get someone to read this to me in my native language so that I can understand it. I understand that if I move, I MUST update my current living address whenever there are any changes. I also understand that if I am sick, I must contact the PDSO immediately to arrange and provide appropriate medical documentation from a licensed medical physician, doctor of osteopathy, or licensed clinical psychologist to be considered as an excused absence. Failure to prove this documentation will result in absences, and possibly put my I-20 in danger. Finally, I understand that I am responsible for knowing the policies and procedures of International Language Academy – MILA and to follow them completely. If any policies or procedures change, it is my responsibility to check my email to ensure that I am aware of the changes. I do not have to sign a new waiver to account for the change in policy or procedure.`,
     //         330,
     //         helperHeight + 12,
     //         {
@@ -2540,7 +2540,7 @@ export default async function enrollment(doc = null, id = '') {
     doc.fillColor('#111')
         .fontSize(8)
         .text(
-            `Immigration requires that students submit documented proof of financial support. Miami International Language Academy requires US ${formatter.format(
+            `Immigration requires that students submit documented proof of financial support. International Language Academy requires US ${formatter.format(
                 filial.dataValues.financial_support_year_amount
             )} for the IEP and MBE programs be available per year.`,
             30,
@@ -2816,7 +2816,7 @@ export default async function enrollment(doc = null, id = '') {
     doc.fill('#111')
         .fontSize(8)
         .text(
-            `I certify that all statements given in this application are true and accurate to the best of my knowledge. I agree to abide by all rules and regulations of Miami International Language Academy – MILA. I agree that if any information is found to be false, I may be suspended from classes without a refund of any fees paid.`,
+            `I certify that all statements given in this application are true and accurate to the best of my knowledge. I agree to abide by all rules and regulations of International Language Academy – MILA. I agree that if any information is found to be false, I may be suspended from classes without a refund of any fees paid.`,
             30,
             helperHeight + 12
         )

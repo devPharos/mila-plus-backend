@@ -511,7 +511,11 @@ export async function sendInvoiceRecurrenceJob() {
                                                                 ${paymentInfoHTML}
                                                             </table>
                                                             <p style="margin: 20px 40px;">Have a great day,</p>
-                                                            <p style="margin: 20px 40px;">MILA - Miami International Language Academy</p>
+                                                            <p style="margin: 20px 40px;">MILA - International Language Academy<strong>${
+                                                                filial
+                                                                    .dataValues
+                                                                    .name
+                                                            }</strong></p>
                                                         </td>
                                                     </tr>
                                                     <tr>
