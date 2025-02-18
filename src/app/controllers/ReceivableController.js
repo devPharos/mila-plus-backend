@@ -834,6 +834,7 @@ class ReceivableController {
                 'status',
                 ['filial', 'name'],
                 ['issuer', 'name'],
+                'issuer_id',
                 'amount',
             ]
             Promise.all([searchPromise(search, receivables, fields)]).then(
