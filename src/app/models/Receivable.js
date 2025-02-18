@@ -114,6 +114,10 @@ class Receivable extends Model {
                         key: 'id',
                     },
                 },
+                notification_sent: {
+                    type: Sequelize.BOOLEAN,
+                    defaultValue: false,
+                },
                 created_at: {
                     type: Sequelize.DATE,
                     allowNull: false,

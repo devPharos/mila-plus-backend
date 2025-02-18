@@ -419,7 +419,7 @@ class ProspectPaymentController {
                                         </tr>
                                         <tr>
                                             <td style="background-color: #f4f5f8; border-top: 1px solid #ccc;  text-align: center; padding: 4px;">
-                                                <h3 style="margin: 10px 0;line-height: 1.5;font-size: 16px;font-weight: normal;">MILA INTERNATIONAL LANGUAGE ACADEMY<br/><strong>${
+                                                <h3 style="margin: 10px 0;line-height: 1.5;font-size: 16px;font-weight: normal;">MILA INTERNATIONAL LANGUAGE ACADEMY - <strong>${
                                                     filial.dataValues.name
                                                 }</strong></h3>
                                             </td>

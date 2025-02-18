@@ -283,7 +283,8 @@ export function applyDiscounts({
 
 export async function sendInvoiceRecurrenceJob() {
     try {
-        const date = addDays(new Date(), 3)
+        const days_before = 5
+        const date = addDays(new Date(), days_before)
         const searchDate =
             date.getFullYear() +
             (date.getMonth() + 1).toString().padStart(2, '0') +
@@ -312,6 +313,7 @@ export async function sendInvoiceRecurrenceJob() {
             ],
             where: {
                 is_recurrence: true,
+                notification_sent: false,
                 canceled_at: null,
                 status: 'Pending',
                 type: 'Invoice',
@@ -409,6 +411,9 @@ export async function sendInvoiceRecurrenceJob() {
                             invoice_number,
                             paymentInfoHTML
                         )
+                        receivable.update({
+                            notification_sent: true,
+                        })
                         console.log('Payment sent to student successfully!')
                     })
             } else {
@@ -441,6 +446,9 @@ export async function sendInvoiceRecurrenceJob() {
                             invoice_number,
                             paymentInfoHTML
                         )
+                        receivable.update({
+                            notification_sent: true,
+                        })
                         console.log('Payment sent to student successfully!')
                     })
             }
@@ -457,7 +465,7 @@ export async function sendInvoiceRecurrenceJob() {
             mailer.sendMail({
                 from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
                 to: issuerExists.dataValues.email,
-                // to: 'denis@pharosit.com.br;dansouz1712@gmail.com',
+                bcc: 'it.admin@milaorlandousa.com;denis@pharosit.com.br',
                 subject: `MILA Plus - Tuition Fee - ${issuerExists.dataValues.name}`,
                 html: `<!DOCTYPE html>
                                 <html lang="en">
@@ -477,7 +485,7 @@ export async function sendInvoiceRecurrenceJob() {
                                                     </tr>
                                                     <tr>
                                                         <td style="background-color: #f4f5f8; border-top: 1px solid #ccc;  text-align: center; padding: 4px;">
-                                                            <h3 style="margin: 10px 0;line-height: 1.5;font-size: 16px;font-weight: normal;">MILA INTERNATIONAL LANGUAGE ACADEMY<br/><strong>${
+                                                            <h3 style="margin: 10px 0;line-height: 1.5;font-size: 16px;font-weight: normal;">MILA INTERNATIONAL LANGUAGE ACADEMY - <strong>${
                                                                 filial
                                                                     .dataValues
                                                                     .name
@@ -511,7 +519,7 @@ export async function sendInvoiceRecurrenceJob() {
                                                                 ${paymentInfoHTML}
                                                             </table>
                                                             <p style="margin: 20px 40px;">Have a great day,</p>
-                                                            <p style="margin: 20px 40px;">MILA - International Language Academy<strong>${
+                                                            <p style="margin: 20px 40px;">MILA - International Language Academy - <strong>${
                                                                 filial
                                                                     .dataValues
                                                                     .name
