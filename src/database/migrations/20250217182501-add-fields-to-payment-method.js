@@ -5,7 +5,7 @@ module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.addColumn('paymentmethods', 'type_of_payment', {
             type: Sequelize.STRING,
-            defaultValue: 'All',
+            defaultValue: 'Inbounds & Outbounds',
             allowNull: false,
         })
         await queryInterface.addColumn('paymentmethods', 'payment_details', {
