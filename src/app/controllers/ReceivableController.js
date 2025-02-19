@@ -28,6 +28,7 @@ import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
 import Feeadjustment from '../models/Feeadjustment'
 import { resolve } from 'path'
 import Milauser from '../models/Milauser'
+import Textpaymenttransaction from '../models/Textpaymenttransaction'
 
 const xl = require('excel4node')
 const fs = require('fs')
@@ -320,9 +321,12 @@ export async function sendInvoiceRecurrenceJob() {
                 type_detail: 'Tuition fee',
                 due_date: `${searchDate}`,
             },
+            order: [['memo', 'ASC']],
         })
 
         console.log(`Receivables found:`, receivables.length)
+
+        let sent_number = 0
 
         receivables.map(async (receivable) => {
             const issuerExists = await Issuer.findByPk(
@@ -403,21 +407,34 @@ export async function sendInvoiceRecurrenceJob() {
                                 }</div>
                             </td>
                         </tr>`
-                        Mail(
-                            issuerExists,
-                            filial,
-                            tuitionFee,
-                            amount,
-                            invoice_number,
-                            paymentInfoHTML
-                        )
-                        receivable.update({
-                            notification_sent: true,
-                        })
-                        console.log('Payment sent to student successfully!')
+                        if (
+                            Mail(
+                                issuerExists,
+                                filial,
+                                tuitionFee,
+                                amount,
+                                invoice_number,
+                                paymentInfoHTML
+                            )
+                        ) {
+                            receivable.update({
+                                notification_sent: true,
+                            })
+                            sent_number++
+                            console.log(
+                                `✅ Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
+                                    receivables.length - sent_number
+                                }`
+                            )
+                        } else {
+                            console.log(
+                                `❌ It wasnt possible to send the e-mail, sent_number: ${sent_number} not sent: ${
+                                    receivables.length - sent_number
+                                }`
+                            )
+                        }
                     })
             } else {
-                console.log('is not autopay')
                 emergepay
                     .startTextToPayTransaction({
                         amount: amount.toFixed(2),
@@ -430,31 +447,52 @@ export async function sendInvoiceRecurrenceJob() {
                         pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
                         transactionReference: 'I' + invoice_number,
                     })
-                    .then((response) => {
-                        const { paymentPageUrl } = response.data
-
-                        paymentInfoHTML = `<tr>
-                    <td style="text-align: center;padding: 10px 0 30px;">
-                        <a href="${paymentPageUrl}" target="_blank" style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
-                    </td>
-                </tr>`
-                        Mail(
-                            issuerExists,
-                            filial,
-                            tuitionFee,
-                            amount,
-                            invoice_number,
-                            paymentInfoHTML
-                        )
-                        receivable.update({
-                            notification_sent: true,
+                    .then(async (response) => {
+                        const { paymentPageUrl, paymentPageId } = response.data
+                        await Textpaymenttransaction.create({
+                            receivable_id: receivable.dataValues.id,
+                            payment_page_url: paymentPageUrl,
+                            payment_page_id: paymentPageId,
+                            created_by: 2,
+                            created_at: new Date(),
+                        }).then(async () => {
+                            paymentInfoHTML = `<tr>
+                            <td style="text-align: center;padding: 10px 0 30px;">
+                                <a href="${paymentPageUrl}" target="_blank" style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
+                            </td>
+                        </tr>`
+                            if (
+                                await Mail(
+                                    issuerExists,
+                                    filial,
+                                    tuitionFee,
+                                    amount,
+                                    invoice_number,
+                                    paymentInfoHTML
+                                )
+                            ) {
+                                receivable.update({
+                                    notification_sent: true,
+                                })
+                                sent_number++
+                                console.log(
+                                    `✅ Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
+                                        receivables.length - sent_number
+                                    }`
+                                )
+                            } else {
+                                console.log(
+                                    `❌ It wasnt possible to send the e-mail, sent_number: ${sent_number} not sent: ${
+                                        receivables.length - sent_number
+                                    }`
+                                )
+                            }
                         })
-                        console.log('Payment sent to student successfully!')
                     })
             }
         })
 
-        function Mail(
+        async function Mail(
             issuerExists,
             filial,
             tuitionFee,
@@ -462,12 +500,13 @@ export async function sendInvoiceRecurrenceJob() {
             invoice_number,
             paymentInfoHTML
         ) {
-            mailer.sendMail({
-                from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
-                to: issuerExists.dataValues.email,
-                bcc: 'it.admin@milaorlandousa.com;denis@pharosit.com.br',
-                subject: `MILA Plus - Tuition Fee - ${issuerExists.dataValues.name}`,
-                html: `<!DOCTYPE html>
+            try {
+                await mailer.sendMail({
+                    from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+                    to: issuerExists.dataValues.email,
+                    bcc: 'it.admin@milaorlandousa.com;denis@pharosit.com.br',
+                    subject: `MILA Plus - Tuition Fee - ${issuerExists.dataValues.name}`,
+                    html: `<!DOCTYPE html>
                                 <html lang="en">
                                 <head>
                                     <meta charset="UTF-8">
@@ -597,8 +636,10 @@ export async function sendInvoiceRecurrenceJob() {
                                                                     .dataValues
                                                                     .address
                                                             } ${
-                    filial.dataValues.name
-                }, ${filial.dataValues.state} ${filial.dataValues.zipcode} US
+                        filial.dataValues.name
+                    }, ${filial.dataValues.state} ${
+                        filial.dataValues.zipcode
+                    } US
                                                         </td>
                                                     </tr>
                                                 </table>
@@ -607,10 +648,16 @@ export async function sendInvoiceRecurrenceJob() {
                                     </table>
                                 </body>
                                 </html>`,
-            })
+                })
+                return true
+            } catch (err) {
+                // console.log(err.responseCode)
+                return false
+            }
         }
     } catch (err) {
         console.log({ err })
+        return false
     }
 }
 
