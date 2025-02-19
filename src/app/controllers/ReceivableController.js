@@ -320,6 +320,7 @@ export async function sendInvoiceRecurrenceJob() {
                 type_detail: 'Tuition fee',
                 due_date: `${searchDate}`,
             },
+            order: [['memo', 'ASC']],
         })
 
         console.log(`Receivables found:`, receivables.length)
@@ -403,18 +404,21 @@ export async function sendInvoiceRecurrenceJob() {
                                 }</div>
                             </td>
                         </tr>`
-                        Mail(
-                            issuerExists,
-                            filial,
-                            tuitionFee,
-                            amount,
-                            invoice_number,
-                            paymentInfoHTML
-                        )
-                        receivable.update({
-                            notification_sent: true,
-                        })
-                        console.log('Payment sent to student successfully!')
+                        if (
+                            Mail(
+                                issuerExists,
+                                filial,
+                                tuitionFee,
+                                amount,
+                                invoice_number,
+                                paymentInfoHTML
+                            )
+                        ) {
+                            receivable.update({
+                                notification_sent: true,
+                            })
+                            console.log('Payment sent to student successfully!')
+                        }
                     })
             } else {
                 console.log('is not autopay')
@@ -438,23 +442,28 @@ export async function sendInvoiceRecurrenceJob() {
                         <a href="${paymentPageUrl}" target="_blank" style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
                     </td>
                 </tr>`
-                        Mail(
-                            issuerExists,
-                            filial,
-                            tuitionFee,
-                            amount,
-                            invoice_number,
-                            paymentInfoHTML
-                        )
-                        receivable.update({
-                            notification_sent: true,
-                        })
-                        console.log('Payment sent to student successfully!')
+                        if (
+                            Mail(
+                                issuerExists,
+                                filial,
+                                tuitionFee,
+                                amount,
+                                invoice_number,
+                                paymentInfoHTML
+                            )
+                        ) {
+                            receivable.update({
+                                notification_sent: true,
+                            })
+                            console.log('Payment sent to student successfully!')
+                        } else {
+                            console.log('Ué')
+                        }
                     })
             }
         })
 
-        function Mail(
+        async function Mail(
             issuerExists,
             filial,
             tuitionFee,
@@ -462,12 +471,13 @@ export async function sendInvoiceRecurrenceJob() {
             invoice_number,
             paymentInfoHTML
         ) {
-            mailer.sendMail({
-                from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
-                to: issuerExists.dataValues.email,
-                bcc: 'it.admin@milaorlandousa.com;denis@pharosit.com.br',
-                subject: `MILA Plus - Tuition Fee - ${issuerExists.dataValues.name}`,
-                html: `<!DOCTYPE html>
+            try {
+                await mailer.sendMail({
+                    from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+                    to: issuerExists.dataValues.email,
+                    bcc: 'it.admin@milaorlandousa.com;denis@pharosit.com.br',
+                    subject: `MILA Plus - Tuition Fee - ${issuerExists.dataValues.name}`,
+                    html: `<!DOCTYPE html>
                                 <html lang="en">
                                 <head>
                                     <meta charset="UTF-8">
@@ -597,8 +607,10 @@ export async function sendInvoiceRecurrenceJob() {
                                                                     .dataValues
                                                                     .address
                                                             } ${
-                    filial.dataValues.name
-                }, ${filial.dataValues.state} ${filial.dataValues.zipcode} US
+                        filial.dataValues.name
+                    }, ${filial.dataValues.state} ${
+                        filial.dataValues.zipcode
+                    } US
                                                         </td>
                                                     </tr>
                                                 </table>
@@ -607,10 +619,16 @@ export async function sendInvoiceRecurrenceJob() {
                                     </table>
                                 </body>
                                 </html>`,
-            })
+                })
+                return true
+            } catch (err) {
+                console.log(err)
+                return false
+            }
         }
     } catch (err) {
         console.log({ err })
+        return false
     }
 }
 
