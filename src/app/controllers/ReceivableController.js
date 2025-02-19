@@ -426,12 +426,6 @@ export async function sendInvoiceRecurrenceJob() {
                                     receivables.length - sent_number
                                 }`
                             )
-                        } else {
-                            console.log(
-                                `❌ It wasnt possible to send the e-mail, sent_number: ${sent_number} not sent: ${
-                                    receivables.length - sent_number
-                                }`
-                            )
                         }
                     })
             } else {
@@ -477,12 +471,6 @@ export async function sendInvoiceRecurrenceJob() {
                                 sent_number++
                                 console.log(
                                     `✅ Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
-                                        receivables.length - sent_number
-                                    }`
-                                )
-                            } else {
-                                console.log(
-                                    `❌ It wasnt possible to send the e-mail, sent_number: ${sent_number} not sent: ${
                                         receivables.length - sent_number
                                     }`
                                 )
@@ -651,7 +639,9 @@ export async function sendInvoiceRecurrenceJob() {
                 })
                 return true
             } catch (err) {
-                // console.log(err.responseCode)
+                console.log(
+                    `❌ It wasnt possible to send the e-mail, errorCode: ${err.responseCode}`
+                )
                 return false
             }
         }
