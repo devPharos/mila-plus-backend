@@ -10,7 +10,16 @@ import Issuer from '../models/Issuer'
 import FilialPriceList from '../models/FilialPriceList'
 import FilialDiscountList from '../models/FilialDiscountList'
 import Student from '../models/Student'
-import { addDays, differenceInDays, format, parseISO } from 'date-fns'
+import {
+    addDays,
+    addMonths,
+    addWeeks,
+    addYears,
+    differenceInDays,
+    format,
+    parseISO,
+    subDays,
+} from 'date-fns'
 import { searchPromise } from '../functions/searchPromise'
 import { mailer } from '../../config/mailer'
 import { emergepay } from '../../config/emergepay'
@@ -22,6 +31,7 @@ import Settlement from '../models/Settlement'
 import {
     createPaidTimeline,
     verifyAndCancelTextToPayTransaction,
+    verifyAndCreateTextToPayTransaction,
 } from './EmergepayController'
 import Refund from '../models/Refund'
 import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
@@ -29,6 +39,7 @@ import Feeadjustment from '../models/Feeadjustment'
 import { resolve } from 'path'
 import Milauser from '../models/Milauser'
 import Textpaymenttransaction from '../models/Textpaymenttransaction'
+import Renegociation from '../models/Renegociation'
 
 const xl = require('excel4node')
 const fs = require('fs')
@@ -284,13 +295,16 @@ export function applyDiscounts({
 
 export async function sendInvoiceRecurrenceJob() {
     try {
+        await sendAutopayRecurrenceJob()
         const days_before = 5
         const date = addDays(new Date(), days_before)
         const searchDate =
             date.getFullYear() +
             (date.getMonth() + 1).toString().padStart(2, '0') +
             date.getDate().toString().padStart(2, '0')
-        console.log(`Verifying Invoice Recurrence Job on date: ${searchDate}`)
+        console.log(
+            `[Regular Invoices] - Verifying Recurrence regular invoices on due date: ${searchDate}`
+        )
         const receivables = await Receivable.findAll({
             include: [
                 {
@@ -306,6 +320,7 @@ export async function sendInvoiceRecurrenceJob() {
                             as: 'issuer_x_recurrence',
                             required: true,
                             where: {
+                                is_autopay: false,
                                 canceled_at: null,
                             },
                         },
@@ -324,7 +339,139 @@ export async function sendInvoiceRecurrenceJob() {
             order: [['memo', 'ASC']],
         })
 
-        console.log(`Receivables found:`, receivables.length)
+        console.log(
+            `[Regular Invoices] - Receivables found:`,
+            receivables.length
+        )
+
+        let sent_number = 0
+
+        receivables.map(async (receivable) => {
+            const issuerExists = await Issuer.findByPk(
+                receivable.dataValues.issuer_id
+            )
+            const student = await Student.findByPk(
+                issuerExists.dataValues.student_id
+            )
+            if (!issuerExists || !student) {
+                return res.status(400).json({
+                    error: 'Issuer or student not found',
+                })
+            }
+            const tuitionFee = await Receivable.findByPk(receivable.id)
+
+            const filial = await Filial.findByPk(
+                receivable.dataValues.filial_id
+            )
+            if (!filial) {
+                return res.status(400).json({
+                    error: 'Filial not found.',
+                })
+            }
+
+            let amount = tuitionFee.dataValues.total
+            const invoice_number = tuitionFee.dataValues.invoice_number
+                .toString()
+                .padStart(6, '0')
+
+            emergepay
+                .startTextToPayTransaction({
+                    amount: amount.toFixed(2),
+                    externalTransactionId: receivable.dataValues.id,
+                    promptTip: false,
+                    pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
+                    transactionReference: 'I' + invoice_number,
+                })
+                .then(async (response) => {
+                    const { paymentPageUrl, paymentPageId } = response.data
+                    await Textpaymenttransaction.create({
+                        receivable_id: receivable.dataValues.id,
+                        payment_page_url: paymentPageUrl,
+                        payment_page_id: paymentPageId,
+                        created_by: 2,
+                        created_at: new Date(),
+                    }).then(async () => {
+                        paymentInfoHTML = `<tr>
+                            <td style="text-align: center;padding: 10px 0 30px;">
+                                <a href="${paymentPageUrl}" target="_blank" style="background-color: #0a0; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
+                            </td>
+                        </tr>`
+                        if (
+                            await TuitionMail({
+                                receivable_id: tuitionFee.dataValues.id,
+                            })
+                        ) {
+                            sent_number++
+                            console.log(
+                                `✅ [Regular Invoices] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
+                                    receivables.length - sent_number
+                                }`
+                            )
+                        }
+                    })
+                })
+        })
+    } catch (err) {
+        MailLog({
+            className: 'ReceivableController',
+            functionName: 'sendInvoiceRecurrenceJob',
+            req: null,
+            err,
+        })
+        console.log({ err })
+        return false
+    }
+}
+
+export async function sendAutopayRecurrenceJob() {
+    try {
+        const days_before = 0
+        const date = addDays(new Date(), days_before)
+        const searchDate =
+            date.getFullYear() +
+            (date.getMonth() + 1).toString().padStart(2, '0') +
+            date.getDate().toString().padStart(2, '0')
+        console.log(
+            `[Autopay Invoices] - Verifying Recurrence autopay invoices on due date: ${searchDate}`
+        )
+        const receivables = await Receivable.findAll({
+            include: [
+                {
+                    model: Issuer,
+                    as: 'issuer',
+                    required: true,
+                    where: {
+                        canceled_at: null,
+                    },
+                    include: [
+                        {
+                            model: Recurrence,
+                            as: 'issuer_x_recurrence',
+                            required: true,
+                            where: {
+                                is_autopay: true,
+                                canceled_at: null,
+                            },
+                        },
+                    ],
+                },
+            ],
+            where: {
+                is_recurrence: true,
+                notification_sent: false,
+                canceled_at: null,
+                status: 'Pending',
+                type: 'Invoice',
+                type_detail: 'Tuition fee',
+                due_date: `${searchDate}`,
+            },
+            order: [['memo', 'ASC']],
+        })
+
+        console.log(
+            `[Autopay Invoices] - Receivables found:`,
+            receivables.length
+        )
 
         let sent_number = 0
 
@@ -390,7 +537,8 @@ export async function sendInvoiceRecurrenceJob() {
                         uniqueTransId: tokenizedTransaction.dataValues.id,
                         externalTransactionId: receivable.id,
                         amount: amount.toFixed(2),
-                        billingName: issuerExists.dataValues.name,
+                        billingName:
+                            tokenizedTransaction.dataValues.billing_name,
                         billingAddress: issuerExists.dataValues.address,
                         billingPostalCode: issuerExists.dataValues.zip,
                         promptTip: false,
@@ -398,281 +546,51 @@ export async function sendInvoiceRecurrenceJob() {
                         transactionReference: 'I' + invoice_number,
                     })
                     .then(async (response) => {
-                        paymentInfoHTML = `<tr>
-                            <td style="text-align: center;padding: 10px 0 30px;">
-                                <div style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Autopay Status: ${
-                                    response.data.resultMessage === 'Approved'
-                                        ? 'Approved'
-                                        : 'Declined'
-                                }</div>
-                            </td>
-                        </tr>`
-                        if (
-                            Mail(
-                                issuerExists,
-                                filial,
-                                tuitionFee,
-                                amount,
-                                invoice_number,
-                                paymentInfoHTML
-                            )
-                        ) {
-                            receivable.update({
-                                notification_sent: true,
-                            })
-                            sent_number++
-                            console.log(
-                                `✅ Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
-                                    receivables.length - sent_number
-                                }`
-                            )
-                        }
-                    })
-            } else {
-                emergepay
-                    .startTextToPayTransaction({
-                        amount: amount.toFixed(2),
-                        externalTransactionId: receivable.dataValues.id,
-                        // Optional
-                        // billingName: issuerExists.dataValues.name,
-                        // billingAddress: issuerExists.dataValues.address,
-                        // billingPostalCode: issuerExists.dataValues.zip,
-                        promptTip: false,
-                        pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
-                        transactionReference: 'I' + invoice_number,
-                    })
-                    .then(async (response) => {
-                        const { paymentPageUrl, paymentPageId } = response.data
-                        await Textpaymenttransaction.create({
-                            receivable_id: receivable.dataValues.id,
-                            payment_page_url: paymentPageUrl,
-                            payment_page_id: paymentPageId,
-                            created_by: 2,
-                            created_at: new Date(),
-                        }).then(async () => {
-                            paymentInfoHTML = `<tr>
-                            <td style="text-align: center;padding: 10px 0 30px;">
-                                <a href="${paymentPageUrl}" target="_blank" style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
-                            </td>
-                        </tr>`
-                            if (
-                                await Mail(
-                                    issuerExists,
-                                    filial,
-                                    tuitionFee,
-                                    amount,
-                                    invoice_number,
-                                    paymentInfoHTML
-                                )
-                            ) {
-                                receivable.update({
-                                    notification_sent: true,
-                                })
-                                sent_number++
-                                console.log(
-                                    `✅ Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
-                                        receivables.length - sent_number
-                                    }`
-                                )
-                            }
-                        })
+                        console.log(
+                            `${
+                                response.data.resultMessage === 'Approved'
+                                    ? '✅'
+                                    : '❌'
+                            } [Autopay Invoices] - Tokenized payment transaction realized. Status: ${
+                                response.data.resultMessage
+                            }`
+                        )
                     })
             }
         })
-
-        async function Mail(
-            issuerExists,
-            filial,
-            tuitionFee,
-            amount,
-            invoice_number,
-            paymentInfoHTML
-        ) {
-            try {
-                await mailer.sendMail({
-                    from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
-                    to: issuerExists.dataValues.email,
-                    bcc: 'it.admin@milaorlandousa.com;denis@pharosit.com.br',
-                    subject: `MILA Plus - Tuition Fee - ${issuerExists.dataValues.name}`,
-                    html: `<!DOCTYPE html>
-                                <html lang="en">
-                                <head>
-                                    <meta charset="UTF-8">
-                                    <title>Invoice for Payment</title>
-                                </head>
-                                <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: Arial, sans-serif;color: #444;font-size: 16px;">
-                                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; padding: 20px;">
-                                        <tr>
-                                            <td align="center">
-                                                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 6px; overflow: hidden; border: 1px solid #e0e0e0;">
-                                                    <tr>
-                                                        <td style="background-color: #fff;  text-align: center; padding: 20px;">
-                                                            <h1 style="margin: 0; font-size: 24px;">INVOICE I${invoice_number} - DETAILS</h1>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td style="background-color: #f4f5f8; border-top: 1px solid #ccc;  text-align: center; padding: 4px;">
-                                                            <h3 style="margin: 10px 0;line-height: 1.5;font-size: 16px;font-weight: normal;">MILA INTERNATIONAL LANGUAGE ACADEMY - <strong>${
-                                                                filial
-                                                                    .dataValues
-                                                                    .name
-                                                            }</strong></h3>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td style="padding: 20px 0;">
-                                                            <p style="margin: 20px 40px;">Dear ${
-                                                                issuerExists
-                                                                    .dataValues
-                                                                    .name
-                                                            },</p>
-                                                            <p style="margin: 20px 40px;">Here's your invoice! We appreciate your prompt payment.</p>
-                                                            <table width="100%" cellpadding="10" cellspacing="0" style="background-color: #dbe9f1; border-radius: 4px; margin: 20px 0;padding: 10px 0;">
-                                                                <tr>
-                                                                    <td style="font-weight: bold;text-align: center;color: #444;">DUE ${format(
-                                                                        parseISO(
-                                                                            tuitionFee
-                                                                                .dataValues
-                                                                                .due_date
-                                                                        ),
-                                                                        'MM/dd/yyyy'
-                                                                    )}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td style="font-weight: bold;text-align: center;font-size: 36px;color: #444;">$ ${amount.toFixed(
-                                                                        2
-                                                                    )}</td>
-                                                                </tr>
-                                                                ${paymentInfoHTML}
-                                                            </table>
-                                                            <p style="margin: 20px 40px;">Have a great day,</p>
-                                                            <p style="margin: 20px 40px;">MILA - International Language Academy - <strong>${
-                                                                filial
-                                                                    .dataValues
-                                                                    .name
-                                                            }</strong></p>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td style="background-color: #f4f5f8; border-top: 1px solid #ccc;  text-align: center; padding: 4px;">
-                                                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f5f8; overflow: hidden;padding: 0 40px;">
-                                                                <tr>
-                                                                    <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                                        <strong>Bill to</strong>
-                                                                    </td>
-                                                                    <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                                        ${
-                                                                            issuerExists
-                                                                                .dataValues
-                                                                                .name
-                                                                        }
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td style=" text-align: left; padding: 20px;">
-                                                                        <strong>Terms</strong>
-                                                                    </td>
-                                                                    <td style=" text-align: right; padding: 20px;">
-                                                                        Due on receipt
-                                                                    </td>
-                                                                </tr>
-                                                            </table>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td style="color: #444; text-align: center; padding: 4px;">
-                                                            <table width="100%" cellpadding="0" cellspacing="0" style="overflow: hidden;padding: 0 40px;">
-                                                                <tr>
-                                                                    <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                                        <strong>English course - 4 weeks</strong><br/>
-                                                                        <span style="font-size: 12px;">1 X $ ${tuitionFee.dataValues.total.toFixed(
-                                                                            2
-                                                                        )}</span>
-                                                                    </td>
-                                                                    <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                                        $ ${tuitionFee.dataValues.total.toFixed(
-                                                                            2
-                                                                        )}
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td colspan="2" style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                                        Balance due <span style="margin-left: 10px;">$ ${amount.toFixed(
-                                                                            2
-                                                                        )}</span>
-                                                                    </td>
-                                                                </tr>
-                                                            </table>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td style="padding: 40px;font-size: 12px;">
-                                                            *.*Este pagamento não isenta invoices anteriores.<br/>
-                                                            *.*This payment does not exempt previous invoices
-                                                        </td>
-                                                    </tr>
-                                                    ${paymentInfoHTML}
-                                                    <tr>
-                                                        <td style="text-align: center; padding: 10px; line-height: 1.5; background-color: #f1f3f5; font-size: 12px; color: #6c757d;">
-                                                            MILA INTERNATIONAL LANGUAGE ACADEMY - ${
-                                                                filial
-                                                                    .dataValues
-                                                                    .name
-                                                            }<br/>
-                                                            ${
-                                                                filial
-                                                                    .dataValues
-                                                                    .address
-                                                            } ${
-                        filial.dataValues.name
-                    }, ${filial.dataValues.state} ${
-                        filial.dataValues.zipcode
-                    } US
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </body>
-                                </html>`,
-                })
-                return true
-            } catch (err) {
-                console.log(
-                    `❌ It wasnt possible to send the e-mail, errorCode: ${err.responseCode}`
-                )
-                return false
-            }
-        }
     } catch (err) {
-        console.log({ err })
+        MailLog({
+            className: 'ReceivableController',
+            functionName: 'sendAutopayRecurrenceJob',
+            req: null,
+            err,
+        })
         return false
     }
 }
 
-export async function calculateFee(receivable = null) {
+export async function calculateFee(receivable_id = null) {
     try {
-        if (!receivable) {
-            return 0
-        }
+        const receivable = await Receivable.findByPk(receivable_id)
 
-        if (
-            receivable.dataValues.id !== '4600995c-0f87-4ef3-bd1d-b70e85d9d87a'
-        ) {
-            return 0
+        if (!receivable) {
+            return false
         }
 
         const paymentCriteria = await PaymentCriteria.findByPk(
             receivable.dataValues.paymentcriteria_id
         )
 
-        if (receivable.dataValues.due_date >= new Date()) {
-            return 0
+        if (!paymentCriteria) {
+            return false
+        }
+
+        if (receivable.dataValues.due_date >= format(new Date(), 'yyyyMMdd')) {
+            return false
         }
 
         if (paymentCriteria.dataValues.fee_value === 0) {
-            return 0
+            return false
         }
 
         const daysPassed = differenceInDays(
@@ -682,7 +600,7 @@ export async function calculateFee(receivable = null) {
         let how_many_times = 0
 
         if (daysPassed < paymentCriteria.dataValues.fee_qt) {
-            return 0
+            return false
         }
 
         if (paymentCriteria.dataValues.fee_metric === 'Day') {
@@ -721,7 +639,7 @@ export async function calculateFee(receivable = null) {
         }
 
         const { amount, discount } = receivable.dataValues
-        const settled = Settlement.findAll({
+        const settled = await Settlement.findAll({
             where: {
                 receivable_id: receivable.id,
                 canceled_at: null,
@@ -733,15 +651,25 @@ export async function calculateFee(receivable = null) {
                 settledAmount += curr.dataValues.amount
                 return acc + curr.dataValues.amount
             }, 0)
-        receivable.update({
+
+        if (receivable.dataValues.fee === feesAmount) {
+            return false
+        }
+
+        await receivable.update({
             total: (amount - discount + feesAmount).toFixed(2),
             balance: (amount - discount + feesAmount - settledAmount).toFixed(
                 2
             ),
             fee: feesAmount.toFixed(2),
+            notification_sent: false,
             updated_at: new Date(),
             updated_by: 2,
         })
+
+        await verifyAndCancelTextToPayTransaction(receivable.id)
+        await verifyAndCreateTextToPayTransaction(receivable.id)
+        await verifyAndCancelParcelowPaymentLink(receivable.id)
 
         return receivable
     } catch (err) {
@@ -761,9 +689,16 @@ export async function calculateFeesRecurrenceJob() {
                 },
             },
         })
-        receivables.forEach(async (receivable) => {
-            calculateFee(receivable)
-        })
+        let sent_number = 0
+        for (let receivable of receivables) {
+            if (await calculateFee(receivable.dataValues.id)) {
+                await TuitionMail({ receivable_id: receivable.dataValues.id })
+                sent_number++
+            }
+        }
+        console.log(
+            `✅ Late Receivables calculated successfully! sent_number: ${sent_number}`
+        )
     } catch (err) {
         MailLog({
             className: 'ReceivableController',
@@ -775,24 +710,282 @@ export async function calculateFeesRecurrenceJob() {
 }
 
 export async function cancelInvoice(invoice_number = null) {
-    if (!invoice_number) return false
-    const promises = []
-    await Receivable.findAll({
-        where: {
-            invoice_number,
-            canceled_at: null,
-        },
-    }).then((receivables) => {
-        receivables.map(async (receivable) => {
-            promises.push(verifyAndCancelParcelowPaymentLink(receivable.id))
-            promises.push(verifyAndCancelTextToPayTransaction(receivable.id))
-            promises.push(receivable.destroy())
+    try {
+        if (!invoice_number) return false
+        const receivables = await Receivable.findAll({
+            where: {
+                invoice_number,
+                canceled_at: null,
+            },
         })
 
-        Promise.all(promises).then(() => {
-            return true
-        })
-    })
+        for (let receivable of receivables) {
+            await verifyAndCancelParcelowPaymentLink(receivable.id)
+            await verifyAndCancelTextToPayTransaction(receivable.id)
+            await receivable.destroy()
+        }
+    } catch (err) {
+        const className = 'ReceivableController'
+        const functionName = 'cancelInvoice'
+        MailLog({ className, functionName, req: null, err })
+        return false
+    }
+}
+
+export async function TuitionMail({
+    receivable_id = null,
+    paymentInfoHTML = '',
+}) {
+    try {
+        const receivable = await Receivable.findByPk(receivable_id)
+        if (!receivable) {
+            return false
+        }
+        if (receivable.dataValues.notification_sent) {
+            console.log('Notification already sent')
+            return false
+        }
+        const issuer = await Issuer.findByPk(receivable.dataValues.issuer_id)
+        if (!issuer) {
+            return false
+        }
+        const filial = await Filial.findByPk(receivable.dataValues.filial_id)
+        if (!filial) {
+            return false
+        }
+        const paymentCriteria = await PaymentCriteria.findByPk(
+            receivable.dataValues.paymentcriteria_id
+        )
+        if (!paymentCriteria) {
+            return false
+        }
+        const paymentMethod = await PaymentMethod.findByPk(
+            receivable.dataValues.paymentmethod_id
+        )
+        if (!paymentMethod) {
+            return false
+        }
+        if (paymentMethod.dataValues.platform === 'Gravity') {
+            const textPaymentTransaction = await Textpaymenttransaction.findOne(
+                {
+                    where: {
+                        receivable_id: receivable.id,
+                        canceled_at: null,
+                    },
+                }
+            )
+            if (textPaymentTransaction) {
+                paymentInfoHTML = `<tr>
+                <td style="text-align: center;padding: 10px 0 30px;">
+                    <a href="${textPaymentTransaction.dataValues.payment_page_url}" target="_blank" style="background-color: #0a0; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
+                </td>
+            </tr>`
+            }
+        }
+        const amount = receivable.dataValues.total
+        const invoice_number = receivable.dataValues.invoice_number
+            .toString()
+            .padStart(6, '0')
+
+        await mailer
+            .sendMail({
+                from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+                to:
+                    process.env.NODE_ENV === 'production'
+                        ? issuerExists.dataValues.email
+                        : 'denis@pharosit.com.br',
+                bcc:
+                    process.env.NODE_ENV === 'production'
+                        ? 'it.admin@milaorlandousa.com;denis@pharosit.com.br'
+                        : '',
+                subject: `MILA Plus - Tuition Fee - ${issuer.dataValues.name}`,
+                html: `<!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8">
+                            <title>Invoice for Payment</title>
+                        </head>
+                        <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: Arial, sans-serif;color: #444;font-size: 16px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; padding: 20px;">
+                                <tr>
+                                    <td align="center">
+                                        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 6px; overflow: hidden; border: 1px solid #e0e0e0;">
+                                            <tr>
+                                                <td style="background-color: #fff;  text-align: center; padding: 20px;">
+                                                    <h1 style="margin: 0; font-size: 24px;">INVOICE I${invoice_number} - DETAILS</h1>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="background-color: #f4f5f8; border-top: 1px solid #ccc;  text-align: center; padding: 4px;">
+                                                    <h3 style="margin: 10px 0;line-height: 1.5;font-size: 16px;font-weight: normal;">MILA INTERNATIONAL LANGUAGE ACADEMY - <strong>${
+                                                        filial.dataValues.name
+                                                    }</strong></h3>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 20px 0;">
+                                                    <p style="margin: 20px 40px;">Dear ${
+                                                        issuer.dataValues.name
+                                                    },</p>
+                                                    <p style="margin: 20px 40px;">Here's your invoice! We appreciate your prompt payment.</p>
+                                                    <table width="100%" cellpadding="10" cellspacing="0" style="background-color: #dbe9f1; border-radius: 4px; margin: 20px 0;padding: 10px 0;">
+                                                        <tr>
+                                                            <td style="font-weight: bold;text-align: center;color: #c00;">DUE ${format(
+                                                                parseISO(
+                                                                    receivable
+                                                                        .dataValues
+                                                                        .due_date
+                                                                ),
+                                                                'MM/dd/yyyy'
+                                                            )}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="font-weight: bold;text-align: center;font-size: 36px;color: #444;">$ ${amount.toFixed(
+                                                                2
+                                                            )}</td>
+                                                        </tr>
+                                                        ${paymentInfoHTML}
+                                                    </table>
+                                                    <p style="margin: 20px 40px;">Have a great day,</p>
+                                                    <p style="margin: 20px 40px;">MILA - International Language Academy - <strong>${
+                                                        filial.dataValues.name
+                                                    }</strong></p>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="background-color: #f4f5f8; border-top: 1px solid #ccc;  text-align: center; padding: 4px;">
+                                                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f5f8; overflow: hidden;padding: 0 40px;">
+                                                        <tr>
+                                                            <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                <strong>Bill to</strong>
+                                                            </td>
+                                                            <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                ${
+                                                                    issuer
+                                                                        .dataValues
+                                                                        .name
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style=" text-align: left; padding: 20px;">
+                                                                <strong>Terms</strong>
+                                                            </td>
+                                                            <td style=" text-align: right; padding: 20px;">
+                                                                Due on receipt
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #444; text-align: center; padding: 4px;">
+                                                    <table width="100%" cellpadding="0" cellspacing="0" style="overflow: hidden;padding: 0 40px;">
+                                                        <tr>
+                                                            <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                <strong>English Class - 4 weeks</strong><br/>
+                                                                <span style="font-size: 12px;">1 X $ ${receivable.dataValues.amount.toFixed(
+                                                                    2
+                                                                )}</span>
+                                                            </td>
+                                                            <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                $ ${receivable.dataValues.amount.toFixed(
+                                                                    2
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                        ${
+                                                            receivable
+                                                                .dataValues
+                                                                .discount > 0 &&
+                                                            `<tr>
+                                                                <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                    Discounts
+                                                                </td>
+                                                                <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                    - $ ${receivable.dataValues.discount.toFixed(
+                                                                        2
+                                                                    )}
+                                                                </td>
+                                                            </tr>`
+                                                        }
+                                                        ${
+                                                            receivable
+                                                                .dataValues
+                                                                .fee > 0
+                                                                ? `<tr>
+                                                                            <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;color: #a00;">
+                                                                                Late payment fee
+                                                                            </td>
+                                                                            <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;color: #a00;">
+                                                                                $ ${receivable.dataValues.fee.toFixed(
+                                                                                    2
+                                                                                )}
+                                                                            </td>
+                                                        </tr>`
+                                                                : ''
+                                                        }
+                                                        <tr>
+                                                            <td colspan="2" style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                Balance due <span style="margin-left: 10px;">$ ${amount.toFixed(
+                                                                    2
+                                                                )}</span>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            ${
+                                                receivable.dataValues.fee > 0 &&
+                                                paymentCriteria.dataValues
+                                                    .late_fee_description
+                                                    ? `<tr>
+                                                <td style="padding: 40px;font-size: 12px;text-align: justify;">
+                                                    <strong style='color:#a00;'>LATE Payments:</strong> - ${paymentCriteria.dataValues.late_fee_description}
+                                                </td>
+                                            </tr>`
+                                                    : ''
+                                            }
+                                            <tr>
+                                                <td style="padding: 40px;font-size: 12px;">
+                                                    *.*Este pagamento não isenta invoices anteriores.<br/>
+                                                    *.*This payment does not exempt previous invoices
+                                                </td>
+                                            </tr>
+                                            ${paymentInfoHTML}
+                                            <tr>
+                                                <td style="text-align: center; padding: 10px; line-height: 1.5; background-color: #f1f3f5; font-size: 12px; color: #6c757d;">
+                                                    MILA INTERNATIONAL LANGUAGE ACADEMY - ${
+                                                        filial.dataValues.name
+                                                    }<br/>
+                                                    ${
+                                                        filial.dataValues
+                                                            .address
+                                                    } ${
+                    filial.dataValues.name
+                }, ${filial.dataValues.state} ${filial.dataValues.zipcode} US
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </body>
+                        </html>`,
+            })
+            .then(async () => {
+                await receivable.update({
+                    notification_sent: true,
+                })
+                return true
+            })
+    } catch (err) {
+        console.log(err)
+        console.log(
+            `❌ It wasnt possible to send the e-mail, errorCode: ${err.responseCode}`
+        )
+        return false
+    }
 }
 
 class ReceivableController {
@@ -1383,6 +1576,146 @@ class ReceivableController {
             await t.rollback()
             const className = 'ReceivableController'
             const functionName = 'settlement'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async renegociation(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const {
+                receivables,
+                installment_amount,
+                number_of_installments,
+                payment_method_id,
+                payment_criteria_id,
+                observations,
+            } = req.body
+
+            let { first_due_date } = req.body
+
+            first_due_date = addDays(first_due_date, 1)
+
+            const renegociation = await Renegociation.create(
+                {
+                    first_due_date: format(first_due_date, 'yyyyMMdd'),
+                    number_of_installments,
+                    payment_method_id,
+                    payment_criteria_id,
+                    observations,
+                    created_at: new Date(),
+                    created_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            for (let receivableFind of receivables) {
+                const receivable = await Receivable.findByPk(receivableFind.id)
+                await receivable.update(
+                    {
+                        status: 'Renegociated',
+                        balance: 0,
+                        updated_at: new Date(),
+                        updated_by: req.userId,
+                        renegociation_to: renegociation.id,
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+            }
+
+            const paymentCriteria = await PaymentCriteria.findByPk(
+                payment_criteria_id
+            )
+
+            if (!paymentCriteria) {
+                return null
+            }
+            const { recurring_metric, recurring_qt } =
+                paymentCriteria.dataValues
+
+            for (
+                let installment = 0;
+                installment < number_of_installments;
+                installment++
+            ) {
+                let entry_date = null
+                let due_date = null
+                let qt = installment * recurring_qt
+
+                if (recurring_metric === 'Day') {
+                    entry_date = format(
+                        subDays(addDays(first_due_date, qt), 3),
+                        'yyyyMMdd'
+                    )
+                    due_date = format(addDays(first_due_date, qt), 'yyyyMMdd')
+                } else if (recurring_metric === 'Week') {
+                    entry_date = format(
+                        subDays(addWeeks(first_due_date, qt), 3),
+                        'yyyyMMdd'
+                    )
+                    due_date = format(addWeeks(first_due_date, qt), 'yyyyMMdd')
+                } else if (recurring_metric === 'Month') {
+                    entry_date = format(
+                        subDays(addMonths(first_due_date, qt), 3),
+                        'yyyyMMdd'
+                    )
+                    due_date = format(addMonths(first_due_date, qt), 'yyyyMMdd')
+                } else if (recurring_metric === 'Year') {
+                    entry_date = format(
+                        subDays(addYears(first_due_date, qt), 3),
+                        'yyyyMMdd'
+                    )
+                    due_date = format(addYears(first_due_date, qt), 'yyyyMMdd')
+                }
+
+                const firstReceivable = await Receivable.findByPk(
+                    receivables[0].id
+                )
+                await Receivable.create(
+                    {
+                        company_id: firstReceivable.company_id,
+                        filial_id: firstReceivable.filial_id,
+                        issuer_id: firstReceivable.issuer_id,
+                        type: firstReceivable.type,
+                        type_detail: firstReceivable.type_detail,
+                        entry_date: format(new Date(), 'yyyyMMdd'),
+                        due_date,
+                        memo: firstReceivable.memo,
+                        is_recurrence: false,
+                        amount: installment_amount,
+                        total: installment_amount,
+                        balance: installment_amount,
+                        paymentmethod_id: payment_method_id,
+                        status: 'Pending',
+                        status_date: format(new Date(), 'yyyyMMdd'),
+                        chartofaccount_id: firstReceivable.chartofaccount_id,
+                        paymentcriteria_id: payment_criteria_id,
+                        notification_sent: false,
+                        renegociation_from: renegociation.id,
+                        created_at: new Date(),
+                        created_by: req.userId,
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+            }
+
+            t.commit()
+
+            return res.json(renegociation)
+        } catch (err) {
+            await t.rollback()
+            const className = 'ReceivableController'
+            const functionName = 'renegociation'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

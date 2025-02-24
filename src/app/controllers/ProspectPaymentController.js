@@ -108,7 +108,6 @@ class ProspectPaymentController {
                     used_invoice = registrationFee.dataValues.invoice_number
                 }
                 await cancelInvoice(registrationFee.dataValues.invoice_number)
-                await registrationFee.destroy()
                 registrationFee = null
             } else if (
                 registrationFee &&
@@ -381,7 +380,7 @@ class ProspectPaymentController {
             const tuitionHTML = tuitionFee
                 ? `<tr>
             <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
-                <strong>English course - 4 weeks</strong><br/>
+                <strong>English Class - 4 weeks</strong><br/>
                 <span style="font-size: 12px;">1 X $ ${tuitionFee.dataValues.total.toFixed(
                     2
                 )}</span>
@@ -518,7 +517,7 @@ class ProspectPaymentController {
                                                 <table width="100%" cellpadding="0" cellspacing="0" style="overflow: hidden;padding: 0 40px;">
                                                     <tr>
                                                         <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                            <strong>English course - Registration fee</strong><br/>
+                                                            <strong>English Class - Registration fee</strong><br/>
                                                             <span style="font-size: 12px;">1 X $ ${registrationFee.dataValues.total.toFixed(
                                                                 2
                                                             )}</span>

@@ -16,6 +16,7 @@ import Enrollment from '../models/Enrollment'
 import Enrollmenttimeline from '../models/Enrollmenttimeline'
 import Textpaymenttransaction from '../models/Textpaymenttransaction'
 import PaymentMethod from '../models/PaymentMethod'
+import { TuitionMail } from './ReceivableController'
 
 export async function createPaidTimeline(receivable_id = null) {
     const receivable = await Receivable.findByPk(receivable_id)
@@ -169,16 +170,26 @@ export async function settlement(
     }
 }
 
-export async function verifyAndCancelTextToPayTransaction(
+export async function verifyAndCreateTextToPayTransaction(
     receivable_id = null
 ) {
     try {
         if (!receivable_id) {
-            return
+            return false
         }
         const receivable = await Receivable.findByPk(receivable_id)
         if (!receivable) {
-            return
+            return false
+        }
+        const issuer = await Issuer.findByPk(receivable.dataValues.issuer_id)
+        if (!issuer) {
+            return false
+        }
+        const paymentMethod = await PaymentMethod.findByPk(
+            receivable.dataValues.paymentmethod_id
+        )
+        if (paymentMethod.dataValues.platform !== 'Gravity') {
+            return false
         }
         const textPaymentTransaction = await Textpaymenttransaction.findOne({
             where: {
@@ -187,15 +198,82 @@ export async function verifyAndCancelTextToPayTransaction(
             },
         })
         if (textPaymentTransaction) {
-            emergepay
+            return false
+        }
+        await emergepay
+            .startTextToPayTransaction({
+                amount: receivable.dataValues.balance.toFixed(2),
+                externalTransactionId: receivable_id,
+                promptTip: false,
+                pageDescription: `${receivable.dataValues.type_detail} - ${issuer.dataValues.name}`,
+                transactionReference:
+                    'I' +
+                    receivable.dataValues.invoice_number
+                        .toString()
+                        .padStart(6, '0'),
+            })
+            .then(async (response) => {
+                const { paymentPageUrl, paymentPageId } = response.data
+                await Textpaymenttransaction.create({
+                    receivable_id: receivable.dataValues.id,
+                    payment_page_url: paymentPageUrl,
+                    payment_page_id: paymentPageId,
+                    created_by: 2,
+                    created_at: new Date(),
+                }).then(async () => {
+                    await receivable
+                        .update({
+                            notification_sent: false,
+                        })
+                        .then(() => {
+                            return true
+                        })
+                })
+            })
+    } catch (err) {
+        const className = 'EmergepayController'
+        const functionName = 'verifyAndCancelTextToPayTransaction'
+        MailLog({ className, functionName, req: null, err })
+    }
+}
+
+export async function verifyAndCancelTextToPayTransaction(
+    receivable_id = null
+) {
+    try {
+        if (!receivable_id) {
+            return false
+        }
+        const receivable = await Receivable.findByPk(receivable_id)
+        if (!receivable) {
+            return false
+        }
+        const paymentMethod = await PaymentMethod.findByPk(
+            receivable.dataValues.paymentmethod_id
+        )
+        if (paymentMethod.dataValues.platform !== 'Gravity') {
+            return false
+        }
+        await Textpaymenttransaction.findOne({
+            where: {
+                receivable_id: receivable.id,
+                canceled_at: null,
+            },
+        }).then(async (textPaymentTransaction) => {
+            if (!textPaymentTransaction) {
+                return false
+            }
+            await emergepay
                 .cancelTextToPayTransaction({
                     paymentPageId:
                         textPaymentTransaction.dataValues.payment_page_id,
                 })
                 .then(async () => {
-                    textPaymentTransaction.destroy()
+                    textPaymentTransaction.destroy().then(() => {
+                        return true
+                    })
                 })
-        }
+        })
     } catch (err) {
         const className = 'EmergepayController'
         const functionName = 'verifyAndCancelTextToPayTransaction'
@@ -281,10 +359,6 @@ class EmergepayController {
                 .startTextToPayTransaction({
                     amount: amount.toFixed(2),
                     externalTransactionId: fileUuid,
-                    // Optional
-                    billingName: 'Denis Varella',
-                    billingAddress: 'Rua Primeiro de Maio, 56',
-                    billingPostalCode: '12345',
                     promptTip: false,
                     pageDescription,
                     transactionReference: receivable_id,
@@ -407,13 +481,27 @@ class EmergepayController {
                     )
                     if (receivable && resultMessage === 'Approved') {
                         const amountPaidBalance = parseFloat(amountProcessed)
-                        settlement(
+                        await settlement(
                             {
                                 receivable_id: receivable.id,
                                 amountPaidBalance,
                             },
                             req
-                        )
+                        ).then(async () => {
+                            const paymentInfoHTML = `<tr>
+                            <td style="text-align: center;padding: 10px 0 30px;">
+                                <div style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Autopay Status: ${
+                                    resultMessage === 'Approved'
+                                        ? 'Approved'
+                                        : 'Declined'
+                                }</div>
+                            </td>
+                        </tr>`
+                            await TuitionMail({
+                                receivable_id: receivable.id,
+                                paymentInfoHTML,
+                            })
+                        })
                     }
                 })
             } else {

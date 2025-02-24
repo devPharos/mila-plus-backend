@@ -423,6 +423,7 @@ routes.put('/receivables/:receivable_id', ReceivableController.update)
 routes.delete('/receivables/:receivable_id', ReceivableController.delete)
 routes.post('/receivables/refund/:receivable_id', ReceivableController.refund)
 routes.post('/receivables/settlement', ReceivableController.settlement)
+routes.post('/receivables/renegociation', ReceivableController.renegociation)
 routes.post('/receivables/feeadjustment', ReceivableController.feeAdjustment)
 routes.post('/receivables/excel', ReceivableController.excel)
 

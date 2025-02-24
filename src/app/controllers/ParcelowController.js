@@ -10,11 +10,11 @@ const { Op } = Sequelize
 export async function verifyAndCancelParcelowPaymentLink(receivable_id = null) {
     try {
         if (!receivable_id) {
-            return
+            return false
         }
         const receivable = await Receivable.findByPk(receivable_id)
         if (!receivable) {
-            return
+            return false
         }
         const parcelowPaymentLink = await Parcelowpaymentlink.findOne({
             where: {
@@ -23,11 +23,17 @@ export async function verifyAndCancelParcelowPaymentLink(receivable_id = null) {
             },
         })
         if (parcelowPaymentLink) {
-            await parcelowAPI.post(
-                `/api/orders/${parcelowPaymentLink.dataValues.order_id}/cancel`
-            )
-            await parcelowPaymentLink.destroy()
+            await parcelowAPI
+                .post(
+                    `/api/orders/${parcelowPaymentLink.dataValues.order_id}/cancel`
+                )
+                .then(async () => {
+                    await parcelowPaymentLink.destroy().then(() => {
+                        return true
+                    })
+                })
         }
+        return false
     } catch (err) {
         const className = 'ParcelowController'
         const functionName = 'cancelParcelowPaymentLink'
