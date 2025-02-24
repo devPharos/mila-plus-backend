@@ -7,6 +7,7 @@ import schedule from 'node-schedule'
 import './database/index.js'
 import {
     calculateFeesRecurrenceJob,
+    sendAutopayRecurrenceJob,
     sendInvoiceRecurrenceJob,
 } from './app/controllers/ReceivableController.js'
 
@@ -63,15 +64,17 @@ class App {
     }
 
     schedule() {
-        schedule.scheduleJob('0 0 7 * * *', calculateFeesRecurrenceJob)
-        schedule.scheduleJob('0 0 8 * * *', sendInvoiceRecurrenceJob)
-        console.log('✅ Schedule jobs started!')
-        schedule.scheduleJob('0 0 * * * *', sendInvoiceRecurrenceJob)
-        schedule.scheduleJob('0 10 * * * *', sendInvoiceRecurrenceJob)
-        schedule.scheduleJob('0 20 * * * *', sendInvoiceRecurrenceJob)
-        schedule.scheduleJob('0 30 * * * *', sendInvoiceRecurrenceJob)
-        schedule.scheduleJob('0 40 * * * *', sendInvoiceRecurrenceJob)
-        schedule.scheduleJob('0 50 * * * *', sendInvoiceRecurrenceJob)
+        schedule.scheduleJob('0 0 3 * * *', calculateFeesRecurrenceJob)
+        for (let minutes = 0; minutes < 6; minutes++) {
+            schedule.scheduleJob(
+                `0 ${minutes * 10} 8 * * *`,
+                sendInvoiceRecurrenceJob
+            )
+        }
+
+        setTimeout(() => {
+            console.log('✅ Schedule jobs started!')
+        }, 1000)
     }
 }
 

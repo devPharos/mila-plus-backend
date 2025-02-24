@@ -109,14 +109,22 @@ class Receivable extends Model {
                 paymentcriteria_id: {
                     type: Sequelize.UUID,
                     allowNull: true,
-                    references: {
-                        model: 'paymentcriterias',
-                        key: 'id',
-                    },
                 },
                 notification_sent: {
                     type: Sequelize.BOOLEAN,
                     defaultValue: false,
+                },
+                renegociation_from: {
+                    type: Sequelize.UUID,
+                    allowNull: true,
+                },
+                renegociation_to: {
+                    type: Sequelize.UUID,
+                    references: {
+                        model: 'renegociations',
+                        key: 'id',
+                    },
+                    allowNull: true,
                 },
                 created_at: {
                     type: Sequelize.DATE,
@@ -196,6 +204,14 @@ class Receivable extends Model {
         this.belongsTo(models.Milauser, {
             foreignKey: 'updated_by',
             as: 'updatedBy',
+        })
+        this.belongsTo(models.Renegociation, {
+            foreignKey: 'renegociation_from',
+            as: 'renegociationFrom',
+        })
+        this.belongsTo(models.Renegociation, {
+            foreignKey: 'renegociation_to',
+            as: 'renegociationTo',
         })
     }
 }

@@ -1,6 +1,6 @@
 import Sequelize, { Model } from 'sequelize'
 
-class PaymentCriteria extends Model {
+class Renegociation extends Model {
     static init(sequelize) {
         super.init(
             {
@@ -9,49 +9,33 @@ class PaymentCriteria extends Model {
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true,
                 },
-                company_id: {
+                number_of_installments: {
                     type: Sequelize.INTEGER,
                     allowNull: false,
-                    references: { model: 'companies', key: 'id' },
-                    onUpdate: 'NO ACTION',
                 },
-                filial_id: {
-                    type: Sequelize.INTEGER,
-                    allowNull: false,
-                    references: { model: 'filials', key: 'id' },
-                    onUpdate: 'NO ACTION',
-                },
-                description: {
-                    type: Sequelize.STRING,
-                    allowNull: false,
-                },
-                recurring_qt: {
-                    type: Sequelize.INTEGER,
-                    allowNull: true,
-                },
-                recurring_metric: {
-                    type: Sequelize.STRING,
-                    allowNull: true,
-                },
-                fee_qt: {
-                    type: Sequelize.INTEGER,
-                    allowNull: true,
-                },
-                fee_metric: {
-                    type: Sequelize.STRING,
-                    allowNull: true,
-                },
-                fee_type: {
-                    type: Sequelize.STRING,
-                    allowNull: true,
-                },
-                fee_value: {
-                    type: Sequelize.FLOAT,
-                    allowNull: true,
-                },
-                late_fee_description: {
+                observations: {
                     type: Sequelize.TEXT,
                     allowNull: true,
+                },
+                first_due_date: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
+                payment_method_id: {
+                    type: Sequelize.UUID,
+                    allowNull: true,
+                    references: {
+                        model: 'paymentmethods',
+                        key: 'id',
+                    },
+                },
+                payment_criteria_id: {
+                    type: Sequelize.UUID,
+                    allowNull: true,
+                    references: {
+                        model: 'paymentcriterias',
+                        key: 'id',
+                    },
                 },
                 created_at: {
                     type: Sequelize.DATE,
@@ -80,7 +64,7 @@ class PaymentCriteria extends Model {
             },
             {
                 sequelize,
-                tableName: 'paymentcriterias', // Nome da tabela
+                tableName: 'renegociations', // Nome da tabela
             }
         )
 
@@ -88,12 +72,15 @@ class PaymentCriteria extends Model {
     }
 
     static associate(models) {
-        this.belongsTo(models.Company, {
-            foreignKey: 'company_id',
-            as: 'company',
+        this.belongsTo(models.PaymentMethod, {
+            foreignKey: 'payment_method_id',
+            as: 'paymentMethod',
         })
-        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
+        this.belongsTo(models.PaymentCriteria, {
+            foreignKey: 'payment_criteria_id',
+            as: 'paymentCriteria',
+        })
     }
 }
 
-export default PaymentCriteria
+export default Renegociation
