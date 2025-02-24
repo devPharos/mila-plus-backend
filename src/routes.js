@@ -269,7 +269,7 @@ routes.get('/students', StudentController.index)
 routes.get('/students/:student_id', StudentController.show)
 routes.post('/students', StudentController.store)
 routes.put('/students/:student_id', StudentController.update)
-routes.delete('/students/:student_id', StudentController.inactivate)
+routes.post('/students/inactivate', StudentController.inactivate)
 
 routes.get('/agents/:agent_id', AgentController.show)
 routes.post('/agents', AgentController.store)
@@ -426,6 +426,10 @@ routes.post('/receivables/settlement', ReceivableController.settlement)
 routes.post('/receivables/renegociation', ReceivableController.renegociation)
 routes.post('/receivables/feeadjustment', ReceivableController.feeAdjustment)
 routes.post('/receivables/excel', ReceivableController.excel)
+routes.post(
+    '/receivables/send-invoice/:receivable_id',
+    ReceivableController.sendInvoice
+)
 
 // settlements
 routes.get('/settlements', SettlementController.index)

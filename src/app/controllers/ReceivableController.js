@@ -741,10 +741,6 @@ export async function TuitionMail({
         if (!receivable) {
             return false
         }
-        if (receivable.dataValues.notification_sent) {
-            console.log('Notification already sent')
-            return false
-        }
         const issuer = await Issuer.findByPk(receivable.dataValues.issuer_id)
         if (!issuer) {
             return false
@@ -766,14 +762,16 @@ export async function TuitionMail({
             return false
         }
         if (paymentMethod.dataValues.platform === 'Gravity') {
-            const textPaymentTransaction = await Textpaymenttransaction.findOne(
-                {
-                    where: {
-                        receivable_id: receivable.id,
-                        canceled_at: null,
-                    },
-                }
-            )
+            let textPaymentTransaction = await Textpaymenttransaction.findOne({
+                where: {
+                    receivable_id: receivable.id,
+                    canceled_at: null,
+                },
+            })
+            if (!textPaymentTransaction) {
+                textPaymentTransaction =
+                    await verifyAndCreateTextToPayTransaction(receivable.id)
+            }
             if (textPaymentTransaction) {
                 paymentInfoHTML = `<tr>
                 <td style="text-align: center;padding: 10px 0 30px;">
@@ -868,13 +866,38 @@ export async function TuitionMail({
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td style=" text-align: left; padding: 20px;">
+                                                            <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
                                                                 <strong>Terms</strong>
                                                             </td>
-                                                            <td style=" text-align: right; padding: 20px;">
+                                                            <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
                                                                 Due on receipt
                                                             </td>
                                                         </tr>
+                                                    <tr>
+                                                        <td style=" text-align: left; padding: 20px;">
+                                                            <strong>Payment Method</strong>
+                                                        </td>
+                                                        <td style=" text-align: right; padding: 20px;">
+                                                            ${
+                                                                paymentMethod
+                                                                    .dataValues
+                                                                    .description
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                    ${
+                                                        paymentMethod.dataValues
+                                                            .payment_details
+                                                            ? `<tr>
+                                                        <td style=" text-align: left; padding: 20px;border-top: 1px dashed #babec5;">
+                                                            ↳ Payment Details
+                                                        </td>
+                                                        <td style=" text-align: right; padding: 20px;border-top: 1px dashed #babec5;">
+                                                            ${paymentMethod.dataValues.payment_details}
+                                                        </td>
+                                                    </tr>`
+                                                            : ``
+                                                    }
                                                     </table>
                                                 </td>
                                             </tr>
@@ -897,8 +920,8 @@ export async function TuitionMail({
                                                         ${
                                                             receivable
                                                                 .dataValues
-                                                                .discount > 0 &&
-                                                            `<tr>
+                                                                .discount > 0
+                                                                ? `<tr>
                                                                 <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
                                                                     Discounts
                                                                 </td>
@@ -908,6 +931,7 @@ export async function TuitionMail({
                                                                     )}
                                                                 </td>
                                                             </tr>`
+                                                                : ''
                                                         }
                                                         ${
                                                             receivable
@@ -979,8 +1003,11 @@ export async function TuitionMail({
                 })
                 return true
             })
+            .catch((err) => {
+                console.log(err)
+                return false
+            })
     } catch (err) {
-        console.log(err)
         console.log(
             `❌ It wasnt possible to send the e-mail, errorCode: ${err.responseCode}`
         )
@@ -1594,6 +1621,7 @@ class ReceivableController {
                 payment_method_id,
                 payment_criteria_id,
                 observations,
+                send_invoice,
             } = req.body
 
             let { first_due_date } = req.body
@@ -1629,6 +1657,8 @@ class ReceivableController {
                         transaction: t,
                     }
                 )
+                await verifyAndCancelParcelowPaymentLink(receivable.id)
+                await verifyAndCancelTextToPayTransaction(receivable.id)
             }
 
             const paymentCriteria = await PaymentCriteria.findByPk(
@@ -1640,6 +1670,8 @@ class ReceivableController {
             }
             const { recurring_metric, recurring_qt } =
                 paymentCriteria.dataValues
+
+            let firstGeneratedReceivable = null
 
             for (
                 let installment = 0;
@@ -1706,17 +1738,29 @@ class ReceivableController {
                     {
                         transaction: t,
                     }
-                )
+                ).then(async (receivable) => {
+                    if (installment === 0) {
+                        firstGeneratedReceivable = receivable
+                    }
+                })
             }
 
             t.commit()
 
+            setTimeout(() => {
+                if (send_invoice && firstGeneratedReceivable) {
+                    TuitionMail({
+                        receivable_id: firstGeneratedReceivable.dataValues.id,
+                    })
+                }
+            }, 1000)
+
             return res.json(renegociation)
         } catch (err) {
-            await t.rollback()
             const className = 'ReceivableController'
             const functionName = 'renegociation'
             MailLog({ className, functionName, req, err })
+            await t.rollback()
             return res.status(500).json({
                 error: err,
             })
@@ -2212,6 +2256,57 @@ class ReceivableController {
         } catch (err) {
             const className = 'ReceivableController'
             const functionName = 'excel'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async sendInvoice(req, res) {
+        try {
+            const { receivable_id } = req.params
+            const receivable = await Receivable.findByPk(receivable_id)
+            if (!receivable) {
+                return res.status(400).json({
+                    error: 'Receivable does not exist.',
+                })
+            }
+            const { paymentmethod_id } = receivable.dataValues
+            const paymentMethod = await PaymentMethod.findByPk(paymentmethod_id)
+            if (!paymentMethod) {
+                return res.status(400).json({
+                    error: 'Payment Method does not exist.',
+                })
+            }
+            const textPaymentTransaction = await Textpaymenttransaction.findOne(
+                {
+                    where: {
+                        receivable_id: receivable.id,
+                        canceled_at: null,
+                    },
+                }
+            )
+            let paymentInfoHTML = ''
+            if (textPaymentTransaction) {
+                paymentInfoHTML = `<tr>
+                <td style="text-align: center;padding: 10px 0 30px;">
+                    <a href="${textPaymentTransaction.dataValues.payment_page_url}" target="_blank" style="background-color: #0a0; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
+                </td>
+                </tr>`
+            }
+            await TuitionMail({
+                receivable_id: receivable.id,
+                paymentInfoHTML,
+            }).then(async () => {
+                await receivable.update({
+                    notification_sent: true,
+                })
+                return res.json(receivable)
+            })
+        } catch (err) {
+            const className = 'ReceivableController'
+            const functionName = 'sendInvoice'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

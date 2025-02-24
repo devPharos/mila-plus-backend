@@ -200,36 +200,30 @@ export async function verifyAndCreateTextToPayTransaction(
         if (textPaymentTransaction) {
             return false
         }
-        await emergepay
-            .startTextToPayTransaction({
-                amount: receivable.dataValues.balance.toFixed(2),
-                externalTransactionId: receivable_id,
-                promptTip: false,
-                pageDescription: `${receivable.dataValues.type_detail} - ${issuer.dataValues.name}`,
-                transactionReference:
-                    'I' +
-                    receivable.dataValues.invoice_number
-                        .toString()
-                        .padStart(6, '0'),
-            })
-            .then(async (response) => {
-                const { paymentPageUrl, paymentPageId } = response.data
-                await Textpaymenttransaction.create({
-                    receivable_id: receivable.dataValues.id,
-                    payment_page_url: paymentPageUrl,
-                    payment_page_id: paymentPageId,
-                    created_by: 2,
-                    created_at: new Date(),
-                }).then(async () => {
-                    await receivable
-                        .update({
-                            notification_sent: false,
-                        })
-                        .then(() => {
-                            return true
-                        })
-                })
-            })
+        const response = await emergepay.startTextToPayTransaction({
+            amount: receivable.dataValues.balance.toFixed(2),
+            externalTransactionId: receivable_id,
+            promptTip: false,
+            pageDescription: `${receivable.dataValues.type_detail} - ${issuer.dataValues.name}`,
+            transactionReference:
+                'I' +
+                receivable.dataValues.invoice_number
+                    .toString()
+                    .padStart(6, '0'),
+        })
+
+        const { paymentPageUrl, paymentPageId } = response.data
+        const retTextPaymentTransaction = await Textpaymenttransaction.create({
+            receivable_id: receivable.dataValues.id,
+            payment_page_url: paymentPageUrl,
+            payment_page_id: paymentPageId,
+            created_by: 2,
+            created_at: new Date(),
+        })
+        await receivable.update({
+            notification_sent: false,
+        })
+        return retTextPaymentTransaction
     } catch (err) {
         const className = 'EmergepayController'
         const functionName = 'verifyAndCancelTextToPayTransaction'
