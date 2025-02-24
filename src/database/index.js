@@ -61,6 +61,7 @@ import Parcelowpaymentlink from '../app/models/Parcelowpaymentlink.js'
 import Parcelowtransaction from '../app/models/Parcelowtransaction.js'
 import Feeadjustment from '../app/models/Feeadjustment.js'
 import Renegociation from '../app/models/Renegociation.js'
+import Studentinactivation from '../app/models/Studentinactivation.js'
 
 const models = [
     Processtype,
@@ -120,6 +121,7 @@ const models = [
     Settlement,
     Student,
     Studentdiscount,
+    Studentinactivation,
     Staff,
     Staffdocument,
     Textpaymenttransaction,
