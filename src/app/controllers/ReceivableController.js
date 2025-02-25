@@ -790,7 +790,7 @@ export async function TuitionMail({
                 from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
                 to:
                     process.env.NODE_ENV === 'production'
-                        ? issuerExists.dataValues.email
+                        ? issuer.dataValues.email
                         : 'denis@pharosit.com.br',
                 bcc:
                     process.env.NODE_ENV === 'production'
