@@ -495,6 +495,8 @@ class EmergepayController {
                                 receivable_id: receivable.id,
                                 paymentInfoHTML,
                             })
+                            res.sendStatus(200)
+                            return
                         })
                     }
                 })

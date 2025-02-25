@@ -763,7 +763,10 @@ export async function TuitionMail({
         if (!paymentMethod) {
             return false
         }
-        if (paymentMethod.dataValues.platform === 'Gravity') {
+        if (
+            !paymentInfoHTML &&
+            paymentMethod.dataValues.platform === 'Gravity'
+        ) {
             let textPaymentTransaction = await Textpaymenttransaction.findOne({
                 where: {
                     receivable_id: receivable.id,
