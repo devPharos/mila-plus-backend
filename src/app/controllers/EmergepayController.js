@@ -482,21 +482,21 @@ class EmergepayController {
                             },
                             req
                         ).then(async () => {
-                            const paymentInfoHTML = `<tr>
-                            <td style="text-align: center;padding: 10px 0 30px;">
-                                <div style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Payment Status: ${
-                                    resultMessage === 'Approved'
-                                        ? 'Approved'
-                                        : 'Declined'
-                                }</div>
-                            </td>
-                        </tr>`
-                            await TuitionMail({
-                                receivable_id: receivable.id,
-                                paymentInfoHTML,
-                            })
-                            res.sendStatus(200)
-                            return
+                            //     const paymentInfoHTML = `<tr>
+                            //     <td style="text-align: center;padding: 10px 0 30px;">
+                            //         <div style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Payment Status: ${
+                            //             resultMessage === 'Approved'
+                            //                 ? 'Approved'
+                            //                 : 'Declined'
+                            //         }</div>
+                            //     </td>
+                            // </tr>`
+                            // await TuitionMail({
+                            //     receivable_id: receivable.id,
+                            //     paymentInfoHTML,
+                            // })
+                            // res.sendStatus(200)
+                            // return
                         })
                     }
                 })
