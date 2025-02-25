@@ -294,6 +294,7 @@ export function applyDiscounts({
 }
 
 export async function sendInvoiceRecurrenceJob() {
+    console.log('Executing sendInvoiceRecurrenceJob')
     try {
         await sendAutopayRecurrenceJob()
         const days_before = 5
@@ -680,6 +681,7 @@ export async function calculateFee(receivable_id = null) {
 }
 
 export async function calculateFeesRecurrenceJob() {
+    console.log('Executing calculateFeesRecurrenceJob')
     try {
         const receivables = await Receivable.findAll({
             where: {
@@ -1612,6 +1614,7 @@ class ReceivableController {
     }
 
     async renegociation(req, res) {
+        console.log('Executing renegociation')
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
@@ -2293,6 +2296,7 @@ class ReceivableController {
     }
 
     async sendInvoice(req, res) {
+        console.log('Executing sendInvoice')
         try {
             const { receivable_id } = req.params
             const receivable = await Receivable.findByPk(receivable_id)
