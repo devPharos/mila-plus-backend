@@ -484,7 +484,7 @@ class EmergepayController {
                         ).then(async () => {
                             const paymentInfoHTML = `<tr>
                             <td style="text-align: center;padding: 10px 0 30px;">
-                                <div style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Autopay Status: ${
+                                <div style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Payment Status: ${
                                     resultMessage === 'Approved'
                                         ? 'Approved'
                                         : 'Declined'
