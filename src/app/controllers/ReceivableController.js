@@ -1962,8 +1962,19 @@ class ReceivableController {
             }
             if (entry_date_to) {
                 let filterDate = entry_date_to.replace(/-/g, '')
-                filter.entry_date = {
-                    [Op.lte]: filterDate,
+                if (filter.entry_date) {
+                    filter.entry_date = {
+                        [Op.and]: [
+                            filter.entry_date,
+                            {
+                                [Op.lte]: filterDate,
+                            },
+                        ],
+                    }
+                } else {
+                    filter.entry_date = {
+                        [Op.lte]: filterDate,
+                    }
                 }
             }
             if (due_date_from) {
@@ -1974,8 +1985,19 @@ class ReceivableController {
             }
             if (due_date_to) {
                 let filterDate = due_date_to.replace(/-/g, '')
-                filter.due_date = {
-                    [Op.lte]: filterDate,
+                if (filter.due_date) {
+                    filter.due_date = {
+                        [Op.and]: [
+                            filter.due_date,
+                            {
+                                [Op.lte]: filterDate,
+                            },
+                        ],
+                    }
+                } else {
+                    filter.due_date = {
+                        [Op.lte]: filterDate,
+                    }
                 }
             }
             if (req.headers.filial != 1) {
