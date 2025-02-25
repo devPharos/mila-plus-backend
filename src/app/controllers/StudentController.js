@@ -300,6 +300,36 @@ class StudentController {
         }
     }
 
+    async activate(req, res) {
+        const { student_id } = req.params
+        const studentExists = await Student.findByPk(student_id)
+
+        if (!studentExists) {
+            return res.status(400).json({
+                error: 'Student not found.',
+            })
+        }
+
+        try {
+            await studentExists.update({
+                status: 'In Class',
+                updated_at: new Date(),
+                updated_by: req.userId,
+            })
+
+            return res.status(200).json({
+                message: 'Student activated.',
+            })
+        } catch (err) {
+            const className = 'StudentController'
+            const functionName = 'activate'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
     async prospectToStudent(req, res) {
         const { student_id } = req.params
         const studentExists = await Student.findByPk(student_id)

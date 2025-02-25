@@ -270,6 +270,7 @@ routes.get('/students/:student_id', StudentController.show)
 routes.post('/students', StudentController.store)
 routes.put('/students/:student_id', StudentController.update)
 routes.post('/students/inactivate', StudentController.inactivate)
+routes.post('/students/activate/:student_id', StudentController.activate)
 
 routes.get('/agents/:agent_id', AgentController.show)
 routes.post('/agents', AgentController.store)
