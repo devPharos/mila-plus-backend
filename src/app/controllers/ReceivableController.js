@@ -2235,7 +2235,14 @@ class ReceivableController {
                         ? receivable.paymentCriteria.description
                         : ''
                 )
-                ws2.cell(index + 3, 16).string(receivable.invoice_number)
+                if (receivable.invoice_number) {
+                    ws2.cell(index + 3, 16).string(
+                        receivable.invoice_number.toString().padStart(6, '0')
+                    )
+                } else {
+                    ws2.cell(index + 3, 16).string('')
+                }
+
                 ws2.cell(index + 3, 17).string(chartOfAccount)
                 ws2.cell(index + 3, 18).string(receivable.memo)
                 if (receivable.created_at) {
