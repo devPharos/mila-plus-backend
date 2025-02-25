@@ -1933,13 +1933,13 @@ class ReceivableController {
             ws.cell(7, 1).string('Type').style(styleBold)
             ws.cell(8, 1).string('Type Detail').style(styleBold)
 
-            ws.cell(2, 2).string(entry_date_from)
-            ws.cell(3, 2).string(entry_date_to)
-            ws.cell(4, 2).string(due_date_from)
-            ws.cell(5, 2).string(due_date_to)
-            ws.cell(6, 2).string(status)
-            ws.cell(7, 2).string(type)
-            ws.cell(8, 2).string(type_detail)
+            ws.cell(2, 2).string(entry_date_from || '')
+            ws.cell(3, 2).string(entry_date_to || '')
+            ws.cell(4, 2).string(due_date_from || '')
+            ws.cell(5, 2).string(due_date_to || '')
+            ws.cell(6, 2).string(status || '')
+            ws.cell(7, 2).string(type || '')
+            ws.cell(8, 2).string(type_detail || '')
 
             ws.column(1).width = 30
             ws.column(2).width = 30
