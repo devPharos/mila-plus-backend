@@ -1981,6 +1981,7 @@ class ReceivableController {
             if (req.headers.filial != 1) {
                 filter.filial_id = req.headers.filial
             }
+            console.log({ filter })
             const receivables = await Receivable.findAll({
                 where: {
                     company_id: req.companyId,
