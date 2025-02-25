@@ -1933,13 +1933,13 @@ class ReceivableController {
             ws.cell(7, 1).string('Type').style(styleBold)
             ws.cell(8, 1).string('Type Detail').style(styleBold)
 
-            ws.cell(2, 2).string(entry_date_from)
-            ws.cell(3, 2).string(entry_date_to)
-            ws.cell(4, 2).string(due_date_from)
-            ws.cell(5, 2).string(due_date_to)
-            ws.cell(6, 2).string(status)
-            ws.cell(7, 2).string(type)
-            ws.cell(8, 2).string(type_detail)
+            ws.cell(2, 2).string(entry_date_from || '')
+            ws.cell(3, 2).string(entry_date_to || '')
+            ws.cell(4, 2).string(due_date_from || '')
+            ws.cell(5, 2).string(due_date_to || '')
+            ws.cell(6, 2).string(status || '')
+            ws.cell(7, 2).string(type || '')
+            ws.cell(8, 2).string(type_detail || '')
 
             ws.column(1).width = 30
             ws.column(2).width = 30
@@ -1962,8 +1962,19 @@ class ReceivableController {
             }
             if (entry_date_to) {
                 let filterDate = entry_date_to.replace(/-/g, '')
-                filter.entry_date = {
-                    [Op.lte]: filterDate,
+                if (filter.entry_date) {
+                    filter.entry_date = {
+                        [Op.and]: [
+                            filter.entry_date,
+                            {
+                                [Op.lte]: filterDate,
+                            },
+                        ],
+                    }
+                } else {
+                    filter.entry_date = {
+                        [Op.lte]: filterDate,
+                    }
                 }
             }
             if (due_date_from) {
@@ -1974,8 +1985,19 @@ class ReceivableController {
             }
             if (due_date_to) {
                 let filterDate = due_date_to.replace(/-/g, '')
-                filter.due_date = {
-                    [Op.lte]: filterDate,
+                if (filter.due_date) {
+                    filter.due_date = {
+                        [Op.and]: [
+                            filter.due_date,
+                            {
+                                [Op.lte]: filterDate,
+                            },
+                        ],
+                    }
+                } else {
+                    filter.due_date = {
+                        [Op.lte]: filterDate,
+                    }
                 }
             }
             if (req.headers.filial != 1) {
