@@ -1011,6 +1011,7 @@ export async function TuitionMail({
         console.log(
             `❌ It wasnt possible to send the e-mail, errorCode: ${err.responseCode}`
         )
+        console.log(err)
         return false
     }
 }
