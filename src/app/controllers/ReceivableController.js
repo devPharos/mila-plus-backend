@@ -297,7 +297,7 @@ export async function sendInvoiceRecurrenceJob() {
     console.log('Executing sendInvoiceRecurrenceJob')
     try {
         await sendAutopayRecurrenceJob()
-        const days_before = 5
+        const days_before = 4
         const date = addDays(new Date(), days_before)
         const searchDate =
             date.getFullYear() +
