@@ -392,7 +392,7 @@ export async function sendInvoiceRecurrenceJob() {
                         created_by: 2,
                         created_at: new Date(),
                     }).then(async () => {
-                        paymentInfoHTML = `<tr>
+                        let paymentInfoHTML = `<tr>
                             <td style="text-align: center;padding: 10px 0 30px;">
                                 <a href="${paymentPageUrl}" target="_blank" style="background-color: #0a0; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
                             </td>
@@ -400,6 +400,7 @@ export async function sendInvoiceRecurrenceJob() {
                         if (
                             await TuitionMail({
                                 receivable_id: tuitionFee.dataValues.id,
+                                paymentInfoHTML,
                             })
                         ) {
                             sent_number++
