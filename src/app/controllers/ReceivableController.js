@@ -347,7 +347,7 @@ export async function sendInvoiceRecurrenceJob() {
 
         let sent_number = 0
 
-        receivables.map(async (receivable) => {
+        for (const receivable of receivables) {
             const issuerExists = await Issuer.findByPk(
                 receivable.dataValues.issuer_id
             )
@@ -355,9 +355,8 @@ export async function sendInvoiceRecurrenceJob() {
                 issuerExists.dataValues.student_id
             )
             if (!issuerExists || !student) {
-                return res.status(400).json({
-                    error: 'Issuer or student not found',
-                })
+                console.log('Issuer or student not found')
+                return
             }
             const tuitionFee = await Receivable.findByPk(receivable.id)
 
@@ -365,9 +364,8 @@ export async function sendInvoiceRecurrenceJob() {
                 receivable.dataValues.filial_id
             )
             if (!filial) {
-                return res.status(400).json({
-                    error: 'Filial not found.',
-                })
+                console.log('Filial not found.')
+                return false
             }
 
             let amount = tuitionFee.dataValues.total
@@ -375,44 +373,43 @@ export async function sendInvoiceRecurrenceJob() {
                 .toString()
                 .padStart(6, '0')
 
-            emergepay
-                .startTextToPayTransaction({
-                    amount: amount.toFixed(2),
-                    externalTransactionId: receivable.dataValues.id,
-                    promptTip: false,
-                    pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
-                    transactionReference: 'I' + invoice_number,
+            const response = await emergepay.startTextToPayTransaction({
+                amount: amount.toFixed(2),
+                externalTransactionId: receivable.dataValues.id,
+                promptTip: false,
+                pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
+                transactionReference: 'I' + invoice_number,
+            })
+
+            if (response) {
+                const { paymentPageUrl, paymentPageId } = response.data
+                await Textpaymenttransaction.create({
+                    receivable_id: receivable.dataValues.id,
+                    payment_page_url: paymentPageUrl,
+                    payment_page_id: paymentPageId,
+                    created_by: 2,
+                    created_at: new Date(),
                 })
-                .then(async (response) => {
-                    const { paymentPageUrl, paymentPageId } = response.data
-                    await Textpaymenttransaction.create({
-                        receivable_id: receivable.dataValues.id,
-                        payment_page_url: paymentPageUrl,
-                        payment_page_id: paymentPageId,
-                        created_by: 2,
-                        created_at: new Date(),
-                    }).then(async () => {
-                        let paymentInfoHTML = `<tr>
-                            <td style="text-align: center;padding: 10px 0 30px;">
-                                <a href="${paymentPageUrl}" target="_blank" style="background-color: #0a0; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
-                            </td>
-                        </tr>`
-                        if (
-                            await TuitionMail({
-                                receivable_id: tuitionFee.dataValues.id,
-                                paymentInfoHTML,
-                            })
-                        ) {
-                            sent_number++
-                            console.log(
-                                `✅ [Regular Invoices] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
-                                    receivables.length - sent_number
-                                }`
-                            )
-                        }
+                let paymentInfoHTML = `<tr>
+                        <td style="text-align: center;padding: 10px 0 30px;">
+                            <a href="${paymentPageUrl}" target="_blank" style="background-color: #0a0; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
+                        </td>
+                    </tr>`
+                if (
+                    await TuitionMail({
+                        receivable_id: tuitionFee.dataValues.id,
+                        paymentInfoHTML,
                     })
-                })
-        })
+                ) {
+                    sent_number++
+                    console.log(
+                        `✅ [Regular Invoices] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
+                            receivables.length - sent_number
+                        }`
+                    )
+                }
+            }
+        }
     } catch (err) {
         MailLog({
             className: 'ReceivableController',
