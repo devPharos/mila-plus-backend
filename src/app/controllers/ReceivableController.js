@@ -306,7 +306,6 @@ export async function sendInvoiceRecurrenceJob() {
         console.log(
             `[Regular Invoices] - Verifying Recurrence regular invoices on due date: ${searchDate}`
         )
-        return
         const receivables = await Receivable.findAll({
             include: [
                 {
