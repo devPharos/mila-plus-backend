@@ -297,7 +297,7 @@ export async function sendInvoiceRecurrenceJob() {
     console.log('Executing sendInvoiceRecurrenceJob')
     try {
         await sendAutopayRecurrenceJob()
-        const days_before = 4
+        const days_before = -3
         const date = addDays(new Date(), days_before)
         const searchDate =
             date.getFullYear() +
@@ -306,6 +306,7 @@ export async function sendInvoiceRecurrenceJob() {
         console.log(
             `[Regular Invoices] - Verifying Recurrence regular invoices on due date: ${searchDate}`
         )
+        return
         const receivables = await Receivable.findAll({
             include: [
                 {
