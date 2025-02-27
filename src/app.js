@@ -67,11 +67,10 @@ class App {
         schedule.scheduleJob('0 0 3 * * *', calculateFeesRecurrenceJob)
         for (let minutes = 0; minutes < 6; minutes++) {
             schedule.scheduleJob(
-                `0 ${minutes * 10} 14 * * *`,
+                `0 ${minutes * 10} 8 * * *`,
                 sendInvoiceRecurrenceJob
             )
         }
-        sendInvoiceRecurrenceJob()
 
         setTimeout(() => {
             console.log('✅ Schedule jobs started!')

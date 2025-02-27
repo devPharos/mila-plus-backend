@@ -297,7 +297,7 @@ export async function sendInvoiceRecurrenceJob() {
     console.log('Executing sendInvoiceRecurrenceJob')
     try {
         await sendAutopayRecurrenceJob()
-        const days_before = -3
+        const days_before = 4
         const date = addDays(new Date(), days_before)
         const searchDate =
             date.getFullYear() +
@@ -388,19 +388,16 @@ export async function sendInvoiceRecurrenceJob() {
                             <a href="${paymentPageUrl}" target="_blank" style="background-color: #0a0; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
                         </td>
                     </tr>`
-                    if (
-                        await TuitionMail({
-                            receivable_id: tuitionFee.dataValues.id,
-                            paymentInfoHTML,
-                        })
-                    ) {
-                        sent_number++
-                        console.log(
-                            `✅ [Regular Invoices] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
-                                receivables.length - sent_number
-                            }`
-                        )
-                    }
+                    await TuitionMail({
+                        receivable_id: tuitionFee.dataValues.id,
+                        paymentInfoHTML,
+                    })
+                    sent_number++
+                    console.log(
+                        `✅ [Regular Invoices] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
+                            receivables.length - sent_number
+                        }`
+                    )
                 }
             }
         }
