@@ -16,7 +16,6 @@ import Enrollment from '../models/Enrollment'
 import Enrollmenttimeline from '../models/Enrollmenttimeline'
 import Textpaymenttransaction from '../models/Textpaymenttransaction'
 import PaymentMethod from '../models/PaymentMethod'
-import { TuitionMail } from './ReceivableController'
 
 export async function createPaidTimeline(receivable_id = null) {
     const receivable = await Receivable.findByPk(receivable_id)
@@ -38,6 +37,10 @@ export async function createPaidTimeline(receivable_id = null) {
             },
         })
 
+        if (!enrollment || !issuer || !student) {
+            return false
+        }
+
         const lastTimeline = await Enrollmenttimeline.findOne({
             where: {
                 enrollment_id: enrollment.dataValues.id,
@@ -45,6 +48,10 @@ export async function createPaidTimeline(receivable_id = null) {
             },
             order: [['created_at', 'DESC']],
         })
+
+        if (!lastTimeline) {
+            return false
+        }
 
         const {
             enrollment_id,
