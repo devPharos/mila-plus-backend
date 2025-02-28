@@ -675,6 +675,7 @@ export async function calculateFeesRecurrenceJob() {
         const receivables = await Receivable.findAll({
             where: {
                 status: 'Pending',
+                canceled_at: null,
                 due_date: {
                     [Op.lt]: format(new Date(), 'yyyyMMdd'),
                 },
