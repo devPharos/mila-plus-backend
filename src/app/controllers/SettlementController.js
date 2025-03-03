@@ -96,12 +96,7 @@ class SettlementController {
                 order: searchOrder,
             })
 
-            const fields = [
-                'status',
-                ['receivable', 'filial', 'name'],
-                ['receivable', 'issuer', 'name'],
-                'amount',
-            ]
+            const fields = ['status', ['receivable', 'memo'], 'amount']
             Promise.all([searchPromise(search, receivables, fields)]).then(
                 (data) => {
                     return res.json(data[0])
