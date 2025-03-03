@@ -265,13 +265,11 @@ export async function verifyAndCancelTextToPayTransaction(
             },
         })
         if (!textPaymentTransaction) {
-            console.log('!textPaymentTransaction')
-            return false
+            return true
         }
-        const response = await emergepay.cancelTextToPayTransaction({
+        await emergepay.cancelTextToPayTransaction({
             paymentPageId: textPaymentTransaction.dataValues.payment_page_id,
         })
-        console.log(response)
         await textPaymentTransaction.destroy().then(() => {
             return true
         })
