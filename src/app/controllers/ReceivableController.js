@@ -1472,6 +1472,7 @@ class ReceivableController {
 
     async settlement(req, res) {
         const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
         try {
             const {
                 receivables,
