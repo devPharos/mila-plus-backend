@@ -98,8 +98,8 @@ class SettlementController {
 
             const fields = [
                 'status',
-                ['filial', 'name'],
-                ['issuer', 'name'],
+                ['receivable', 'filial', 'name'],
+                ['receivable', 'issuer', 'name'],
                 'amount',
             ]
             Promise.all([searchPromise(search, receivables, fields)]).then(
