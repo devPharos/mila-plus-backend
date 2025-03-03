@@ -1481,7 +1481,7 @@ class ReceivableController {
                 total_amount,
             } = req.body
 
-            receivables.map(async (rec, index) => {
+            for (let rec of receivables) {
                 const receivable = await Receivable.findByPk(rec.id)
 
                 if (!receivable) {
@@ -1498,7 +1498,7 @@ class ReceivableController {
                     )
 
                     if (discount) {
-                        totalAmount = applyDiscounts({
+                        totalAmount = await applyDiscounts({
                             applied_at: 'Settlement',
                             type: 'Financial',
                             studentDiscounts: [
@@ -1520,7 +1520,7 @@ class ReceivableController {
 
                 if (receivable.dataValues.status !== 'Paid') {
                     const t = await connection.transaction()
-                    Settlement.create(
+                    await Settlement.create(
                         {
                             receivable_id: receivable.id,
                             amount: settledAmount,
@@ -1532,69 +1532,57 @@ class ReceivableController {
                         {
                             transaction: t,
                         }
-                    ).then(() => {
-                        receivable
-                            .update(
-                                {
-                                    status: 'Paid',
-                                    discount: (
-                                        receivable.dataValues.discount +
-                                        difference
-                                    ).toFixed(2),
-                                    total: (
-                                        receivable.dataValues.total - difference
-                                    ).toFixed(2),
-                                    balance: 0,
-                                    updated_at: new Date(),
-                                    updated_by: req.userId,
-                                },
-                                {
-                                    transaction: t,
-                                }
-                            )
-                            .then(async (receivable) => {
-                                createPaidTimeline(receivable.id)
-                                if (
-                                    prices.discounts &&
-                                    prices.discounts.length > 0
-                                ) {
-                                    const discount =
-                                        await FilialDiscountList.findByPk(
-                                            prices.discounts[0]
-                                                .filial_discount_list_id
-                                        )
-                                    await Receivablediscounts.create(
-                                        {
-                                            receivable_id: receivable.id,
-                                            discount_id: discount.id,
-                                            name: discount.name,
-                                            type: discount.type,
-                                            value: discount.value,
-                                            percent: discount.percent,
-                                            created_by: 2,
-                                            created_at: new Date(),
-                                        },
-                                        {
-                                            transaction: t,
-                                        }
-                                    )
-                                }
-                            })
-                            .finally(() => {
-                                t.commit()
+                    )
+                    const updatedReceivable = await receivable.update(
+                        {
+                            status: 'Paid',
+                            discount: (
+                                receivable.dataValues.discount + difference
+                            ).toFixed(2),
+                            total: (
+                                receivable.dataValues.total - difference
+                            ).toFixed(2),
+                            balance: 0,
+                            updated_at: new Date(),
+                            updated_by: req.userId,
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
 
-                                return res.json({
-                                    message:
-                                        'Settlements created successfully.',
-                                })
-                            })
+                    await createPaidTimeline(updatedReceivable.id)
+                    if (prices.discounts && prices.discounts.length > 0) {
+                        const discount = await FilialDiscountList.findByPk(
+                            prices.discounts[0].filial_discount_list_id
+                        )
+                        await Receivablediscounts.create(
+                            {
+                                receivable_id: updatedReceivable.id,
+                                discount_id: discount.id,
+                                name: discount.name,
+                                type: discount.type,
+                                value: discount.value,
+                                percent: discount.percent,
+                                created_by: 2,
+                                created_at: new Date(),
+                            },
+                            {
+                                transaction: t,
+                            }
+                        )
+                    }
+                    t.commit()
+
+                    return res.json({
+                        message: 'Settlements created successfully.',
                     })
                 } else {
                     return res.status(401).json({
                         error: 'Receivable already settled.',
                     })
                 }
-            })
+            }
         } catch (err) {
             await t.rollback()
             const className = 'ReceivableController'
