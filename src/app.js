@@ -10,6 +10,7 @@ import {
     sendAutopayRecurrenceJob,
     sendInvoiceRecurrenceJob,
 } from './app/controllers/ReceivableController.js'
+import { emergepay } from './config/emergepay.js'
 
 class App {
     constructor() {
