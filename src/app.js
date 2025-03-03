@@ -13,6 +13,7 @@ import {
 import { emergepay } from './config/emergepay.js'
 import Textpaymenttransaction from './app/models/Textpaymenttransaction.js'
 import Receivable from './app/models/Receivable.js'
+import { Op } from 'sequelize'
 
 class App {
     constructor() {
