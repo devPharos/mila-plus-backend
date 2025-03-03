@@ -18,7 +18,7 @@ export async function searchPromise(
         if (typeof field === 'date') {
             field = format(field, 'yyyy-MM-dd')
         }
-        if (field.toLowerCase().includes(search)) {
+        if (field && field.toLowerCase().includes(search)) {
             register.precision += 1
         }
     }
