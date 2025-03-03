@@ -12,6 +12,7 @@ import {
 } from './app/controllers/ReceivableController.js'
 import { emergepay } from './config/emergepay.js'
 import Textpaymenttransaction from './app/models/Textpaymenttransaction.js'
+import Receivable from './app/models/Receivable.js'
 
 class App {
     constructor() {
@@ -103,6 +104,21 @@ class App {
             await textPaymentTransaction.destroy().then(() => {
                 console.log('TextPaymentTransaction deleted')
             })
+            const receivable = await Receivable.findByPk(
+                textPaymentTransaction.dataValues.receivable_id
+            )
+            if (receivable) {
+                receivable.update({
+                    balance:
+                        receivable.dataValues.balance -
+                        receivable.dataValues.fee,
+                    total:
+                        receivable.dataValues.total - receivable.dataValues.fee,
+                    fee: 0,
+                    notification_sent: false,
+                })
+                console.log('Receivable updated')
+            }
         }
 
         setTimeout(() => {
