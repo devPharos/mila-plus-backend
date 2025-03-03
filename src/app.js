@@ -75,11 +75,27 @@ class App {
         // calculateFeesRecurrenceJob()
 
         emergepay.cancelTextToPayTransaction({
-            paymentPageId: 'kGiN8RowHT',
+            paymentPageId: 'ijfNI8Uy5Q',
         })
 
         emergepay.cancelTextToPayTransaction({
-            paymentPageId: 'AdAuR4KujD',
+            paymentPageId: 'Rp2l1Vk5aJ',
+        })
+
+        emergepay.cancelTextToPayTransaction({
+            paymentPageId: 'Wm1TZx3fdw',
+        })
+
+        emergepay.cancelTextToPayTransaction({
+            paymentPageId: 'BYOcU5zHmh',
+        })
+
+        emergepay.cancelTextToPayTransaction({
+            paymentPageId: 'ku7sJtWZwv',
+        })
+
+        emergepay.cancelTextToPayTransaction({
+            paymentPageId: '1K5q1RETPb',
         })
 
         setTimeout(() => {
