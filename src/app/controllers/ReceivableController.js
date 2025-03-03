@@ -684,7 +684,7 @@ export async function calculateFeesRecurrenceJob() {
         let sent_number = 0
         for (let receivable of receivables) {
             if (await calculateFee(receivable.dataValues.id)) {
-                // await TuitionMail({ receivable_id: receivable.dataValues.id })
+                await TuitionMail({ receivable_id: receivable.dataValues.id })
                 sent_number++
             }
         }
