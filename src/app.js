@@ -98,10 +98,14 @@ class App {
         })
 
         for (let textPaymentTransaction of textPaymentTransactions) {
-            emergepay.cancelTextToPayTransaction({
-                paymentPageId:
-                    textPaymentTransaction.dataValues.payment_page_id,
-            })
+            try {
+                emergepay.cancelTextToPayTransaction({
+                    paymentPageId:
+                        textPaymentTransaction.dataValues.payment_page_id,
+                })
+            } catch (err) {
+                console.log(err)
+            }
             await textPaymentTransaction.destroy().then(() => {
                 console.log('TextPaymentTransaction deleted')
             })
