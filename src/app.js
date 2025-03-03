@@ -72,14 +72,14 @@ class App {
                 sendInvoiceRecurrenceJob
             )
         }
-        calculateFeesRecurrenceJob()
+        // calculateFeesRecurrenceJob()
 
         emergepay.cancelTextToPayTransaction({
-            paymentPageId: 'li8NXuJ1R2',
+            paymentPageId: 'kGiN8RowHT',
         })
 
         emergepay.cancelTextToPayTransaction({
-            paymentPageId: 'IlkykHd6Em',
+            paymentPageId: 'AdAuR4KujD',
         })
 
         setTimeout(() => {
