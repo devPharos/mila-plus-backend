@@ -25,6 +25,7 @@ export async function searchPromise(
             ) {
                 register.precision += 1
             }
+            // console.log(search)
         }
 
         promises.push(
