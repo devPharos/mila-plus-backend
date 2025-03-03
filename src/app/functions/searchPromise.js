@@ -20,7 +20,7 @@ export async function searchPromise(
                 field = format(field, 'yyyy-MM-dd')
             }
             if (
-                typeof field === field &&
+                typeof field === 'string' &&
                 field.toLowerCase().includes(search)
             ) {
                 register.precision += 1
