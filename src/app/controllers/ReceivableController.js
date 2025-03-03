@@ -1572,17 +1572,17 @@ class ReceivableController {
                             }
                         )
                     }
-                    t.commit()
-
-                    return res.json({
-                        message: 'Settlements created successfully.',
-                    })
                 } else {
                     return res.status(401).json({
                         error: 'Receivable already settled.',
                     })
                 }
             }
+            t.commit()
+
+            return res.json({
+                message: 'Settlements created successfully.',
+            })
         } catch (err) {
             await t.rollback()
             const className = 'ReceivableController'
