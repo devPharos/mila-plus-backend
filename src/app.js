@@ -75,52 +75,56 @@ class App {
                 sendInvoiceRecurrenceJob
             )
         }
-        // calculateFeesRecurrenceJob()
+        calculateFeesRecurrenceJob()
 
-        const textPaymentTransactions = await Textpaymenttransaction.findAll({
-            include: [
-                {
-                    model: Receivable,
-                    as: 'receivable',
-                    required: true,
-                    where: {
-                        fee: {
-                            [Op.gt]: 0,
-                        },
-                        status: 'Pending',
-                        canceled_at: null,
-                    },
-                },
-            ],
-            where: {
-                canceled_at: null,
-            },
-        })
+        // const textPaymentTransactions = await Textpaymenttransaction.findAll({
+        //     include: [
+        //         {
+        //             model: Receivable,
+        //             as: 'receivable',
+        //             required: true,
+        //             where: {
+        //                 fee: {
+        //                     [Op.gt]: 0,
+        //                 },
+        //                 status: 'Pending',
+        //                 canceled_at: null,
+        //             },
+        //         },
+        //     ],
+        //     where: {
+        //         canceled_at: null,
+        //     },
+        // })
 
-        for (let textPaymentTransaction of textPaymentTransactions) {
-            emergepay.cancelTextToPayTransaction({
-                paymentPageId:
-                    textPaymentTransaction.dataValues.payment_page_id,
-            })
-            await textPaymentTransaction.destroy().then(() => {
-                console.log('TextPaymentTransaction deleted')
-            })
-            const receivable = await Receivable.findByPk(
-                textPaymentTransaction.dataValues.receivable_id
-            )
-            if (receivable) {
-                receivable.update({
-                    balance:
-                        receivable.dataValues.balance -
-                        receivable.dataValues.fee,
-                    total:
-                        receivable.dataValues.total - receivable.dataValues.fee,
-                    fee: 0,
-                    notification_sent: false,
-                })
-                console.log('Receivable updated')
-            }
-        }
+        // for (let textPaymentTransaction of textPaymentTransactions) {
+        //     try {
+        //         emergepay.cancelTextToPayTransaction({
+        //             paymentPageId:
+        //                 textPaymentTransaction.dataValues.payment_page_id,
+        //         })
+        //     } catch (err) {
+        //         console.log(err)
+        //     }
+        //     await textPaymentTransaction.destroy().then(() => {
+        //         console.log('TextPaymentTransaction deleted')
+        //     })
+        //     const receivable = await Receivable.findByPk(
+        //         textPaymentTransaction.dataValues.receivable_id
+        //     )
+        //     if (receivable) {
+        //         receivable.update({
+        //             balance:
+        //                 receivable.dataValues.balance -
+        //                 receivable.dataValues.fee,
+        //             total:
+        //                 receivable.dataValues.total - receivable.dataValues.fee,
+        //             fee: 0,
+        //             notification_sent: false,
+        //         })
+        //         console.log('Receivable updated')
+        //     }
+        // }
 
         setTimeout(() => {
             console.log('✅ Schedule jobs started!')
