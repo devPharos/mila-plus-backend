@@ -1520,7 +1520,6 @@ class ReceivableController {
                     totalAmount > rec.balance ? rec.total : totalAmount
 
                 if (receivable.dataValues.status !== 'Paid') {
-                    const t = await connection.transaction()
                     await Settlement.create(
                         {
                             receivable_id: receivable.id,
