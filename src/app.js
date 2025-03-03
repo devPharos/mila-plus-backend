@@ -73,6 +73,14 @@ class App {
         }
         calculateFeesRecurrenceJob()
 
+        emergepay.cancelTextToPayTransaction({
+            paymentPageId: 'li8NXuJ1R2',
+        })
+
+        emergepay.cancelTextToPayTransaction({
+            paymentPageId: 'IlkykHd6Em',
+        })
+
         setTimeout(() => {
             console.log('✅ Schedule jobs started!')
         }, 1000)
