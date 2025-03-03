@@ -233,7 +233,7 @@ export async function verifyAndCreateTextToPayTransaction(
         return retTextPaymentTransaction
     } catch (err) {
         const className = 'EmergepayController'
-        const functionName = 'verifyAndCancelTextToPayTransaction'
+        const functionName = 'verifyAndCreateTextToPayTransaction'
         MailLog({ className, functionName, req: null, err })
     }
 }
@@ -255,25 +255,20 @@ export async function verifyAndCancelTextToPayTransaction(
         if (paymentMethod.dataValues.platform !== 'Gravity') {
             return false
         }
-        await Textpaymenttransaction.findOne({
+        const textPaymentTransaction = await Textpaymenttransaction.findOne({
             where: {
                 receivable_id: receivable.id,
                 canceled_at: null,
             },
-        }).then(async (textPaymentTransaction) => {
-            if (!textPaymentTransaction) {
-                return false
-            }
-            await emergepay
-                .cancelTextToPayTransaction({
-                    paymentPageId:
-                        textPaymentTransaction.dataValues.payment_page_id,
-                })
-                .then(async () => {
-                    textPaymentTransaction.destroy().then(() => {
-                        return true
-                    })
-                })
+        })
+        if (!textPaymentTransaction) {
+            return false
+        }
+        await emergepay.cancelTextToPayTransaction({
+            paymentPageId: textPaymentTransaction.dataValues.payment_page_id,
+        })
+        await textPaymentTransaction.destroy().then(() => {
+            return true
         })
     } catch (err) {
         const className = 'EmergepayController'

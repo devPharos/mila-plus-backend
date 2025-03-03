@@ -23,15 +23,12 @@ export async function verifyAndCancelParcelowPaymentLink(receivable_id = null) {
             },
         })
         if (parcelowPaymentLink) {
-            await parcelowAPI
-                .post(
-                    `/api/orders/${parcelowPaymentLink.dataValues.order_id}/cancel`
-                )
-                .then(async () => {
-                    await parcelowPaymentLink.destroy().then(() => {
-                        return true
-                    })
-                })
+            await parcelowAPI.post(
+                `/api/orders/${parcelowPaymentLink.dataValues.order_id}/cancel`
+            )
+            await parcelowPaymentLink.destroy().then(() => {
+                return true
+            })
         }
         return false
     } catch (err) {

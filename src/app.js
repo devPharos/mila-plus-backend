@@ -71,6 +71,7 @@ class App {
                 sendInvoiceRecurrenceJob
             )
         }
+        calculateFeesRecurrenceJob()
 
         setTimeout(() => {
             console.log('✅ Schedule jobs started!')
