@@ -62,6 +62,7 @@ import Parcelowtransaction from '../app/models/Parcelowtransaction.js'
 import Feeadjustment from '../app/models/Feeadjustment.js'
 import Renegociation from '../app/models/Renegociation.js'
 import Studentinactivation from '../app/models/Studentinactivation.js'
+import Maillog from '../app/models/Maillog.js'
 
 const models = [
     Processtype,
@@ -101,6 +102,7 @@ const models = [
     UserGroup,
     UserGroupXUser,
     UserXFilial,
+    Maillog,
     MenuHierarchy,
     MenuHierarchyXGroups,
     Merchants,

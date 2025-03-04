@@ -40,6 +40,9 @@ import { resolve } from 'path'
 import Milauser from '../models/Milauser'
 import Textpaymenttransaction from '../models/Textpaymenttransaction'
 import Renegociation from '../models/Renegociation'
+import Maillog from '../models/Maillog'
+import { BeforeDueDateMail } from '../views/mails/BeforeDueDateMail'
+import { OnDueDateMail } from '../views/mails/OnDueDateMail'
 
 const xl = require('excel4node')
 const fs = require('fs')
@@ -293,8 +296,8 @@ export function applyDiscounts({
     return totalAmount
 }
 
-export async function sendInvoiceRecurrenceJob() {
-    console.log('Executing sendInvoiceRecurrenceJob')
+export async function sendBeforeDueDateInvoices() {
+    console.log('Executing sendBeforeDueDateInvoices')
     try {
         await sendAutopayRecurrenceJob()
         const days_before = 4
@@ -330,7 +333,6 @@ export async function sendInvoiceRecurrenceJob() {
             ],
             where: {
                 is_recurrence: true,
-                notification_sent: false,
                 canceled_at: null,
                 status: 'Pending',
                 type: 'Invoice',
@@ -361,50 +363,200 @@ export async function sendInvoiceRecurrenceJob() {
             )
 
             if (issuerExists && student && filial) {
-                let amount = tuitionFee.dataValues.total
-                const invoice_number = tuitionFee.dataValues.invoice_number
-                    .toString()
-                    .padStart(6, '0')
-
-                const response = await emergepay.startTextToPayTransaction({
-                    amount: amount.toFixed(2),
-                    externalTransactionId: receivable.dataValues.id,
-                    promptTip: false,
-                    pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
-                    transactionReference: 'I' + invoice_number,
+                await BeforeDueDateMail({
+                    receivable_id: tuitionFee.dataValues.id,
                 })
-
-                if (response) {
-                    const { paymentPageUrl, paymentPageId } = response.data
-                    await Textpaymenttransaction.create({
-                        receivable_id: receivable.dataValues.id,
-                        payment_page_url: paymentPageUrl,
-                        payment_page_id: paymentPageId,
-                        created_by: 2,
-                        created_at: new Date(),
-                    })
-                    let paymentInfoHTML = `<tr>
-                        <td style="text-align: center;padding: 10px 0 30px;">
-                            <a href="${paymentPageUrl}" target="_blank" style="background-color: #0a0; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
-                        </td>
-                    </tr>`
-                    await TuitionMail({
-                        receivable_id: tuitionFee.dataValues.id,
-                        paymentInfoHTML,
-                    })
-                    sent_number++
-                    console.log(
-                        `✅ [Regular Invoices] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
-                            receivables.length - sent_number
-                        }`
-                    )
-                }
+                sent_number++
+                console.log(
+                    `✅ [Regular Invoices] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
+                        receivables.length - sent_number
+                    }`
+                )
             }
         }
     } catch (err) {
         MailLog({
             className: 'ReceivableController',
-            functionName: 'sendInvoiceRecurrenceJob',
+            functionName: 'sendBeforeDueDateInvoices',
+            req: null,
+            err,
+        })
+        console.log({ err })
+        return false
+    }
+}
+
+export async function sendOnDueDateInvoices() {
+    console.log('Executing sendOnDueDateInvoices')
+    try {
+        await sendAutopayRecurrenceJob()
+        const days_before = 0
+        const date = addDays(new Date(), days_before)
+        const searchDate =
+            date.getFullYear() +
+            (date.getMonth() + 1).toString().padStart(2, '0') +
+            date.getDate().toString().padStart(2, '0')
+        console.log(
+            `[Regular Invoices] - Verifying Recurrence regular invoices on due date: ${searchDate}`
+        )
+        const receivables = await Receivable.findAll({
+            include: [
+                {
+                    model: Issuer,
+                    as: 'issuer',
+                    required: true,
+                    where: {
+                        canceled_at: null,
+                    },
+                    include: [
+                        {
+                            model: Recurrence,
+                            as: 'issuer_x_recurrence',
+                            required: true,
+                            where: {
+                                is_autopay: false,
+                                canceled_at: null,
+                            },
+                        },
+                    ],
+                },
+            ],
+            where: {
+                is_recurrence: true,
+                canceled_at: null,
+                status: 'Pending',
+                type: 'Invoice',
+                type_detail: 'Tuition fee',
+                due_date: `${searchDate}`,
+            },
+            order: [['memo', 'ASC']],
+        })
+
+        console.log(
+            `[Regular Invoices] - Receivables found:`,
+            receivables.length
+        )
+
+        let sent_number = 0
+
+        for (const receivable of receivables) {
+            const issuerExists = await Issuer.findByPk(
+                receivable.dataValues.issuer_id
+            )
+            const student = await Student.findByPk(
+                issuerExists.dataValues.student_id
+            )
+            const tuitionFee = await Receivable.findByPk(receivable.id)
+
+            const filial = await Filial.findByPk(
+                receivable.dataValues.filial_id
+            )
+
+            if (issuerExists && student && filial) {
+                await OnDueDateMail({
+                    receivable_id: tuitionFee.dataValues.id,
+                })
+                sent_number++
+                console.log(
+                    `✅ [Regular Invoices] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
+                        receivables.length - sent_number
+                    }`
+                )
+            }
+        }
+    } catch (err) {
+        MailLog({
+            className: 'ReceivableController',
+            functionName: 'sendOnDueDateInvoices',
+            req: null,
+            err,
+        })
+        console.log({ err })
+        return false
+    }
+}
+
+export async function sendAfterDueDateInvoices() {
+    console.log('Executing sendAfterDueDateInvoices')
+    try {
+        const days_after = 4
+        const date = subDays(new Date(), days_after)
+        const searchDate =
+            date.getFullYear() +
+            (date.getMonth() + 1).toString().padStart(2, '0') +
+            date.getDate().toString().padStart(2, '0')
+        console.log(
+            `[Regular Invoices] - Verifying Recurrence regular invoices on due date: ${searchDate}`
+        )
+        const receivables = await Receivable.findAll({
+            include: [
+                {
+                    model: Issuer,
+                    as: 'issuer',
+                    required: true,
+                    where: {
+                        canceled_at: null,
+                    },
+                    include: [
+                        {
+                            model: Recurrence,
+                            as: 'issuer_x_recurrence',
+                            required: true,
+                            where: {
+                                is_autopay: false,
+                                canceled_at: null,
+                            },
+                        },
+                    ],
+                },
+            ],
+            where: {
+                is_recurrence: true,
+                canceled_at: null,
+                status: 'Pending',
+                type: 'Invoice',
+                type_detail: 'Tuition fee',
+                due_date: `${searchDate}`,
+            },
+            order: [['memo', 'ASC']],
+        })
+
+        console.log(
+            `[Regular Invoices] - Receivables found:`,
+            receivables.length
+        )
+
+        let sent_number = 0
+
+        for (const receivable of receivables) {
+            const issuerExists = await Issuer.findByPk(
+                receivable.dataValues.issuer_id
+            )
+            const student = await Student.findByPk(
+                issuerExists.dataValues.student_id
+            )
+            const tuitionFee = await Receivable.findByPk(receivable.id)
+
+            const filial = await Filial.findByPk(
+                receivable.dataValues.filial_id
+            )
+
+            if (issuerExists && student && filial) {
+                await BeforeDueDateMail({
+                    receivable_id: tuitionFee.dataValues.id,
+                })
+                sent_number++
+                console.log(
+                    `✅ [Regular Invoices] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
+                        receivables.length - sent_number
+                    }`
+                )
+            }
+        }
+    } catch (err) {
+        MailLog({
+            className: 'ReceivableController',
+            functionName: 'sendAfterDueDateInvoices',
             req: null,
             err,
         })
@@ -493,7 +645,6 @@ export async function sendAutopayRecurrenceJob() {
                 .toString()
                 .padStart(6, '0')
 
-            let paymentInfoHTML = ''
             const firstReceivable = await Receivable.findOne({
                 where: {
                     company_id: receivable.dataValues.company_id,
@@ -683,8 +834,15 @@ export async function calculateFeesRecurrenceJob() {
         })
         let sent_number = 0
         for (let receivable of receivables) {
-            if (await calculateFee(receivable.dataValues.id)) {
+            if ((await calculateFee(receivable.dataValues.id)) === true) {
                 await TuitionMail({ receivable_id: receivable.dataValues.id })
+                await Maillog.create({
+                    receivable_id: tuitionFee.dataValues.id,
+                    type: 'Fee Adjustment',
+                    date: format(new Date(), 'yyyyMMdd'),
+                    time: format(new Date(), 'HH:mm:ss'),
+                    created_by: 2,
+                })
                 sent_number++
             }
         }
@@ -2422,12 +2580,11 @@ class ReceivableController {
             await TuitionMail({
                 receivable_id: receivable.id,
                 paymentInfoHTML,
-            }).then(async () => {
-                await receivable.update({
-                    notification_sent: true,
-                })
-                return res.json(receivable)
             })
+            await receivable.update({
+                notification_sent: true,
+            })
+            return res.json(receivable)
         } catch (err) {
             const className = 'ReceivableController'
             const functionName = 'sendInvoice'

@@ -7,8 +7,10 @@ import schedule from 'node-schedule'
 import './database/index.js'
 import {
     calculateFeesRecurrenceJob,
+    sendAfterDueDateInvoices,
     sendAutopayRecurrenceJob,
-    sendInvoiceRecurrenceJob,
+    sendBeforeDueDateInvoices,
+    sendOnDueDateInvoices,
 } from './app/controllers/ReceivableController.js'
 import { emergepay } from './config/emergepay.js'
 import Textpaymenttransaction from './app/models/Textpaymenttransaction.js'
@@ -68,63 +70,11 @@ class App {
     }
 
     async schedule() {
-        schedule.scheduleJob('0 0 3 * * *', calculateFeesRecurrenceJob)
-        for (let minutes = 0; minutes < 6; minutes++) {
-            schedule.scheduleJob(
-                `0 ${minutes * 10} 8 * * *`,
-                sendInvoiceRecurrenceJob
-            )
-        }
-        calculateFeesRecurrenceJob()
-
-        // const textPaymentTransactions = await Textpaymenttransaction.findAll({
-        //     include: [
-        //         {
-        //             model: Receivable,
-        //             as: 'receivable',
-        //             required: true,
-        //             where: {
-        //                 fee: {
-        //                     [Op.gt]: 0,
-        //                 },
-        //                 status: 'Pending',
-        //                 canceled_at: null,
-        //             },
-        //         },
-        //     ],
-        //     where: {
-        //         canceled_at: null,
-        //     },
-        // })
-
-        // for (let textPaymentTransaction of textPaymentTransactions) {
-        //     try {
-        //         emergepay.cancelTextToPayTransaction({
-        //             paymentPageId:
-        //                 textPaymentTransaction.dataValues.payment_page_id,
-        //         })
-        //     } catch (err) {
-        //         console.log(err)
-        //     }
-        //     await textPaymentTransaction.destroy().then(() => {
-        //         console.log('TextPaymentTransaction deleted')
-        //     })
-        //     const receivable = await Receivable.findByPk(
-        //         textPaymentTransaction.dataValues.receivable_id
-        //     )
-        //     if (receivable) {
-        //         receivable.update({
-        //             balance:
-        //                 receivable.dataValues.balance -
-        //                 receivable.dataValues.fee,
-        //             total:
-        //                 receivable.dataValues.total - receivable.dataValues.fee,
-        //             fee: 0,
-        //             notification_sent: false,
-        //         })
-        //         console.log('Receivable updated')
-        //     }
-        // }
+        schedule.scheduleJob(`0 0 4 * * *`, sendAutopayRecurrenceJob)
+        schedule.scheduleJob(`0 15 4 * * *`, sendBeforeDueDateInvoices)
+        schedule.scheduleJob(`0 30 4 * * *`, sendOnDueDateInvoices)
+        schedule.scheduleJob(`0 45 4 * * *`, sendAfterDueDateInvoices)
+        schedule.scheduleJob('0 0 5 * * *', calculateFeesRecurrenceJob)
 
         setTimeout(() => {
             console.log('✅ Schedule jobs started!')

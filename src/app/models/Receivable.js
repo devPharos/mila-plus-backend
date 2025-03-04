@@ -213,6 +213,10 @@ class Receivable extends Model {
             foreignKey: 'renegociation_to',
             as: 'renegociationTo',
         })
+        this.hasMany(models.Maillog, {
+            foreignKey: 'receivable_id',
+            as: 'maillogs',
+        })
     }
 }
 
