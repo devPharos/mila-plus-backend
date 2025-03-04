@@ -1525,7 +1525,10 @@ class ReceivableController {
                             receivable_id: receivable.id,
                             amount: settledAmount,
                             paymentmethod_id,
-                            settlement_date: settlement_date,
+                            settlement_date: format(
+                                settlement_date,
+                                'yyyyMMdd'
+                            ),
                             created_at: new Date(),
                             created_by: req.userId,
                         },
@@ -1839,6 +1842,8 @@ class ReceivableController {
                 entry_date_to,
                 due_date_from,
                 due_date_to,
+                settlement_from,
+                settlement_to,
                 status,
                 type,
                 type_detail,
@@ -1907,22 +1912,27 @@ class ReceivableController {
             ws.cell(3, 1).string('Entry date to').style(styleBold)
             ws.cell(4, 1).string('Due date from').style(styleBold)
             ws.cell(5, 1).string('Due date to').style(styleBold)
-            ws.cell(6, 1).string('Status').style(styleBold)
-            ws.cell(7, 1).string('Type').style(styleBold)
-            ws.cell(8, 1).string('Type Detail').style(styleBold)
+            ws.cell(6, 1).string('Settlement date from').style(styleBold)
+            ws.cell(7, 1).string('Settlement date to').style(styleBold)
+            ws.cell(8, 1).string('Status').style(styleBold)
+            ws.cell(9, 1).string('Type').style(styleBold)
+            ws.cell(10, 1).string('Type Detail').style(styleBold)
 
             ws.cell(2, 2).string(entry_date_from || '')
             ws.cell(3, 2).string(entry_date_to || '')
             ws.cell(4, 2).string(due_date_from || '')
             ws.cell(5, 2).string(due_date_to || '')
-            ws.cell(6, 2).string(status || '')
-            ws.cell(7, 2).string(type || '')
-            ws.cell(8, 2).string(type_detail || '')
+            ws.cell(6, 2).string(settlement_from || '')
+            ws.cell(7, 2).string(settlement_to || '')
+            ws.cell(8, 2).string(status || '')
+            ws.cell(9, 2).string(type || '')
+            ws.cell(10, 2).string(type_detail || '')
 
             ws.column(1).width = 30
             ws.column(2).width = 30
 
             const filter = {}
+            const filterSettlement = {}
             if (status !== 'All') {
                 filter.status = status
             }
@@ -1978,10 +1988,32 @@ class ReceivableController {
                     }
                 }
             }
+            if (settlement_from) {
+                let filterDate = settlement_from.replace(/-/g, '')
+                filterSettlement.settlement_date = {
+                    [Op.gte]: filterDate,
+                }
+            }
+            if (settlement_to) {
+                let filterDate = settlement_to.replace(/-/g, '')
+                if (filterSettlement.settlement_date) {
+                    filterSettlement.settlement_date = {
+                        [Op.and]: [
+                            filterSettlement.settlement_date,
+                            {
+                                [Op.lte]: filterDate,
+                            },
+                        ],
+                    }
+                } else {
+                    filterSettlement.settlement_to = {
+                        [Op.lte]: filterDate,
+                    }
+                }
+            }
             if (req.headers.filial != 1) {
                 filter.filial_id = req.headers.filial
             }
-            console.log({ filter })
             const receivables = await Receivable.findAll({
                 where: {
                     company_id: req.companyId,
@@ -2044,8 +2076,18 @@ class ReceivableController {
                     {
                         model: Settlement,
                         as: 'settlements',
-                        required: false,
-                        where: { canceled_at: null },
+                        required: filterSettlement ? true : false,
+                        where: { canceled_at: null, ...filterSettlement },
+                        include: [
+                            {
+                                model: PaymentMethod,
+                                as: 'paymentMethod',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
                     },
                 ],
                 order: [['due_date', 'DESC']],
@@ -2085,6 +2127,9 @@ class ReceivableController {
             ws2.cell(row, col).string('Last Payment Date').style(styleBold)
             ws2.column(col).width = 15
             col++
+            ws2.cell(row, col).string('Last Payment Method').style(styleBold)
+            ws2.column(col).width = 15
+            col++
             ws2.cell(row, col).string('Type').style(styleBold)
             ws2.column(col).width = 15
             col++
@@ -2094,9 +2139,9 @@ class ReceivableController {
             ws2.cell(row, col).string('Is Recurrence?').style(styleBold)
             ws2.column(col).width = 20
             col++
-            ws2.cell(row, col).string('Payment Method').style(styleBold)
-            ws2.column(col).width = 20
-            col++
+            // ws2.cell(row, col).string('Payment Method').style(styleBold)
+            // ws2.column(col).width = 20
+            // col++
             ws2.cell(row, col).string('Payment Criteria').style(styleBold)
             ws2.column(col).width = 20
             col++
@@ -2152,42 +2197,51 @@ class ReceivableController {
                         chartOfAccount = receivable.chartOfAccount.name
                     }
                 }
-
-                ws2.cell(index + 3, 1).date(
+                let nCol = 1
+                ws2.cell(index + 3, nCol).date(
                     format(parseISO(receivable.entry_date), 'yyyy-MM-dd')
                 )
-                ws2.cell(index + 3, 2).date(
+                nCol++
+                ws2.cell(index + 3, nCol).date(
                     format(parseISO(receivable.due_date), 'yyyy-MM-dd')
                 )
-                ws2.cell(index + 3, 3).string(
+                nCol++
+                ws2.cell(index + 3, nCol).string(
                     receivable.issuer ? receivable.issuer.name : ''
                 )
-                ws2.cell(index + 3, 4)
+                nCol++
+                ws2.cell(index + 3, nCol)
                     .number(receivable.amount)
                     .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
-                ws2.cell(index + 3, 5)
+                nCol++
+                ws2.cell(index + 3, nCol)
                     .number(receivable.discount * -1)
                     .style({
                         numberFormat: '$ #,##0.00; ($#,##0.00); -',
                         font: { color: '#aa0000' },
                     })
-                ws2.cell(index + 3, 6)
+                nCol++
+                ws2.cell(index + 3, nCol)
                     .number(receivable.fee)
                     .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
-                ws2.cell(index + 3, 7)
+                nCol++
+                ws2.cell(index + 3, nCol)
                     .number(receivable.total)
                     .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
-                ws2.cell(index + 3, 8)
+                nCol++
+                ws2.cell(index + 3, nCol)
                     .number(receivable.balance)
                     .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
-                ws2.cell(index + 3, 9).string(receivable.status)
+                nCol++
+                ws2.cell(index + 3, nCol).string(receivable.status)
+                nCol++
                 if (
                     receivable.settlements &&
                     receivable.settlements.length > 0 &&
                     receivable.settlements[receivable.settlements.length - 1]
                         .settlement_date
                 ) {
-                    ws2.cell(index + 3, 10).date(
+                    ws2.cell(index + 3, nCol).date(
                         format(
                             parseISO(
                                 receivable.settlements[
@@ -2198,48 +2252,74 @@ class ReceivableController {
                         )
                     )
                 } else {
-                    ws2.cell(index + 3, 10).string('')
+                    ws2.cell(index + 3, nCol).string('')
                 }
-                ws2.cell(index + 3, 11).string(receivable.type)
-                ws2.cell(index + 3, 12).string(receivable.type_detail)
-                ws2.cell(index + 3, 13).bool(receivable.is_recurrence)
-                ws2.cell(index + 3, 14).string(
-                    receivable.paymentMethod
-                        ? receivable.paymentMethod.description
-                        : ''
-                )
-                ws2.cell(index + 3, 15).string(
+                nCol++
+                if (
+                    receivable.settlements &&
+                    receivable.settlements.length > 0
+                ) {
+                    ws2.cell(index + 3, nCol).string(
+                        receivable.settlements[
+                            receivable.settlements.length - 1
+                        ].paymentMethod.description
+                    )
+                } else {
+                    ws2.cell(index + 3, nCol).string('')
+                }
+                nCol++
+                ws2.cell(index + 3, nCol).string(receivable.type)
+                nCol++
+                ws2.cell(index + 3, nCol).string(receivable.type_detail)
+                nCol++
+                ws2.cell(index + 3, nCol).bool(receivable.is_recurrence)
+                nCol++
+                // ws2.cell(index + 3, nCol).string(
+                //     receivable.paymentMethod
+                //         ? receivable.paymentMethod.description
+                //         : ''
+                // )
+                // nCol++
+                ws2.cell(index + 3, nCol).string(
                     receivable.paymentCriteria
                         ? receivable.paymentCriteria.description
                         : ''
                 )
+                nCol++
                 if (receivable.invoice_number) {
-                    ws2.cell(index + 3, 16).string(
+                    ws2.cell(index + 3, nCol).string(
                         receivable.invoice_number.toString().padStart(6, '0')
                     )
                 } else {
-                    ws2.cell(index + 3, 16).string('')
+                    ws2.cell(index + 3, nCol).string('')
                 }
-
-                ws2.cell(index + 3, 17).string(chartOfAccount)
-                ws2.cell(index + 3, 18).string(receivable.memo)
+                nCol++
+                ws2.cell(index + 3, nCol).string(chartOfAccount)
+                nCol++
+                ws2.cell(index + 3, nCol).string(receivable.memo)
+                nCol++
                 if (receivable.created_at) {
-                    ws2.cell(index + 3, 19).date(receivable.created_at)
+                    ws2.cell(index + 3, nCol).date(receivable.created_at)
                 } else {
-                    ws2.cell(index + 3, 19).string('')
+                    ws2.cell(index + 3, nCol).string('')
                 }
-                ws2.cell(index + 3, 20).string(
+                nCol++
+                ws2.cell(index + 3, nCol).string(
                     receivable.createdBy ? receivable.createdBy.name : ''
                 )
+                nCol++
                 if (receivable.updated_at) {
-                    ws2.cell(index + 3, 21).date(receivable.updated_at)
+                    ws2.cell(index + 3, nCol).date(receivable.updated_at)
                 } else {
-                    ws2.cell(index + 3, 21).string('')
+                    ws2.cell(index + 3, nCol).string('')
                 }
-                ws2.cell(index + 3, 22).string(
+                nCol++
+                ws2.cell(index + 3, nCol).string(
                     receivable.updatedBy ? receivable.updatedBy.name : ''
                 )
-                ws2.cell(index + 3, 23).string(receivable.id)
+                nCol++
+                ws2.cell(index + 3, nCol).string(receivable.id)
+                nCol++
             })
 
             row += receivables.length + 1
