@@ -1746,6 +1746,7 @@ class ReceivableController {
                     })
                 }
             }
+
             t.commit()
 
             return res.json({
