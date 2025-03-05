@@ -137,7 +137,8 @@ class FilialController {
                         },
                         {
                             id:
-                                req.headers.filial != 1
+                                req.headers.filial != 1 &&
+                                req.headers.filial !== undefined
                                     ? req.headers.filial
                                     : 0,
                         },
