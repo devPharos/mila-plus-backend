@@ -1708,6 +1708,7 @@ class ReceivableController {
                                 receivable.dataValues.total - difference
                             ).toFixed(2),
                             balance: 0,
+                            notification_sent: true,
                             updated_at: new Date(),
                             updated_by: req.userId,
                         },

@@ -1,13 +1,10 @@
 import { format, parseISO } from 'date-fns'
-import { verifyAndCreateTextToPayTransaction } from '../../controllers/EmergepayController'
 import Filial from '../../models/Filial'
 import Issuer from '../../models/Issuer'
 import PaymentCriteria from '../../models/PaymentCriteria'
 import PaymentMethod from '../../models/PaymentMethod'
 import Receivable from '../../models/Receivable'
-import Textpaymenttransaction from '../../models/Textpaymenttransaction'
 import { mailer } from '../../../config/mailer'
-import Maillog from '../../models/Maillog'
 
 export async function SettlementMail({ receivable_id = null }) {
     let paymentInfoHTML = ''
@@ -39,25 +36,12 @@ export async function SettlementMail({ receivable_id = null }) {
     if (!paymentMethod) {
         return false
     }
-    if (paymentMethod.dataValues.platform === 'Gravity') {
-        let textPaymentTransaction = await Textpaymenttransaction.findOne({
-            where: {
-                receivable_id: receivable.id,
-                canceled_at: null,
-            },
-        })
-        if (!textPaymentTransaction) {
-            textPaymentTransaction = await verifyAndCreateTextToPayTransaction(
-                receivable.id
-            )
-        }
 
-        paymentInfoHTML = `<tr>
-            <td style="text-align: center;padding: 10px 0 30px;">
-                <div style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Payment Status: Approved</div>
-            </td>
-        </tr>`
-    }
+    paymentInfoHTML = `<tr>
+        <td style="text-align: center;padding: 10px 0 30px;">
+            <div style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Payment Status: Approved</div>
+        </td>
+    </tr>`
 
     await mailer.sendMail({
         from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
@@ -266,9 +250,6 @@ export async function SettlementMail({ receivable_id = null }) {
                           </table>
                       </body>
                       </html>`,
-    })
-    await receivable.update({
-        notification_sent: true,
     })
     // await Maillog.create({
     //     receivable_id: receivable.id,
