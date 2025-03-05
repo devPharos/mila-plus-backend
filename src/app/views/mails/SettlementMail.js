@@ -56,9 +56,9 @@ export async function SettlementMail({ receivable_id = null }) {
                       <html lang="en">
                       <head>
                           <meta charset="UTF-8">
-                          <title>Invoice for Payment</title>
+                          <title>Settlement</title>
                       </head>
-                      <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: Arial, sans-serif;color: #444;font-size: 16px;">
+                      <body style="margin: 0; padding: 0; background-color: #fff; font-family: Arial, sans-serif;color: #444;font-size: 16px;">
                           <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; padding: 20px;">
                               <tr>
                                   <td align="center">

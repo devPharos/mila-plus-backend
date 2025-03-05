@@ -86,7 +86,6 @@ class MenuHierarchyController {
             return group.group_id
         })
         Promise.all(promises).then(async (groupIds) => {
-            console.log(groupIds)
             const hierarchy = await MenuHierarchy.findAll({
                 include: [
                     {
@@ -142,8 +141,6 @@ class MenuHierarchyController {
                 },
                 attributes: ['alias', 'father_id', 'name'],
             })
-
-            console.log(hierarchy)
 
             return res.json({ hierarchy, groups })
         })

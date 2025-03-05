@@ -2164,7 +2164,7 @@ class ReceivableController {
                         ],
                     }
                 } else {
-                    filterSettlement.settlement_to = {
+                    filterSettlement.settlement_date = {
                         [Op.lte]: filterDate,
                     }
                 }
@@ -2234,7 +2234,9 @@ class ReceivableController {
                     {
                         model: Settlement,
                         as: 'settlements',
-                        required: filterSettlement ? true : false,
+                        required: filterSettlement.settlement_date
+                            ? true
+                            : false,
                         where: { canceled_at: null, ...filterSettlement },
                         include: [
                             {

@@ -243,19 +243,16 @@ export async function verifyAndCancelTextToPayTransaction(
 ) {
     try {
         if (!receivable_id) {
-            console.log('!receivable_id')
             return false
         }
         const receivable = await Receivable.findByPk(receivable_id)
         if (!receivable) {
-            console.log('!receivable')
             return false
         }
         const paymentMethod = await PaymentMethod.findByPk(
             receivable.dataValues.paymentmethod_id
         )
         if (paymentMethod.dataValues.platform !== 'Gravity') {
-            console.log('!Gravity')
             return false
         }
         const textPaymentTransaction = await Textpaymenttransaction.findOne({
