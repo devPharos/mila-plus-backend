@@ -15,6 +15,14 @@ class Maillog extends Model {
                     type: Sequelize.UUID,
                     allowNull: false,
                 },
+                type: {
+                    type: Sequelize.STRING,
+                    allowNull: false,
+                },
+                date: {
+                    type: Sequelize.STRING,
+                    allowNull: false,
+                },
                 time: {
                     type: Sequelize.STRING,
                 },

@@ -16,6 +16,7 @@ import Enrollment from '../models/Enrollment'
 import Enrollmenttimeline from '../models/Enrollmenttimeline'
 import Textpaymenttransaction from '../models/Textpaymenttransaction'
 import PaymentMethod from '../models/PaymentMethod'
+import { SettlementMail } from '../views/mails/SettlementMail'
 
 export async function createPaidTimeline(receivable_id = null) {
     const receivable = await Receivable.findByPk(receivable_id)
@@ -107,8 +108,46 @@ export async function settlement(
             created_at: new Date(),
             created_by: 2,
         })
-        receivable
-            .update({
+        await receivable.update({
+            status: parcial ? 'Parcial Paid' : 'Paid',
+            balance:
+                receivable.balance -
+                (parcial ? amountPaidBalance : receivable.dataValues.balance),
+            status_date: format(new Date(), 'yyyyMMdd'),
+            updated_at: new Date(),
+            updated_by: 2,
+        })
+        await createPaidTimeline()
+        amountPaidBalance -=
+            receivable.dataValues.balance > amountPaidBalance
+                ? amountPaidBalance
+                : receivable.dataValues.balance
+        await SettlementMail({ receivable_id: receivable.id })
+        if (amountPaidBalance <= 0) {
+            return
+        }
+        const receivables = await Receivable.findAll({
+            where: {
+                company_id: receivable.dataValues.company_id,
+                filial_id: receivable.dataValues.filial_id,
+                invoice_number: receivable.dataValues.invoice_number,
+                status: 'Pending',
+                canceled_at: null,
+            },
+        })
+        for (let receivable of receivables) {
+            const parcial = amountPaidBalance < receivable.dataValues.balance
+            await Settlement.create({
+                receivable_id: receivable.id,
+                amount: parcial
+                    ? amountPaidBalance
+                    : receivable.dataValues.balance,
+                paymentmethod_id: paymentMethod.dataValues.id,
+                settlement_date: format(new Date(), 'yyyyMMdd'),
+                created_at: new Date(),
+                created_by: 2,
+            })
+            await receivable.update({
                 status: parcial ? 'Parcial Paid' : 'Paid',
                 balance:
                     receivable.balance -
@@ -119,57 +158,12 @@ export async function settlement(
                 updated_at: new Date(),
                 updated_by: 2,
             })
-            .then(async () => {
-                createPaidTimeline()
-                amountPaidBalance -=
-                    receivable.dataValues.balance > amountPaidBalance
-                        ? amountPaidBalance
-                        : receivable.dataValues.balance
-                if (amountPaidBalance <= 0) {
-                    return
-                }
-                Receivable.findAll({
-                    where: {
-                        company_id: receivable.dataValues.company_id,
-                        filial_id: receivable.dataValues.filial_id,
-                        invoice_number: receivable.dataValues.invoice_number,
-                        status: 'Pending',
-                        canceled_at: null,
-                    },
-                }).then((receivables) => {
-                    receivables.forEach(async (receivable) => {
-                        const parcial =
-                            amountPaidBalance < receivable.dataValues.balance
-                        Settlement.create({
-                            receivable_id: receivable.id,
-                            amount: parcial
-                                ? amountPaidBalance
-                                : receivable.dataValues.balance,
-                            paymentmethod_id: paymentMethod.dataValues.id,
-                            settlement_date: format(new Date(), 'yyyyMMdd'),
-                            created_at: new Date(),
-                            created_by: 2,
-                        }).then(() => {
-                            receivable.update({
-                                status: parcial ? 'Parcial Paid' : 'Paid',
-                                balance:
-                                    receivable.balance -
-                                    (parcial
-                                        ? amountPaidBalance
-                                        : receivable.dataValues.balance),
-                                status_date: format(new Date(), 'yyyyMMdd'),
-                                updated_at: new Date(),
-                                updated_by: 2,
-                            })
-                            amountPaidBalance -=
-                                receivable.dataValues.balance >
-                                amountPaidBalance
-                                    ? amountPaidBalance
-                                    : receivable.dataValues.balance
-                        })
-                    })
-                })
-            })
+            amountPaidBalance -=
+                receivable.dataValues.balance > amountPaidBalance
+                    ? amountPaidBalance
+                    : receivable.dataValues.balance
+            await SettlementMail({ receivable_id: receivable.id })
+        }
     } catch (err) {
         const className = 'EmergepayController'
         const functionName = 'settlement'

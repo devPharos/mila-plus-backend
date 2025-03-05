@@ -40,6 +40,24 @@ export async function SettlementMail({ receivable_id = null }) {
         if (!paymentMethod) {
             return false
         }
+        if (paymentMethod.dataValues.platform === 'Gravity') {
+            let textPaymentTransaction = await Textpaymenttransaction.findOne({
+                where: {
+                    receivable_id: receivable.id,
+                    canceled_at: null,
+                },
+            })
+            if (!textPaymentTransaction) {
+                textPaymentTransaction =
+                    await verifyAndCreateTextToPayTransaction(receivable.id)
+            }
+
+            paymentInfoHTML = `<tr>
+            <td style="text-align: center;padding: 10px 0 30px;">
+                <div style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Payment Status: Approved</div>
+            </td>
+        </tr>`
+        }
 
         await mailer.sendMail({
             from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
@@ -51,14 +69,14 @@ export async function SettlementMail({ receivable_id = null }) {
                 process.env.NODE_ENV === 'production'
                     ? 'it.admin@milaorlandousa.com;denis@pharosit.com.br'
                     : '',
-            subject: `MILA Plus - Tuition Fee - ${issuer.dataValues.name}`,
+            subject: `MILA Plus - Payment Confirmation - Tuition Fee - ${issuer.dataValues.name}`,
             html: `<!DOCTYPE html>
                       <html lang="en">
                       <head>
                           <meta charset="UTF-8">
-                          <title>Settlement</title>
+                          <title>Invoice for Payment</title>
                       </head>
-                      <body style="margin: 0; padding: 0; background-color: #fff; font-family: Arial, sans-serif;color: #444;font-size: 16px;">
+                      <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: Arial, sans-serif;color: #444;font-size: 16px;">
                           <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; padding: 20px;">
                               <tr>
                                   <td align="center">
@@ -80,8 +98,8 @@ export async function SettlementMail({ receivable_id = null }) {
                                                   <p style="margin: 20px 40px;">Dear ${
                                                       issuer.dataValues.name
                                                   },</p>
-                                                  <p style="margin: 20px 40px;">We wanted to kindly remind you that the payment for the invoice is due today.</p>
-                                                  <p style="margin: 20px 40px;">Please reach out if there are any issues or if you need additional details.</p>
+                                                  <p style="margin: 20px 40px;">Just a quick note to let you know we've received your payment.</p>
+                                                  <p style="margin: 20px 40px;">Thank you for your prompt payment! If you have any questions or need anything else, feel free to reach out to us.</p>
                                                   <table width="100%" cellpadding="10" cellspacing="0" style="background-color: #dbe9f1; border-radius: 4px; margin: 20px 0;padding: 10px 0;">
                                                       <tr>
                                                           <td style="font-weight: bold;text-align: center;color: #c00;">DUE ${format(
@@ -254,10 +272,11 @@ export async function SettlementMail({ receivable_id = null }) {
         })
         await Maillog.create({
             receivable_id: receivable.id,
-            type: '4 days before due date',
+            type: 'Settlement',
             date: format(new Date(), 'yyyyMMdd'),
             time: format(new Date(), 'HH:mm:ss'),
             created_by: 2,
+            created_at: new Date(),
         })
         return true
     } catch (err) {
