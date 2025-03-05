@@ -278,10 +278,11 @@ export async function BeforeDueDateMail({ receivable_id = null }) {
         })
         await Maillog.create({
             receivable_id: receivable.id,
-            type: '4 days before due date',
+            type: 'Before due date reminder',
             date: format(new Date(), 'yyyyMMdd'),
             time: format(new Date(), 'HH:mm:ss'),
             created_by: 2,
+            created_at: new Date(),
         })
         return true
     } catch (err) {

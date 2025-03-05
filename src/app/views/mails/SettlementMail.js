@@ -69,7 +69,7 @@ export async function SettlementMail({ receivable_id = null }) {
                 process.env.NODE_ENV === 'production'
                     ? 'it.admin@milaorlandousa.com;denis@pharosit.com.br'
                     : '',
-            subject: `MILA Plus - Tuition Fee - ${issuer.dataValues.name}`,
+            subject: `MILA Plus - Payment Confirmation - Tuition Fee - ${issuer.dataValues.name}`,
             html: `<!DOCTYPE html>
                       <html lang="en">
                       <head>
@@ -272,10 +272,11 @@ export async function SettlementMail({ receivable_id = null }) {
         })
         await Maillog.create({
             receivable_id: receivable.id,
-            type: '4 days before due date',
+            type: 'Settlement',
             date: format(new Date(), 'yyyyMMdd'),
             time: format(new Date(), 'HH:mm:ss'),
             created_by: 2,
+            created_at: new Date(),
         })
         return true
     } catch (err) {
