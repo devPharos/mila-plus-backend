@@ -43,6 +43,7 @@ import Renegociation from '../models/Renegociation'
 import Maillog from '../models/Maillog'
 import { BeforeDueDateMail } from '../views/mails/BeforeDueDateMail'
 import { OnDueDateMail } from '../views/mails/OnDueDateMail'
+import { SettlementMail } from '../views/mails/SettlementMail'
 
 const xl = require('excel4node')
 const fs = require('fs')
@@ -1205,17 +1206,20 @@ class ReceivableController {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
                         required: false,
+                        // attributes: ['id', 'description'],
                         where: { canceled_at: null },
                     },
                     {
                         model: Filial,
                         as: 'filial',
                         required: false,
+                        // attributes: ['id', 'name'],
                         where: { canceled_at: null },
                     },
                     {
                         model: Issuer,
                         as: 'issuer',
+                        // attributes: ['id', 'name'],
                         required: false,
                         where: {
                             canceled_at: null,
@@ -1733,6 +1737,9 @@ class ReceivableController {
                             }
                         )
                     }
+                    await SettlementMail({
+                        receivable_id: updatedReceivable.id,
+                    })
                 } else {
                     return res.status(401).json({
                         error: 'Receivable already settled.',
