@@ -480,6 +480,8 @@ class EmergepayController {
                         req
                     )
                 }
+                res.sendStatus(200)
+                return
             } else {
                 console.log('Hmac não corresponde')
             }
