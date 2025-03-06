@@ -480,14 +480,14 @@ class EmergepayController {
                         req
                     )
                 }
+                res.sendStatus(200)
+                return
             } else {
                 console.log('Hmac não corresponde')
             }
         } catch (err) {
             console.log({ err })
         }
-        res.sendStatus(200)
-        return
     }
 
     async refund(req, res) {
