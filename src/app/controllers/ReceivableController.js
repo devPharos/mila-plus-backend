@@ -30,6 +30,7 @@ import Studentdiscount from '../models/Studentdiscount'
 import Settlement from '../models/Settlement'
 import {
     createPaidTimeline,
+    settlement,
     verifyAndCancelTextToPayTransaction,
     verifyAndCreateTextToPayTransaction,
 } from './EmergepayController'
@@ -308,7 +309,7 @@ export async function sendBeforeDueDateInvoices() {
             (date.getMonth() + 1).toString().padStart(2, '0') +
             date.getDate().toString().padStart(2, '0')
         console.log(
-            `[Regular Invoices] - Verifying Recurrence regular invoices on due date: ${searchDate}`
+            `[Before Due] - Verifying Recurrence regular invoices on due date: ${searchDate}`
         )
         const receivables = await Receivable.findAll({
             include: [
@@ -369,7 +370,7 @@ export async function sendBeforeDueDateInvoices() {
                 })
                 sent_number++
                 console.log(
-                    `✅ [Regular Invoices] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
+                    `✅ [Before Due] - sent_number: ${sent_number} not sent: ${
                         receivables.length - sent_number
                     }`
                 )
@@ -433,10 +434,7 @@ export async function sendOnDueDateInvoices() {
             order: [['memo', 'ASC']],
         })
 
-        console.log(
-            `[Regular Invoices] - Receivables found:`,
-            receivables.length
-        )
+        console.log(`[On Due] - Receivables found:`, receivables.length)
 
         let sent_number = 0
 
@@ -459,7 +457,7 @@ export async function sendOnDueDateInvoices() {
                 })
                 sent_number++
                 console.log(
-                    `✅ [Regular Invoices] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
+                    `✅ [On Due] - sent_number: ${sent_number} not sent: ${
                         receivables.length - sent_number
                     }`
                 )
@@ -487,7 +485,7 @@ export async function sendAfterDueDateInvoices() {
             (date.getMonth() + 1).toString().padStart(2, '0') +
             date.getDate().toString().padStart(2, '0')
         console.log(
-            `[Regular Invoices] - Verifying Recurrence regular invoices on due date: ${searchDate}`
+            `[After Due] - Verifying Recurrence regular invoices on due date: ${searchDate}`
         )
         const receivables = await Receivable.findAll({
             include: [
@@ -548,7 +546,7 @@ export async function sendAfterDueDateInvoices() {
                 })
                 sent_number++
                 console.log(
-                    `✅ [Regular Invoices] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
+                    `✅ [After Due] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
                         receivables.length - sent_number
                     }`
                 )
@@ -1676,55 +1674,17 @@ class ReceivableController {
                     }
                 }
 
-                const difference = receivable.dataValues.balance - totalAmount
-
                 const settledAmount =
                     totalAmount > rec.balance ? rec.total : totalAmount
 
                 if (receivable.dataValues.status !== 'Paid') {
-                    await Settlement.create(
-                        {
-                            receivable_id: receivable.id,
-                            amount: settledAmount,
-                            paymentmethod_id,
-                            settlement_date: format(
-                                settlement_date,
-                                'yyyyMMdd'
-                            ),
-                            created_at: new Date(),
-                            created_by: req.userId,
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
-                    const updatedReceivable = await receivable.update(
-                        {
-                            status: 'Paid',
-                            discount: (
-                                receivable.dataValues.discount + difference
-                            ).toFixed(2),
-                            total: (
-                                receivable.dataValues.total - difference
-                            ).toFixed(2),
-                            balance: 0,
-                            notification_sent: true,
-                            updated_at: new Date(),
-                            updated_by: req.userId,
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
-
-                    await createPaidTimeline(updatedReceivable.id)
                     if (prices.discounts && prices.discounts.length > 0) {
                         const discount = await FilialDiscountList.findByPk(
                             prices.discounts[0].filial_discount_list_id
                         )
                         await Receivablediscounts.create(
                             {
-                                receivable_id: updatedReceivable.id,
+                                receivable_id: receivable.id,
                                 discount_id: discount.id,
                                 name: discount.name,
                                 type: discount.type,
@@ -1738,9 +1698,15 @@ class ReceivableController {
                             }
                         )
                     }
-                    await SettlementMail({
-                        receivable_id: updatedReceivable.id,
-                    })
+                    await settlement(
+                        {
+                            receivable_id: receivable.id,
+                            amountPaidBalance: settledAmount,
+                            settlement_date,
+                            paymentmethod_id,
+                        },
+                        req
+                    )
                 } else {
                     return res.status(401).json({
                         error: 'Receivable already settled.',
