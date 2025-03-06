@@ -79,7 +79,12 @@ export async function createPaidTimeline(receivable_id = null) {
 }
 
 export async function settlement(
-    { receivable_id = null, amountPaidBalance = 0 },
+    {
+        receivable_id = null,
+        amountPaidBalance = 0,
+        settlement_date = format(new Date(), 'yyyyMMdd'),
+        paymentmethod_id = null,
+    },
     req = null
 ) {
     try {
@@ -89,22 +94,28 @@ export async function settlement(
             return false
         }
 
-        const parcial = amountPaidBalance < receivable.dataValues.balance
+        if (receivable.dataValues.status === 'Paid') {
+            return false
+        }
 
-        const paymentMethod = await PaymentMethod.findOne({
-            where: {
-                company_id: receivable.dataValues.company_id,
-                filial_id: receivable.dataValues.filial_id,
-                platform: 'Gravity',
-                canceled_at: null,
-            },
-        })
+        if (
+            receivable.dataValues.status === 'Parcial Paid' &&
+            receivable.dataValues.balance < amountPaidBalance
+        ) {
+            return false
+        }
+
+        if (!paymentmethod_id) {
+            paymentmethod_id = receivable.dataValues.paymentmethod_id
+        }
+
+        const parcial = amountPaidBalance < receivable.dataValues.balance
 
         await Settlement.create({
             receivable_id: receivable.id,
             amount: parcial ? amountPaidBalance : receivable.dataValues.balance,
-            paymentmethod_id: paymentMethod.dataValues.id,
-            settlement_date: format(new Date(), 'yyyyMMdd'),
+            paymentmethod_id,
+            settlement_date,
             created_at: new Date(),
             created_by: 2,
         })
@@ -113,7 +124,8 @@ export async function settlement(
             balance:
                 receivable.balance -
                 (parcial ? amountPaidBalance : receivable.dataValues.balance),
-            status_date: format(new Date(), 'yyyyMMdd'),
+            status_date: settlement_date,
+            paymentmethod_id,
             updated_at: new Date(),
             updated_by: 2,
         })
@@ -123,9 +135,11 @@ export async function settlement(
                 ? amountPaidBalance
                 : receivable.dataValues.balance
         await SettlementMail({ receivable_id: receivable.id })
+
         if (amountPaidBalance <= 0) {
             return
         }
+
         const receivables = await Receivable.findAll({
             where: {
                 company_id: receivable.dataValues.company_id,
@@ -136,33 +150,12 @@ export async function settlement(
             },
         })
         for (let receivable of receivables) {
-            const parcial = amountPaidBalance < receivable.dataValues.balance
-            await Settlement.create({
+            await settlement({
                 receivable_id: receivable.id,
-                amount: parcial
-                    ? amountPaidBalance
-                    : receivable.dataValues.balance,
-                paymentmethod_id: paymentMethod.dataValues.id,
-                settlement_date: format(new Date(), 'yyyyMMdd'),
-                created_at: new Date(),
-                created_by: 2,
+                amountPaidBalance,
+                settlement_date,
+                paymentmethod_id,
             })
-            await receivable.update({
-                status: parcial ? 'Parcial Paid' : 'Paid',
-                balance:
-                    receivable.balance -
-                    (parcial
-                        ? amountPaidBalance
-                        : receivable.dataValues.balance),
-                status_date: format(new Date(), 'yyyyMMdd'),
-                updated_at: new Date(),
-                updated_by: 2,
-            })
-            amountPaidBalance -=
-                receivable.dataValues.balance > amountPaidBalance
-                    ? amountPaidBalance
-                    : receivable.dataValues.balance
-            await SettlementMail({ receivable_id: receivable.id })
         }
     } catch (err) {
         const className = 'EmergepayController'
@@ -465,37 +458,28 @@ class EmergepayController {
                     unique_trans_id: uniqueTransId,
                     created_at: new Date(),
                     created_by: 2,
-                }).then(async (emergepaytransaction) => {
-                    const receivable = await Receivable.findByPk(
-                        externalTransactionId
-                    )
-                    if (receivable && resultMessage === 'Approved') {
-                        const amountPaidBalance = parseFloat(amountProcessed)
-                        await settlement(
-                            {
-                                receivable_id: receivable.id,
-                                amountPaidBalance,
-                            },
-                            req
-                        ).then(async () => {
-                            //     const paymentInfoHTML = `<tr>
-                            //     <td style="text-align: center;padding: 10px 0 30px;">
-                            //         <div style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Payment Status: ${
-                            //             resultMessage === 'Approved'
-                            //                 ? 'Approved'
-                            //                 : 'Declined'
-                            //         }</div>
-                            //     </td>
-                            // </tr>`
-                            // await TuitionMail({
-                            //     receivable_id: receivable.id,
-                            //     paymentInfoHTML,
-                            // })
-                            // res.sendStatus(200)
-                            // return
-                        })
-                    }
                 })
+                const receivable = await Receivable.findByPk(
+                    externalTransactionId
+                )
+                if (receivable && resultMessage === 'Approved') {
+                    const amountPaidBalance = parseFloat(amountProcessed)
+                    const paymentMethod = await PaymentMethod.findOne({
+                        where: {
+                            platform: 'Gravity',
+                            canceled_at: null,
+                        },
+                    })
+                    await settlement(
+                        {
+                            receivable_id: receivable.id,
+                            amountPaidBalance,
+                            settlement_date: format(new Date(), 'yyyyMMdd'),
+                            paymentmethod_id: paymentMethod.id,
+                        },
+                        req
+                    )
+                }
             } else {
                 console.log('Hmac não corresponde')
             }
