@@ -488,6 +488,8 @@ class EmergepayController {
         } catch (err) {
             console.log({ err })
         }
+        res.sendStatus(200)
+        return
     }
 
     async refund(req, res) {
