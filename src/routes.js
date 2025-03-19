@@ -467,6 +467,7 @@ routes.post(
 )
 
 routes.post('/recurrence', RecurrenceController.store)
+routes.delete('/recurrence/:student_id', RecurrenceController.stopRecurrence)
 
 routes.get('/filialdiscounts', FilialDiscountListController.index)
 routes.get('/files', FileController.index)

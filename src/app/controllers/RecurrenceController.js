@@ -23,6 +23,8 @@ import Studentdiscount from '../models/Studentdiscount'
 import FilialDiscountList from '../models/FilialDiscountList'
 import Receivablediscounts from '../models/Receivablediscounts'
 import { applyDiscounts } from './ReceivableController'
+import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
+import { verifyAndCancelTextToPayTransaction } from './EmergepayController'
 
 export async function generateRecurrenceReceivables(recurrence) {
     try {
@@ -85,6 +87,9 @@ export async function generateRecurrenceReceivables(recurrence) {
                 issuer_id: issuer.id,
                 type_detail: 'Tuition fee',
                 canceled_at: null,
+                due_date: {
+                    [Op.gte]: format(new Date(), 'yyyyMMdd'),
+                },
             },
             include: [
                 {
@@ -528,7 +533,74 @@ class RecurrenceController {
                     .status(400)
                     .json({ error: 'Student does not exist.' })
             }
-            const issuer = await Issuer.findByPk(student.dataValues.issuer_id)
+            const issuer = await Issuer.findOne({
+                where: {
+                    student_id: student.id,
+                    canceled_at: null,
+                },
+            })
+            if (!issuer) {
+                return res.status(400).json({ error: 'Issuer does not exist.' })
+            }
+
+            const recurrence = await Recurrence.findOne({
+                where: {
+                    company_id: 1,
+                    filial_id: issuer.dataValues.filial_id,
+                    issuer_id: issuer.id,
+                    canceled_at: null,
+                    active: true,
+                },
+            })
+
+            if (!recurrence) {
+                return res
+                    .status(400)
+                    .json({ error: 'Recurrence does not exist.' })
+            }
+
+            const receivables = await Receivable.findAll({
+                where: {
+                    company_id: 1,
+                    filial_id: issuer.dataValues.filial_id,
+                    issuer_id: issuer.id,
+                    type: 'Invoice',
+                    is_recurrence: true,
+                    type_detail: 'Tuition fee',
+                    status: 'Pending',
+                    canceled_at: null,
+                    due_date: {
+                        [Op.gte]: format(new Date(), 'yyyyMMdd'),
+                    },
+                },
+            })
+
+            await recurrence.update(
+                {
+                    active: false,
+                    canceled_at: new Date(),
+                    canceled_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            for (let receivable of receivables) {
+                await verifyAndCancelParcelowPaymentLink(receivable.id)
+                await verifyAndCancelTextToPayTransaction(receivable.id)
+                await receivable.update(
+                    {
+                        canceled_at: new Date(),
+                        canceled_by: req.userId,
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+            }
+            t.commit()
+            return res.json(recurrence)
         } catch (err) {
             await t.rollback()
             const className = 'RecurrenceController'
