@@ -46,6 +46,7 @@ export async function BeforeDueDateMail({ receivable_id = null }) {
                     receivable_id: receivable.id,
                     canceled_at: null,
                 },
+                order: [['created_at', 'DESC']],
             })
             if (!textPaymentTransaction) {
                 textPaymentTransaction =

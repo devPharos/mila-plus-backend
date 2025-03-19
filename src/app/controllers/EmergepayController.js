@@ -190,6 +190,7 @@ export async function verifyAndCreateTextToPayTransaction(
                 receivable_id: receivable.id,
                 canceled_at: null,
             },
+            order: [['created_at', 'DESC']],
         })
         if (textPaymentTransaction) {
             return false
@@ -247,6 +248,7 @@ export async function verifyAndCancelTextToPayTransaction(
                 receivable_id: receivable.id,
                 canceled_at: null,
             },
+            order: [['created_at', 'DESC']],
         })
         if (!textPaymentTransaction) {
             return true

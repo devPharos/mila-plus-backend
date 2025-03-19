@@ -66,6 +66,10 @@ class Receivable extends Model {
                     type: Sequelize.FLOAT,
                     defaultValue: 0,
                 },
+                manual_discount: {
+                    type: Sequelize.FLOAT,
+                    defaultValue: 0,
+                },
                 fee: {
                     type: Sequelize.FLOAT,
                     defaultValue: 0,
