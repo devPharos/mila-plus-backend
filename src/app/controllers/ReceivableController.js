@@ -931,6 +931,7 @@ export async function TuitionMail({
                     receivable_id: receivable.id,
                     canceled_at: null,
                 },
+                order: [['created_at', 'DESC']],
             })
             if (!textPaymentTransaction) {
                 textPaymentTransaction =
@@ -960,7 +961,7 @@ export async function TuitionMail({
                     process.env.NODE_ENV === 'production'
                         ? 'it.admin@milaorlandousa.com;denis@pharosit.com.br'
                         : '',
-                subject: `MILA Plus - Tuition Fee - ${issuer.dataValues.name}`,
+                subject: `MILA Plus - Tuition Fee - Resend - ${issuer.dataValues.name}`,
                 html: `<!DOCTYPE html>
                         <html lang="en">
                         <head>
@@ -1647,13 +1648,10 @@ class ReceivableController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const {
-                receivables,
-                prices,
-                paymentmethod_id,
-                settlement_date,
-                total_amount,
-            } = req.body
+            const { receivables, prices, paymentmethod_id, settlement_date } =
+                req.body
+
+            let { total_amount } = req.body
 
             for (let rec of receivables) {
                 const receivable = await Receivable.findByPk(rec.id)
@@ -1664,7 +1662,14 @@ class ReceivableController {
                     })
                 }
 
-                let totalAmount = receivable.dataValues.balance
+                let manual_discount = 0
+
+                if (receivables.length > 1) {
+                    total_amount = receivable.dataValues.balance
+                } else {
+                    manual_discount =
+                        receivable.dataValues.balance - total_amount
+                }
 
                 if (prices.discounts && prices.discounts.length > 0) {
                     const discount = await FilialDiscountList.findByPk(
@@ -1672,7 +1677,7 @@ class ReceivableController {
                     )
 
                     if (discount) {
-                        totalAmount = applyDiscounts({
+                        total_amount = applyDiscounts({
                             applied_at: 'Settlement',
                             type: 'Financial',
                             studentDiscounts: [
@@ -1682,18 +1687,23 @@ class ReceivableController {
                                     },
                                 },
                             ],
-                            totalAmount,
+                            totalAmount: total_amount,
                         })
                     }
                 }
 
                 const thisDiscounts =
-                    receivable.dataValues.balance - totalAmount
+                    receivable.dataValues.balance - total_amount
 
                 await receivable.update({
-                    balance: totalAmount,
-                    total: receivable.dataValues.total - thisDiscounts,
-                    discount: receivable.dataValues.discount + thisDiscounts,
+                    balance: total_amount,
+                    total: (
+                        receivable.dataValues.total - thisDiscounts
+                    ).toFixed(2),
+                    discount: (
+                        receivable.dataValues.discount + thisDiscounts
+                    ).toFixed(2),
+                    manual_discount: manual_discount.toFixed(2),
                 })
 
                 if (receivable.dataValues.status !== 'Paid') {
@@ -1720,7 +1730,7 @@ class ReceivableController {
                     await settlement(
                         {
                             receivable_id: receivable.id,
-                            amountPaidBalance: totalAmount,
+                            amountPaidBalance: total_amount,
                             settlement_date,
                             paymentmethod_id,
                         },
@@ -2564,6 +2574,7 @@ class ReceivableController {
                         receivable_id: receivable.id,
                         canceled_at: null,
                     },
+                    order: [['created_at', 'DESC']],
                 }
             )
             let paymentInfoHTML = ''

@@ -11,6 +11,8 @@ import Student from '../models/Student'
 import { searchPromise } from '../functions/searchPromise'
 import Receivable from '../models/Receivable'
 import Settlement from '../models/Settlement'
+import Receivablediscounts from '../models/Receivablediscounts'
+import { applyDiscounts } from './ReceivableController'
 
 class SettlementController {
     async index(req, res) {
@@ -237,7 +239,7 @@ class SettlementController {
                 })
             }
 
-            settlements
+            await settlements
                 .update(
                     {
                         canceled_at: new Date(),
@@ -248,18 +250,72 @@ class SettlementController {
                     }
                 )
                 .then(async () => {
-                    receivable
+                    const discounts = await Receivablediscounts.findAll({
+                        where: {
+                            receivable_id: receivable.id,
+                            canceled_at: null,
+                            type: 'Financial',
+                        },
+                    })
+                    let total_settled = settlements.dataValues.amount
+                    let total_discount = 0
+                    for (let discount of discounts) {
+                        if (discount.dataValues.percent) {
+                            total_discount +=
+                                (total_settled * 100) /
+                                    (100 - discount.dataValues.value) -
+                                total_settled
+                        } else {
+                            total_discount += discount.dataValues.value
+                        }
+                        await discount.update({
+                            canceled_at: new Date(),
+                            canceled_by: req.userId,
+                        })
+                    }
+                    if (settlements.dataValues.amount === 0) {
+                        total_settled = 0
+                        total_discount =
+                            receivable.dataValues.amount +
+                            receivable.dataValues.fee
+                    }
+
+                    console.log({ total_discount, total_settled })
+
+                    await receivable
                         .update(
                             {
-                                status:
+                                discount: (
+                                    receivable.dataValues.discount -
+                                    total_discount -
+                                    receivable.dataValues.manual_discount
+                                ).toFixed(2),
+                                total: (
+                                    receivable.dataValues.total +
+                                    receivable.dataValues.manual_discount +
+                                    total_discount
+                                ).toFixed(2),
+                                balance: (
                                     receivable.dataValues.balance +
-                                        settlements.dataValues.amount ===
-                                    receivable.dataValues.total
+                                    total_settled +
+                                    receivable.dataValues.manual_discount +
+                                    total_discount
+                                ).toFixed(2),
+                                status:
+                                    (
+                                        receivable.dataValues.balance +
+                                        total_settled +
+                                        receivable.dataValues.manual_discount +
+                                        total_discount
+                                    ).toFixed(2) ===
+                                    (
+                                        receivable.dataValues.total +
+                                        receivable.dataValues.manual_discount +
+                                        total_discount
+                                    ).toFixed(2)
                                         ? 'Pending'
                                         : 'Parcial Paid',
-                                balance:
-                                    receivable.dataValues.balance +
-                                    settlements.dataValues.amount,
+                                manual_discount: 0,
                                 updated_at: new Date(),
                                 updated_by: req.userId,
                             },
