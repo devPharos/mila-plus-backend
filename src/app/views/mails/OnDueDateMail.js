@@ -8,6 +8,7 @@ import Receivable from '../../models/Receivable'
 import Textpaymenttransaction from '../../models/Textpaymenttransaction'
 import { mailer } from '../../../config/mailer'
 import Maillog from '../../models/Maillog'
+import MailLog from '../../../Mails/MailLog'
 
 export async function OnDueDateMail({ receivable_id = null }) {
     try {
@@ -285,6 +286,12 @@ export async function OnDueDateMail({ receivable_id = null }) {
         console.log(
             `❌ It wasnt possible to send the e-mail, errorCode: ${err.responseCode}`
         )
+        MailLog({
+            className: 'ReceivableController',
+            functionName: 'OnDueDateMail',
+            req: null,
+            err,
+        })
         return false
     }
 }

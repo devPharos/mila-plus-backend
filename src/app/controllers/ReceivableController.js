@@ -848,11 +848,12 @@ export async function calculateFeesRecurrenceJob() {
                     receivable_id: receivable.dataValues.id,
                 })
                 // await Maillog.create({
-                //     receivable_id: tuitionFee.dataValues.id,
-                //     type: 'Fee Adjustment',
+                //     receivable_id: receivable.dataValues.id,
+                //     type: 'Settlement',
                 //     date: format(new Date(), 'yyyyMMdd'),
                 //     time: format(new Date(), 'HH:mm:ss'),
                 //     created_by: 2,
+                //     created_at: new Date(),
                 // })
                 sent_number++
             }
