@@ -16,6 +16,8 @@ import { emergepay } from './config/emergepay.js'
 import Textpaymenttransaction from './app/models/Textpaymenttransaction.js'
 import Receivable from './app/models/Receivable.js'
 import { Op } from 'sequelize'
+import { differenceInDays, format, parseISO, subDays } from 'date-fns'
+import { verifyAndCancelTextToPayTransaction } from './app/controllers/EmergepayController.js'
 
 class App {
     constructor() {
@@ -75,6 +77,38 @@ class App {
         schedule.scheduleJob(`0 30 4 * * *`, sendOnDueDateInvoices)
         schedule.scheduleJob(`0 45 4 * * *`, sendAfterDueDateInvoices)
         schedule.scheduleJob('0 0 5 * * *', calculateFeesRecurrenceJob)
+
+        const textPayments = await Textpaymenttransaction.findAll({
+            where: {
+                canceled_at: null,
+                created_at: {
+                    [Op.lt]: format(
+                        subDays(new Date(new Date().setHours(0, 0, 0, 0)), 7),
+                        'yyyy-MM-dd'
+                    ),
+                },
+            },
+            limit: 5,
+        })
+
+        for (let textPayment of textPayments) {
+            await emergepay
+                .cancelTextToPayTransaction({
+                    paymentPageId: textPayment.dataValues.payment_page_id,
+                })
+                .then(async () => {
+                    await textPayment.destroy().then(() => {
+                        console.log(
+                            `✅ Text to pay transaction cancelled ${textPayment.dataValues.payment_page_id}`
+                        )
+                        return true
+                    })
+                })
+                .catch((err) => {
+                    // console.log('1')
+                })
+        }
+        console.log(`Done`)
 
         setTimeout(() => {
             console.log('✅ Schedule jobs started!')
