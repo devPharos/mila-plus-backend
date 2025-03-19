@@ -11,6 +11,7 @@ class Feeadjustment extends Model {
                 },
                 receivable_id: Sequelize.UUID,
                 old_fee: Sequelize.FLOAT,
+                new_fee: Sequelize.FLOAT,
                 reason: Sequelize.STRING,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,

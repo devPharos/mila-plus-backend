@@ -90,7 +90,7 @@ export async function settlement(
     try {
         const receivable = await Receivable.findByPk(receivable_id)
 
-        if (!receivable || !amountPaidBalance) {
+        if (!receivable) {
             return false
         }
 

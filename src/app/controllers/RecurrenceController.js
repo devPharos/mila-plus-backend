@@ -517,6 +517,28 @@ class RecurrenceController {
             })
         }
     }
+    async stopRecurrence(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { student_id } = req.params
+            const student = await Student.findByPk(student_id)
+            if (!student) {
+                return res
+                    .status(400)
+                    .json({ error: 'Student does not exist.' })
+            }
+            const issuer = await Issuer.findByPk(student.dataValues.issuer_id)
+        } catch (err) {
+            await t.rollback()
+            const className = 'RecurrenceController'
+            const functionName = 'stopRecurrence'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
 }
 
 export default new RecurrenceController()

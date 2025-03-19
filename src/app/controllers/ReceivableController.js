@@ -45,6 +45,7 @@ import Maillog from '../models/Maillog'
 import { BeforeDueDateMail } from '../views/mails/BeforeDueDateMail'
 import { OnDueDateMail } from '../views/mails/OnDueDateMail'
 import { SettlementMail } from '../views/mails/SettlementMail'
+import { AfterDueDateMail } from '../views/mails/AfterDueDateMail'
 
 const xl = require('excel4node')
 const fs = require('fs')
@@ -255,7 +256,7 @@ export function applyDiscounts({
     applied_at,
     type = null,
     studentDiscounts,
-    totalAmount,
+    totalAmount = 0,
     due_date = null,
 }) {
     if (studentDiscounts && studentDiscounts.length > 0) {
@@ -541,7 +542,7 @@ export async function sendAfterDueDateInvoices() {
             )
 
             if (issuerExists && student && filial) {
-                await BeforeDueDateMail({
+                await AfterDueDateMail({
                     receivable_id: tuitionFee.dataValues.id,
                 })
                 sent_number++
@@ -734,7 +735,7 @@ export async function calculateFee(receivable_id = null) {
         }
 
         const daysPassed = differenceInDays(
-            new Date(),
+            new Date(new Date().setHours(0, 0, 0, 0)),
             parseISO(receivable.dataValues.due_date)
         )
         let how_many_times = 0
@@ -792,9 +793,18 @@ export async function calculateFee(receivable_id = null) {
                 return acc + curr.dataValues.amount
             }, 0)
 
-        if (receivable.dataValues.fee === feesAmount) {
+        if (receivable.dataValues.fee.toFixed(2) === feesAmount.toFixed(2)) {
             return false
         }
+
+        await Feeadjustment.create({
+            receivable_id: receivable.id,
+            old_fee: receivable.dataValues.fee,
+            new_fee: feesAmount,
+            reason: 'Automatic fee adjustment',
+            created_by: 2,
+            created_at: new Date(),
+        })
 
         await receivable.update({
             total: (amount - discount + feesAmount).toFixed(2),
@@ -834,14 +844,16 @@ export async function calculateFeesRecurrenceJob() {
         let sent_number = 0
         for (let receivable of receivables) {
             if ((await calculateFee(receivable.dataValues.id)) === true) {
-                await TuitionMail({ receivable_id: receivable.dataValues.id })
-                await Maillog.create({
-                    receivable_id: tuitionFee.dataValues.id,
-                    type: 'Fee Adjustment',
-                    date: format(new Date(), 'yyyyMMdd'),
-                    time: format(new Date(), 'HH:mm:ss'),
-                    created_by: 2,
+                await FeeChargedMail({
+                    receivable_id: receivable.dataValues.id,
                 })
+                // await Maillog.create({
+                //     receivable_id: tuitionFee.dataValues.id,
+                //     type: 'Fee Adjustment',
+                //     date: format(new Date(), 'yyyyMMdd'),
+                //     time: format(new Date(), 'HH:mm:ss'),
+                //     created_by: 2,
+                // })
                 sent_number++
             }
         }
@@ -1247,6 +1259,7 @@ class ReceivableController {
                 'status',
                 ['filial', 'name'],
                 ['issuer', 'name'],
+                'invoice_number',
                 'issuer_id',
                 'amount',
             ]
@@ -1659,7 +1672,7 @@ class ReceivableController {
                     )
 
                     if (discount) {
-                        totalAmount = await applyDiscounts({
+                        totalAmount = applyDiscounts({
                             applied_at: 'Settlement',
                             type: 'Financial',
                             studentDiscounts: [
@@ -1674,8 +1687,14 @@ class ReceivableController {
                     }
                 }
 
-                const settledAmount =
-                    totalAmount > rec.balance ? rec.total : totalAmount
+                const thisDiscounts =
+                    receivable.dataValues.balance - totalAmount
+
+                await receivable.update({
+                    balance: totalAmount,
+                    total: receivable.dataValues.total - thisDiscounts,
+                    discount: receivable.dataValues.discount + thisDiscounts,
+                })
 
                 if (receivable.dataValues.status !== 'Paid') {
                     if (prices.discounts && prices.discounts.length > 0) {
@@ -1701,7 +1720,7 @@ class ReceivableController {
                     await settlement(
                         {
                             receivable_id: receivable.id,
-                            amountPaidBalance: settledAmount,
+                            amountPaidBalance: totalAmount,
                             settlement_date,
                             paymentmethod_id,
                         },
@@ -1906,6 +1925,7 @@ class ReceivableController {
                 {
                     receivable_id: receivableExists.id,
                     old_fee: receivableExists.dataValues.fee,
+                    new_fee: fee,
                     reason,
                     created_by: req.userId,
                     created_at: new Date(),
