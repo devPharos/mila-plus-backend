@@ -88,7 +88,6 @@ class App {
                     ),
                 },
             },
-            limit: 5,
         })
 
         for (let textPayment of textPayments) {
