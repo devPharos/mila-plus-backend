@@ -109,7 +109,9 @@ export async function settlement(
             paymentmethod_id = receivable.dataValues.paymentmethod_id
         }
 
-        const parcial = amountPaidBalance < receivable.dataValues.balance
+        const parcial =
+            amountPaidBalance !== 0 &&
+            amountPaidBalance < receivable.dataValues.balance
 
         await Settlement.create({
             receivable_id: receivable.id,
@@ -121,42 +123,42 @@ export async function settlement(
         })
         await receivable.update({
             status: parcial ? 'Parcial Paid' : 'Paid',
-            balance:
+            balance: (
                 receivable.balance -
-                (parcial ? amountPaidBalance : receivable.dataValues.balance),
+                (parcial ? amountPaidBalance : receivable.dataValues.balance)
+            ).toFixed(2),
             status_date: settlement_date,
             paymentmethod_id,
             updated_at: new Date(),
             updated_by: 2,
         })
         await createPaidTimeline()
-        amountPaidBalance -=
-            receivable.dataValues.balance > amountPaidBalance
-                ? amountPaidBalance
-                : receivable.dataValues.balance
-        await SettlementMail({ receivable_id: receivable.id })
+        await SettlementMail({
+            receivable_id: receivable.id,
+            amount: amountPaidBalance,
+        })
 
         if (amountPaidBalance <= 0) {
             return
         }
 
-        const receivables = await Receivable.findAll({
-            where: {
-                company_id: receivable.dataValues.company_id,
-                filial_id: receivable.dataValues.filial_id,
-                invoice_number: receivable.dataValues.invoice_number,
-                status: 'Pending',
-                canceled_at: null,
-            },
-        })
-        for (let receivable of receivables) {
-            await settlement({
-                receivable_id: receivable.id,
-                amountPaidBalance,
-                settlement_date,
-                paymentmethod_id,
-            })
-        }
+        // const receivables = await Receivable.findAll({
+        //     where: {
+        //         company_id: receivable.dataValues.company_id,
+        //         filial_id: receivable.dataValues.filial_id,
+        //         invoice_number: receivable.dataValues.invoice_number,
+        //         status: 'Pending',
+        //         canceled_at: null,
+        //     },
+        // })
+        // for (let receivable of receivables) {
+        //     await settlement({
+        //         receivable_id: receivable.id,
+        //         amountPaidBalance,
+        //         settlement_date,
+        //         paymentmethod_id,
+        //     })
+        // }
     } catch (err) {
         const className = 'EmergepayController'
         const functionName = 'settlement'

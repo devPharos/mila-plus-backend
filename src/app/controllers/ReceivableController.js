@@ -1352,6 +1352,13 @@ class ReceivableController {
                         where: { canceled_at: null },
                         order: [['created_at', 'DESC']],
                     },
+                    {
+                        model: Maillog,
+                        as: 'maillogs',
+                        required: false,
+                        where: { canceled_at: null },
+                        order: [['created_at', 'DESC']],
+                    },
                 ],
             })
 
@@ -1672,13 +1679,15 @@ class ReceivableController {
                         receivable.dataValues.balance - total_amount
                 }
 
+                let total_amount_with_discount = total_amount
+
                 if (prices.discounts && prices.discounts.length > 0) {
                     const discount = await FilialDiscountList.findByPk(
                         prices.discounts[0].filial_discount_list_id
                     )
 
                     if (discount) {
-                        total_amount = applyDiscounts({
+                        total_amount_with_discount = applyDiscounts({
                             applied_at: 'Settlement',
                             type: 'Financial',
                             studentDiscounts: [
@@ -1693,14 +1702,9 @@ class ReceivableController {
                     }
                 }
 
-                const thisDiscounts =
-                    receivable.dataValues.balance - total_amount
+                const thisDiscounts = total_amount - total_amount_with_discount
 
                 await receivable.update({
-                    balance: total_amount,
-                    total: (
-                        receivable.dataValues.total - thisDiscounts
-                    ).toFixed(2),
                     discount: (
                         receivable.dataValues.discount + thisDiscounts
                     ).toFixed(2),
@@ -1731,7 +1735,7 @@ class ReceivableController {
                     await settlement(
                         {
                             receivable_id: receivable.id,
-                            amountPaidBalance: total_amount,
+                            amountPaidBalance: total_amount_with_discount,
                             settlement_date,
                             paymentmethod_id,
                         },

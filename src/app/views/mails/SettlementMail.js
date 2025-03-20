@@ -8,14 +8,18 @@ import { mailer } from '../../../config/mailer'
 import Maillog from '../../models/Maillog'
 import MailLog from '../../../Mails/MailLog'
 
-export async function SettlementMail({ receivable_id = null }) {
+export async function SettlementMail({ receivable_id = null, amount = 0 }) {
     try {
         let paymentInfoHTML = ''
         const receivable = await Receivable.findByPk(receivable_id)
         if (!receivable) {
             return false
         }
-        const amount = receivable.dataValues.total
+        if (amount === '0.00') {
+            console.log(1, { amount })
+            amount = 0
+        }
+        console.log(2, { amount })
         const invoice_number = receivable.dataValues.invoice_number
             .toString()
             .padStart(6, '0')
@@ -208,9 +212,42 @@ export async function SettlementMail({ receivable_id = null }) {
                                                       </tr>`
                                                               : ''
                                                       }
+                                                      ${
+                                                          receivable.dataValues
+                                                              .total -
+                                                              amount -
+                                                              receivable
+                                                                  .dataValues
+                                                                  .balance >
+                                                          0
+                                                              ? `<tr>
+                                                                          <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;color: #a00;">
+                                                                              Already Paid
+                                                                          </td>
+                                                                          <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;color: #a00;">
+                                                                              $ ${(
+                                                                                  receivable
+                                                                                      .dataValues
+                                                                                      .total -
+                                                                                  amount -
+                                                                                  receivable
+                                                                                      .dataValues
+                                                                                      .balance
+                                                                              ).toFixed(
+                                                                                  2
+                                                                              )}
+                                                                          </td>
+                                                      </tr>`
+                                                              : ''
+                                                      }
                                                       <tr>
                                                           <td colspan="2" style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                              Balance due <span style="margin-left: 10px;">$ ${amount.toFixed(
+                                                              Balance due <span style="margin-left: 10px;">$ ${(
+                                                                  receivable
+                                                                      .dataValues
+                                                                      .balance +
+                                                                  amount
+                                                              ).toFixed(
                                                                   2
                                                               )}</span>
                                                           </td>

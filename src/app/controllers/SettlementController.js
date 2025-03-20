@@ -227,19 +227,7 @@ class SettlementController {
                 })
             }
 
-            const settlements = await Settlement.findOne({
-                where: {
-                    receivable_id: receivable.id,
-                    canceled_at: null,
-                },
-            })
-            if (!settlements) {
-                return res.status(400).json({
-                    error: 'Settlement does not exist.',
-                })
-            }
-
-            await settlements
+            await settlement
                 .update(
                     {
                         canceled_at: new Date(),
@@ -257,7 +245,7 @@ class SettlementController {
                             type: 'Financial',
                         },
                     })
-                    let total_settled = settlements.dataValues.amount
+                    let total_settled = settlement.dataValues.amount
                     let total_discount = 0
                     for (let discount of discounts) {
                         if (discount.dataValues.percent) {
@@ -273,7 +261,7 @@ class SettlementController {
                             canceled_by: req.userId,
                         })
                     }
-                    if (settlements.dataValues.amount === 0) {
+                    if (settlement.dataValues.amount === 0) {
                         total_settled = 0
                         total_discount =
                             receivable.dataValues.amount +
@@ -282,37 +270,27 @@ class SettlementController {
 
                     console.log({ total_discount, total_settled })
 
+                    if (total_discount === Infinity) {
+                        total_discount = receivable.dataValues.discount
+                    }
+
                     await receivable
                         .update(
                             {
                                 discount: (
                                     receivable.dataValues.discount -
-                                    total_discount -
-                                    receivable.dataValues.manual_discount
-                                ).toFixed(2),
-                                total: (
-                                    receivable.dataValues.total +
-                                    receivable.dataValues.manual_discount +
                                     total_discount
                                 ).toFixed(2),
                                 balance: (
                                     receivable.dataValues.balance +
-                                    total_settled +
-                                    receivable.dataValues.manual_discount +
-                                    total_discount
+                                    total_settled
                                 ).toFixed(2),
                                 status:
                                     (
                                         receivable.dataValues.balance +
-                                        total_settled +
-                                        receivable.dataValues.manual_discount +
-                                        total_discount
+                                        total_settled
                                     ).toFixed(2) ===
-                                    (
-                                        receivable.dataValues.total +
-                                        receivable.dataValues.manual_discount +
-                                        total_discount
-                                    ).toFixed(2)
+                                    receivable.dataValues.total.toFixed(2)
                                         ? 'Pending'
                                         : 'Parcial Paid',
                                 manual_discount: 0,
