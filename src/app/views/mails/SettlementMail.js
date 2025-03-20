@@ -7,6 +7,7 @@ import Receivable from '../../models/Receivable'
 import { mailer } from '../../../config/mailer'
 import Maillog from '../../models/Maillog'
 import MailLog from '../../../Mails/MailLog'
+import Settlement from '../../models/Settlement'
 
 export async function SettlementMail({ receivable_id = null, amount = 0 }) {
     try {
@@ -43,6 +44,14 @@ export async function SettlementMail({ receivable_id = null, amount = 0 }) {
         if (!paymentMethod) {
             return false
         }
+
+        const settlements = await Settlement.findAll({
+            where: {
+                receivable_id: receivable.id,
+                canceled_at: null,
+            },
+            order: [['created_at', 'ASC']],
+        })
 
         paymentInfoHTML = `<tr>
         <td style="text-align: center;padding: 10px 0 30px;">
@@ -213,32 +222,40 @@ export async function SettlementMail({ receivable_id = null, amount = 0 }) {
                                                               : ''
                                                       }
                                                       ${
-                                                          receivable.dataValues
-                                                              .total -
-                                                              amount -
-                                                              receivable
-                                                                  .dataValues
-                                                                  .balance >
-                                                          0
-                                                              ? `<tr>
+                                                          settlements.length >
+                                                              1 &&
+                                                          `<tr>
                                                                           <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;color: #a00;">
                                                                               Already Paid
                                                                           </td>
                                                                           <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;color: #a00;">
-                                                                              $ ${(
-                                                                                  receivable
-                                                                                      .dataValues
-                                                                                      .total -
-                                                                                  amount -
-                                                                                  receivable
-                                                                                      .dataValues
-                                                                                      .balance
-                                                                              ).toFixed(
-                                                                                  2
-                                                                              )}
+                                                                              $ ${settlements
+                                                                                  .filter(
+                                                                                      (
+                                                                                          _,
+                                                                                          index
+                                                                                      ) =>
+                                                                                          index +
+                                                                                              1 <
+                                                                                          settlements.length
+                                                                                  )
+                                                                                  .reduce(
+                                                                                      (
+                                                                                          acc,
+                                                                                          curr
+                                                                                      ) => {
+                                                                                          return (
+                                                                                              acc +
+                                                                                              curr.amount
+                                                                                          )
+                                                                                      },
+                                                                                      0
+                                                                                  )
+                                                                                  .toFixed(
+                                                                                      2
+                                                                                  )}
                                                                           </td>
                                                       </tr>`
-                                                              : ''
                                                       }
                                                       <tr>
                                                           <td colspan="2" style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">

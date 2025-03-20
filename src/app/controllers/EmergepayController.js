@@ -110,6 +110,7 @@ export async function settlement(
         }
 
         const parcial =
+            receivable.dataValues.manual_discount !== 0 &&
             amountPaidBalance !== 0 &&
             amountPaidBalance < receivable.dataValues.balance
 
