@@ -8,6 +8,7 @@ import Receivable from '../../models/Receivable'
 import Textpaymenttransaction from '../../models/Textpaymenttransaction'
 import { mailer } from '../../../config/mailer'
 import Maillog from '../../models/Maillog'
+import MailLog from '../../../Mails/MailLog'
 
 export async function AfterDueDateMail({ receivable_id = null }) {
     try {
@@ -280,7 +281,7 @@ export async function AfterDueDateMail({ receivable_id = null }) {
         })
         await Maillog.create({
             receivable_id: receivable.id,
-            type: 'Friendly late payment reminder',
+            type: 'Overdue reminder',
             date: format(new Date(), 'yyyyMMdd'),
             time: format(new Date(), 'HH:mm:ss'),
             created_by: 2,
@@ -291,6 +292,12 @@ export async function AfterDueDateMail({ receivable_id = null }) {
         console.log(
             `❌ It wasnt possible to send the e-mail, errorCode: ${err.responseCode}`
         )
+        MailLog({
+            className: 'ReceivableController',
+            functionName: 'AfterDueDateMail',
+            req: null,
+            err,
+        })
         return false
     }
 }

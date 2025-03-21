@@ -5,56 +5,72 @@ import PaymentCriteria from '../../models/PaymentCriteria'
 import PaymentMethod from '../../models/PaymentMethod'
 import Receivable from '../../models/Receivable'
 import { mailer } from '../../../config/mailer'
+import Maillog from '../../models/Maillog'
+import MailLog from '../../../Mails/MailLog'
+import Settlement from '../../models/Settlement'
 
-export async function SettlementMail({ receivable_id = null }) {
-    let paymentInfoHTML = ''
-    const receivable = await Receivable.findByPk(receivable_id)
-    if (!receivable) {
-        return false
-    }
-    const amount = receivable.dataValues.total
-    const invoice_number = receivable.dataValues.invoice_number
-        .toString()
-        .padStart(6, '0')
-    const issuer = await Issuer.findByPk(receivable.dataValues.issuer_id)
-    if (!issuer) {
-        return false
-    }
-    const filial = await Filial.findByPk(receivable.dataValues.filial_id)
-    if (!filial) {
-        return false
-    }
-    const paymentCriteria = await PaymentCriteria.findByPk(
-        receivable.dataValues.paymentcriteria_id
-    )
-    if (!paymentCriteria) {
-        return false
-    }
-    const paymentMethod = await PaymentMethod.findByPk(
-        receivable.dataValues.paymentmethod_id
-    )
-    if (!paymentMethod) {
-        return false
-    }
+export async function SettlementMail({ receivable_id = null, amount = 0 }) {
+    try {
+        let paymentInfoHTML = ''
+        const receivable = await Receivable.findByPk(receivable_id)
+        if (!receivable) {
+            return false
+        }
+        if (amount === '0.00') {
+            console.log(1, { amount })
+            amount = 0
+        }
+        console.log(2, { amount })
+        const invoice_number = receivable.dataValues.invoice_number
+            .toString()
+            .padStart(6, '0')
+        const issuer = await Issuer.findByPk(receivable.dataValues.issuer_id)
+        if (!issuer) {
+            return false
+        }
+        const filial = await Filial.findByPk(receivable.dataValues.filial_id)
+        if (!filial) {
+            return false
+        }
+        const paymentCriteria = await PaymentCriteria.findByPk(
+            receivable.dataValues.paymentcriteria_id
+        )
+        if (!paymentCriteria) {
+            return false
+        }
+        const paymentMethod = await PaymentMethod.findByPk(
+            receivable.dataValues.paymentmethod_id
+        )
+        if (!paymentMethod) {
+            return false
+        }
 
-    paymentInfoHTML = `<tr>
+        const settlements = await Settlement.findAll({
+            where: {
+                receivable_id: receivable.id,
+                canceled_at: null,
+            },
+            order: [['created_at', 'ASC']],
+        })
+
+        paymentInfoHTML = `<tr>
         <td style="text-align: center;padding: 10px 0 30px;">
             <div style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Payment Status: Approved</div>
         </td>
     </tr>`
 
-    await mailer.sendMail({
-        from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
-        to:
-            process.env.NODE_ENV === 'production'
-                ? issuer.dataValues.email
-                : 'denis@pharosit.com.br',
-        bcc:
-            process.env.NODE_ENV === 'production'
-                ? 'it.admin@milaorlandousa.com;denis@pharosit.com.br'
-                : '',
-        subject: `MILA Plus - Payment Confirmation - Tuition Fee - ${issuer.dataValues.name}`,
-        html: `<!DOCTYPE html>
+        await mailer.sendMail({
+            from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+            to:
+                process.env.NODE_ENV === 'production'
+                    ? issuer.dataValues.email
+                    : 'denis@pharosit.com.br',
+            bcc:
+                process.env.NODE_ENV === 'production'
+                    ? 'it.admin@milaorlandousa.com;denis@pharosit.com.br'
+                    : '',
+            subject: `MILA Plus - Payment Confirmation - Tuition Fee - ${issuer.dataValues.name}`,
+            html: `<!DOCTYPE html>
                       <html lang="en">
                       <head>
                           <meta charset="UTF-8">
@@ -205,9 +221,50 @@ export async function SettlementMail({ receivable_id = null }) {
                                                       </tr>`
                                                               : ''
                                                       }
+                                                      ${
+                                                          settlements.length >
+                                                              1 &&
+                                                          `<tr>
+                                                                          <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;color: #a00;">
+                                                                              Already Paid
+                                                                          </td>
+                                                                          <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;color: #a00;">
+                                                                              $ ${settlements
+                                                                                  .filter(
+                                                                                      (
+                                                                                          _,
+                                                                                          index
+                                                                                      ) =>
+                                                                                          index +
+                                                                                              1 <
+                                                                                          settlements.length
+                                                                                  )
+                                                                                  .reduce(
+                                                                                      (
+                                                                                          acc,
+                                                                                          curr
+                                                                                      ) => {
+                                                                                          return (
+                                                                                              acc +
+                                                                                              curr.amount
+                                                                                          )
+                                                                                      },
+                                                                                      0
+                                                                                  )
+                                                                                  .toFixed(
+                                                                                      2
+                                                                                  )}
+                                                                          </td>
+                                                      </tr>`
+                                                      }
                                                       <tr>
                                                           <td colspan="2" style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                              Balance due <span style="margin-left: 10px;">$ ${amount.toFixed(
+                                                              Balance due <span style="margin-left: 10px;">$ ${(
+                                                                  receivable
+                                                                      .dataValues
+                                                                      .balance +
+                                                                  amount
+                                                              ).toFixed(
                                                                   2
                                                               )}</span>
                                                           </td>
@@ -240,8 +297,8 @@ export async function SettlementMail({ receivable_id = null }) {
                                                   ${
                                                       filial.dataValues.address
                                                   } ${
-            filial.dataValues.name
-        }, ${filial.dataValues.state} ${filial.dataValues.zipcode} US
+                filial.dataValues.name
+            }, ${filial.dataValues.state} ${filial.dataValues.zipcode} US
                                               </td>
                                           </tr>
                                       </table>
@@ -250,14 +307,26 @@ export async function SettlementMail({ receivable_id = null }) {
                           </table>
                       </body>
                       </html>`,
-    })
-    // await Maillog.create({
-    //     receivable_id: receivable.id,
-    //     type: 'Settlement',
-    //     date: format(new Date(), 'yyyyMMdd'),
-    //     time: format(new Date(), 'HH:mm:ss'),
-    //     created_by: 2,
-    //     created_at: new Date(),
-    // })
-    return true
+        })
+        await Maillog.create({
+            receivable_id: receivable.dataValues.id,
+            type: 'Payment Confirmation',
+            date: format(new Date(), 'yyyyMMdd'),
+            time: format(new Date(), 'HH:mm:ss'),
+            created_by: 2,
+            created_at: new Date(),
+        })
+        return true
+    } catch (err) {
+        console.log(
+            `❌ It wasnt possible to send the e-mail, errorCode: ${err.responseCode}`
+        )
+        MailLog({
+            className: 'ReceivableController',
+            functionName: 'SettlementMail',
+            req: null,
+            err,
+        })
+        return false
+    }
 }

@@ -46,6 +46,7 @@ import { BeforeDueDateMail } from '../views/mails/BeforeDueDateMail'
 import { OnDueDateMail } from '../views/mails/OnDueDateMail'
 import { SettlementMail } from '../views/mails/SettlementMail'
 import { AfterDueDateMail } from '../views/mails/AfterDueDateMail'
+import { FeeChargedMail } from '../views/mails/FeeChargedMail'
 
 const xl = require('excel4node')
 const fs = require('fs')
@@ -738,6 +739,12 @@ export async function calculateFee(receivable_id = null) {
             new Date(new Date().setHours(0, 0, 0, 0)),
             parseISO(receivable.dataValues.due_date)
         )
+        // console.log(
+        //     'daysPassed',
+        //     daysPassed,
+        //     new Date(new Date().setHours(0, 0, 0, 0)),
+        //     parseISO(receivable.dataValues.due_date)
+        // )
         let how_many_times = 0
 
         if (daysPassed < paymentCriteria.dataValues.fee_qt) {
@@ -745,22 +752,24 @@ export async function calculateFee(receivable_id = null) {
         }
 
         if (paymentCriteria.dataValues.fee_metric === 'Day') {
-            how_many_times = Math.round(
+            how_many_times = Math.floor(
                 daysPassed / paymentCriteria.dataValues.fee_qt
             )
         } else if (paymentCriteria.dataValues.fee_metric === 'Week') {
-            how_many_times = Math.round(
+            how_many_times = Math.floor(
                 (daysPassed / paymentCriteria.dataValues.fee_qt) * 7
             )
         } else if (paymentCriteria.dataValues.fee_metric === 'Month') {
-            how_many_times = Math.round(
+            how_many_times = Math.floor(
                 (daysPassed / paymentCriteria.dataValues.fee_qt) * 30
             )
         } else if (paymentCriteria.dataValues.fee_metric === 'Year') {
-            how_many_times = Math.round(
+            how_many_times = Math.floor(
                 (daysPassed / paymentCriteria.dataValues.fee_qt) * 365
             )
         }
+
+        // console.log('how many times:', how_many_times)
 
         let receivableTotalWithFees = receivable.dataValues.total
         let feesAmount = 0
@@ -794,6 +803,7 @@ export async function calculateFee(receivable_id = null) {
             }, 0)
 
         if (receivable.dataValues.fee.toFixed(2) === feesAmount.toFixed(2)) {
+            // console.log('Already calculated fees')
             return false
         }
 
@@ -821,7 +831,7 @@ export async function calculateFee(receivable_id = null) {
         await verifyAndCreateTextToPayTransaction(receivable.id)
         await verifyAndCancelParcelowPaymentLink(receivable.id)
 
-        return receivable
+        return true
     } catch (err) {
         const className = 'ReceivableController'
         const functionName = 'calculateFee'
@@ -847,18 +857,11 @@ export async function calculateFeesRecurrenceJob() {
                 await FeeChargedMail({
                     receivable_id: receivable.dataValues.id,
                 })
-                // await Maillog.create({
-                //     receivable_id: tuitionFee.dataValues.id,
-                //     type: 'Fee Adjustment',
-                //     date: format(new Date(), 'yyyyMMdd'),
-                //     time: format(new Date(), 'HH:mm:ss'),
-                //     created_by: 2,
-                // })
                 sent_number++
             }
         }
         console.log(
-            `✅ Late Receivables calculated successfully! sent_number: ${sent_number}`
+            `✅ Fee Charged calculated successfully! sent_number: ${sent_number}`
         )
     } catch (err) {
         MailLog({
@@ -1351,6 +1354,13 @@ class ReceivableController {
                         where: { canceled_at: null },
                         order: [['created_at', 'DESC']],
                     },
+                    {
+                        model: Maillog,
+                        as: 'maillogs',
+                        required: false,
+                        where: { canceled_at: null },
+                        order: [['created_at', 'DESC']],
+                    },
                 ],
             })
 
@@ -1648,8 +1658,13 @@ class ReceivableController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { receivables, prices, paymentmethod_id, settlement_date } =
-                req.body
+            const {
+                receivables,
+                prices,
+                paymentmethod_id,
+                settlement_date,
+                settlement_memo,
+            } = req.body
 
             let { total_amount } = req.body
 
@@ -1671,13 +1686,15 @@ class ReceivableController {
                         receivable.dataValues.balance - total_amount
                 }
 
+                let total_amount_with_discount = total_amount
+
                 if (prices.discounts && prices.discounts.length > 0) {
                     const discount = await FilialDiscountList.findByPk(
                         prices.discounts[0].filial_discount_list_id
                     )
 
                     if (discount) {
-                        total_amount = applyDiscounts({
+                        total_amount_with_discount = applyDiscounts({
                             applied_at: 'Settlement',
                             type: 'Financial',
                             studentDiscounts: [
@@ -1692,14 +1709,9 @@ class ReceivableController {
                     }
                 }
 
-                const thisDiscounts =
-                    receivable.dataValues.balance - total_amount
+                const thisDiscounts = total_amount - total_amount_with_discount
 
                 await receivable.update({
-                    balance: total_amount,
-                    total: (
-                        receivable.dataValues.total - thisDiscounts
-                    ).toFixed(2),
                     discount: (
                         receivable.dataValues.discount + thisDiscounts
                     ).toFixed(2),
@@ -1730,9 +1742,10 @@ class ReceivableController {
                     await settlement(
                         {
                             receivable_id: receivable.id,
-                            amountPaidBalance: total_amount,
+                            amountPaidBalance: total_amount_with_discount,
                             settlement_date,
                             paymentmethod_id,
+                            settlement_memo,
                         },
                         req
                     )
