@@ -275,7 +275,7 @@ export async function OnDueDateMail({ receivable_id = null }) {
         })
         await Maillog.create({
             receivable_id: receivable.id,
-            type: 'On due date reminder',
+            type: 'On due reminder',
             date: format(new Date(), 'yyyyMMdd'),
             time: format(new Date(), 'HH:mm:ss'),
             created_by: 2,

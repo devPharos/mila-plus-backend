@@ -1658,8 +1658,13 @@ class ReceivableController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { receivables, prices, paymentmethod_id, settlement_date } =
-                req.body
+            const {
+                receivables,
+                prices,
+                paymentmethod_id,
+                settlement_date,
+                settlement_memo,
+            } = req.body
 
             let { total_amount } = req.body
 
@@ -1740,6 +1745,7 @@ class ReceivableController {
                             amountPaidBalance: total_amount_with_discount,
                             settlement_date,
                             paymentmethod_id,
+                            settlement_memo,
                         },
                         req
                     )

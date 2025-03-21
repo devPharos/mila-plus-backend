@@ -281,7 +281,7 @@ export async function AfterDueDateMail({ receivable_id = null }) {
         })
         await Maillog.create({
             receivable_id: receivable.id,
-            type: 'Friendly late payment reminder',
+            type: 'Overdue reminder',
             date: format(new Date(), 'yyyyMMdd'),
             time: format(new Date(), 'HH:mm:ss'),
             created_by: 2,

@@ -84,6 +84,7 @@ export async function settlement(
         amountPaidBalance = 0,
         settlement_date = format(new Date(), 'yyyyMMdd'),
         paymentmethod_id = null,
+        settlement_memo = null,
     },
     req = null
 ) {
@@ -119,6 +120,7 @@ export async function settlement(
             amount: parcial ? amountPaidBalance : receivable.dataValues.balance,
             paymentmethod_id,
             settlement_date,
+            memo: settlement_memo,
             created_at: new Date(),
             created_by: 2,
         })

@@ -33,6 +33,10 @@ class Settlement extends Model {
                     type: Sequelize.STRING,
                     allowNull: true,
                 },
+                memo: {
+                    type: Sequelize.TEXT,
+                    allowNull: true,
+                },
                 created_at: {
                     type: Sequelize.DATE,
                     allowNull: false,

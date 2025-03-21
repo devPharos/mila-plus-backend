@@ -310,7 +310,7 @@ export async function SettlementMail({ receivable_id = null, amount = 0 }) {
         })
         await Maillog.create({
             receivable_id: receivable.dataValues.id,
-            type: 'Settlement',
+            type: 'Payment Confirmation',
             date: format(new Date(), 'yyyyMMdd'),
             time: format(new Date(), 'HH:mm:ss'),
             created_by: 2,
