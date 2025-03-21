@@ -46,6 +46,7 @@ import { BeforeDueDateMail } from '../views/mails/BeforeDueDateMail'
 import { OnDueDateMail } from '../views/mails/OnDueDateMail'
 import { SettlementMail } from '../views/mails/SettlementMail'
 import { AfterDueDateMail } from '../views/mails/AfterDueDateMail'
+import { FeeChargedMail } from '../views/mails/FeeChargedMail'
 
 const xl = require('excel4node')
 const fs = require('fs')
@@ -738,6 +739,12 @@ export async function calculateFee(receivable_id = null) {
             new Date(new Date().setHours(0, 0, 0, 0)),
             parseISO(receivable.dataValues.due_date)
         )
+        // console.log(
+        //     'daysPassed',
+        //     daysPassed,
+        //     new Date(new Date().setHours(0, 0, 0, 0)),
+        //     parseISO(receivable.dataValues.due_date)
+        // )
         let how_many_times = 0
 
         if (daysPassed < paymentCriteria.dataValues.fee_qt) {
@@ -745,22 +752,24 @@ export async function calculateFee(receivable_id = null) {
         }
 
         if (paymentCriteria.dataValues.fee_metric === 'Day') {
-            how_many_times = Math.round(
+            how_many_times = Math.floor(
                 daysPassed / paymentCriteria.dataValues.fee_qt
             )
         } else if (paymentCriteria.dataValues.fee_metric === 'Week') {
-            how_many_times = Math.round(
+            how_many_times = Math.floor(
                 (daysPassed / paymentCriteria.dataValues.fee_qt) * 7
             )
         } else if (paymentCriteria.dataValues.fee_metric === 'Month') {
-            how_many_times = Math.round(
+            how_many_times = Math.floor(
                 (daysPassed / paymentCriteria.dataValues.fee_qt) * 30
             )
         } else if (paymentCriteria.dataValues.fee_metric === 'Year') {
-            how_many_times = Math.round(
+            how_many_times = Math.floor(
                 (daysPassed / paymentCriteria.dataValues.fee_qt) * 365
             )
         }
+
+        // console.log('how many times:', how_many_times)
 
         let receivableTotalWithFees = receivable.dataValues.total
         let feesAmount = 0
@@ -794,6 +803,7 @@ export async function calculateFee(receivable_id = null) {
             }, 0)
 
         if (receivable.dataValues.fee.toFixed(2) === feesAmount.toFixed(2)) {
+            // console.log('Already calculated fees')
             return false
         }
 
@@ -821,7 +831,7 @@ export async function calculateFee(receivable_id = null) {
         await verifyAndCreateTextToPayTransaction(receivable.id)
         await verifyAndCancelParcelowPaymentLink(receivable.id)
 
-        return receivable
+        return true
     } catch (err) {
         const className = 'ReceivableController'
         const functionName = 'calculateFee'
@@ -847,19 +857,11 @@ export async function calculateFeesRecurrenceJob() {
                 await FeeChargedMail({
                     receivable_id: receivable.dataValues.id,
                 })
-                // await Maillog.create({
-                //     receivable_id: receivable.dataValues.id,
-                //     type: 'Settlement',
-                //     date: format(new Date(), 'yyyyMMdd'),
-                //     time: format(new Date(), 'HH:mm:ss'),
-                //     created_by: 2,
-                //     created_at: new Date(),
-                // })
                 sent_number++
             }
         }
         console.log(
-            `✅ Late Receivables calculated successfully! sent_number: ${sent_number}`
+            `✅ Fee Charged calculated successfully! sent_number: ${sent_number}`
         )
     } catch (err) {
         MailLog({
