@@ -1295,6 +1295,7 @@ class ReceivableController {
             const fields = [
                 'status',
                 ['filial', 'name'],
+                ['issuer', 'id'],
                 ['issuer', 'name'],
                 'invoice_number',
                 'issuer_id',
