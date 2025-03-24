@@ -679,12 +679,12 @@ export async function sendAutopayRecurrenceJob() {
                         uniqueTransId: tokenizedTransaction.dataValues.id,
                         externalTransactionId: receivable.id,
                         amount: amount.toFixed(2),
-                        billingName:
-                            tokenizedTransaction.dataValues.billing_name,
-                        billingAddress: issuerExists.dataValues.address,
-                        billingPostalCode: issuerExists.dataValues.zip,
-                        promptTip: false,
-                        pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
+                        // billingName:
+                        //     tokenizedTransaction.dataValues.billing_name,
+                        // billingAddress: issuerExists.dataValues.address,
+                        // billingPostalCode: issuerExists.dataValues.zip,
+                        // promptTip: false,
+                        // pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
                         transactionReference: 'I' + invoice_number,
                     })
                     .then(async (response) => {
