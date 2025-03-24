@@ -1490,7 +1490,10 @@ class ReceivableController {
                         where: {
                             external_transaction_id: receivableExists.id,
                             canceled_at: null,
+                            result_message: 'Approved',
+                            result_status: true,
                         },
+                        order: [['created_at', 'DESC']],
                     }
                 )
                 if (!emergepaytransaction) {
