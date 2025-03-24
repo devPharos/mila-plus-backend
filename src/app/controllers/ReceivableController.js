@@ -1203,23 +1203,23 @@ class ReceivableController {
                 searchOrder.push([orderBy, orderASC])
             }
 
-            const searches = search
-                ? /[a-zA-Z]/.test(search)
-                    ? null
-                    : {
-                          [Op.or]: [
-                              {
-                                  invoice_number: {
-                                      [Op.or]: [
-                                          {
-                                              [Op.gte]: search,
-                                          },
-                                      ],
-                                  },
-                              },
-                          ],
-                      }
-                : null
+            // const searches = search
+            //     ? /[a-zA-Z]/.test(search)
+            //         ? null
+            //         : {
+            //               [Op.or]: [
+            //                   {
+            //                       invoice_number: {
+            //                           [Op.or]: [
+            //                               {
+            //                                   [Op.gte]: search,
+            //                               },
+            //                           ],
+            //                       },
+            //                   },
+            //               ],
+            //           }
+            //     : null
 
             const receivables = await Receivable.findAll({
                 include: [
@@ -1276,10 +1276,7 @@ class ReceivableController {
                                     : 0,
                         },
                     ],
-                    ...searches,
                 },
-                limit: 50,
-                offset: 0,
                 attributes: [
                     'id',
                     'invoice_number',
@@ -1295,20 +1292,20 @@ class ReceivableController {
                 order: searchOrder,
             })
 
-            // const fields = [
-            //     'status',
-            //     ['filial', 'name'],
-            //     ['issuer', 'name'],
-            //     'invoice_number',
-            //     'issuer_id',
-            //     'amount',
-            // ]
-            // Promise.all([searchPromise(search, receivables, fields)]).then(
-            // (data) => {
-            // return res.json(data[0])
-            //     }
-            // )
-            return res.json(receivables)
+            const fields = [
+                'status',
+                ['filial', 'name'],
+                ['issuer', 'name'],
+                'invoice_number',
+                'issuer_id',
+                'amount',
+            ]
+            Promise.all([searchPromise(search, receivables, fields)]).then(
+                (data) => {
+                    return res.json(data[0])
+                }
+            )
+            // return res.json(receivables)
         } catch (err) {
             const className = 'ReceivableController'
             const functionName = 'index'
