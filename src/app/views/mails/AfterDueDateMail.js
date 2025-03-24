@@ -10,7 +10,10 @@ import { mailer } from '../../../config/mailer'
 import Maillog from '../../models/Maillog'
 import MailLog from '../../../Mails/MailLog'
 
-export async function AfterDueDateMail({ receivable_id = null }) {
+export async function AfterDueDateMail({
+    receivable_id = null,
+    manual = false,
+}) {
     try {
         let paymentInfoHTML = ''
         const receivable = await Receivable.findByPk(receivable_id)
@@ -72,7 +75,9 @@ export async function AfterDueDateMail({ receivable_id = null }) {
                 process.env.NODE_ENV === 'production'
                     ? 'it.admin@milaorlandousa.com;denis@pharosit.com.br'
                     : '',
-            subject: `MILA Plus - Overdue Reminder - Tuition Fee - ${issuer.dataValues.name}`,
+            subject: `MILA Plus - Overdue Reminder ${
+                manual ? ' - Resend' : ''
+            } - Tuition Fee - ${issuer.dataValues.name}`,
             html: `<!DOCTYPE html>
                       <html lang="en">
                       <head>

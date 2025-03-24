@@ -28,7 +28,7 @@ import { verifyAndCancelTextToPayTransaction } from './EmergepayController'
 
 export async function generateRecurrenceReceivables(recurrence) {
     try {
-        const issuer = await Issuer.findByPk(recurrence.issuer_id)
+        const issuer = await Issuer.findByPk(recurrence.dataValues.issuer_id)
         if (!issuer) {
             return null
         }
@@ -87,9 +87,7 @@ export async function generateRecurrenceReceivables(recurrence) {
                 issuer_id: issuer.id,
                 type_detail: 'Tuition fee',
                 canceled_at: null,
-                due_date: {
-                    [Op.gte]: format(new Date(), 'yyyyMMdd'),
-                },
+                is_recurrence: true,
             },
             include: [
                 {
@@ -101,24 +99,33 @@ export async function generateRecurrenceReceivables(recurrence) {
                     },
                 },
             ],
+            order: [
+                ['due_date', 'ASC'],
+                ['created_at', 'ASC'],
+            ],
         })
 
-        receivables
-            .filter((receivable) => receivable.status === 'Pending')
-            .map((receivable) => {
-                receivable.update({
+        for (const receivable of receivables) {
+            if (
+                receivable.dataValues.status === 'Pending' &&
+                receivable.dataValues.fee === 0
+            ) {
+                await receivable.update({
                     canceled_at: new Date(),
                     canceled_by: recurrence.dataValues.created_by,
                 })
-            })
+            }
+        }
 
         let lastPaidReceivable = null
         const paid = receivables.filter(
-            (receivable) => receivable.status === 'Paid'
+            (receivable) =>
+                receivable.dataValues.status === 'Paid' ||
+                receivable.dataValues.status === 'Parcial Paid'
         )
 
         if (paid.length > 0) {
-            lastPaidReceivable = paid.sort((a, b) => a.due_date - b.due_date)[0]
+            lastPaidReceivable = paid[paid.length - 1]
         }
 
         const { recurring_metric, recurring_qt } = paymentCriteria.dataValues
@@ -127,7 +134,15 @@ export async function generateRecurrenceReceivables(recurrence) {
             ? parseISO(lastPaidReceivable.dataValues.due_date)
             : parseISO(recurrence.dataValues.first_due_date)
 
-        for (let i = paid.length; i < 12 + paid.length; i++) {
+        let totalPeriods = 11
+        let initialPeriod = 0
+
+        if (paid.length > 0) {
+            totalPeriods = 12
+            initialPeriod = 1
+        }
+
+        for (let i = initialPeriod; i <= totalPeriods; i++) {
             let entry_date = null
             let due_date = null
             let qt = i * recurring_qt
@@ -157,6 +172,7 @@ export async function generateRecurrenceReceivables(recurrence) {
                 )
                 due_date = format(addYears(calc_date, qt), 'yyyyMMdd')
             }
+            console.log('due_date', due_date)
 
             let totalAmount = filialPriceList.dataValues.tuition
 
