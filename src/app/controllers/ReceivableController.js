@@ -616,9 +616,7 @@ export async function sendAutopayRecurrenceJob() {
             receivables.length
         )
 
-        let sent_number = 0
-
-        receivables.map(async (receivable) => {
+        for (const receivable of receivables) {
             const issuerExists = await Issuer.findByPk(
                 receivable.dataValues.issuer_id
             )
@@ -665,7 +663,9 @@ export async function sendAutopayRecurrenceJob() {
                     where: {
                         external_transaction_id: firstReceivable.id,
                         canceled_at: null,
+                        result_status: true,
                     },
+                    order: [['created_at', 'DESC']],
                 })
             }
 
@@ -674,7 +674,7 @@ export async function sendAutopayRecurrenceJob() {
                     ?.dataValues?.is_autopay &&
                 tokenizedTransaction
             ) {
-                emergepay
+                await emergepay
                     .tokenizedPaymentTransaction({
                         uniqueTransId: tokenizedTransaction.dataValues.id,
                         externalTransactionId: receivable.id,
@@ -699,7 +699,7 @@ export async function sendAutopayRecurrenceJob() {
                         )
                     })
             }
-        })
+        }
     } catch (err) {
         MailLog({
             className: 'ReceivableController',
@@ -1202,6 +1202,25 @@ class ReceivableController {
             } else {
                 searchOrder.push([orderBy, orderASC])
             }
+
+            const searches = search
+                ? /[a-zA-Z]/.test(search)
+                    ? null
+                    : {
+                          [Op.or]: [
+                              {
+                                  invoice_number: {
+                                      [Op.or]: [
+                                          {
+                                              [Op.gte]: search,
+                                          },
+                                      ],
+                                  },
+                              },
+                          ],
+                      }
+                : null
+
             const receivables = await Receivable.findAll({
                 include: [
                     {
@@ -1209,31 +1228,33 @@ class ReceivableController {
                         as: 'paymentMethod',
                         required: false,
                         where: { canceled_at: null },
+                        attributes: ['id', 'description', 'platform'],
                     },
                     {
                         model: ChartOfAccount,
                         as: 'chartOfAccount',
                         required: false,
                         where: { canceled_at: null },
+                        attributes: ['id', 'name'],
                     },
                     {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
                         required: false,
-                        // attributes: ['id', 'description'],
+                        attributes: ['id', 'description'],
                         where: { canceled_at: null },
                     },
                     {
                         model: Filial,
                         as: 'filial',
                         required: false,
-                        // attributes: ['id', 'name'],
+                        attributes: ['id', 'name'],
                         where: { canceled_at: null },
                     },
                     {
                         model: Issuer,
                         as: 'issuer',
-                        // attributes: ['id', 'name'],
+                        attributes: ['id', 'name'],
                         required: false,
                         where: {
                             canceled_at: null,
@@ -1255,23 +1276,39 @@ class ReceivableController {
                                     : 0,
                         },
                     ],
+                    ...searches,
                 },
+                limit: 50,
+                offset: 0,
+                attributes: [
+                    'id',
+                    'invoice_number',
+                    'status',
+                    'amount',
+                    'fee',
+                    'discount',
+                    'total',
+                    'balance',
+                    'due_date',
+                    'entry_date',
+                ],
                 order: searchOrder,
             })
 
-            const fields = [
-                'status',
-                ['filial', 'name'],
-                ['issuer', 'name'],
-                'invoice_number',
-                'issuer_id',
-                'amount',
-            ]
-            Promise.all([searchPromise(search, receivables, fields)]).then(
-                (data) => {
-                    return res.json(data[0])
-                }
-            )
+            // const fields = [
+            //     'status',
+            //     ['filial', 'name'],
+            //     ['issuer', 'name'],
+            //     'invoice_number',
+            //     'issuer_id',
+            //     'amount',
+            // ]
+            // Promise.all([searchPromise(search, receivables, fields)]).then(
+            // (data) => {
+            // return res.json(data[0])
+            //     }
+            // )
+            return res.json(receivables)
         } catch (err) {
             const className = 'ReceivableController'
             const functionName = 'index'
