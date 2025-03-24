@@ -79,7 +79,7 @@ class App {
         schedule.scheduleJob('0 0 5 * * *', calculateFeesRecurrenceJob)
 
         sendAutopayRecurrenceJob()
-        calculateFeesRecurrenceJob()
+        // calculateFeesRecurrenceJob()
 
         setTimeout(() => {
             console.log('✅ Schedule jobs started!')

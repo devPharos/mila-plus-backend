@@ -663,7 +663,7 @@ export async function sendAutopayRecurrenceJob() {
                     where: {
                         external_transaction_id: firstReceivable.id,
                         canceled_at: null,
-                        result_status: true,
+                        result_status: 'true',
                     },
                     order: [['created_at', 'DESC']],
                 })
@@ -1528,7 +1528,7 @@ class ReceivableController {
                             external_transaction_id: receivableExists.id,
                             canceled_at: null,
                             result_message: 'Approved',
-                            result_status: true,
+                            result_status: 'true',
                         },
                         order: [['created_at', 'DESC']],
                     }
