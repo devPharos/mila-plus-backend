@@ -640,7 +640,7 @@ export async function sendAutopayRecurrenceJob() {
                 })
             }
 
-            let amount = tuitionFee.dataValues.total
+            let amount = tuitionFee.dataValues.balance
             const invoice_number = tuitionFee.dataValues.invoice_number
                 .toString()
                 .padStart(6, '0')
@@ -1222,14 +1222,11 @@ class ReceivableController {
                     searches = {
                         [Op.or]: [
                             {
-                                issuer_id: {
-                                    [Op.eq]: search,
-                                },
+                                issuer_id: search,
                             },
                         ],
                     }
-                }
-                if (search.split('/').length === 3) {
+                } else if (search.split('/').length === 3) {
                     const date = search.split('/')
                     searches = {
                         [Op.or]: [
