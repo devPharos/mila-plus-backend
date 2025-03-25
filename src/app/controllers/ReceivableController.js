@@ -569,8 +569,8 @@ export async function sendAfterDueDateInvoices() {
 
 export async function sendAutopayRecurrenceJob() {
     try {
-        const days_before = 0
-        const date = addDays(
+        const days_before = 1
+        const date = subDays(
             new Date(new Date().setHours(0, 0, 0, 0)),
             days_before
         )
