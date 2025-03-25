@@ -274,7 +274,7 @@ class DataSyncController {
                         const receivable = await Receivable.findOne({
                             where: {
                                 invoice_number: parseInt(
-                                    substring(invoice_number, 1)
+                                    invoice_number.substring(1)
                                 ),
                                 canceled_at: null,
                             },
