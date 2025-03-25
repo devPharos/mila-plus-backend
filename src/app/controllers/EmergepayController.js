@@ -271,6 +271,86 @@ export async function verifyAndCancelTextToPayTransaction(
     }
 }
 
+export async function adjustPaidTransactions() {
+    try {
+        const accountCardType = 'MC'
+        const accountEntryMethod = 'Keyed'
+        const accountExpiryDate = '0729'
+        const amount = '489'
+        const amountBalance = '0'
+        const amountProcessed = '489'
+        const amountTaxed = '0'
+        const amountTipped = '0'
+        const approvalNumberResult = '174056'
+        const avsResponseCode = 'NA'
+        const avsResponseText = 'Not applicable'
+        const batchNumber = '0'
+        const billingName = ''
+        const cashier = ''
+        const cvvResponseCode = 'M'
+        const cvvResponseText = 'Match'
+        const externalTransactionId = 'b4107fe8-b03b-47b5-a098-538f49156f2e'
+        const isPartialApproval = false
+        const maskedAccount = '****7742'
+        const resultMessage = 'Approved'
+        const resultStatus = 'true'
+        const transactionReference = 'I001539'
+        const transactionType = 'CreditSale'
+        const uniqueTransId =
+            'dc8cb18e7cae477695f4718282218334-7c42f4d2a3e44ffba0d43aafb1fddac7'
+
+        await Emergepaytransaction.create({
+            account_card_type: accountCardType,
+            account_entry_method: accountEntryMethod,
+            account_expiry_date: accountExpiryDate,
+            amount: parseFloat(amount),
+            amount_balance: parseFloat(amountBalance || 0),
+            amount_processed: parseFloat(amountProcessed || 0),
+            amount_taxed: parseFloat(amountTaxed || 0),
+            amount_tipped: parseFloat(amountTipped || 0),
+            approval_number_result: approvalNumberResult,
+            avs_response_code: avsResponseCode,
+            avs_response_text: avsResponseText,
+            batch_number: batchNumber,
+            billing_name: billingName,
+            cashier: cashier,
+            cvv_response_code: cvvResponseCode,
+            cvv_response_text: cvvResponseText,
+            external_transaction_id: externalTransactionId,
+            is_partial_approval: isPartialApproval,
+            masked_account: maskedAccount,
+            result_message: resultMessage,
+            result_status: resultStatus,
+            transaction_reference: transactionReference,
+            transaction_type: transactionType,
+            unique_trans_id: uniqueTransId,
+            created_at: new Date(),
+            created_by: 2,
+        })
+        const receivable = await Receivable.findByPk(externalTransactionId)
+        if (receivable && resultMessage === 'Approved') {
+            const amountPaidBalance = parseFloat(amountProcessed)
+            const paymentMethod = await PaymentMethod.findOne({
+                where: {
+                    platform: 'Gravity',
+                    canceled_at: null,
+                },
+            })
+            await settlement(
+                {
+                    receivable_id: receivable.id,
+                    amountPaidBalance,
+                    settlement_date: format(new Date(), 'yyyyMMdd'),
+                    paymentmethod_id: paymentMethod.id,
+                },
+                req
+            )
+        }
+    } catch (err) {
+        console.log(err)
+    }
+}
+
 class EmergepayController {
     async simpleForm(req, res) {
         const { receivable_id, amount } = req.body

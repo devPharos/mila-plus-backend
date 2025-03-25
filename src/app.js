@@ -12,12 +12,7 @@ import {
     sendBeforeDueDateInvoices,
     sendOnDueDateInvoices,
 } from './app/controllers/ReceivableController.js'
-import { emergepay } from './config/emergepay.js'
-import Textpaymenttransaction from './app/models/Textpaymenttransaction.js'
-import Receivable from './app/models/Receivable.js'
-import { Op } from 'sequelize'
-import { differenceInDays, format, parseISO, subDays } from 'date-fns'
-import { verifyAndCancelTextToPayTransaction } from './app/controllers/EmergepayController.js'
+import { adjustPaidTransactions } from './app/controllers/EmergepayController.js'
 
 class App {
     constructor() {
@@ -80,6 +75,8 @@ class App {
 
         // sendAutopayRecurrenceJob()
         // calculateFeesRecurrenceJob()
+
+        adjustPaidTransactions()
 
         setTimeout(() => {
             console.log('✅ Schedule jobs started!')
