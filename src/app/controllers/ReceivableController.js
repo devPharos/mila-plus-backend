@@ -680,7 +680,8 @@ export async function sendAutopayRecurrenceJob() {
             ) {
                 await emergepay
                     .tokenizedPaymentTransaction({
-                        uniqueTransId: tokenizedTransaction.dataValues.id,
+                        uniqueTransId:
+                            tokenizedTransaction.dataValues.unique_trans_id,
                         externalTransactionId: receivable.id,
                         amount: amount.toFixed(2),
                         billingName:
