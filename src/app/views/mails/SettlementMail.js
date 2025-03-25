@@ -17,10 +17,8 @@ export async function SettlementMail({ receivable_id = null, amount = 0 }) {
             return false
         }
         if (amount === '0.00') {
-            console.log(1, { amount })
             amount = 0
         }
-        console.log(2, { amount })
         const invoice_number = receivable.dataValues.invoice_number
             .toString()
             .padStart(6, '0')
