@@ -570,7 +570,10 @@ export async function sendAfterDueDateInvoices() {
 export async function sendAutopayRecurrenceJob() {
     try {
         const days_before = 0
-        const date = addDays(new Date(), days_before)
+        const date = addDays(
+            new Date(new Date().setHours(0, 0, 0, 0)),
+            days_before
+        )
         const searchDate =
             date.getFullYear() +
             (date.getMonth() + 1).toString().padStart(2, '0') +
