@@ -261,15 +261,17 @@ class DataSyncController {
                 })
             } else if (importType === 'EmergepayTransactions') {
                 fs.readFile(file.path, 'utf8', async (err, data) => {
-                    const lines = data.split('\n')
+                    // console.log(data.replaceAll('"', ''))
+                    const lines = data.replaceAll('"', '').split('\n')
                     const head = lines[0].split(',')
 
-                    for (let line of lines) {
-                        const val = unescape(encodeURIComponent(line)).split(
-                            ','
-                        )
+                    // console.log(head)
+                    // console.log(lines)
 
-                        const invoice_number = val[head.indexOf('Reference')]
+                    for (let line of lines.filter((_, index) => index !== 0)) {
+                        const values = line.split(',')
+
+                        const invoice_number = values[head.indexOf('Reference')]
 
                         const receivable = await Receivable.findOne({
                             where: {
@@ -280,16 +282,21 @@ class DataSyncController {
                             },
                         })
 
-                        const accountCardType = val[head.indexOf('Card Type')]
+                        if (!receivable) {
+                            continue
+                        }
+
+                        const accountCardType =
+                            values[head.indexOf('Card Type')]
                         const accountEntryMethod = 'Keyed'
                         const accountExpiryDate = '1230'
-                        const amount = val[head.indexOf('Sale Amount')]
+                        const amount = values[head.indexOf('Sale Amount')]
                         const amountBalance = '0'
-                        const amountProcessed = val[head.indexOf('Total')]
+                        const amountProcessed = values[head.indexOf('Total')]
                         const amountTaxed = '0'
                         const amountTipped = '0'
                         const approvalNumberResult =
-                            val[head.indexOf('Approval')]
+                            values[head.indexOf('Approval')]
                         const avsResponseCode = 'NA'
                         const avsResponseText = 'Not applicable'
                         const batchNumber = '0'
@@ -299,14 +306,14 @@ class DataSyncController {
                         const cvvResponseText = 'Match'
                         const externalTransactionId = receivable.id
                         const isPartialApproval = false
-                        const maskedAccount = val[head.indexOf('Card')]
+                        const maskedAccount = values[head.indexOf('Card')]
                         const resultMessage = 'Approved'
                         const resultStatus = 'true'
                         const transactionReference =
-                            val[head.indexOf('Reference')]
+                            values[head.indexOf('Reference')]
                         const transactionType = 'CreditSale'
                         const uniqueTransId =
-                            val[head.indexOf('Transaction ID')]
+                            values[head.indexOf('Transaction ID')]
 
                         const transactionExists =
                             await Emergepaytransaction.findOne({
