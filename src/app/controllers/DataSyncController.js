@@ -308,6 +308,18 @@ class DataSyncController {
                         const uniqueTransId =
                             val[head.indexOf('Transaction ID')]
 
+                        const transactionExists =
+                            await Emergepaytransaction.findOne({
+                                where: {
+                                    unique_trans_id: uniqueTransId,
+                                    canceled_at: null,
+                                },
+                            })
+
+                        if (transactionExists) {
+                            continue
+                        }
+
                         await Emergepaytransaction.create({
                             account_card_type: accountCardType,
                             account_entry_method: accountEntryMethod,
