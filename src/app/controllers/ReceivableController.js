@@ -767,18 +767,12 @@ export async function sendAutopayRecurrenceJob() {
                                     canceled_at: null,
                                 },
                             })
-                            await settlement(
-                                {
-                                    receivable_id: receivable.id,
-                                    amountPaidBalance,
-                                    settlement_date: format(
-                                        new Date(),
-                                        'yyyyMMdd'
-                                    ),
-                                    paymentmethod_id: paymentMethod.id,
-                                },
-                                req
-                            )
+                            await settlement({
+                                receivable_id: receivable.id,
+                                amountPaidBalance,
+                                settlement_date: format(new Date(), 'yyyyMMdd'),
+                                paymentmethod_id: paymentMethod.id,
+                            })
                         }
                     })
                     .catch((err) => {
