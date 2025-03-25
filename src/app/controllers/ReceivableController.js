@@ -699,6 +699,9 @@ export async function sendAutopayRecurrenceJob() {
                             }`
                         )
                     })
+                    .catch((err) => {
+                        console.log(err)
+                    })
             }
         }
     } catch (err) {
@@ -2730,6 +2733,10 @@ class ReceivableController {
                     error: 'Receivable does not exist.',
                 })
             }
+
+            await verifyAndCancelTextToPayTransaction(receivable.id)
+            await verifyAndCreateTextToPayTransaction(receivable.id)
+            await verifyAndCancelParcelowPaymentLink(receivable.id)
 
             if (
                 receivable.dataValues.due_date > format(new Date(), 'yyyyMMdd')

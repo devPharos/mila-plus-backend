@@ -172,7 +172,6 @@ export async function generateRecurrenceReceivables(recurrence) {
                 )
                 due_date = format(addYears(calc_date, qt), 'yyyyMMdd')
             }
-            console.log('due_date', due_date)
 
             let totalAmount = filialPriceList.dataValues.tuition
 
@@ -485,12 +484,6 @@ class RecurrenceController {
                     .status(400)
                     .json({ error: 'Recurrence does not exist.' })
             }
-            // Mastercard	MC
-            // Diners Club	DN
-            // Visa	VS
-            // JCB	JC
-            // American Express	AX
-            // Discover	DC
 
             let cardType = ''
             if (accountCardType === 'AX') {
@@ -509,7 +502,6 @@ class RecurrenceController {
 
             await recurrence.update(
                 {
-                    is_autopay: true,
                     card_number: maskedAccount,
                     card_expiration_date:
                         accountExpiryDate.substring(0, 2) +
