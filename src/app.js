@@ -78,7 +78,7 @@ class App {
         schedule.scheduleJob(`0 45 4 * * *`, sendAfterDueDateInvoices)
         schedule.scheduleJob('0 0 5 * * *', calculateFeesRecurrenceJob)
 
-        sendAutopayRecurrenceJob()
+        // sendAutopayRecurrenceJob()
         // calculateFeesRecurrenceJob()
 
         setTimeout(() => {
