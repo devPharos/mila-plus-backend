@@ -222,9 +222,8 @@ export async function SettlementMail({ receivable_id = null, amount = 0 }) {
                                                               : ''
                                                       }
                                                       ${
-                                                          settlements.length >
-                                                              1 &&
-                                                          `<tr>
+                                                          settlements.length > 1
+                                                              ? `<tr>
                                                                           <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;color: #a00;">
                                                                               Already Paid
                                                                           </td>
@@ -256,6 +255,7 @@ export async function SettlementMail({ receivable_id = null, amount = 0 }) {
                                                                                   )}
                                                                           </td>
                                                       </tr>`
+                                                              : ``
                                                       }
                                                       <tr>
                                                           <td colspan="2" style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">

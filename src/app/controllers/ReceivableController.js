@@ -47,6 +47,7 @@ import { OnDueDateMail } from '../views/mails/OnDueDateMail'
 import { SettlementMail } from '../views/mails/SettlementMail'
 import { AfterDueDateMail } from '../views/mails/AfterDueDateMail'
 import { FeeChargedMail } from '../views/mails/FeeChargedMail'
+import { generateRecurrenceReceivables } from './RecurrenceController'
 
 const xl = require('excel4node')
 const fs = require('fs')
@@ -639,7 +640,7 @@ export async function sendAutopayRecurrenceJob() {
                 })
             }
 
-            let amount = tuitionFee.dataValues.total
+            let amount = tuitionFee.dataValues.balance
             const invoice_number = tuitionFee.dataValues.invoice_number
                 .toString()
                 .padStart(6, '0')
@@ -679,12 +680,10 @@ export async function sendAutopayRecurrenceJob() {
                         uniqueTransId: tokenizedTransaction.dataValues.id,
                         externalTransactionId: receivable.id,
                         amount: amount.toFixed(2),
-                        // billingName:
-                        //     tokenizedTransaction.dataValues.billing_name,
-                        // billingAddress: issuerExists.dataValues.address,
-                        // billingPostalCode: issuerExists.dataValues.zip,
-                        // promptTip: false,
-                        // pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
+                        billingName:
+                            tokenizedTransaction.dataValues.billing_name,
+                        billingAddress: issuerExists.dataValues.address,
+                        billingPostalCode: issuerExists.dataValues.zip,
                         transactionReference: 'I' + invoice_number,
                     })
                     .then(async (response) => {
@@ -697,6 +696,9 @@ export async function sendAutopayRecurrenceJob() {
                                 response.data.resultMessage
                             }`
                         )
+                    })
+                    .catch((err) => {
+                        console.log(err)
                     })
             }
         }
@@ -1184,6 +1186,17 @@ export async function TuitionMail({
     }
 }
 
+function isUUIDv4(str) {
+    const uuidv4Regex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    return uuidv4Regex.test(str)
+}
+
+function canBeFloat(str) {
+    // Aceita formatos como: "123", "-123.45", "0.123", ".123", "-.123"
+    return /^[-+]?(?:\d*\.\d+|\d+\.?\d*)$/.test(str.trim())
+}
+
 class ReceivableController {
     async index(req, res) {
         try {
@@ -1203,25 +1216,83 @@ class ReceivableController {
                 searchOrder.push([orderBy, orderASC])
             }
 
-            // const searches = search
-            //     ? /[a-zA-Z]/.test(search)
-            //         ? null
-            //         : {
-            //               [Op.or]: [
-            //                   {
-            //                       invoice_number: {
-            //                           [Op.or]: [
-            //                               {
-            //                                   [Op.gte]: search,
-            //                               },
-            //                           ],
-            //                       },
-            //                   },
-            //               ],
-            //           }
-            //     : null
+            // Contém letras
+            let searches = null
+            if (search) {
+                if (isUUIDv4(search)) {
+                    searches = {
+                        [Op.or]: [
+                            {
+                                issuer_id: search,
+                            },
+                        ],
+                    }
+                } else if (search.split('/').length === 3) {
+                    const date = search.split('/')
+                    searches = {
+                        [Op.or]: [
+                            {
+                                due_date: date[2] + date[0] + date[1],
+                            },
+                        ],
+                    }
+                } else if (
+                    search.split('/').length === 2 &&
+                    search.length === 5
+                ) {
+                    const date = search.split('/')
+                    searches = {
+                        [Op.or]: [
+                            {
+                                due_date: {
+                                    [Op.like]: `%${date[0] + date[1]}`,
+                                },
+                            },
+                        ],
+                    }
+                } else if (/[^0-9]/.test(search) && !canBeFloat(search)) {
+                    searches = {
+                        [Op.or]: [
+                            {
+                                memo: {
+                                    [Op.iLike]: `%${search.toUpperCase()}%`,
+                                },
+                            },
+                        ],
+                    }
+                } else {
+                    searches = {
+                        [Op.or]: [
+                            {
+                                invoice_number: {
+                                    [Op.or]: [
+                                        {
+                                            [Op.eq]: parseInt(search),
+                                        },
+                                    ],
+                                },
+                            },
+                            {
+                                amount: {
+                                    [Op.eq]: parseFloat(search),
+                                },
+                            },
+                            {
+                                total: {
+                                    [Op.eq]: parseFloat(search),
+                                },
+                            },
+                            {
+                                balance: {
+                                    [Op.eq]: parseFloat(search),
+                                },
+                            },
+                        ],
+                    }
+                }
+            }
 
-            const receivables = await Receivable.findAll({
+            const { count, rows } = await Receivable.findAndCountAll({
                 include: [
                     {
                         model: PaymentMethod,
@@ -1259,6 +1330,17 @@ class ReceivableController {
                         where: {
                             canceled_at: null,
                         },
+                        include: [
+                            {
+                                model: Recurrence,
+                                as: 'issuer_x_recurrence',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                                attributes: ['id', 'is_autopay'],
+                            },
+                        ],
                     },
                 ],
                 where: {
@@ -1276,6 +1358,7 @@ class ReceivableController {
                                     : 0,
                         },
                     ],
+                    ...searches,
                 },
                 attributes: [
                     'id',
@@ -1288,25 +1371,26 @@ class ReceivableController {
                     'balance',
                     'due_date',
                     'entry_date',
+                    'is_recurrence',
                 ],
                 order: searchOrder,
             })
 
-            const fields = [
-                'status',
-                ['filial', 'name'],
-                ['issuer', 'id'],
-                ['issuer', 'name'],
-                'invoice_number',
-                'issuer_id',
-                'amount',
-            ]
-            Promise.all([searchPromise(search, receivables, fields)]).then(
-                (data) => {
-                    return res.json(data[0])
-                }
-            )
-            // return res.json(receivables)
+            // const fields = [
+            //     'status',
+            //     ['filial', 'name'],
+            //     ['issuer', 'id'],
+            //     ['issuer', 'name'],
+            //     'invoice_number',
+            //     'issuer_id',
+            //     'amount',
+            // ]
+            // Promise.all([searchPromise(search, receivables, fields)]).then(
+            //     (data) => {
+            // return res.json({ totalRows, rows: data[0] })
+            //     }
+            // )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'ReceivableController'
             const functionName = 'index'
@@ -1787,6 +1871,17 @@ class ReceivableController {
                         },
                         req
                     )
+                    if (receivable.dataValues.is_recurrence) {
+                        const recurrence = await Recurrence.findOne({
+                            where: {
+                                issuer_id: receivable.dataValues.issuer_id,
+                                canceled_at: null,
+                            },
+                        })
+                        if (recurrence) {
+                            await generateRecurrenceReceivables(recurrence)
+                        }
+                    }
                 } else {
                     return res.status(401).json({
                         error: 'Receivable already settled.',
@@ -2268,6 +2363,17 @@ class ReceivableController {
                         as: 'issuer',
                         required: false,
                         where: { canceled_at: null },
+                        include: [
+                            {
+                                model: Recurrence,
+                                as: 'issuer_x_recurrence',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                                attributes: ['id', 'is_autopay'],
+                            },
+                        ],
                     },
                     {
                         model: PaymentCriteria,
@@ -2353,6 +2459,9 @@ class ReceivableController {
             ws2.column(col).width = 20
             col++
             ws2.cell(row, col).string('Is Recurrence?').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            ws2.cell(row, col).string('Is Autopay?').style(styleBold)
             ws2.column(col).width = 20
             col++
             // ws2.cell(row, col).string('Payment Method').style(styleBold)
@@ -2488,7 +2597,17 @@ class ReceivableController {
                 nCol++
                 ws2.cell(index + 3, nCol).string(receivable.type_detail)
                 nCol++
-                ws2.cell(index + 3, nCol).bool(receivable.is_recurrence)
+                ws2.cell(index + 3, nCol).string(
+                    receivable.is_recurrence ? 'Yes' : 'No'
+                )
+                nCol++
+                ws2.cell(index + 3, nCol).string(
+                    receivable.issuer &&
+                        receivable.issuer.issuer_x_recurrence &&
+                        receivable.issuer.issuer_x_recurrence.is_autopay
+                        ? 'Yes'
+                        : 'No'
+                )
                 nCol++
                 // ws2.cell(index + 3, nCol).string(
                 //     receivable.paymentMethod
@@ -2612,37 +2731,63 @@ class ReceivableController {
                     error: 'Receivable does not exist.',
                 })
             }
-            const { paymentmethod_id } = receivable.dataValues
-            const paymentMethod = await PaymentMethod.findByPk(paymentmethod_id)
-            if (!paymentMethod) {
-                return res.status(400).json({
-                    error: 'Payment Method does not exist.',
+
+            await verifyAndCancelTextToPayTransaction(receivable.id)
+            await verifyAndCreateTextToPayTransaction(receivable.id)
+            await verifyAndCancelParcelowPaymentLink(receivable.id)
+
+            if (
+                receivable.dataValues.due_date > format(new Date(), 'yyyyMMdd')
+            ) {
+                await BeforeDueDateMail({
+                    receivable_id: receivable.id,
+                    manual: true,
+                })
+            } else if (
+                receivable.dataValues.due_date ===
+                format(new Date(), 'yyyyMMdd')
+            ) {
+                await OnDueDateMail({
+                    receivable_id: receivable.id,
+                    manual: true,
+                })
+            } else {
+                await AfterDueDateMail({
+                    receivable_id: receivable.id,
+                    manual: true,
                 })
             }
-            const textPaymentTransaction = await Textpaymenttransaction.findOne(
-                {
-                    where: {
-                        receivable_id: receivable.id,
-                        canceled_at: null,
-                    },
-                    order: [['created_at', 'DESC']],
-                }
-            )
-            let paymentInfoHTML = ''
-            if (textPaymentTransaction) {
-                paymentInfoHTML = `<tr>
-                <td style="text-align: center;padding: 10px 0 30px;">
-                    <a href="${textPaymentTransaction.dataValues.payment_page_url}" target="_blank" style="background-color: #0a0; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
-                </td>
-                </tr>`
-            }
-            await TuitionMail({
-                receivable_id: receivable.id,
-                paymentInfoHTML,
-            })
-            await receivable.update({
-                notification_sent: true,
-            })
+            // const { paymentmethod_id } = receivable.dataValues
+            // const paymentMethod = await PaymentMethod.findByPk(paymentmethod_id)
+            // if (!paymentMethod) {
+            //     return res.status(400).json({
+            //         error: 'Payment Method does not exist.',
+            //     })
+            // }
+            // const textPaymentTransaction = await Textpaymenttransaction.findOne(
+            //     {
+            //         where: {
+            //             receivable_id: receivable.id,
+            //             canceled_at: null,
+            //         },
+            //         order: [['created_at', 'DESC']],
+            //     }
+            // )
+            // let paymentInfoHTML = ''
+            // if (textPaymentTransaction) {
+            //     paymentInfoHTML = `<tr>
+            //     <td style="text-align: center;padding: 10px 0 30px;">
+            //         <a href="${textPaymentTransaction.dataValues.payment_page_url}" target="_blank" style="background-color: #0a0; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
+            //     </td>
+            //     </tr>`
+            // }
+            // await TuitionMail({
+            //     receivable_id: receivable.id,
+            //     paymentInfoHTML,
+            // })
+            // await receivable.update({
+            //     notification_sent: true,
+            // })
             return res.json(receivable)
         } catch (err) {
             const className = 'ReceivableController'
