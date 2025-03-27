@@ -268,11 +268,16 @@ class SettlementController {
                             receivable.dataValues.fee
                     }
 
-                    console.log({ total_discount, total_settled })
-
                     if (total_discount === Infinity) {
                         total_discount = receivable.dataValues.discount
                     }
+
+                    const return_amount =
+                        total_settled === 0
+                            ? receivable.dataValues.balance + total_discount
+                            : receivable.dataValues.balance +
+                              total_settled +
+                              total_discount
 
                     await receivable
                         .update(
@@ -281,18 +286,18 @@ class SettlementController {
                                     receivable.dataValues.discount -
                                     total_discount
                                 ).toFixed(2),
-                                balance: (
-                                    receivable.dataValues.balance +
-                                    total_settled
-                                ).toFixed(2),
+                                balance: return_amount.toFixed(2),
                                 status:
+                                    return_amount.toFixed(2) ===
                                     (
-                                        receivable.dataValues.balance +
-                                        total_settled
-                                    ).toFixed(2) ===
-                                    receivable.dataValues.total.toFixed(2)
+                                        receivable.dataValues.total +
+                                        total_discount
+                                    ).toFixed(2)
                                         ? 'Pending'
                                         : 'Parcial Paid',
+                                total:
+                                    receivable.dataValues.total +
+                                    total_discount,
                                 manual_discount: 0,
                                 updated_at: new Date(),
                                 updated_by: req.userId,

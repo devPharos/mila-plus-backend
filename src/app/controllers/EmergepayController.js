@@ -112,12 +112,16 @@ export async function settlement(
 
         const parcial =
             receivable.dataValues.manual_discount !== 0 &&
-            amountPaidBalance !== 0 &&
+            // amountPaidBalance !== 0 &&
             amountPaidBalance < receivable.dataValues.balance
 
         await Settlement.create({
             receivable_id: receivable.id,
-            amount: parcial ? amountPaidBalance : receivable.dataValues.balance,
+            amount: parcial
+                ? amountPaidBalance
+                : amountPaidBalance === 0
+                ? 0
+                : receivable.dataValues.balance,
             paymentmethod_id,
             settlement_date,
             memo: settlement_memo,
