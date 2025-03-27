@@ -275,7 +275,9 @@ class SettlementController {
                     const return_amount =
                         total_settled === 0
                             ? receivable.dataValues.balance + total_discount
-                            : receivable.dataValues.balance + total_settled
+                            : receivable.dataValues.balance +
+                              total_settled +
+                              total_discount
 
                     await receivable
                         .update(
@@ -287,9 +289,15 @@ class SettlementController {
                                 balance: return_amount.toFixed(2),
                                 status:
                                     return_amount.toFixed(2) ===
-                                    receivable.dataValues.total.toFixed(2)
+                                    (
+                                        receivable.dataValues.total +
+                                        total_discount
+                                    ).toFixed(2)
                                         ? 'Pending'
                                         : 'Parcial Paid',
+                                total:
+                                    receivable.dataValues.total +
+                                    total_discount,
                                 manual_discount: 0,
                                 updated_at: new Date(),
                                 updated_by: req.userId,

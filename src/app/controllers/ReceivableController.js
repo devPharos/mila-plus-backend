@@ -1921,6 +1921,10 @@ class ReceivableController {
                     discount: (
                         receivable.dataValues.discount + thisDiscounts
                     ).toFixed(2),
+                    balance: (
+                        receivable.dataValues.balance - thisDiscounts
+                    ).toFixed(2),
+                    total: receivable.dataValues.total - thisDiscounts,
                     manual_discount: manual_discount.toFixed(2),
                 })
 
