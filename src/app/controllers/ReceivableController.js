@@ -1955,7 +1955,10 @@ class ReceivableController {
                         },
                         req
                     )
-                    if (receivable.dataValues.is_recurrence) {
+                    if (
+                        rec.id === receivables[receivables.length - 1].id &&
+                        receivable.dataValues.is_recurrence
+                    ) {
                         const recurrence = await Recurrence.findOne({
                             where: {
                                 issuer_id: receivable.dataValues.issuer_id,
