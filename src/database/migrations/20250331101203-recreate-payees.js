@@ -2,10 +2,6 @@
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.removeIndex(
-            'payees',
-            'type_type_detail_invoice_number'
-        )
         await queryInterface.dropTable('payeeinstallments')
         await queryInterface.dropTable('payees')
         await queryInterface.createTable('payees', {
@@ -165,7 +161,7 @@ module.exports = {
 
         await queryInterface.addIndex('payees', {
             unique: true,
-            name: 'type_type_detail_invoice_number',
+            name: 'issuer_type_type_detail_invoice_number',
             fields: ['issuer_id', 'type', 'type_detail', 'invoice_number'],
         })
     },
@@ -175,7 +171,7 @@ module.exports = {
 
         await queryInterface.removeIndex(
             'payees',
-            'type_type_detail_invoice_number'
+            'issuer_type_type_detail_invoice_number'
         )
     },
 }
