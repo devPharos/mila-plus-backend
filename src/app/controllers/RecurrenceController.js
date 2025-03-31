@@ -26,7 +26,10 @@ import { applyDiscounts } from './ReceivableController'
 import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
 import { verifyAndCancelTextToPayTransaction } from './EmergepayController'
 
-export async function generateRecurrenceReceivables(recurrence) {
+export async function generateRecurrenceReceivables({
+    recurrence = null,
+    clearAll = false,
+}) {
     try {
         const issuer = await Issuer.findByPk(recurrence.dataValues.issuer_id)
         if (!issuer) {
@@ -105,16 +108,24 @@ export async function generateRecurrenceReceivables(recurrence) {
             ],
         })
 
-        for (const receivable of receivables) {
-            if (
-                receivable.dataValues.status === 'Pending' &&
-                receivable.dataValues.fee === 0
-            ) {
-                await receivable.update({
-                    canceled_at: new Date(),
-                    canceled_by: recurrence.dataValues.created_by,
-                })
+        let pedings = 0
+
+        if (clearAll) {
+            for (const receivable of receivables) {
+                if (
+                    receivable.dataValues.status === 'Pending' &&
+                    receivable.dataValues.fee === 0
+                ) {
+                    await receivable.update({
+                        canceled_at: new Date(),
+                        canceled_by: recurrence.dataValues.created_by,
+                    })
+                }
             }
+        } else {
+            pedings = receivables.filter(
+                (receivable) => receivable.dataValues.status === 'Pending'
+            ).length
         }
 
         let lastPaidReceivable = null
@@ -140,6 +151,10 @@ export async function generateRecurrenceReceivables(recurrence) {
         if (paid.length > 0) {
             totalPeriods = 12
             initialPeriod = 1
+        }
+
+        if (pedings > 0) {
+            initialPeriod = pedings + 1
         }
 
         for (let i = initialPeriod; i <= totalPeriods; i++) {
@@ -453,7 +468,7 @@ class RecurrenceController {
                 prices: req.body.prices,
             })
 
-            generateRecurrenceReceivables(recurrence)
+            generateRecurrenceReceivables({ recurrence, clearAll: true })
             return res.json(recurrence)
         } catch (err) {
             await t.rollback()

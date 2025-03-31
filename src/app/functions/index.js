@@ -46,18 +46,6 @@ export async function handleStudentDiscounts({
                 applied_at,
             } = discount
             if (!hasDiscount) {
-                console.log({
-                    filial_id: student.dataValues.filial_id,
-                    student_id,
-                    filial_discount_list_id,
-                    start_date: start_date
-                        ? start_date.replaceAll('-', '')
-                        : null,
-                    end_date: end_date ? end_date.replaceAll('-', '') : null,
-                    applied_at,
-                    created_by: 2,
-                    created_at: new Date(),
-                })
                 await Studentdiscount.create({
                     student_id,
                     filial_discount_list_id,

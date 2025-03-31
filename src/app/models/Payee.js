@@ -12,10 +12,18 @@ class Payee extends Model {
                 company_id: {
                     type: Sequelize.INTEGER,
                     allowNull: false,
+                    references: {
+                        model: 'companies',
+                        key: 'id',
+                    },
                 },
                 filial_id: {
                     type: Sequelize.INTEGER,
                     allowNull: false,
+                    references: {
+                        model: 'filials',
+                        key: 'id',
+                    },
                 },
                 issuer_id: {
                     type: Sequelize.UUID,
@@ -52,15 +60,31 @@ class Payee extends Model {
                 fee: {
                     type: Sequelize.FLOAT,
                     allowNull: false,
+                    defaultValue: 0,
+                },
+                discount: {
+                    type: Sequelize.FLOAT,
+                    defaultValue: 0,
+                },
+                manual_discount: {
+                    type: Sequelize.FLOAT,
+                    defaultValue: 0,
                 },
                 total: {
+                    type: Sequelize.FLOAT,
+                    allowNull: false,
+                },
+                balance: {
                     type: Sequelize.FLOAT,
                     allowNull: false,
                 },
                 paymentmethod_id: {
                     type: Sequelize.UUID,
                     allowNull: true,
-                    references: { model: 'paymentmethods', key: 'id' },
+                    references: {
+                        model: 'paymentmethods',
+                        key: 'id',
+                    },
                 },
                 status: {
                     type: Sequelize.STRING,
@@ -77,36 +101,59 @@ class Payee extends Model {
                 chartofaccount_id: {
                     type: Sequelize.INTEGER,
                     allowNull: true,
-                    references: { model: 'chartofaccounts', key: 'id' },
+                    references: {
+                        model: 'chartofaccounts',
+                        key: 'id',
+                    },
                 },
                 paymentcriteria_id: {
                     type: Sequelize.UUID,
                     allowNull: true,
-                    references: { model: 'paymentcriterias', key: 'id' },
+                    references: {
+                        model: 'paymentcriterias',
+                        key: 'id',
+                    },
+                },
+                invoice_number: {
+                    type: Sequelize.INTEGER,
+                    autoIncrement: true,
+                    allowNull: false,
+                },
+                type: {
+                    type: Sequelize.STRING,
+                    allowNull: false,
+                },
+                type_detail: {
+                    type: Sequelize.STRING,
+                    allowNull: false,
+                },
+                notification_sent: {
+                    type: Sequelize.BOOLEAN,
+                    defaultValue: false,
                 },
                 created_at: {
-                    type: Sequelize.DATE,
                     allowNull: false,
+                    type: Sequelize.DATE,
                 },
                 created_by: {
-                    type: Sequelize.INTEGER,
                     allowNull: false,
+                    type: Sequelize.INTEGER,
                 },
                 updated_at: {
-                    type: Sequelize.DATE,
                     allowNull: true,
+                    type: Sequelize.DATE,
                 },
                 updated_by: {
-                    type: Sequelize.INTEGER,
                     allowNull: true,
+                    type: Sequelize.INTEGER,
                 },
                 canceled_at: {
-                    type: Sequelize.DATE,
                     allowNull: true,
+                    type: Sequelize.DATE,
                 },
                 canceled_by: {
-                    type: Sequelize.INTEGER,
                     allowNull: true,
+                    type: Sequelize.INTEGER,
                 },
             },
             {
@@ -138,10 +185,6 @@ class Payee extends Model {
         this.belongsTo(models.Issuer, {
             foreignKey: 'issuer_id',
             as: 'issuer',
-        })
-        this.hasMany(models.PayeeInstallment, {
-            foreignKey: 'payee_id',
-            as: 'installments',
         })
     }
 }
