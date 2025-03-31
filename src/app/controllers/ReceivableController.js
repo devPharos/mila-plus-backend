@@ -1970,7 +1970,10 @@ class ReceivableController {
                             },
                         })
                         if (recurrence) {
-                            await generateRecurrenceReceivables(recurrence)
+                            await generateRecurrenceReceivables({
+                                recurrence,
+                                clearAll: false,
+                            })
                         }
                     }
                 } else {

@@ -1,4 +1,4 @@
-import Sequelize from 'sequelize'
+import Sequelize, { Op } from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 
@@ -8,58 +8,176 @@ import ChartOfAccount from '../models/Chartofaccount'
 import PaymentCriteria from '../models/PaymentCriteria'
 import Filial from '../models/Filial'
 import Issuer from '../models/Issuer'
-
-import PayeeInstallment from '../models/PayeeInstallment'
-import PayeeInstallmentController from './PayeeInstallmentController'
+import { format } from 'date-fns'
 
 class PayeeController {
     async index(req, res) {
         try {
-            const payees = await Payee.findAll({
+            const {
+                orderBy = 'due_date',
+                orderASC = 'ASC',
+                search = '',
+            } = req.query
+            let searchOrder = []
+            if (orderBy.includes(',')) {
+                searchOrder.push([
+                    orderBy.split(',')[0],
+                    orderBy.split(',')[1],
+                    orderASC,
+                ])
+            } else {
+                searchOrder.push([orderBy, orderASC])
+            }
+
+            // Contém letras
+            let searches = null
+            if (search) {
+                if (isUUIDv4(search)) {
+                    searches = {
+                        [Op.or]: [
+                            {
+                                issuer_id: search,
+                            },
+                        ],
+                    }
+                } else if (search.split('/').length === 3) {
+                    const date = search.split('/')
+                    searches = {
+                        [Op.or]: [
+                            {
+                                due_date: date[2] + date[0] + date[1],
+                            },
+                        ],
+                    }
+                } else if (
+                    search.split('/').length === 2 &&
+                    search.length === 5
+                ) {
+                    const date = search.split('/')
+                    searches = {
+                        [Op.or]: [
+                            {
+                                due_date: {
+                                    [Op.like]: `%${date[0] + date[1]}`,
+                                },
+                            },
+                        ],
+                    }
+                } else if (/[^0-9]/.test(search) && !canBeFloat(search)) {
+                    searches = {
+                        [Op.or]: [
+                            {
+                                memo: {
+                                    [Op.iLike]: `%${search.toUpperCase()}%`,
+                                },
+                            },
+                        ],
+                    }
+                } else {
+                    searches = {
+                        [Op.or]: [
+                            {
+                                invoice_number: {
+                                    [Op.or]: [
+                                        {
+                                            [Op.eq]: parseInt(search),
+                                        },
+                                    ],
+                                },
+                            },
+                            {
+                                amount: {
+                                    [Op.eq]: parseFloat(search),
+                                },
+                            },
+                            {
+                                total: {
+                                    [Op.eq]: parseFloat(search),
+                                },
+                            },
+                            {
+                                balance: {
+                                    [Op.eq]: parseFloat(search),
+                                },
+                            },
+                        ],
+                    }
+                }
+            }
+            const { count, rows } = await Payee.findAndCountAll({
                 include: [
                     {
                         model: PaymentMethod,
                         as: 'paymentMethod',
                         required: false,
                         where: { canceled_at: null },
+                        attributes: ['id', 'description', 'platform'],
                     },
                     {
                         model: ChartOfAccount,
                         as: 'chartOfAccount',
                         required: false,
                         where: { canceled_at: null },
+                        attributes: ['id', 'name'],
                     },
                     {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
                         required: false,
+                        attributes: ['id', 'description'],
                         where: { canceled_at: null },
-                    },
-                    {
-                        model: PayeeInstallment,
-                        as: 'installments',
-                        required: false,
-                        where: { canceled_at: null },
-                        order: [['installment', 'ASC']],
                     },
                     {
                         model: Filial,
                         as: 'filial',
                         required: false,
+                        attributes: ['id', 'name'],
                         where: { canceled_at: null },
                     },
                     {
                         model: Issuer,
                         as: 'issuer',
+                        attributes: ['id', 'name'],
                         required: false,
-                        where: { canceled_at: null },
+                        where: {
+                            canceled_at: null,
+                        },
                     },
                 ],
-                where: { canceled_at: null },
-                order: [['created_at', 'DESC']],
+                where: {
+                    canceled_at: null,
+                    [Op.or]: [
+                        {
+                            filial_id: {
+                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
+                            },
+                        },
+                        {
+                            filial_id:
+                                req.headers.filial != 1
+                                    ? req.headers.filial
+                                    : 0,
+                        },
+                    ],
+                    ...searches,
+                },
+                attributes: [
+                    'id',
+                    'invoice_number',
+                    'status',
+                    'amount',
+                    'fee',
+                    'discount',
+                    'total',
+                    'balance',
+                    'due_date',
+                    'entry_date',
+                    'is_recurrence',
+                ],
+                order: searchOrder,
             })
 
-            return res.json(payees)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'PayeeController'
             const functionName = 'index'
@@ -96,13 +214,6 @@ class PayeeController {
                         where: { canceled_at: null },
                     },
                     {
-                        model: PayeeInstallment,
-                        as: 'installments',
-                        required: false,
-                        where: { canceled_at: null },
-                        order: [['installment', 'ASC']],
-                    },
-                    {
                         model: Filial,
                         as: 'filial',
                         required: false,
@@ -132,24 +243,42 @@ class PayeeController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const {
+                amount,
+                fee,
+                discount,
+                total,
+                type,
+                type_detail,
+                issuer_id,
+                entry_date,
+                due_date,
+                paymentmethod_id,
+                memo,
+                contract_number,
+                chartofaccount_id,
+            } = req.body
             const newPayee = await Payee.create(
                 {
-                    ...req.body,
-                    fee: req.body.fee ? req.body.fee : 0,
-                    is_recurrence: req.body.is_recurrence
-                        ? req.body.is_recurrence
-                        : false,
-                    total: req.body.total
-                        ? req.body.total
-                        : req.body.amount
-                        ? req.body.amount
-                        : 0,
                     company_id: 1,
+                    filial_id: req.body.filial_id,
+                    amount: amount ? parseFloat(amount).toFixed(2) : 0,
+                    fee: fee ? parseFloat(fee).toFixed(2) : 0,
+                    discount: discount ? parseFloat(discount).toFixed(2) : 0,
+                    total: total ? parseFloat(total).toFixed(2) : 0,
+                    balance: total ? parseFloat(total).toFixed(2) : 0,
+                    type,
+                    type_detail,
+                    issuer_id,
+                    entry_date,
+                    due_date,
+                    paymentmethod_id,
+                    memo,
+                    contract_number,
+                    chartofaccount_id,
+                    is_recurrence: false,
                     status: 'Pending',
-                    status_date: new Date().toString(),
-                    filial_id: req.body.filial_id
-                        ? req.body.filial_id
-                        : req.headers.filial,
+                    status_date: format(new Date(), 'yyyyMMdd'),
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -175,8 +304,6 @@ class PayeeController {
     async update(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
-        let oldInstallments = []
-        let oldFistDueDate = null
         let oldDueDate = null
 
         try {
@@ -185,13 +312,6 @@ class PayeeController {
             const payeeExists = await Payee.findByPk(payee_id, {
                 where: { canceled_at: null },
                 include: [
-                    {
-                        model: PayeeInstallment,
-                        as: 'installments',
-                        required: false,
-                        where: { canceled_at: null },
-                        order: [['installment', 'ASC']],
-                    },
                     {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
@@ -223,112 +343,6 @@ class PayeeController {
                     transaction: t,
                 }
             )
-
-            if (
-                payeeExists?.installments &&
-                payeeExists.installments.length > 0
-            ) {
-                oldInstallments = payeeExists.installments
-            }
-
-            const { installmentsItems } =
-                await PayeeInstallmentController.allInstallmentsByDateInterval(
-                    payeeExists
-                )
-
-            if (
-                installmentsItems &&
-                installmentsItems.length > 0 &&
-                oldInstallments.length > 0
-            ) {
-                let updatedInstallments = []
-                const allDiffs = oldInstallments.filter(
-                    (oldItem) =>
-                        !installmentsItems.some(
-                            (newItem) =>
-                                newItem.installment === oldItem.installment
-                        )
-                )
-
-                if (allDiffs.length > 0) {
-                    for (let i = 0; i < allDiffs.length; i++) {
-                        const itemDiff = allDiffs[i]
-
-                        if (!itemDiff.id) {
-                            return
-                        }
-
-                        if (oldFistDueDate && itemDiff.due_date) {
-                            const dueDate = new Date(itemDiff.due_date)
-                            const entryDate = new Date(oldFistDueDate)
-
-                            if (entryDate < dueDate) {
-                                await PayeeInstallment.update(
-                                    {
-                                        canceled_at: new Date(),
-                                        canceled_by: req.userId,
-                                        updated_at: new Date(),
-                                        updated_by: req.userId,
-                                    },
-                                    {
-                                        where: {
-                                            payee_id: payeeExists.id,
-                                            installment: 1,
-                                        },
-                                        transaction: t,
-                                    }
-                                )
-
-                                await t.commit()
-
-                                updatedInstallments.push(true)
-
-                                break
-                            }
-                        }
-
-                        if (oldDueDate && itemDiff.due_date) {
-                            const statusDate = new Date(itemDiff.due_date)
-
-                            if (
-                                statusDate >= new Date(oldDueDate) &&
-                                statusDate <= new Date(payeeExists.due_date)
-                            ) {
-                                await PayeeInstallment.update(
-                                    {
-                                        canceled_at: new Date(),
-                                        canceled_by: req.userId,
-                                        updated_at: new Date(),
-                                        updated_by: req.userId,
-                                    },
-                                    {
-                                        transaction: t,
-                                        where: {
-                                            payee_id: payeeExists.id,
-                                            installment: itemDiff.installment,
-                                        },
-                                    }
-                                )
-
-                                updatedInstallments.push(true)
-                                break
-                            }
-                        }
-                    }
-                }
-
-                if (updatedInstallments.length > 0) {
-                    const newInstallmentsItens =
-                        await PayeeInstallmentController.allInstallmentsByDateInterval(
-                            payeeExists
-                        )
-
-                    payeeExists.installments =
-                        newInstallmentsItens.installmentsItems || []
-                } else {
-                    payeeExists.installments = installmentsItems || []
-                }
-            }
 
             await t.commit()
 
