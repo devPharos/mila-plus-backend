@@ -2,6 +2,10 @@
 
 module.exports = {
     async up(queryInterface, Sequelize) {
+        await queryInterface.removeIndex(
+            'payees',
+            'type_type_detail_invoice_number'
+        )
         await queryInterface.dropTable('payeeinstallments')
         await queryInterface.dropTable('payees')
         await queryInterface.createTable('payees', {
