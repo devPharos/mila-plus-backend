@@ -628,9 +628,7 @@ export async function sendAutopayRecurrenceJob() {
                 issuerExists.dataValues.student_id
             )
             if (!issuerExists || !student) {
-                return res.status(400).json({
-                    error: 'Issuer or student not found',
-                })
+                return
             }
             const tuitionFee = await Receivable.findByPk(receivable.id)
 
@@ -638,9 +636,7 @@ export async function sendAutopayRecurrenceJob() {
                 receivable.dataValues.filial_id
             )
             if (!filial) {
-                return res.status(400).json({
-                    error: 'Filial not found.',
-                })
+                return
             }
 
             let amount = tuitionFee.dataValues.balance
@@ -671,6 +667,19 @@ export async function sendAutopayRecurrenceJob() {
                     },
                     order: [['created_at', 'DESC']],
                 })
+            }
+
+            const alreadyPaid = await Emergepaytransaction.findOne({
+                where: {
+                    external_transaction_id: firstReceivable.id,
+                    canceled_at: null,
+                    result_status: 'true',
+                    transaction_reference: 'I' + invoice_number,
+                },
+            })
+
+            if (alreadyPaid) {
+                return
             }
 
             if (
