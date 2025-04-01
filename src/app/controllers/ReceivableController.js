@@ -304,7 +304,6 @@ export function applyDiscounts({
 export async function sendBeforeDueDateInvoices() {
     console.log('Executing sendBeforeDueDateInvoices')
     try {
-        await sendAutopayRecurrenceJob()
         const days_before = 4
         const date = addDays(new Date(), days_before)
         const searchDate =
@@ -394,7 +393,6 @@ export async function sendBeforeDueDateInvoices() {
 export async function sendOnDueDateInvoices() {
     console.log('Executing sendOnDueDateInvoices')
     try {
-        await sendAutopayRecurrenceJob()
         const days_before = 0
         const date = addDays(new Date(), days_before)
         const searchDate =
