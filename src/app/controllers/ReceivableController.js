@@ -767,18 +767,12 @@ export async function sendAutopayRecurrenceJob() {
                                     canceled_at: null,
                                 },
                             })
-                            await settlement(
-                                {
-                                    receivable_id: receivable.id,
-                                    amountPaidBalance,
-                                    settlement_date: format(
-                                        new Date(),
-                                        'yyyyMMdd'
-                                    ),
-                                    paymentmethod_id: paymentMethod.id,
-                                },
-                                req
-                            )
+                            await settlement({
+                                receivable_id: receivable.id,
+                                amountPaidBalance,
+                                settlement_date: format(new Date(), 'yyyyMMdd'),
+                                paymentmethod_id: paymentMethod.id,
+                            })
                         }
                     })
                     .catch((err) => {
@@ -1270,13 +1264,13 @@ export async function TuitionMail({
     }
 }
 
-function isUUIDv4(str) {
+export function isUUIDv4(str) {
     const uuidv4Regex =
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     return uuidv4Regex.test(str)
 }
 
-function canBeFloat(str) {
+export function canBeFloat(str) {
     // Aceita formatos como: "123", "-123.45", "0.123", ".123", "-.123"
     return /^[-+]?(?:\d*\.\d+|\d+\.?\d*)$/.test(str.trim())
 }
