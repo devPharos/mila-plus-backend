@@ -628,9 +628,7 @@ export async function sendAutopayRecurrenceJob() {
                 issuerExists.dataValues.student_id
             )
             if (!issuerExists || !student) {
-                return res.status(400).json({
-                    error: 'Issuer or student not found',
-                })
+                return
             }
             const tuitionFee = await Receivable.findByPk(receivable.id)
 
@@ -638,9 +636,7 @@ export async function sendAutopayRecurrenceJob() {
                 receivable.dataValues.filial_id
             )
             if (!filial) {
-                return res.status(400).json({
-                    error: 'Filial not found.',
-                })
+                return
             }
 
             let amount = tuitionFee.dataValues.balance
@@ -671,6 +667,19 @@ export async function sendAutopayRecurrenceJob() {
                     },
                     order: [['created_at', 'DESC']],
                 })
+            }
+
+            const alreadyPaid = await Emergepaytransaction.findOne({
+                where: {
+                    external_transaction_id: firstReceivable.id,
+                    canceled_at: null,
+                    result_status: 'true',
+                    transaction_reference: 'I' + invoice_number,
+                },
+            })
+
+            if (alreadyPaid) {
+                return
             }
 
             if (
@@ -767,18 +776,12 @@ export async function sendAutopayRecurrenceJob() {
                                     canceled_at: null,
                                 },
                             })
-                            await settlement(
-                                {
-                                    receivable_id: receivable.id,
-                                    amountPaidBalance,
-                                    settlement_date: format(
-                                        new Date(),
-                                        'yyyyMMdd'
-                                    ),
-                                    paymentmethod_id: paymentMethod.id,
-                                },
-                                req
-                            )
+                            await settlement({
+                                receivable_id: receivable.id,
+                                amountPaidBalance,
+                                settlement_date: format(new Date(), 'yyyyMMdd'),
+                                paymentmethod_id: paymentMethod.id,
+                            })
                         }
                     })
                     .catch((err) => {
@@ -1270,13 +1273,13 @@ export async function TuitionMail({
     }
 }
 
-function isUUIDv4(str) {
+export function isUUIDv4(str) {
     const uuidv4Regex =
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     return uuidv4Regex.test(str)
 }
 
-function canBeFloat(str) {
+export function canBeFloat(str) {
     // Aceita formatos como: "123", "-123.45", "0.123", ".123", "-.123"
     return /^[-+]?(?:\d*\.\d+|\d+\.?\d*)$/.test(str.trim())
 }

@@ -8,7 +8,9 @@ import ChartOfAccount from '../models/Chartofaccount'
 import PaymentCriteria from '../models/PaymentCriteria'
 import Filial from '../models/Filial'
 import Issuer from '../models/Issuer'
+import Payeesettlement from '../models/Payeesettlement'
 import { format } from 'date-fns'
+import { canBeFloat, isUUIDv4 } from './ReceivableController'
 
 class PayeeController {
     async index(req, res) {
@@ -351,6 +353,56 @@ class PayeeController {
             await t.rollback()
             const className = 'PayeeController'
             const functionName = 'update'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async settlement(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const {
+                payee_id,
+                paymentmethod_id,
+                settlement_date,
+                settlement_memo,
+            } = req.body
+
+            const payeeExists = await Payee.findByPk(payee_id)
+
+            if (!payeeExists) {
+                return res.status(401).json({ error: 'Payee does not exist.' })
+            }
+
+            const paymentMethod = await PaymentMethod.findByPk(paymentmethod_id)
+
+            if (!paymentMethod) {
+                return res.status(400).json({
+                    error: 'Payment Method does not exist.',
+                })
+            }
+
+            const settlement = await Payeesettlement.create({
+                receivable_id: payeeExists.id,
+                amount: payeeExists.dataValues.balance,
+                paymentmethod_id,
+                settlement_date,
+                memo: settlement_memo,
+                created_at: new Date(),
+                created_by: req.userId,
+            })
+
+            await t.commit()
+            return res
+                .status(200)
+                .json({ message: 'Payee settlement successful.' })
+        } catch (err) {
+            await t.rollback()
+            const className = 'PayeeController'
+            const functionName = 'settlement'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

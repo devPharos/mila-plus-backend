@@ -43,7 +43,6 @@ import BankAccounts from '../app/models/BankAccount'
 import MerchantXChartOfAccount from '../app/models/MerchantXChartOfAccounts'
 import Issuer from '../app/models/Issuer'
 import Payee from '../app/models/Payee'
-import PayeeInstallment from '../app/models/PayeeInstallment'
 import PaymentCriteria from '../app/models/PaymentCriteria'
 import PaymentMethod from '../app/models/PaymentMethod'
 import Receivable from '../app/models/Receivable'
@@ -63,6 +62,8 @@ import Feeadjustment from '../app/models/Feeadjustment.js'
 import Renegociation from '../app/models/Renegociation.js'
 import Studentinactivation from '../app/models/Studentinactivation.js'
 import Maillog from '../app/models/Maillog.js'
+import Payeerecurrence from '../app/models/Payeerecurrence.js'
+import Payeesettlement from '../app/models/Payeesettlement.js'
 
 const models = [
     Processtype,
@@ -111,7 +112,8 @@ const models = [
     Parcelowpaymentlink,
     Parcelowtransaction,
     Payee,
-    PayeeInstallment,
+    Payeerecurrence,
+    Payeesettlement,
     PaymentCriteria,
     PaymentMethod,
     Receivable,
