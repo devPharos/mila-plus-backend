@@ -76,7 +76,7 @@ class App {
         // sendAutopayRecurrenceJob()
         // calculateFeesRecurrenceJob()
 
-        // adjustPaidTransactions()
+        adjustPaidTransactions()
 
         setTimeout(() => {
             console.log('✅ Schedule jobs started!')

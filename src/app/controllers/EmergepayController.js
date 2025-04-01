@@ -3,7 +3,7 @@ import { mailer } from '../../config/mailer'
 import databaseConfig from '../../config/database'
 import Emergepaytransaction from '../models/Emergepaytransaction'
 import { v4 as uuidv4 } from 'uuid'
-import { Sequelize } from 'sequelize'
+import { Op, Sequelize } from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import Receivable from '../models/Receivable'
 import { emergepay } from '../../config/emergepay'
@@ -277,63 +277,54 @@ export async function verifyAndCancelTextToPayTransaction(
 
 export async function adjustPaidTransactions() {
     try {
-        const accountCardType = 'MC'
-        const accountEntryMethod = 'Keyed'
-        const accountExpiryDate = '0729'
-        const amount = '489'
-        const amountBalance = '0'
-        const amountProcessed = '489'
-        const amountTaxed = '0'
-        const amountTipped = '0'
-        const approvalNumberResult = '174056'
-        const avsResponseCode = 'NA'
-        const avsResponseText = 'Not applicable'
-        const batchNumber = '0'
-        const billingName = ''
-        const cashier = ''
-        const cvvResponseCode = 'M'
-        const cvvResponseText = 'Match'
-        const externalTransactionId = 'b4107fe8-b03b-47b5-a098-538f49156f2e'
-        const isPartialApproval = false
-        const maskedAccount = '****7742'
-        const resultMessage = 'Approved'
-        const resultStatus = 'true'
-        const transactionReference = 'I001539'
-        const transactionType = 'CreditSale'
-        const uniqueTransId =
-            'dc8cb18e7cae477695f4718282218334-7c42f4d2a3e44ffba0d43aafb1fddac7'
-
-        await Emergepaytransaction.create({
-            account_card_type: accountCardType,
-            account_entry_method: accountEntryMethod,
-            account_expiry_date: accountExpiryDate,
-            amount: parseFloat(amount),
-            amount_balance: parseFloat(amountBalance || 0),
-            amount_processed: parseFloat(amountProcessed || 0),
-            amount_taxed: parseFloat(amountTaxed || 0),
-            amount_tipped: parseFloat(amountTipped || 0),
-            approval_number_result: approvalNumberResult,
-            avs_response_code: avsResponseCode,
-            avs_response_text: avsResponseText,
-            batch_number: batchNumber,
-            billing_name: billingName,
-            cashier: cashier,
-            cvv_response_code: cvvResponseCode,
-            cvv_response_text: cvvResponseText,
-            external_transaction_id: externalTransactionId,
-            is_partial_approval: isPartialApproval,
-            masked_account: maskedAccount,
-            result_message: resultMessage,
-            result_status: resultStatus,
-            transaction_reference: transactionReference,
-            transaction_type: transactionType,
-            unique_trans_id: uniqueTransId,
-            created_at: new Date(),
-            created_by: 2,
+        const receivables = await Receivable.findAll({
+            where: {
+                status: 'Pending',
+                canceled_at: null,
+                [Op.or]: [
+                    {
+                        invoice_number: 10047,
+                    },
+                    {
+                        invoice_number: 10023,
+                    },
+                    {
+                        invoice_number: 10011,
+                    },
+                    {
+                        invoice_number: 10143,
+                    },
+                    {
+                        invoice_number: 10035,
+                    },
+                    {
+                        invoice_number: 10107,
+                    },
+                    {
+                        invoice_number: 10083,
+                    },
+                    {
+                        invoice_number: 10131,
+                    },
+                ],
+            },
         })
-        const receivable = await Receivable.findByPk(externalTransactionId)
-        if (receivable && resultMessage === 'Approved') {
-            const amountPaidBalance = parseFloat(amountProcessed)
+        for (let receivable of receivables) {
+            const paid = await Emergepaytransaction.findOne({
+                where: {
+                    external_transaction_id: receivable.id,
+                    canceled_at: null,
+                    result_status: 'true',
+                    transaction_reference:
+                        'I' +
+                        receivable.invoice_number.toString().padStart(6, '0'),
+                },
+            })
+            if (!paid) {
+                console.log('Not paid')
+                continue
+            }
+            const amountPaidBalance = receivable.balance
             const paymentMethod = await PaymentMethod.findOne({
                 where: {
                     platform: 'Gravity',
