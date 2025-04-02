@@ -258,7 +258,6 @@ class PayeeController {
                 amount,
                 fee,
                 discount,
-                total,
                 type,
                 type_detail,
                 entry_date,
@@ -269,6 +268,7 @@ class PayeeController {
                 merchant,
                 paymentMethod,
                 filial,
+                invoice_number,
             } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
@@ -279,7 +279,7 @@ class PayeeController {
                 })
             }
 
-            const issuer = await Issuer.findByPk(merchant.issuer_id)
+            const issuer = await Issuer.findByPk(merchant.issuer)
 
             if (!issuer) {
                 return res.status(400).json({
@@ -314,10 +314,19 @@ class PayeeController {
                     amount: amount ? parseFloat(amount).toFixed(2) : 0,
                     fee: fee ? parseFloat(fee).toFixed(2) : 0,
                     discount: discount ? parseFloat(discount).toFixed(2) : 0,
-                    total: total ? parseFloat(total).toFixed(2) : 0,
-                    balance: total ? parseFloat(total).toFixed(2) : 0,
+                    total: (
+                        parseFloat(amount) +
+                        parseFloat(fee) -
+                        parseFloat(discount)
+                    ).toFixed(2),
+                    balance: (
+                        parseFloat(amount) +
+                        parseFloat(fee) -
+                        parseFloat(discount)
+                    ).toFixed(2),
                     type,
                     type_detail,
+                    invoice_number,
                     issuer_id: issuer.id,
                     entry_date,
                     due_date,
@@ -422,6 +431,18 @@ class PayeeController {
                 oldDueDate = payeeExists.due_date
             }
 
+            let { amount, fee, discount } = req.body
+
+            if (!amount) {
+                amount = payeeExists.amount.toFixed(2)
+            }
+            if (!fee) {
+                fee = payeeExists.fee.toFixed(2)
+            }
+            if (!discount) {
+                discount = payeeExists.discount.toFixed(2)
+            }
+
             await payeeExists.update(
                 {
                     ...req.body,
@@ -429,6 +450,16 @@ class PayeeController {
                     chartofaccount_id: chartOfAccountExists.id,
                     issuer_id: issuer.id,
                     paymentmethod_id: paymentMethodExists.id,
+                    total: (
+                        parseFloat(amount) +
+                        parseFloat(fee) -
+                        parseFloat(discount)
+                    ).toFixed(2),
+                    balance: (
+                        parseFloat(amount) +
+                        parseFloat(fee) -
+                        parseFloat(discount)
+                    ).toFixed(2),
                     updated_by: req.userId,
                     updated_at: new Date(),
                 },
@@ -457,11 +488,21 @@ class PayeeController {
         try {
             const {
                 payees,
-                paymentmethod_id,
                 settlement_date,
                 settlement_memo,
                 invoice_number,
+                paymentMethod,
             } = req.body
+
+            const paymentMethodExists = await PaymentMethod.findByPk(
+                paymentMethod.id
+            )
+
+            if (!paymentMethodExists) {
+                return res.status(400).json({
+                    error: 'Payment Method does not exist.',
+                })
+            }
 
             for (let payee of payees) {
                 const payeeExists = await Payee.findByPk(payee.id)
@@ -472,22 +513,12 @@ class PayeeController {
                         .json({ error: 'Payee does not exist.' })
                 }
 
-                const paymentMethod = await PaymentMethod.findByPk(
-                    paymentmethod_id
-                )
-
-                if (!paymentMethod) {
-                    return res.status(400).json({
-                        error: 'Payment Method does not exist.',
-                    })
-                }
-
                 if (payeeExists.status !== 'Paid') {
                     await Payeesettlement.create(
                         {
                             payee_id: payeeExists.id,
                             amount: payeeExists.dataValues.balance,
-                            paymentmethod_id,
+                            paymentmethod_id: paymentMethodExists.id,
                             settlement_date,
                             memo: settlement_memo,
                             created_at: new Date(),
