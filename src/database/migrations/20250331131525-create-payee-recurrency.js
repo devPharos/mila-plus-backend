@@ -113,7 +113,7 @@ module.exports = {
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('payeerecurrences')
         await queryInterface.removeColumn('payees', 'payeerecurrence_id')
+        await queryInterface.dropTable('payeerecurrences')
     },
 }
