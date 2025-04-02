@@ -6,6 +6,7 @@ import Issuer from '../models/Issuer'
 import Merchant from '../models/Merchants'
 import MerchantsXChartOfAccount from '../models/MerchantXChartOfAccounts'
 import { searchPromise } from '../functions/searchPromise'
+import { canBeFloat } from './ReceivableController'
 const { Op } = Sequelize
 
 async function getAllChartOfAccountsByIssuer(issuer_id) {
@@ -185,20 +186,91 @@ class ChartOfAccountsController {
     async index(req, res) {
         try {
             const {
-                type,
-                issuer,
-                orderBy = 'code',
+                orderBy = 'name',
                 orderASC = 'ASC',
-                search,
+                search = '',
+                type = '',
+                limit = 50,
+                issuer = '',
             } = req.query
+            let searchOrder = []
+            if (orderBy.includes(',')) {
+                searchOrder.push([
+                    orderBy.split(',')[0],
+                    orderBy.split(',')[1],
+                    orderASC,
+                ])
+            } else {
+                searchOrder.push([orderBy, orderASC])
+            }
 
-            const chartofaccounts = await Chartofaccount.findAll({
+            // Contém letras
+            let searches = null
+            if (search && search !== 'null') {
+                searches = {
+                    [Op.or]: [
+                        {
+                            name: {
+                                [Op.like]: `%${search.toUpperCase()}%`,
+                            },
+                        },
+                        {
+                            code: {
+                                [Op.like]: `${search}%`,
+                            },
+                        },
+                    ],
+                }
+            }
+
+            let typeSearches = null
+            if (type) {
+                if (type === 'receipts') {
+                    typeSearches = {
+                        [Op.and]: [
+                            {
+                                code: {
+                                    [Op.notIn]: ['01', '02'],
+                                },
+                            },
+                            {
+                                code: {
+                                    [Op.like]: '01%',
+                                },
+                            },
+                        ],
+                    }
+                } else if (type === 'expenses') {
+                    typeSearches = {
+                        [Op.and]: [
+                            {
+                                code: {
+                                    [Op.notIn]: ['01', '02'],
+                                },
+                            },
+                            {
+                                code: {
+                                    [Op.like]: '02%',
+                                },
+                            },
+                        ],
+                    }
+                }
+            }
+
+            const { count, rows } = await Chartofaccount.findAndCountAll({
                 where: {
                     canceled_at: null,
                     company_id: 1,
-                    code: {
-                        [Op.notIn]: ['01', '02'],
-                    },
+                    [Op.and]: [
+                        {
+                            code: {
+                                [Op.notIn]: ['01', '02'],
+                            },
+                        },
+                    ],
+                    ...searches,
+                    ...typeSearches,
                 },
                 include: [
                     {
@@ -221,25 +293,26 @@ class ChartOfAccountsController {
                         ],
                     },
                 ],
+                limit,
                 order: [[orderBy, orderASC]],
             })
 
-            if (type) {
-                if (type === 'receipts')
-                    return res.json(
-                        chartofaccounts.filter(
-                            (chartofaccount) =>
-                                chartofaccount.code.substring(0, 2) == 1
-                        )
-                    )
-                if (type === 'expenses')
-                    return res.json(
-                        chartofaccounts.filter(
-                            (chartofaccount) =>
-                                chartofaccount.code.substring(0, 2) == 2
-                        )
-                    )
-            }
+            // if (type) {
+            //     if (type === 'receipts')
+            //         return res.json(
+            //             chartofaccounts.filter(
+            //                 (chartofaccount) =>
+            //                     chartofaccount.code.substring(0, 2) == 1
+            //             )
+            //         )
+            //     if (type === 'expenses')
+            //         return res.json(
+            //             chartofaccounts.filter(
+            //                 (chartofaccount) =>
+            //                     chartofaccount.code.substring(0, 2) == 2
+            //             )
+            //         )
+            // }
 
             if (issuer) {
                 const chartofaccounts = await getAllChartOfAccountsByIssuer(
@@ -257,12 +330,13 @@ class ChartOfAccountsController {
                 }
             }
 
-            const fields = ['code', 'name']
-            Promise.all([searchPromise(search, chartofaccounts, fields)]).then(
-                (chartofaccounts) => {
-                    return res.json(chartofaccounts[0])
-                }
-            )
+            // const fields = ['code', 'name']
+            // Promise.all([searchPromise(search, chartofaccounts, fields)]).then(
+            //     (chartofaccounts) => {
+            //         return res.json(chartofaccounts[0])
+            //     }
+            // )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'ChartsOfAccountController'
             const functionName = 'index'

@@ -2,7 +2,7 @@
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('payeerecurrencies', {
+        await queryInterface.createTable('payeerecurrences', {
             id: {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
@@ -73,6 +73,10 @@ module.exports = {
                     key: 'id',
                 },
             },
+            memo: {
+                type: Sequelize.TEXT,
+                allowNull: true,
+            },
             created_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
@@ -98,9 +102,18 @@ module.exports = {
                 type: Sequelize.INTEGER,
             },
         })
+        await queryInterface.addColumn('payees', 'payeerecurrence_id', {
+            type: Sequelize.UUID,
+            allowNull: true,
+            references: {
+                model: 'payeerecurrences',
+                key: 'id',
+            },
+        })
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('payeerecurrencies')
+        await queryInterface.dropTable('payeerecurrences')
+        await queryInterface.removeColumn('payees', 'payeerecurrence_id')
     },
 }

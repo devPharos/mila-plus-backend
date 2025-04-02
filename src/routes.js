@@ -39,7 +39,6 @@ import EnrollmentDependentController from './app/controllers/EnrollmentDependent
 import MerchantController from './app/controllers/MerchantController'
 import MerchantXChartOfAccountController from './app/controllers/MerchantXChartOfAccountController'
 import PayeeController from './app/controllers/PayeeController'
-import PayeeInstallmentController from './app/controllers/PayeeInstallmentController'
 import PaymentCriteriaController from './app/controllers/PaymentCriteriaController'
 import PaymentMethodController from './app/controllers/PaymentMethodController'
 import ReceivableController from './app/controllers/ReceivableController'
@@ -55,6 +54,8 @@ import FilialDiscountListController from './app/controllers/FilialDiscountListCo
 import FileController from './app/controllers/FileController'
 import SettlementController from './app/controllers/SettlementController'
 import PublicFileController from './app/controllers/PublicFileController'
+import PayeeSettlementController from './app/controllers/PayeeSettlementController'
+import PayeeRecurrenceController from './app/controllers/PayeeRecurrenceController'
 
 const routes = new Router()
 
@@ -368,18 +369,27 @@ routes.get('/payee/:payee_id', PayeeController.show)
 routes.post('/payee', PayeeController.store)
 routes.put('/payee/:payee_id', PayeeController.update)
 routes.delete('/payee/:payee_id', PayeeController.delete)
+routes.post('/payee/settlement', PayeeController.settlement)
 
-// payee installment
-routes.get('/payeeinstallments', PayeeInstallmentController.index)
+// settlements
+routes.get('/payeesettlements', PayeeSettlementController.index)
+routes.get('/payeesettlements/:payee_id', PayeeSettlementController.show)
+routes.delete(
+    '/payeesettlements/:settlement_id',
+    PayeeSettlementController.delete
+)
+
+// Recurrence
+routes.get('/payeerecurrences', PayeeRecurrenceController.index)
 routes.get(
-    '/payeeinstallments/:payeeinstallment_id',
-    PayeeInstallmentController.show
+    '/payeerecurrences/:payeerecurrence_id',
+    PayeeRecurrenceController.show
 )
-routes.post('/payeeinstallments/temp', PayeeInstallmentController.storeTemp)
 routes.put(
-    '/payeeinstallments/:payeeinstallment_id',
-    PayeeInstallmentController.update
+    '/payeerecurrences/:payeerecurrence_id',
+    PayeeRecurrenceController.update
 )
+routes.post('/payeerecurrences', PayeeRecurrenceController.store)
 
 // payment criteria
 routes.get('/paymentcriterias', PaymentCriteriaController.index)

@@ -11,6 +11,7 @@ import Issuer from '../models/Issuer'
 import Payeesettlement from '../models/Payeesettlement'
 import { format } from 'date-fns'
 import { canBeFloat, isUUIDv4 } from './ReceivableController'
+import Merchants from '../models/Merchants'
 
 class PayeeController {
     async index(req, res) {
@@ -226,6 +227,14 @@ class PayeeController {
                         as: 'issuer',
                         required: false,
                         where: { canceled_at: null },
+                        include: [
+                            {
+                                model: Merchants,
+                                as: 'merchant',
+                                required: false,
+                                where: { canceled_at: null },
+                            },
+                        ],
                     },
                 ],
             })
@@ -252,18 +261,56 @@ class PayeeController {
                 total,
                 type,
                 type_detail,
-                issuer_id,
                 entry_date,
                 due_date,
-                paymentmethod_id,
                 memo,
                 contract_number,
-                chartofaccount_id,
+                chartOfAccount,
+                merchant,
+                paymentMethod,
+                filial,
             } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            const issuer = await Issuer.findByPk(merchant.issuer_id)
+
+            if (!issuer) {
+                return res.status(400).json({
+                    error: 'Issuer does not exist.',
+                })
+            }
+
+            const chartOfAccountExists = await ChartOfAccount.findByPk(
+                chartOfAccount.id
+            )
+
+            if (!chartOfAccountExists) {
+                return res.status(400).json({
+                    error: 'Chart of Account does not exist.',
+                })
+            }
+
+            const paymentMethodExists = await PaymentMethod.findByPk(
+                paymentMethod.id
+            )
+
+            if (!paymentMethodExists) {
+                return res.status(400).json({
+                    error: 'Payment Method does not exist.',
+                })
+            }
+
             const newPayee = await Payee.create(
                 {
                     company_id: 1,
-                    filial_id: req.body.filial_id,
+                    filial_id: filialExists.id,
                     amount: amount ? parseFloat(amount).toFixed(2) : 0,
                     fee: fee ? parseFloat(fee).toFixed(2) : 0,
                     discount: discount ? parseFloat(discount).toFixed(2) : 0,
@@ -271,13 +318,13 @@ class PayeeController {
                     balance: total ? parseFloat(total).toFixed(2) : 0,
                     type,
                     type_detail,
-                    issuer_id,
+                    issuer_id: issuer.id,
                     entry_date,
                     due_date,
-                    paymentmethod_id,
+                    paymentmethod_id: paymentMethodExists.id,
                     memo,
                     contract_number,
-                    chartofaccount_id,
+                    chartofaccount_id: chartOfAccountExists.id,
                     is_recurrence: false,
                     status: 'Pending',
                     status_date: format(new Date(), 'yyyyMMdd'),
@@ -306,10 +353,50 @@ class PayeeController {
     async update(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
-        let oldDueDate = null
 
         try {
             const { payee_id } = req.params
+
+            delete req.body.total
+            delete req.body.balance
+
+            const { merchant, chartOfAccount, paymentMethod, filial } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            const issuer = await Issuer.findByPk(merchant.issuer)
+
+            if (!issuer) {
+                return res.status(400).json({
+                    error: 'Issuer does not exist.',
+                })
+            }
+
+            const chartOfAccountExists = await ChartOfAccount.findByPk(
+                chartOfAccount.id
+            )
+
+            if (!chartOfAccountExists) {
+                return res.status(400).json({
+                    error: 'Chart of Account does not exist.',
+                })
+            }
+
+            const paymentMethodExists = await PaymentMethod.findByPk(
+                paymentMethod.id
+            )
+
+            if (!paymentMethodExists) {
+                return res.status(400).json({
+                    error: 'Payment Method does not exist.',
+                })
+            }
 
             const payeeExists = await Payee.findByPk(payee_id, {
                 where: { canceled_at: null },
@@ -338,6 +425,10 @@ class PayeeController {
             await payeeExists.update(
                 {
                     ...req.body,
+                    filial_id: filialExists.id,
+                    chartofaccount_id: chartOfAccountExists.id,
+                    issuer_id: issuer.id,
+                    paymentmethod_id: paymentMethodExists.id,
                     updated_by: req.userId,
                     updated_at: new Date(),
                 },
@@ -365,35 +456,62 @@ class PayeeController {
         const t = await connection.transaction()
         try {
             const {
-                payee_id,
+                payees,
                 paymentmethod_id,
                 settlement_date,
                 settlement_memo,
+                invoice_number,
             } = req.body
 
-            const payeeExists = await Payee.findByPk(payee_id)
+            for (let payee of payees) {
+                const payeeExists = await Payee.findByPk(payee.id)
 
-            if (!payeeExists) {
-                return res.status(401).json({ error: 'Payee does not exist.' })
+                if (!payeeExists) {
+                    return res
+                        .status(401)
+                        .json({ error: 'Payee does not exist.' })
+                }
+
+                const paymentMethod = await PaymentMethod.findByPk(
+                    paymentmethod_id
+                )
+
+                if (!paymentMethod) {
+                    return res.status(400).json({
+                        error: 'Payment Method does not exist.',
+                    })
+                }
+
+                if (payeeExists.status !== 'Paid') {
+                    await Payeesettlement.create(
+                        {
+                            payee_id: payeeExists.id,
+                            amount: payeeExists.dataValues.balance,
+                            paymentmethod_id,
+                            settlement_date,
+                            memo: settlement_memo,
+                            created_at: new Date(),
+                            created_by: req.userId,
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+
+                    await payeeExists.update(
+                        {
+                            balance: 0,
+                            status: 'Paid',
+                            invoice_number,
+                            updated_at: new Date(),
+                            updated_by: req.userId,
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+                }
             }
-
-            const paymentMethod = await PaymentMethod.findByPk(paymentmethod_id)
-
-            if (!paymentMethod) {
-                return res.status(400).json({
-                    error: 'Payment Method does not exist.',
-                })
-            }
-
-            const settlement = await Payeesettlement.create({
-                receivable_id: payeeExists.id,
-                amount: payeeExists.dataValues.balance,
-                paymentmethod_id,
-                settlement_date,
-                memo: settlement_memo,
-                created_at: new Date(),
-                created_by: req.userId,
-            })
 
             await t.commit()
             return res

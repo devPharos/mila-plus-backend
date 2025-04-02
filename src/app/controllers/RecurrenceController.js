@@ -110,12 +110,20 @@ export async function generateRecurrenceReceivables({
 
         let pedings = 0
 
+        let invoices_number = []
+
         if (clearAll) {
             for (const receivable of receivables) {
                 if (
                     receivable.dataValues.status === 'Pending' &&
                     receivable.dataValues.fee === 0
                 ) {
+                    invoices_number.push({
+                        used: false,
+                        invoice_number: receivable.dataValues.invoice_number,
+                    })
+                    await verifyAndCancelTextToPayTransaction(receivable.id)
+                    await verifyAndCancelParcelowPaymentLink(receivable.id)
                     await receivable.update({
                         canceled_at: new Date(),
                         canceled_by: recurrence.dataValues.created_by,
@@ -229,7 +237,7 @@ export async function generateRecurrenceReceivables({
                 due_date,
             })
 
-            await Receivable.create({
+            const newReceivable = {
                 company_id: 1,
                 filial_id,
                 issuer_id: issuer.id,
@@ -253,7 +261,24 @@ export async function generateRecurrenceReceivables({
                 paymentcriteria_id: recurrence.dataValues.paymentcriteria_id,
                 created_at: new Date(),
                 created_by: 2,
-            }).then((receivable) => {
+            }
+
+            const notUsedInvoice = invoices_number.find(
+                (invoice) => invoice.used === false
+            )
+
+            if (notUsedInvoice) {
+                newReceivable.invoice_number = notUsedInvoice.invoice_number
+                invoices_number.map((invoice) => {
+                    if (
+                        invoice.invoice_number === notUsedInvoice.invoice_number
+                    ) {
+                        invoice.used = true
+                    }
+                })
+            }
+
+            await Receivable.create(newReceivable).then((receivable) => {
                 appliedDiscounts.map((discount) => {
                     Receivablediscounts.create({
                         receivable_id: receivable.id,

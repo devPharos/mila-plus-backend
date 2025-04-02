@@ -7,15 +7,16 @@ import ChartOfAccount from '../models/Chartofaccount'
 import PaymentCriteria from '../models/PaymentCriteria'
 import Filial from '../models/Filial'
 import Issuer from '../models/Issuer'
+import Student from '../models/Student'
 import { searchPromise } from '../functions/searchPromise'
 import Receivable from '../models/Receivable'
 import Settlement from '../models/Settlement'
 import Receivablediscounts from '../models/Receivablediscounts'
-import Payee from '../models/Payee'
-import Merchants from '../models/Merchants'
+import { applyDiscounts } from './ReceivableController'
 import Payeesettlement from '../models/Payeesettlement'
+import Payee from '../models/Payee'
 
-class SettlementController {
+class PayeeSettlementController {
     async index(req, res) {
         try {
             const {
@@ -33,11 +34,11 @@ class SettlementController {
             } else {
                 searchOrder.push([orderBy, orderASC])
             }
-            const receivables = await Settlement.findAll({
+            const payees = await Payeesettlement.findAll({
                 include: [
                     {
-                        model: Receivable,
-                        as: 'receivable',
+                        model: Payee,
+                        as: 'payee',
                         include: [
                             {
                                 model: PaymentCriteria,
@@ -55,14 +56,6 @@ class SettlementController {
                                 model: Issuer,
                                 as: 'issuer',
                                 required: false,
-                                where: {
-                                    canceled_at: null,
-                                },
-                            },
-                            {
-                                model: Settlement,
-                                as: 'settlements',
-                                required: true,
                                 where: {
                                     canceled_at: null,
                                 },
@@ -99,14 +92,14 @@ class SettlementController {
                 order: searchOrder,
             })
 
-            const fields = ['status', ['receivable', 'memo'], 'amount']
-            Promise.all([searchPromise(search, receivables, fields)]).then(
+            const fields = ['status', ['payee', 'memo'], 'amount']
+            Promise.all([searchPromise(search, payees, fields)]).then(
                 (data) => {
                     return res.json(data[0])
                 }
             )
         } catch (err) {
-            const className = 'SettlementController'
+            const className = 'PayeeSettlementController'
             const functionName = 'index'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -117,9 +110,9 @@ class SettlementController {
 
     async show(req, res) {
         try {
-            const { payee_id } = req.params
+            const { receivable_id } = req.params
 
-            const payee = await Payee.findByPk(payee_id, {
+            const receivable = await Receivable.findByPk(receivable_id, {
                 where: { canceled_at: null },
                 include: [
                     {
@@ -141,6 +134,14 @@ class SettlementController {
                         where: { canceled_at: null },
                     },
                     {
+                        model: Receivablediscounts,
+                        as: 'discounts',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                    },
+                    {
                         model: Filial,
                         as: 'filial',
                         required: false,
@@ -153,15 +154,15 @@ class SettlementController {
                         where: { canceled_at: null },
                         include: [
                             {
-                                model: Merchants,
-                                as: 'merchant',
+                                model: Student,
+                                as: 'student',
                                 required: false,
                                 where: { canceled_at: null },
                             },
                         ],
                     },
                     {
-                        model: Payeesettlement,
+                        model: Settlement,
                         as: 'settlements',
                         required: false,
                         where: { canceled_at: null },
@@ -169,9 +170,9 @@ class SettlementController {
                 ],
             })
 
-            return res.json(payee)
+            return res.json(receivable)
         } catch (err) {
-            const className = 'PayeeSettlementController'
+            const className = 'SettlementController'
             const functionName = 'show'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -186,7 +187,7 @@ class SettlementController {
         try {
             const { settlement_id } = req.params
 
-            const settlement = await Settlement.findByPk(settlement_id)
+            const settlement = await Payeesettlement.findByPk(settlement_id)
 
             if (!settlement) {
                 return res
@@ -194,33 +195,10 @@ class SettlementController {
                     .json({ error: 'Settlement does not exist.' })
             }
 
-            const receivable = await Receivable.findByPk(
-                settlement.dataValues.receivable_id
-            )
+            const payee = await Payee.findByPk(settlement.dataValues.payee_id)
 
-            if (!receivable) {
-                return res
-                    .status(400)
-                    .json({ error: 'Receivable does not exist.' })
-            }
-
-            const paymentMethod = await PaymentMethod.findByPk(
-                settlement.dataValues.paymentmethod_id
-            )
-
-            if (!paymentMethod) {
-                return res
-                    .status(400)
-                    .json({ error: 'Payment Method does not exist.' })
-            }
-
-            if (
-                paymentMethod.dataValues.platform &&
-                paymentMethod.dataValues.platform.includes('Gravity')
-            ) {
-                return res.status(400).json({
-                    error: 'Settlement paid by Gravity Card cannot be deleted. Use the refund function instead.',
-                })
+            if (!payee) {
+                return res.status(400).json({ error: 'Payee does not exist.' })
             }
 
             await settlement
@@ -234,67 +212,11 @@ class SettlementController {
                     }
                 )
                 .then(async () => {
-                    const discounts = await Receivablediscounts.findAll({
-                        where: {
-                            receivable_id: receivable.id,
-                            canceled_at: null,
-                            type: 'Financial',
-                        },
-                    })
-                    let total_settled = settlement.dataValues.amount
-                    let total_discount = 0
-                    for (let discount of discounts) {
-                        if (discount.dataValues.percent) {
-                            total_discount +=
-                                (total_settled * 100) /
-                                    (100 - discount.dataValues.value) -
-                                total_settled
-                        } else {
-                            total_discount += discount.dataValues.value
-                        }
-                        await discount.update({
-                            canceled_at: new Date(),
-                            canceled_by: req.userId,
-                        })
-                    }
-                    if (settlement.dataValues.amount === 0) {
-                        total_settled = 0
-                        total_discount =
-                            receivable.dataValues.amount +
-                            receivable.dataValues.fee
-                    }
-
-                    if (total_discount === Infinity) {
-                        total_discount = receivable.dataValues.discount
-                    }
-
-                    const return_amount =
-                        total_settled === 0
-                            ? receivable.dataValues.balance + total_discount
-                            : receivable.dataValues.balance +
-                              total_settled +
-                              total_discount
-
-                    await receivable
+                    await payee
                         .update(
                             {
-                                discount: (
-                                    receivable.dataValues.discount -
-                                    total_discount
-                                ).toFixed(2),
-                                balance: return_amount.toFixed(2),
-                                status:
-                                    return_amount.toFixed(2) ===
-                                    (
-                                        receivable.dataValues.total +
-                                        total_discount
-                                    ).toFixed(2)
-                                        ? 'Pending'
-                                        : 'Parcial Paid',
-                                total:
-                                    receivable.dataValues.total +
-                                    total_discount,
-                                manual_discount: 0,
+                                balance: payee.dataValues.total,
+                                status: 'Pending',
                                 updated_at: new Date(),
                                 updated_by: req.userId,
                             },
@@ -320,7 +242,7 @@ class SettlementController {
                 })
         } catch (err) {
             await t.rollback()
-            const className = 'SettlementController'
+            const className = 'PayeeSettlementController'
             const functionName = 'delete'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -330,4 +252,4 @@ class SettlementController {
     }
 }
 
-export default new SettlementController()
+export default new PayeeSettlementController()

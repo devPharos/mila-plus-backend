@@ -114,10 +114,13 @@ class Payee extends Model {
                         key: 'id',
                     },
                 },
+                payeerecurrence_id: {
+                    type: Sequelize.UUID,
+                    allowNull: true,
+                },
                 invoice_number: {
                     type: Sequelize.INTEGER,
-                    autoIncrement: true,
-                    allowNull: false,
+                    allowNull: true,
                 },
                 type: {
                     type: Sequelize.STRING,

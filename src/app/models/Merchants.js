@@ -124,6 +124,10 @@ class Merchants extends Model {
             foreignKey: 'merchant_id',
             as: 'merchantxchartofaccounts',
         })
+        this.hasOne(models.Issuer, {
+            foreignKey: 'merchant_id',
+            as: 'issuer',
+        })
     }
 }
 

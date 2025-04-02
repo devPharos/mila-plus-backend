@@ -5,17 +5,105 @@ import Merchant from '../models/Merchants'
 import Filial from '../models/Filial'
 import MerchantXChartOfAccounts from '../models/MerchantXChartOfAccounts'
 import ChartOfAccounts from '../models/Chartofaccount'
+import Issuer from '../models/Issuer'
+import { canBeFloat, isUUIDv4 } from './ReceivableController'
 
 const { Op } = Sequelize
 
 class MerchantController {
     async index(req, res) {
         try {
-            const merchants = await Merchant.findAll({
+            const {
+                orderBy = 'name',
+                orderASC = 'ASC',
+                search = '',
+                limit = 50,
+            } = req.query
+            let searchOrder = []
+            if (orderBy.includes(',')) {
+                searchOrder.push([
+                    orderBy.split(',')[0],
+                    orderBy.split(',')[1],
+                    orderASC,
+                ])
+            } else {
+                searchOrder.push([orderBy, orderASC])
+            }
+
+            // Contém letras
+            let searches = null
+            if (search && search !== 'null') {
+                if (isUUIDv4(search)) {
+                    searches = {
+                        [Op.or]: [
+                            {
+                                id: search,
+                            },
+                        ],
+                    }
+                } else if (search.split('/').length === 3) {
+                    const date = search.split('/')
+                    searches = {
+                        [Op.or]: [
+                            {
+                                created_at: date[2] + date[0] + date[1],
+                            },
+                        ],
+                    }
+                } else if (
+                    search.split('/').length === 2 &&
+                    search.length === 5
+                ) {
+                    const date = search.split('/')
+                    searches = {
+                        [Op.or]: [
+                            {
+                                created_at: {
+                                    [Op.like]: `%${date[0] + date[1]}`,
+                                },
+                            },
+                        ],
+                    }
+                } else if (/[^0-9]/.test(search) && !canBeFloat(search)) {
+                    searches = {
+                        [Op.or]: [
+                            {
+                                name: search,
+                            },
+                            {
+                                ein: search,
+                            },
+                            {
+                                alias: search,
+                            },
+                        ],
+                    }
+                } else {
+                    // searches = {
+                    //     [Op.or]: [
+                    //         {
+                    //             amount: {
+                    //                 [Op.eq]: parseFloat(search),
+                    //             },
+                    //         },
+                    //     ],
+                    // }
+                }
+            }
+
+            const { count, rows } = await Merchant.findAndCountAll({
                 include: [
                     {
                         model: Filial,
                         as: 'filial',
+                        where: {
+                            canceled_at: null,
+                        },
+                    },
+                    {
+                        model: Issuer,
+                        as: 'issuer',
+                        required: false,
                         where: {
                             canceled_at: null,
                         },
@@ -54,10 +142,13 @@ class MerchantController {
                                     : 0,
                         },
                     ],
+                    ...searches,
                 },
+                limit,
+                order: searchOrder,
             })
 
-            return res.json(merchants)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'MerchantController'
             const functionName = 'index'
@@ -137,6 +228,56 @@ class MerchantController {
                     transaction: t,
                 }
             )
+
+            const issuerExists = await Issuer.findOne({
+                where: {
+                    company_id: 1,
+                    filial_id: new_merchant.dataValues.filial_id,
+                    merchant_id: new_merchant.dataValues.id,
+                    canceled_at: null,
+                },
+            })
+
+            if (!issuerExists) {
+                await Issuer.create(
+                    {
+                        company_id: 1,
+                        filial_id: new_merchant.dataValues.filial_id,
+                        merchant_id: new_merchant.dataValues.id,
+                        name: new_merchant.dataValues.name,
+                        email: new_merchant.dataValues.email,
+                        phone_number: new_merchant.dataValues.phone_number,
+                        address: new_merchant.dataValues.address,
+                        city: new_merchant.dataValues.city,
+                        state: new_merchant.dataValues.state,
+                        zip: new_merchant.dataValues.zip,
+                        country: new_merchant.dataValues.country,
+                        created_at: new Date(),
+                        created_by: req.userId,
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+            } else {
+                await issuerExists.update(
+                    {
+                        name: new_merchant.dataValues.name,
+                        email: new_merchant.dataValues.email,
+                        phone_number: new_merchant.dataValues.phone_number,
+                        address: new_merchant.dataValues.address,
+                        city: new_merchant.dataValues.city,
+                        state: new_merchant.dataValues.state,
+                        zip: new_merchant.dataValues.zip,
+                        country: new_merchant.dataValues.country,
+                        updated_by: req.userId,
+                        updated_at: new Date(),
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+            }
             await t.commit()
 
             return res.json(new_merchant)
