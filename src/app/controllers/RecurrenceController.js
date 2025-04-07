@@ -307,9 +307,50 @@ class RecurrenceController {
                 orderBy = 'registration_number',
                 orderASC = 'ASC',
                 search = '',
+                limit = 50,
             } = req.query
+            let searchOrder = []
+            if (orderBy.includes(',')) {
+                searchOrder.push([
+                    orderBy.split(',')[0],
+                    orderBy.split(',')[1],
+                    orderASC,
+                ])
+            } else {
+                searchOrder.push([orderBy, orderASC])
+            }
 
-            const students = await Student.findAll({
+            // Contém letras
+            let searches = null
+            if (search && search !== 'null') {
+                if (isUUIDv4(search)) {
+                    searches = {
+                        [Op.or]: [
+                            {
+                                id: search,
+                            },
+                        ],
+                    }
+                } else {
+                    searches = {
+                        [Op.or]: [
+                            {
+                                registration_number: {
+                                    [Op.iLike]: `%${search.toUpperCase()}%`,
+                                },
+                                name: {
+                                    [Op.iLike]: `%${search.toUpperCase()}%`,
+                                },
+                                last_name: {
+                                    [Op.iLike]: `%${search.toUpperCase()}%`,
+                                },
+                            },
+                        ],
+                    }
+                }
+            }
+
+            const { count, rows } = await Student.findAndCountAll({
                 where: {
                     canceled_at: null,
                     category: 'Student',
@@ -327,6 +368,7 @@ class RecurrenceController {
                                     : 0,
                         },
                     ],
+                    ...searches,
                 },
                 attributes: [
                     'id',
@@ -359,12 +401,13 @@ class RecurrenceController {
                 order: [[orderBy, orderASC]],
             })
 
-            const fields = ['registration_number', 'name', 'last_name']
-            Promise.all([searchPromise(search, students, fields)]).then(
-                (students) => {
-                    return res.json(students[0])
-                }
-            )
+            // const fields = ['registration_number', 'name', 'last_name']
+            // Promise.all([searchPromise(search, students, fields)]).then(
+            //     (students) => {
+            //         return res.json(students[0])
+            //     }
+            // )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'RecurrenceController'
             const functionName = 'index'

@@ -1289,6 +1289,7 @@ class ReceivableController {
                 orderBy = 'due_date',
                 orderASC = 'ASC',
                 search = '',
+                limit = 50,
             } = req.query
             let searchOrder = []
             if (orderBy.includes(',')) {
@@ -1303,7 +1304,7 @@ class ReceivableController {
 
             // Contém letras
             let searches = null
-            if (search) {
+            if (search && search !== 'null') {
                 if (isUUIDv4(search)) {
                     searches = {
                         [Op.or]: [
@@ -1458,6 +1459,7 @@ class ReceivableController {
                     'entry_date',
                     'is_recurrence',
                 ],
+                limit,
                 order: searchOrder,
             })
 

@@ -55,11 +55,12 @@ class BankAccountController {
                 ['bank', 'bank_name'],
                 ['filial', 'name'],
             ]
-            Promise.all([searchPromise(search, bankAccounts, fields)]).then(
-                (bankAccounts) => {
-                    return res.json(bankAccounts[0])
-                }
-            )
+            // Promise.all([searchPromise(search, bankAccounts, fields)]).then(
+            //     (bankAccounts) => {
+            //         return res.json(bankAccounts[0])
+            //     }
+            // )
+            return res.json(bankAccounts)
         } catch (err) {
             const className = 'BankAccountController'
             const functionName = 'index'

@@ -132,12 +132,13 @@ class IssuerController {
                 order: [[orderBy, orderASC]],
             })
 
-            const fields = ['name', 'email', 'address']
-            Promise.all([searchPromise(search, issuers, fields)]).then(
-                (issuers) => {
-                    return res.json(issuers[0])
-                }
-            )
+            // const fields = ['name', 'email', 'address']
+            // Promise.all([searchPromise(search, issuers, fields)]).then(
+            //     (issuers) => {
+            //         return res.json(issuers[0])
+            //     }
+            // )
+            return res.json(issuers)
         } catch (err) {
             const className = 'IssuerController'
             const functionName = 'index'

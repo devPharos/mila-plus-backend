@@ -33,61 +33,24 @@ class MerchantController {
             // Contém letras
             let searches = null
             if (search && search !== 'null') {
-                if (isUUIDv4(search)) {
-                    searches = {
-                        [Op.or]: [
-                            {
-                                id: search,
+                searches = {
+                    [Op.or]: [
+                        {
+                            name: {
+                                [Op.iLike]: `%${search}%`,
                             },
-                        ],
-                    }
-                } else if (search.split('/').length === 3) {
-                    const date = search.split('/')
-                    searches = {
-                        [Op.or]: [
-                            {
-                                created_at: date[2] + date[0] + date[1],
+                        },
+                        {
+                            ein: {
+                                [Op.iLike]: `%${search}%`,
                             },
-                        ],
-                    }
-                } else if (
-                    search.split('/').length === 2 &&
-                    search.length === 5
-                ) {
-                    const date = search.split('/')
-                    searches = {
-                        [Op.or]: [
-                            {
-                                created_at: {
-                                    [Op.like]: `%${date[0] + date[1]}`,
-                                },
+                        },
+                        {
+                            alias: {
+                                [Op.iLike]: `%${search}%`,
                             },
-                        ],
-                    }
-                } else if (/[^0-9]/.test(search) && !canBeFloat(search)) {
-                    searches = {
-                        [Op.or]: [
-                            {
-                                name: search,
-                            },
-                            {
-                                ein: search,
-                            },
-                            {
-                                alias: search,
-                            },
-                        ],
-                    }
-                } else {
-                    // searches = {
-                    //     [Op.or]: [
-                    //         {
-                    //             amount: {
-                    //                 [Op.eq]: parseFloat(search),
-                    //             },
-                    //         },
-                    //     ],
-                    // }
+                        },
+                    ],
                 }
             }
 

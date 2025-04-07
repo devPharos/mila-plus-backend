@@ -211,7 +211,7 @@ class ChartOfAccountsController {
                     [Op.or]: [
                         {
                             name: {
-                                [Op.like]: `%${search.toUpperCase()}%`,
+                                [Op.iLike]: `%${search.toUpperCase()}%`,
                             },
                         },
                         {

@@ -19,6 +19,7 @@ class PayeeController {
             const {
                 orderBy = 'due_date',
                 orderASC = 'ASC',
+                limit = 50,
                 search = '',
             } = req.query
             let searchOrder = []
@@ -34,7 +35,7 @@ class PayeeController {
 
             // Contém letras
             let searches = null
-            if (search) {
+            if (search && search !== 'null') {
                 if (isUUIDv4(search)) {
                     searches = {
                         [Op.or]: [
@@ -177,6 +178,7 @@ class PayeeController {
                     'entry_date',
                     'is_recurrence',
                 ],
+                limit,
                 order: searchOrder,
             })
 

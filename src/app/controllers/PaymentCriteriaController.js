@@ -10,7 +10,38 @@ const { Op } = Sequelize
 class PaymentCriteriaController {
     async index(req, res) {
         try {
-            const criteriaList = await PaymentCriteria.findAll({
+            const {
+                orderBy = 'description',
+                orderASC = 'ASC',
+                search = '',
+                limit = 50,
+            } = req.query
+            let searchOrder = []
+            if (orderBy.includes(',')) {
+                searchOrder.push([
+                    orderBy.split(',')[0],
+                    orderBy.split(',')[1],
+                    orderASC,
+                ])
+            } else {
+                searchOrder.push([orderBy, orderASC])
+            }
+
+            // Contém letras
+            let searches = null
+            if (search && search !== 'null') {
+                searches = {
+                    [Op.or]: [
+                        {
+                            description: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                    ],
+                }
+            }
+
+            const { count, rows } = await PaymentCriteria.findAndCountAll({
                 include: [
                     {
                         model: Company,
@@ -38,11 +69,13 @@ class PaymentCriteriaController {
                                     : 0,
                         },
                     ],
+                    ...searches,
                 },
-                order: [['created_at', 'DESC']],
+                limit,
+                order: searchOrder,
             })
 
-            return res.json(criteriaList)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'PaymentCriteriaController'
             const functionName = 'index'

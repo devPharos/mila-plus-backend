@@ -12,7 +12,43 @@ const { Op } = Sequelize
 class PaymentMethodController {
     async index(req, res) {
         try {
-            const paymentMethods = await PaymentMethod.findAll({
+            const {
+                orderBy = 'description',
+                orderASC = 'ASC',
+                search = '',
+                limit = 50,
+            } = req.query
+            let searchOrder = []
+            if (orderBy.includes(',')) {
+                searchOrder.push([
+                    orderBy.split(',')[0],
+                    orderBy.split(',')[1],
+                    orderASC,
+                ])
+            } else {
+                searchOrder.push([orderBy, orderASC])
+            }
+
+            // Contém letras
+            let searches = null
+            if (search && search !== 'null') {
+                searches = {
+                    [Op.or]: [
+                        {
+                            description: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                        {
+                            platform: {
+                                [Op.iLike]: `%${search}%`,
+                            },
+                        },
+                    ],
+                }
+            }
+
+            const { count, rows } = await PaymentMethod.findAndCountAll({
                 include: [
                     {
                         model: Company,
@@ -52,11 +88,13 @@ class PaymentMethodController {
                                     : 0,
                         },
                     ],
+                    ...searches,
                 },
-                order: [['created_at', 'DESC']],
+                limit,
+                order: searchOrder,
             })
 
-            return res.json(paymentMethods)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'PaymentMethodController'
             const functionName = 'index'

@@ -9,18 +9,15 @@ const { Op } = Sequelize
 class BankController {
     async index(req, res) {
         try {
-            const {
-                orderBy = 'created_at',
+            let {
+                orderBy = 'bank_name',
                 orderASC = 'ASC',
                 search = '',
             } = req.query
+            if (search && search !== 'null') {
+                search = ''
+            }
             const banks = await Bank.findAll({
-                include: [
-                    {
-                        association: 'company',
-                        attributes: ['name'],
-                    },
-                ],
                 where: {
                     canceled_at: null,
                 },
@@ -28,11 +25,12 @@ class BankController {
             })
 
             const fields = ['bank_name', 'bank_alias']
-            Promise.all([searchPromise(search, banks, fields)]).then(
-                (banks) => {
-                    return res.json(banks[0])
-                }
-            )
+            // Promise.all([searchPromise(search, banks, fields)]).then(
+            //     (banks) => {
+            //         return res.json(banks[0])
+            //     }
+            // )
+            return res.json(banks)
         } catch (err) {
             const className = 'BankController'
             const functionName = 'index'
