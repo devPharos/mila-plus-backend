@@ -14,26 +14,70 @@ import Receivablediscounts from '../models/Receivablediscounts'
 import Payee from '../models/Payee'
 import Merchants from '../models/Merchants'
 import Payeesettlement from '../models/Payeesettlement'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    getIssuerByName,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 class SettlementController {
     async index(req, res) {
         try {
-            const {
-                orderBy = 'due_date',
-                orderASC = 'ASC',
+            const defaultOrderBy = { column: 'settlement_date', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
+                limit = 10,
             } = req.query
-            let searchOrder = []
-            if (orderBy.includes(',')) {
-                searchOrder.push([
-                    orderBy.split(',')[0],
-                    orderBy.split(',')[1],
-                    orderASC,
-                ])
-            } else {
-                searchOrder.push([orderBy, orderASC])
+
+            if (!verifyFieldInModel(orderBy, Settlement)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
             }
-            const receivables = await Settlement.findAll({
+
+            const filialSearch = verifyFilialSearch(Receivable, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            let issuerSearch = null
+            if (search && search !== 'null') {
+                issuerSearch = await getIssuerByName(search)
+            }
+
+            const searchableFields = [
+                {
+                    model: Receivable,
+                    field: 'invoice_number',
+                    type: 'float',
+                    return: 'receivable_id',
+                },
+                {
+                    model: Receivable,
+                    field: 'due_date',
+                    type: 'date',
+                    return: 'receivable_id',
+                },
+                {
+                    field: 'settlement_date',
+                    type: 'date',
+                },
+                {
+                    field: 'amount',
+                    type: 'float',
+                },
+            ]
+            let searchable = null
+            if (!issuerSearch) {
+                searchable = await generateSearchByFields(
+                    search,
+                    searchableFields
+                )
+            }
+
+            const { count, rows } = await Settlement.findAndCountAll({
                 include: [
                     {
                         model: Receivable,
@@ -69,20 +113,9 @@ class SettlementController {
                             },
                         ],
                         where: {
-                            [Op.or]: [
-                                {
-                                    filial_id: {
-                                        [Op.gte]:
-                                            req.headers.filial == 1 ? 1 : 999,
-                                    },
-                                },
-                                {
-                                    filial_id:
-                                        req.headers.filial != 1
-                                            ? req.headers.filial
-                                            : 0,
-                                },
-                            ],
+                            ...filialSearch,
+                            ...issuerSearch,
+                            canceled_at: null,
                         },
                     },
                     {
@@ -94,17 +127,14 @@ class SettlementController {
                 ],
 
                 where: {
+                    ...searchable,
                     canceled_at: null,
                 },
+                limit,
                 order: searchOrder,
             })
 
-            const fields = ['status', ['receivable', 'memo'], 'amount']
-            Promise.all([searchPromise(search, receivables, fields)]).then(
-                (data) => {
-                    return res.json(data[0])
-                }
-            )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'SettlementController'
             const functionName = 'index'

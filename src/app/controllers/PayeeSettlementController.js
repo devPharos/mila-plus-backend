@@ -1,4 +1,4 @@
-import Sequelize, { Op } from 'sequelize'
+import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Receivable from '../models/Receivable'
@@ -8,33 +8,76 @@ import PaymentCriteria from '../models/PaymentCriteria'
 import Filial from '../models/Filial'
 import Issuer from '../models/Issuer'
 import Student from '../models/Student'
-import { searchPromise } from '../functions/searchPromise'
 import Receivable from '../models/Receivable'
 import Settlement from '../models/Settlement'
 import Receivablediscounts from '../models/Receivablediscounts'
-import { applyDiscounts } from './ReceivableController'
 import Payeesettlement from '../models/Payeesettlement'
 import Payee from '../models/Payee'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    getIssuerByName,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 class PayeeSettlementController {
     async index(req, res) {
         try {
-            const {
-                orderBy = 'due_date',
-                orderASC = 'ASC',
+            const defaultOrderBy = { column: 'created_at', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
+                limit = 10,
             } = req.query
-            let searchOrder = []
-            if (orderBy.includes(',')) {
-                searchOrder.push([
-                    orderBy.split(',')[0],
-                    orderBy.split(',')[1],
-                    orderASC,
-                ])
-            } else {
-                searchOrder.push([orderBy, orderASC])
+
+            if (!verifyFieldInModel(orderBy, Payeesettlement)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
             }
-            const payees = await Payeesettlement.findAll({
+
+            const filialSearch = verifyFilialSearch(Payee, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            let issuerSearch = null
+            if (search && search !== 'null') {
+                issuerSearch = await getIssuerByName(search)
+            }
+
+            const searchableFields = [
+                {
+                    field: 'amount',
+                    type: 'float',
+                },
+                {
+                    field: 'amount',
+                    type: 'float',
+                },
+                {
+                    model: PaymentMethod,
+                    field: 'description',
+                    type: 'string',
+                    return: 'paymentMethod_id',
+                },
+                {
+                    model: Payee,
+                    field: 'invoice_number',
+                    type: 'float',
+                    return: 'payee_id',
+                },
+            ]
+
+            let searchable = null
+            if (!issuerSearch) {
+                searchable = await generateSearchByFields(
+                    search,
+                    searchableFields
+                )
+            }
+
+            const { count, rows } = await Payeesettlement.findAndCountAll({
                 include: [
                     {
                         model: Payee,
@@ -62,20 +105,9 @@ class PayeeSettlementController {
                             },
                         ],
                         where: {
-                            [Op.or]: [
-                                {
-                                    filial_id: {
-                                        [Op.gte]:
-                                            req.headers.filial == 1 ? 1 : 999,
-                                    },
-                                },
-                                {
-                                    filial_id:
-                                        req.headers.filial != 1
-                                            ? req.headers.filial
-                                            : 0,
-                                },
-                            ],
+                            ...filialSearch,
+                            ...issuerSearch,
+                            canceled_at: null,
                         },
                     },
                     {
@@ -87,17 +119,14 @@ class PayeeSettlementController {
                 ],
 
                 where: {
+                    ...searchable,
                     canceled_at: null,
                 },
+                limit,
                 order: searchOrder,
             })
 
-            const fields = ['status', ['payee', 'memo'], 'amount']
-            Promise.all([searchPromise(search, payees, fields)]).then(
-                (data) => {
-                    return res.json(data[0])
-                }
-            )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'PayeeSettlementController'
             const functionName = 'index'

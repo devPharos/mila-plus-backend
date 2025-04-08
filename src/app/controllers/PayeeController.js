@@ -10,104 +10,88 @@ import Filial from '../models/Filial'
 import Issuer from '../models/Issuer'
 import Payeesettlement from '../models/Payeesettlement'
 import { format } from 'date-fns'
-import { canBeFloat, isUUIDv4 } from './ReceivableController'
 import Merchants from '../models/Merchants'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 class PayeeController {
     async index(req, res) {
         try {
-            const {
-                orderBy = 'due_date',
-                orderASC = 'ASC',
-                limit = 50,
+            const defaultOrderBy = { column: 'due_date', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
+                limit = 10,
             } = req.query
-            let searchOrder = []
-            if (orderBy.includes(',')) {
-                searchOrder.push([
-                    orderBy.split(',')[0],
-                    orderBy.split(',')[1],
-                    orderASC,
-                ])
-            } else {
-                searchOrder.push([orderBy, orderASC])
+
+            if (!verifyFieldInModel(orderBy, Payee)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
             }
 
-            // Contém letras
-            let searches = null
-            if (search && search !== 'null') {
-                if (isUUIDv4(search)) {
-                    searches = {
-                        [Op.or]: [
-                            {
-                                issuer_id: search,
-                            },
-                        ],
-                    }
-                } else if (search.split('/').length === 3) {
-                    const date = search.split('/')
-                    searches = {
-                        [Op.or]: [
-                            {
-                                due_date: date[2] + date[0] + date[1],
-                            },
-                        ],
-                    }
-                } else if (
-                    search.split('/').length === 2 &&
-                    search.length === 5
-                ) {
-                    const date = search.split('/')
-                    searches = {
-                        [Op.or]: [
-                            {
-                                due_date: {
-                                    [Op.like]: `%${date[0] + date[1]}`,
-                                },
-                            },
-                        ],
-                    }
-                } else if (/[^0-9]/.test(search) && !canBeFloat(search)) {
-                    searches = {
-                        [Op.or]: [
-                            {
-                                memo: {
-                                    [Op.iLike]: `%${search.toUpperCase()}%`,
-                                },
-                            },
-                        ],
-                    }
-                } else {
-                    searches = {
-                        [Op.or]: [
-                            {
-                                invoice_number: {
-                                    [Op.or]: [
-                                        {
-                                            [Op.eq]: parseInt(search),
-                                        },
-                                    ],
-                                },
-                            },
-                            {
-                                amount: {
-                                    [Op.eq]: parseFloat(search),
-                                },
-                            },
-                            {
-                                total: {
-                                    [Op.eq]: parseFloat(search),
-                                },
-                            },
-                            {
-                                balance: {
-                                    [Op.eq]: parseFloat(search),
-                                },
-                            },
-                        ],
-                    }
-                }
-            }
+            const filialSearch = verifyFilialSearch(Payee, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    model: Filial,
+                    field: 'name',
+                    type: 'string',
+                    return: 'filial_id',
+                },
+                {
+                    model: Issuer,
+                    field: 'name',
+                    type: 'string',
+                    return: 'issuer_id',
+                },
+                {
+                    field: 'issuer_id',
+                    type: 'uuid',
+                },
+                {
+                    field: 'invoice_number',
+                    type: 'float',
+                },
+                {
+                    field: 'entry_date',
+                    type: 'date',
+                },
+                {
+                    field: 'due_date',
+                    type: 'date',
+                },
+                {
+                    field: 'type',
+                    type: 'string',
+                },
+                {
+                    field: 'type_detail',
+                    type: 'string',
+                },
+                {
+                    field: 'status',
+                    type: 'string',
+                },
+                {
+                    field: 'amount',
+                    type: 'float',
+                },
+                {
+                    field: 'total',
+                    type: 'float',
+                },
+                {
+                    field: 'balance',
+                    type: 'float',
+                },
+            ]
             const { count, rows } = await Payee.findAndCountAll({
                 include: [
                     {
@@ -150,20 +134,8 @@ class PayeeController {
                 ],
                 where: {
                     canceled_at: null,
-                    [Op.or]: [
-                        {
-                            filial_id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            filial_id:
-                                req.headers.filial != 1
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
-                    ...searches,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                 },
                 attributes: [
                     'id',
@@ -423,14 +395,6 @@ class PayeeController {
 
             if (!payeeExists) {
                 return res.status(401).json({ error: 'Payee does not exist.' })
-            }
-
-            if (
-                req.body.due_date &&
-                payeeExists.due_date &&
-                req.body.due_date !== payeeExists.due_date
-            ) {
-                oldDueDate = payeeExists.due_date
             }
 
             let { amount, fee, discount } = req.body

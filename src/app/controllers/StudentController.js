@@ -160,6 +160,12 @@ class StudentController {
                 where: { canceled_at: null },
                 include: [
                     {
+                        model: Filial,
+                        as: 'filial',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
                         association: 'discounts',
                         include: [
                             {

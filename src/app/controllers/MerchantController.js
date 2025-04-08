@@ -7,52 +7,61 @@ import MerchantXChartOfAccounts from '../models/MerchantXChartOfAccounts'
 import ChartOfAccounts from '../models/Chartofaccount'
 import Issuer from '../models/Issuer'
 import { canBeFloat, isUUIDv4 } from './ReceivableController'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
 class MerchantController {
     async index(req, res) {
         try {
-            const {
-                orderBy = 'name',
-                orderASC = 'ASC',
+            const defaultOrderBy = { column: 'description', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 50,
+                limit = 10,
             } = req.query
-            let searchOrder = []
-            if (orderBy.includes(',')) {
-                searchOrder.push([
-                    orderBy.split(',')[0],
-                    orderBy.split(',')[1],
-                    orderASC,
-                ])
-            } else {
-                searchOrder.push([orderBy, orderASC])
+
+            if (!verifyFieldInModel(orderBy, Merchant)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
             }
 
-            // Contém letras
-            let searches = null
-            if (search && search !== 'null') {
-                searches = {
-                    [Op.or]: [
-                        {
-                            name: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                        {
-                            ein: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                        {
-                            alias: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                    ],
-                }
-            }
+            const filialSearch = verifyFilialSearch(Merchant, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+                {
+                    field: 'ein',
+                    type: 'string',
+                },
+                {
+                    field: 'alias',
+                    type: 'string',
+                },
+                {
+                    field: 'address',
+                    type: 'string',
+                },
+                {
+                    field: 'email',
+                    type: 'string',
+                },
+                {
+                    field: 'phone_number',
+                    type: 'string',
+                },
+            ]
 
             const { count, rows } = await Merchant.findAndCountAll({
                 include: [
@@ -92,20 +101,8 @@ class MerchantController {
                 ],
                 where: {
                     canceled_at: null,
-                    [Op.or]: [
-                        {
-                            filial_id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            filial_id:
-                                req.headers.filial != 1
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
-                    ...searches,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                 },
                 limit,
                 order: searchOrder,
@@ -171,18 +168,46 @@ class MerchantController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const {
+                filial,
+                alias,
+                name,
+                address,
+                city,
+                state,
+                zip,
+                country,
+                ein,
+                email,
+                phone_number,
+                bank_name,
+                bank_account,
+                bank_routing_number,
+            } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
             const new_merchant = await Merchant.create(
                 {
-                    ...req.body,
-                    filial_id: req.body.filial_id
-                        ? req.body.filial_id
-                        : req.headers.filial,
-                    balance_payees: req.body.balance_payees
-                        ? req.body.balance_payees
-                        : 0,
-                    late_payees: req.body.late_payees
-                        ? req.body.late_payees
-                        : 0,
+                    filial_id: filialExists.id,
+                    alias,
+                    name,
+                    address,
+                    city,
+                    state,
+                    zip,
+                    country,
+                    ein,
+                    email,
+                    phone_number,
+                    bank_name,
+                    bank_account,
+                    bank_routing_number,
                     company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
@@ -261,7 +286,31 @@ class MerchantController {
         try {
             const { merchant_id } = req.params
 
-            // console.log(req.body)
+            const {
+                filial,
+                alias,
+                name,
+                address,
+                city,
+                state,
+                zip,
+                country,
+                ein,
+                email,
+                phone_number,
+                bank_name,
+                bank_account,
+                bank_routing_number,
+            } = req.body
+
+            if (filial) {
+                const filialExists = await Filial.findByPk(filial.id)
+                if (!filialExists) {
+                    return res.status(400).json({
+                        error: 'Filial does not exist.',
+                    })
+                }
+            }
 
             const merchantExists = await Merchant.findByPk(merchant_id, {
                 include: [
@@ -301,7 +350,20 @@ class MerchantController {
 
             await merchantExists.update(
                 {
-                    ...req.body,
+                    filial_id: merchantExists.filial_id,
+                    alias,
+                    name,
+                    address,
+                    city,
+                    state,
+                    zip,
+                    country,
+                    ein,
+                    email,
+                    phone_number,
+                    bank_name,
+                    bank_account,
+                    bank_routing_number,
                     company_id: 1,
                     updated_by: req.userId,
                     updated_at: new Date(),
@@ -330,7 +392,7 @@ class MerchantController {
                                 {
                                     filial_id: merchantExists.filial_id,
                                     merchant_id: merchantExists.id,
-                                    chartofaccount_id: item.chartofaccount_id,
+                                    chartofaccount_id: item.id,
                                     company_id: merchantExists.company_id,
                                     created_at: new Date(),
                                     created_by: req.userId,

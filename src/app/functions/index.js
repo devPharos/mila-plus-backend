@@ -1,5 +1,9 @@
+import { Op } from 'sequelize'
 import Student from '../models/Student'
 import Studentdiscount from '../models/Studentdiscount'
+import { isUUIDv4 } from '../controllers/ReceivableController'
+import Issuer from '../models/Issuer'
+import Merchants from '../models/Merchants'
 
 export function randomPassword() {
     const length = 10
@@ -9,6 +13,196 @@ export function randomPassword() {
     for (var i = length; i > 0; --i)
         result += chars[Math.floor(Math.random() * chars.length)]
     return result
+}
+
+export function verifyFieldInModel(field, model) {
+    const fields = model.rawAttributes
+    return fields[field] !== undefined
+}
+
+export function generateSearchOrder(orderBy, orderASC) {
+    let searchOrder = []
+    if (orderBy.includes(',')) {
+        searchOrder.push([
+            orderBy.split(',')[0],
+            orderBy.split(',')[1],
+            orderASC,
+        ])
+    } else {
+        searchOrder.push([orderBy, orderASC])
+    }
+    return searchOrder
+}
+
+export async function generateSearchByFields(
+    search = '',
+    searchableFields = []
+) {
+    let searches = null
+
+    const modelIds = await generateSearchByModel(
+        search,
+        searchableFields.filter((field) => field.model)
+    )
+
+    const notModels = searchableFields.filter((field) => !field.model)
+
+    if (modelIds) {
+        searches = {
+            [modelIds.field]: {
+                [Op.in]: modelIds.joinIds,
+            },
+        }
+        return searches
+    }
+
+    if (search && search !== 'null' && notModels.length > 0) {
+        const orFields = []
+        for (let field of notModels) {
+            orFields.push(await execFieldTypeSearch(field, search))
+        }
+        searches = {
+            [Op.or]: orFields,
+        }
+    }
+    return searches
+}
+
+export async function execFieldTypeSearch(field, search) {
+    if (field.type === 'uuid' && isUUIDv4(search)) {
+        return {
+            [field.field]: {
+                [Op.eq]: search,
+            },
+        }
+    } else if (field.type === 'float') {
+        return {
+            [field.field]: {
+                [Op.eq]: parseFloat(search),
+            },
+        }
+    } else if (field.type === 'string') {
+        return {
+            [field.field]: {
+                [Op.iLike]: `%${search}%`,
+            },
+        }
+    } else if (field.type === 'date') {
+        const date = search.split('/')
+        if (date.length === 2) {
+            return {
+                [field.field]: {
+                    [Op.or]: [
+                        {
+                            [field.field]: {
+                                [Op.like]: `%${date[0] + date[1]}`,
+                            },
+                        },
+                    ],
+                },
+            }
+        } else if (date.length === 3) {
+            return {
+                [Op.or]: [
+                    {
+                        [field.field]: date[2] + date[0] + date[1],
+                    },
+                ],
+            }
+        }
+    } else if (field.type === 'boolean') {
+        return {
+            [field.field]: {
+                [Op.eq]: search === 'true' ? true : false,
+            },
+        }
+    } else if (isUUIDv4(search)) {
+        return {
+            ['id']: search,
+        }
+    }
+    return null
+}
+
+export async function generateSearchByModel(
+    search = '',
+    searchableFields = []
+) {
+    for (let field of searchableFields) {
+        if (search && search !== 'null') {
+            const joinTable = await field.model.findAll({
+                where: {
+                    canceled_at: null,
+                    ...(await execFieldTypeSearch(field, search)),
+                },
+                attributes: ['id'],
+            })
+
+            let joinIds = []
+
+            if (joinTable.length > 0) {
+                for (let join of joinTable) {
+                    joinIds.push(join.id)
+                }
+                return { field: field.return, joinIds }
+            }
+        }
+    }
+}
+
+export async function getIssuerByName(search = '') {
+    if (search && search !== 'null') {
+        const issuers = await Issuer.findAll({
+            where: {
+                canceled_at: null,
+                name: {
+                    [Op.iLike]: `%${search}%`,
+                },
+            },
+            attributes: ['id'],
+        })
+        const issuerIds = []
+        for (let issuer of issuers) {
+            issuerIds.push(issuer.id)
+        }
+        if (issuerIds.length > 0) {
+            return {
+                issuer_id: {
+                    [Op.in]: issuerIds,
+                },
+            }
+        }
+    }
+}
+
+export function verifyFilialSearch(model = null, req = null) {
+    return model.rawAttributes['filial_id']
+        ? {
+              [Op.or]: [
+                  {
+                      filial_id: {
+                          [Op.gte]: req.headers.filial == 1 ? 1 : 999,
+                      },
+                  },
+                  {
+                      filial_id:
+                          req.headers.filial != 1 ? req.headers.filial : 0,
+                  },
+              ],
+          }
+        : {}
+}
+
+export async function verifyMerchantSearch(search = '') {
+    if (search && search !== 'null' && isUUIDv4(search)) {
+        const merchant = await Merchants.findByPk(search)
+        if (merchant) {
+            return {
+                merchant_id: search,
+            }
+        }
+    }
+    return null
 }
 
 export const FRONTEND_URL =

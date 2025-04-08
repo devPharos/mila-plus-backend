@@ -4,50 +4,44 @@ import databaseConfig from '../../config/database'
 import PaymentCriteria from '../models/PaymentCriteria'
 import Company from '../models/Company'
 import Filial from '../models/Filial'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
 class PaymentCriteriaController {
     async index(req, res) {
         try {
-            const {
-                orderBy = 'description',
-                orderASC = 'ASC',
+            const defaultOrderBy = { column: 'description', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 50,
+                limit = 10,
             } = req.query
-            let searchOrder = []
-            if (orderBy.includes(',')) {
-                searchOrder.push([
-                    orderBy.split(',')[0],
-                    orderBy.split(',')[1],
-                    orderASC,
-                ])
-            } else {
-                searchOrder.push([orderBy, orderASC])
+
+            if (!verifyFieldInModel(orderBy, PaymentCriteria)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
             }
 
-            // Contém letras
-            let searches = null
-            if (search && search !== 'null') {
-                searches = {
-                    [Op.or]: [
-                        {
-                            description: {
-                                [Op.iLike]: `%${search}%`,
-                            },
-                        },
-                    ],
-                }
-            }
+            const filialSearch = verifyFilialSearch(PaymentCriteria, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'description',
+                    type: 'string',
+                },
+            ]
 
             const { count, rows } = await PaymentCriteria.findAndCountAll({
                 include: [
-                    {
-                        model: Company,
-                        as: 'company',
-                        where: { canceled_at: null },
-                    },
                     {
                         model: Filial,
                         as: 'filial',
@@ -56,20 +50,8 @@ class PaymentCriteriaController {
                 ],
                 where: {
                     canceled_at: null,
-                    [Op.or]: [
-                        {
-                            filial_id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            filial_id:
-                                req.headers.filial != 1
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
-                    ...searches,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                 },
                 limit,
                 order: searchOrder,
@@ -124,14 +106,38 @@ class PaymentCriteriaController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const {
+                filial,
+                description,
+                recurring_qt,
+                recurring_metric,
+                fee_qt,
+                fee_metric,
+                fee_type,
+                fee_value,
+                late_fee_description,
+            } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
             const newCriteria = await PaymentCriteria.create(
                 {
-                    ...req.body,
+                    filial_id: filial.id,
+                    description,
+                    recurring_qt,
+                    recurring_metric,
+                    fee_qt,
+                    fee_metric,
+                    fee_type,
+                    fee_value,
+                    late_fee_description,
                     company_id: 1,
                     created_at: new Date(),
-                    filial_id: req.body.filial_id
-                        ? req.body.filial_id
-                        : req.headers.filial,
                     created_by: req.userId,
                 },
                 {
@@ -158,6 +164,25 @@ class PaymentCriteriaController {
         try {
             const { paymentcriteria_id } = req.params
 
+            const {
+                filial,
+                description,
+                recurring_qt,
+                recurring_metric,
+                fee_qt,
+                fee_metric,
+                fee_type,
+                fee_value,
+                late_fee_description,
+            } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
             const criteriaExists = await PaymentCriteria.findByPk(
                 paymentcriteria_id
             )
@@ -170,7 +195,15 @@ class PaymentCriteriaController {
 
             await criteriaExists.update(
                 {
-                    ...req.body,
+                    filial_id: filial.id,
+                    description,
+                    recurring_qt,
+                    recurring_metric,
+                    fee_qt,
+                    fee_metric,
+                    fee_type,
+                    fee_value,
+                    late_fee_description,
                     company_id: 1,
                     updated_by: req.userId,
                     updated_at: new Date(),

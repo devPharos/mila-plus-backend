@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class Chartofaccount extends Model {
     static init(sequelize) {
@@ -17,21 +17,19 @@ class Chartofaccount extends Model {
                 canceled_at: Sequelize.DATE,
             },
             {
-                sequelize
+                sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
     static associate(models) {
-
         this.hasOne(models.Chartofaccount, {
             sourceKey: 'father_id',
             foreignKey: 'id',
             as: 'Father',
-        });
-
+        })
     }
 }
 
-export default Chartofaccount;
+export default Chartofaccount

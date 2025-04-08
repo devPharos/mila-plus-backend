@@ -20,7 +20,6 @@ import {
     parseISO,
     subDays,
 } from 'date-fns'
-import { searchPromise } from '../functions/searchPromise'
 import { mailer } from '../../config/mailer'
 import { emergepay } from '../../config/emergepay'
 import Recurrence from '../models/Recurrence'
@@ -29,7 +28,6 @@ import Receivablediscounts from '../models/Receivablediscounts'
 import Studentdiscount from '../models/Studentdiscount'
 import Settlement from '../models/Settlement'
 import {
-    createPaidTimeline,
     settlement,
     verifyAndCancelTextToPayTransaction,
     verifyAndCreateTextToPayTransaction,
@@ -44,10 +42,16 @@ import Renegociation from '../models/Renegociation'
 import Maillog from '../models/Maillog'
 import { BeforeDueDateMail } from '../views/mails/BeforeDueDateMail'
 import { OnDueDateMail } from '../views/mails/OnDueDateMail'
-import { SettlementMail } from '../views/mails/SettlementMail'
 import { AfterDueDateMail } from '../views/mails/AfterDueDateMail'
 import { FeeChargedMail } from '../views/mails/FeeChargedMail'
 import { generateRecurrenceReceivables } from './RecurrenceController'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
+import Chartofaccount from '../models/Chartofaccount'
 
 const xl = require('excel4node')
 const fs = require('fs')
@@ -1285,98 +1289,77 @@ export function canBeFloat(str) {
 class ReceivableController {
     async index(req, res) {
         try {
-            const {
-                orderBy = 'due_date',
-                orderASC = 'ASC',
+            const defaultOrderBy = { column: 'due_date', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 50,
+                limit = 10,
             } = req.query
-            let searchOrder = []
-            if (orderBy.includes(',')) {
-                searchOrder.push([
-                    orderBy.split(',')[0],
-                    orderBy.split(',')[1],
-                    orderASC,
-                ])
-            } else {
-                searchOrder.push([orderBy, orderASC])
+
+            if (!verifyFieldInModel(orderBy, Receivable)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
             }
 
-            // Contém letras
-            let searches = null
-            if (search && search !== 'null') {
-                if (isUUIDv4(search)) {
-                    searches = {
-                        [Op.or]: [
-                            {
-                                issuer_id: search,
-                            },
-                        ],
-                    }
-                } else if (search.split('/').length === 3) {
-                    const date = search.split('/')
-                    searches = {
-                        [Op.or]: [
-                            {
-                                due_date: date[2] + date[0] + date[1],
-                            },
-                        ],
-                    }
-                } else if (
-                    search.split('/').length === 2 &&
-                    search.length === 5
-                ) {
-                    const date = search.split('/')
-                    searches = {
-                        [Op.or]: [
-                            {
-                                due_date: {
-                                    [Op.like]: `%${date[0] + date[1]}`,
-                                },
-                            },
-                        ],
-                    }
-                } else if (/[^0-9]/.test(search) && !canBeFloat(search)) {
-                    searches = {
-                        [Op.or]: [
-                            {
-                                memo: {
-                                    [Op.iLike]: `%${search.toUpperCase()}%`,
-                                },
-                            },
-                        ],
-                    }
-                } else {
-                    searches = {
-                        [Op.or]: [
-                            {
-                                invoice_number: {
-                                    [Op.or]: [
-                                        {
-                                            [Op.eq]: parseInt(search),
-                                        },
-                                    ],
-                                },
-                            },
-                            {
-                                amount: {
-                                    [Op.eq]: parseFloat(search),
-                                },
-                            },
-                            {
-                                total: {
-                                    [Op.eq]: parseFloat(search),
-                                },
-                            },
-                            {
-                                balance: {
-                                    [Op.eq]: parseFloat(search),
-                                },
-                            },
-                        ],
-                    }
-                }
-            }
+            const filialSearch = verifyFilialSearch(Receivable, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    model: Filial,
+                    field: 'name',
+                    type: 'string',
+                    return: 'filial_id',
+                },
+                {
+                    model: Issuer,
+                    field: 'name',
+                    type: 'string',
+                    return: 'issuer_id',
+                },
+                {
+                    field: 'issuer_id',
+                    type: 'uuid',
+                },
+                // {
+                //     field: 'invoice_number',
+                //     type: 'float',
+                // },
+                {
+                    field: 'entry_date',
+                    type: 'date',
+                },
+                {
+                    field: 'due_date',
+                    type: 'date',
+                },
+                {
+                    field: 'type',
+                    type: 'string',
+                },
+                {
+                    field: 'type_detail',
+                    type: 'string',
+                },
+                {
+                    field: 'status',
+                    type: 'string',
+                },
+                {
+                    field: 'amount',
+                    type: 'float',
+                },
+                {
+                    field: 'total',
+                    type: 'float',
+                },
+                {
+                    field: 'balance',
+                    type: 'float',
+                },
+            ]
 
             const { count, rows } = await Receivable.findAndCountAll({
                 include: [
@@ -1431,20 +1414,8 @@ class ReceivableController {
                 ],
                 where: {
                     canceled_at: null,
-                    [Op.or]: [
-                        {
-                            filial_id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            filial_id:
-                                req.headers.filial != 1
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
-                    ...searches,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                 },
                 attributes: [
                     'id',
@@ -1586,38 +1557,79 @@ class ReceivableController {
         const t = await connection.transaction()
         try {
             const {
+                filial,
+                issuer,
+                paymentMethod,
+                chartOfAccount,
                 amount,
                 fee,
                 discount,
-                total,
                 type,
                 type_detail,
-                issuer_id,
                 entry_date,
                 due_date,
-                paymentmethod_id,
                 memo,
                 contract_number,
-                chartofaccount_id,
+                authorization_code,
             } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            const issuerExists = await Issuer.findByPk(issuer.id)
+            if (!issuerExists) {
+                return res.status(400).json({
+                    error: 'Issuer does not exist.',
+                })
+            }
+
+            const paymentMethodExists = await PaymentMethod.findByPk(
+                paymentMethod.id
+            )
+            if (!paymentMethodExists) {
+                return res.status(400).json({
+                    error: 'Payment Method does not exist.',
+                })
+            }
+
+            const chartOfAccountExists = await Chartofaccount.findByPk(
+                chartOfAccount.id
+            )
+            if (!chartOfAccountExists) {
+                return res.status(400).json({
+                    error: 'Chart of Account does not exist.',
+                })
+            }
+
             const newReceivable = await Receivable.create(
                 {
                     company_id: 1,
-                    filial_id: req.body.filial_id,
+                    filial_id: filialExists.id,
                     amount: amount ? parseFloat(amount).toFixed(2) : 0,
                     fee: fee ? parseFloat(fee).toFixed(2) : 0,
                     discount: discount ? parseFloat(discount).toFixed(2) : 0,
-                    total: total ? parseFloat(total).toFixed(2) : 0,
-                    balance: total ? parseFloat(total).toFixed(2) : 0,
+                    total:
+                        parseFloat(amount) +
+                        parseFloat(fee) -
+                        parseFloat(discount),
+                    balance:
+                        parseFloat(amount) +
+                        parseFloat(fee) -
+                        parseFloat(discount),
                     type,
                     type_detail,
-                    issuer_id,
+                    issuer_id: issuerExists.id,
                     entry_date,
                     due_date,
-                    paymentmethod_id,
+                    paymentmethod_id: paymentMethodExists.id,
                     memo,
                     contract_number,
-                    chartofaccount_id,
+                    authorization_code,
+                    chartofaccount_id: chartOfAccountExists.id,
                     is_recurrence: false,
                     status: 'Pending',
                     status_date: format(new Date(), 'yyyyMMdd'),
@@ -1649,7 +1661,7 @@ class ReceivableController {
         try {
             const { receivable_id } = req.params
             let { refund_amount } = req.body
-            const { refund_reason, paymentmethod_id } = req.body
+            let { refund_reason, paymentMethod } = req.body
 
             refund_amount = parseFloat(refund_amount)
 
@@ -1680,9 +1692,7 @@ class ReceivableController {
                     ? true
                     : false
 
-            const paymentMethod = await PaymentMethod.findByPk(
-                receivableExists.dataValues.paymentmethod_id
-            )
+            paymentMethod = await PaymentMethod.findByPk(paymentMethod.id)
 
             if (!paymentMethod) {
                 return res
@@ -1714,13 +1724,12 @@ class ReceivableController {
                     amount: refund_amount.toString(),
                 })
             }
-
             await Refund.create(
                 {
                     receivable_id: receivableExists.id,
                     settlement_id: settlements[0].id,
                     amount: refund_amount,
-                    paymentmethod_id: paymentmethod_id,
+                    paymentmethod_id: paymentMethod.id,
                     refund_reason: refund_reason,
                     refund_date: format(new Date(), 'yyyyMMdd'),
                     created_at: new Date(),
@@ -1766,6 +1775,47 @@ class ReceivableController {
 
         try {
             const { receivable_id } = req.params
+            const {
+                filial,
+                issuer,
+                paymentMethod,
+                chartOfAccount,
+                amount = 0,
+                fee = 0,
+                discount = 0,
+            } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            const issuerExists = await Issuer.findByPk(issuer.id)
+            if (!issuerExists) {
+                return res.status(400).json({
+                    error: 'Issuer does not exist.',
+                })
+            }
+
+            const paymentMethodExists = await PaymentMethod.findByPk(
+                paymentMethod.id
+            )
+            if (!paymentMethodExists) {
+                return res.status(400).json({
+                    error: 'Payment Method does not exist.',
+                })
+            }
+
+            const chartOfAccountExists = await Chartofaccount.findByPk(
+                chartOfAccount.id
+            )
+            if (!chartOfAccountExists) {
+                return res.status(400).json({
+                    error: 'Chart of Account does not exist.',
+                })
+            }
 
             const receivableExists = await Receivable.findByPk(receivable_id, {
                 where: { canceled_at: null },
@@ -1785,9 +1835,24 @@ class ReceivableController {
                     .json({ error: 'Receivable does not exist.' })
             }
 
+            delete req.body.total
+            delete req.body.balance
+
             await receivableExists.update(
                 {
                     ...req.body,
+                    filial_id: filialExists.id,
+                    issuer_id: issuerExists.id,
+                    paymentmethod_id: paymentMethodExists.id,
+                    chartofaccount_id: chartOfAccountExists.id,
+                    total:
+                        parseFloat(amount) +
+                        parseFloat(fee) -
+                        parseFloat(discount),
+                    balance:
+                        parseFloat(amount) +
+                        parseFloat(fee) -
+                        parseFloat(discount),
                     updated_by: req.userId,
                     updated_at: new Date(),
                 },
@@ -1870,7 +1935,7 @@ class ReceivableController {
             const {
                 receivables,
                 prices,
-                paymentmethod_id,
+                paymentMethod,
                 settlement_date,
                 settlement_memo,
             } = req.body
@@ -1957,7 +2022,7 @@ class ReceivableController {
                             receivable_id: receivable.id,
                             amountPaidBalance: total_amount_with_discount,
                             settlement_date,
-                            paymentmethod_id,
+                            paymentmethod_id: paymentMethod.id,
                             settlement_memo,
                         },
                         req
@@ -2007,15 +2072,25 @@ class ReceivableController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const {
+            let {
                 receivables,
                 installment_amount,
                 number_of_installments,
-                payment_method_id,
-                payment_criteria_id,
+                paymentCriteria,
+                paymentMethod,
                 observations,
                 send_invoice,
             } = req.body
+
+            if (paymentCriteria) {
+                paymentCriteria = await PaymentCriteria.findByPk(
+                    paymentCriteria.id
+                )
+            }
+
+            if (paymentMethod) {
+                paymentMethod = await PaymentMethod.findByPk(paymentMethod.id)
+            }
 
             let { first_due_date } = req.body
 
@@ -2025,8 +2100,8 @@ class ReceivableController {
                 {
                     first_due_date: format(first_due_date, 'yyyyMMdd'),
                     number_of_installments,
-                    payment_method_id,
-                    payment_criteria_id,
+                    payment_method_id: paymentMethod.id,
+                    payment_criteria_id: paymentCriteria.id,
                     observations,
                     created_at: new Date(),
                     created_by: req.userId,
@@ -2052,14 +2127,6 @@ class ReceivableController {
                 )
                 await verifyAndCancelParcelowPaymentLink(receivable.id)
                 await verifyAndCancelTextToPayTransaction(receivable.id)
-            }
-
-            const paymentCriteria = await PaymentCriteria.findByPk(
-                payment_criteria_id
-            )
-
-            if (!paymentCriteria) {
-                return null
             }
             const { recurring_metric, recurring_qt } =
                 paymentCriteria.dataValues
@@ -2118,11 +2185,11 @@ class ReceivableController {
                         amount: installment_amount,
                         total: installment_amount,
                         balance: installment_amount,
-                        paymentmethod_id: payment_method_id,
+                        paymentmethod_id: paymentMethod.id,
                         status: 'Pending',
                         status_date: format(new Date(), 'yyyyMMdd'),
                         chartofaccount_id: firstReceivable.chartofaccount_id,
-                        paymentcriteria_id: payment_criteria_id,
+                        paymentcriteria_id: paymentCriteria.id,
                         notification_sent: false,
                         renegociation_from: renegociation.id,
                         created_at: new Date(),

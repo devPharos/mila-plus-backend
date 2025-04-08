@@ -25,6 +25,12 @@ import {
 } from 'date-fns'
 import Merchants from '../models/Merchants'
 import Chartofaccount from '../models/Chartofaccount'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 export async function generateRecurrencePayees({
     recurrence = null,
@@ -174,21 +180,43 @@ export async function generateRecurrencePayees({
 class PayeeRecurrenceController {
     async index(req, res) {
         try {
-            const {
-                orderBy = 'entry_date',
-                orderASC = 'ASC',
+            const defaultOrderBy = { column: 'first_due_date', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
+                limit = 10,
             } = req.query
-            let searchOrder = []
-            if (orderBy.includes(',')) {
-                searchOrder.push([
-                    orderBy.split(',')[0],
-                    orderBy.split(',')[1],
-                    orderASC,
-                ])
-            } else {
-                searchOrder.push([orderBy, orderASC])
+
+            if (!verifyFieldInModel(orderBy, Payeerecurrence)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
             }
+
+            const filialSearch = verifyFilialSearch(Payeerecurrence, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'memo',
+                    type: 'string',
+                },
+                {
+                    model: Issuer,
+                    field: 'name',
+                    type: 'string',
+                    return: 'issuer_id',
+                },
+                {
+                    field: 'first_due_date',
+                    type: 'date',
+                },
+                {
+                    field: 'amount',
+                    type: 'float',
+                },
+            ]
 
             const { count, rows } = await Payeerecurrence.findAndCountAll({
                 include: [
@@ -220,20 +248,8 @@ class PayeeRecurrenceController {
                             },
                         ],
                         where: {
-                            [Op.or]: [
-                                {
-                                    filial_id: {
-                                        [Op.gte]:
-                                            req.headers.filial == 1 ? 1 : 999,
-                                    },
-                                },
-                                {
-                                    filial_id:
-                                        req.headers.filial != 1
-                                            ? req.headers.filial
-                                            : 0,
-                                },
-                            ],
+                            canceled_at: null,
+                            ...filialSearch,
                         },
                     },
                     {
@@ -245,6 +261,7 @@ class PayeeRecurrenceController {
                 ],
 
                 where: {
+                    ...(await generateSearchByFields(search, searchableFields)),
                     canceled_at: null,
                 },
                 order: searchOrder,

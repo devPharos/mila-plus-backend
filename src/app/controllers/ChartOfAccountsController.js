@@ -7,6 +7,14 @@ import Merchant from '../models/Merchants'
 import MerchantsXChartOfAccount from '../models/MerchantXChartOfAccounts'
 import { searchPromise } from '../functions/searchPromise'
 import { canBeFloat } from './ReceivableController'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+    verifyMerchantSearch,
+} from '../functions'
+import MerchantXChartOfAccount from '../models/MerchantXChartOfAccounts'
 const { Op } = Sequelize
 
 async function getAllChartOfAccountsByIssuer(issuer_id) {
@@ -185,75 +193,100 @@ class ChartOfAccountsController {
 
     async index(req, res) {
         try {
-            const {
-                orderBy = 'name',
-                orderASC = 'ASC',
+            const defaultOrderBy = { column: 'name', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
+                limit = 10,
                 type = '',
-                limit = 50,
-                issuer = '',
             } = req.query
-            let searchOrder = []
-            if (orderBy.includes(',')) {
-                searchOrder.push([
-                    orderBy.split(',')[0],
-                    orderBy.split(',')[1],
-                    orderASC,
-                ])
-            } else {
-                searchOrder.push([orderBy, orderASC])
+
+            if (!verifyFieldInModel(orderBy, Chartofaccount)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
             }
 
-            // Contém letras
-            let searches = null
-            if (search && search !== 'null') {
-                searches = {
-                    [Op.or]: [
-                        {
-                            name: {
-                                [Op.iLike]: `%${search.toUpperCase()}%`,
+            const filialSearch = verifyFilialSearch(Chartofaccount, req)
+
+            const merchantSearch = await verifyMerchantSearch(search)
+
+            if (merchantSearch) {
+                const merchantExists = await Merchant.findByPk(
+                    merchantSearch.merchant_id,
+                    {
+                        include: [
+                            {
+                                model: MerchantXChartOfAccount,
+                                as: 'merchantxchartofaccounts',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                                include: [
+                                    {
+                                        model: Chartofaccount,
+                                        as: 'chartOfAccount',
+                                        required: false,
+                                        where: {
+                                            canceled_at: null,
+                                        },
+                                    },
+                                ],
                             },
-                        },
-                        {
-                            code: {
-                                [Op.like]: `${search}%`,
-                            },
-                        },
-                    ],
+                        ],
+                    }
+                )
+
+                if (merchantExists) {
+                    const merchantxchartofaccounts =
+                        merchantExists.merchantxchartofaccounts.map((el) => {
+                            return {
+                                id: el.chartOfAccount.id,
+                                code: el.chartOfAccount.code,
+                                name: el.chartOfAccount.name,
+                            }
+                        })
+
+                    return res.json({
+                        totalRows: merchantxchartofaccounts.length,
+                        rows: merchantxchartofaccounts,
+                    })
                 }
             }
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    model: Chartofaccount,
+                    field: 'name',
+                    type: 'string',
+                    return: 'father_id',
+                },
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+                {
+                    field: 'code',
+                    type: 'string',
+                },
+            ]
 
             let typeSearches = null
             if (type) {
                 if (type === 'receipts') {
                     typeSearches = {
-                        [Op.and]: [
-                            {
-                                code: {
-                                    [Op.notIn]: ['01', '02'],
-                                },
-                            },
-                            {
-                                code: {
-                                    [Op.like]: '01%',
-                                },
-                            },
-                        ],
+                        code: {
+                            [Op.like]: '01%',
+                        },
                     }
                 } else if (type === 'expenses') {
                     typeSearches = {
-                        [Op.and]: [
-                            {
-                                code: {
-                                    [Op.notIn]: ['01', '02'],
-                                },
-                            },
-                            {
-                                code: {
-                                    [Op.like]: '02%',
-                                },
-                            },
-                        ],
+                        code: {
+                            [Op.like]: '02%',
+                        },
                     }
                 }
             }
@@ -262,6 +295,9 @@ class ChartOfAccountsController {
                 where: {
                     canceled_at: null,
                     company_id: 1,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
+                    ...typeSearches,
                     [Op.and]: [
                         {
                             code: {
@@ -269,8 +305,6 @@ class ChartOfAccountsController {
                             },
                         },
                     ],
-                    ...searches,
-                    ...typeSearches,
                 },
                 include: [
                     {
@@ -294,48 +328,9 @@ class ChartOfAccountsController {
                     },
                 ],
                 limit,
-                order: [[orderBy, orderASC]],
+                order: searchOrder,
             })
 
-            // if (type) {
-            //     if (type === 'receipts')
-            //         return res.json(
-            //             chartofaccounts.filter(
-            //                 (chartofaccount) =>
-            //                     chartofaccount.code.substring(0, 2) == 1
-            //             )
-            //         )
-            //     if (type === 'expenses')
-            //         return res.json(
-            //             chartofaccounts.filter(
-            //                 (chartofaccount) =>
-            //                     chartofaccount.code.substring(0, 2) == 2
-            //             )
-            //         )
-            // }
-
-            if (issuer) {
-                const chartofaccounts = await getAllChartOfAccountsByIssuer(
-                    issuer
-                )
-
-                if (!chartofaccounts) {
-                    return res.status(400).json({
-                        error: 'Issuer not found',
-                    })
-                }
-
-                if (chartofaccounts.length > 0) {
-                    return res.json(chartofaccounts)
-                }
-            }
-
-            // const fields = ['code', 'name']
-            // Promise.all([searchPromise(search, chartofaccounts, fields)]).then(
-            //     (chartofaccounts) => {
-            //         return res.json(chartofaccounts[0])
-            //     }
-            // )
             return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'ChartsOfAccountController'
@@ -351,10 +346,19 @@ class ChartOfAccountsController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const { Father, name, visibility } = req.body
+
+            const fatherExists = await Chartofaccount.findByPk(Father.id)
+            if (!fatherExists) {
+                return res.status(400).json({
+                    error: 'Father Account does not exist.',
+                })
+            }
+
             const chartofaccountExist = await Chartofaccount.findOne({
                 where: {
                     company_id: 1,
-                    father_id: req.body.father_id,
+                    father_id: req.body.Father.id,
                     name: req.body.name,
                     canceled_at: null,
                 },
@@ -366,23 +370,15 @@ class ChartOfAccountsController {
                 })
             }
 
-            const father = await Chartofaccount.findByPk(req.body.father_id)
-
-            if (!father) {
-                return res.status(400).json({
-                    error: 'Father Account is required.',
-                })
-            }
-
             const lastCodeFromFather = await Chartofaccount.findOne({
                 where: {
-                    father_id: father.id,
+                    father_id: fatherExists.id,
                 },
                 order: [['code', 'desc']],
                 attributes: ['code'],
             })
 
-            let nextCode = father.code + '.001'
+            let nextCode = fatherExists.code + '.001'
             if (lastCodeFromFather) {
                 const substrCode = lastCodeFromFather.dataValues.code.substring(
                     lastCodeFromFather.dataValues.code.length - 3
@@ -390,15 +386,27 @@ class ChartOfAccountsController {
                 const numberCode = Number(substrCode) + 1
                 const padStartCode = numberCode.toString().padStart(3, '0')
 
-                nextCode = father.code + '.' + padStartCode
+                nextCode = fatherExists.code + '.' + padStartCode
                 // nextCode = (Number(lastCodeFromFather.dataValues.code) + 1).toString();
             }
+
+            console.log({
+                company_id: 1,
+                code: nextCode,
+                father_id: fatherExists.id,
+                name,
+                visibility,
+                created_by: req.userId,
+                created_at: new Date(),
+            })
 
             const newChartofaccount = await Chartofaccount.create(
                 {
                     company_id: 1,
                     code: nextCode,
-                    ...req.body,
+                    father_id: fatherExists.id,
+                    name,
+                    visibility,
                     created_by: req.userId,
                     created_at: new Date(),
                 },
@@ -427,6 +435,15 @@ class ChartOfAccountsController {
         const t = await connection.transaction()
         try {
             const { chartofaccount_id } = req.params
+            const { Father, name, visibility } = req.body
+
+            const fatherExists = await Chartofaccount.findByPk(Father.id)
+            if (!fatherExists) {
+                return res.status(400).json({
+                    error: 'Father Account does not exist.',
+                })
+            }
+
             const chartofaccountExist = await Chartofaccount.findByPk(
                 chartofaccount_id
             )
@@ -439,7 +456,9 @@ class ChartOfAccountsController {
 
             const chartofaccount = await chartofaccountExist.update(
                 {
-                    ...req.body,
+                    father_id: fatherExists.id,
+                    name,
+                    visibility,
                     updated_by: req.userId,
                     updated_at: new Date(),
                 },

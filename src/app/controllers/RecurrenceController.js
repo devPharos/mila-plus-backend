@@ -17,14 +17,22 @@ import {
     subDays,
 } from 'date-fns'
 import PaymentCriteria from '../models/PaymentCriteria'
-import { searchPromise } from '../functions/searchPromise'
-import { handleStudentDiscounts } from '../functions'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    handleStudentDiscounts,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 import Studentdiscount from '../models/Studentdiscount'
 import FilialDiscountList from '../models/FilialDiscountList'
 import Receivablediscounts from '../models/Receivablediscounts'
 import { applyDiscounts } from './ReceivableController'
 import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
 import { verifyAndCancelTextToPayTransaction } from './EmergepayController'
+import Filial from '../models/Filial'
+import PaymentMethod from '../models/PaymentMethod'
+import Chartofaccount from '../models/Chartofaccount'
 
 export async function generateRecurrenceReceivables({
     recurrence = null,
@@ -86,7 +94,6 @@ export async function generateRecurrenceReceivables({
 
         const receivables = await Receivable.findAll({
             where: {
-                filial_id,
                 issuer_id: issuer.id,
                 type_detail: 'Tuition fee',
                 canceled_at: null,
@@ -239,7 +246,7 @@ export async function generateRecurrenceReceivables({
 
             const newReceivable = {
                 company_id: 1,
-                filial_id,
+                filial_id: issuer.dataValues.filial_id,
                 issuer_id: issuer.id,
                 entry_date: recurrence.dataValues.entry_date,
                 due_date,
@@ -303,72 +310,45 @@ export async function generateRecurrenceReceivables({
 class RecurrenceController {
     async index(req, res) {
         try {
-            const {
-                orderBy = 'registration_number',
-                orderASC = 'ASC',
+            const defaultOrderBy = { column: 'registration_number', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 50,
+                limit = 10,
             } = req.query
-            let searchOrder = []
-            if (orderBy.includes(',')) {
-                searchOrder.push([
-                    orderBy.split(',')[0],
-                    orderBy.split(',')[1],
-                    orderASC,
-                ])
-            } else {
-                searchOrder.push([orderBy, orderASC])
+
+            if (!verifyFieldInModel(orderBy, Student)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
             }
 
-            // Contém letras
-            let searches = null
-            if (search && search !== 'null') {
-                if (isUUIDv4(search)) {
-                    searches = {
-                        [Op.or]: [
-                            {
-                                id: search,
-                            },
-                        ],
-                    }
-                } else {
-                    searches = {
-                        [Op.or]: [
-                            {
-                                registration_number: {
-                                    [Op.iLike]: `%${search.toUpperCase()}%`,
-                                },
-                                name: {
-                                    [Op.iLike]: `%${search.toUpperCase()}%`,
-                                },
-                                last_name: {
-                                    [Op.iLike]: `%${search.toUpperCase()}%`,
-                                },
-                            },
-                        ],
-                    }
-                }
-            }
+            const filialSearch = verifyFilialSearch(Student, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'registration_number',
+                    type: 'string',
+                },
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+                {
+                    field: 'last_name',
+                    type: 'string',
+                },
+            ]
 
             const { count, rows } = await Student.findAndCountAll({
                 where: {
                     canceled_at: null,
                     category: 'Student',
                     status: 'In Class',
-                    [Op.or]: [
-                        {
-                            filial_id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            filial_id:
-                                req.headers.filial != 1
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
-                    ...searches,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                 },
                 attributes: [
                     'id',
@@ -398,15 +378,10 @@ class RecurrenceController {
                         ],
                     },
                 ],
-                order: [[orderBy, orderASC]],
+                limit,
+                order: searchOrder,
             })
 
-            // const fields = ['registration_number', 'name', 'last_name']
-            // Promise.all([searchPromise(search, students, fields)]).then(
-            //     (students) => {
-            //         return res.json(students[0])
-            //     }
-            // )
             return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'RecurrenceController'
@@ -428,6 +403,12 @@ class RecurrenceController {
                 },
                 include: [
                     {
+                        model: Filial,
+                        as: 'filial',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
                         model: Issuer,
                         as: 'issuer',
                         required: false,
@@ -443,6 +424,26 @@ class RecurrenceController {
                                 where: {
                                     canceled_at: null,
                                 },
+                                include: [
+                                    {
+                                        model: PaymentMethod,
+                                        as: 'paymentMethod',
+                                        required: false,
+                                        where: { canceled_at: null },
+                                    },
+                                    {
+                                        model: PaymentCriteria,
+                                        as: 'paymentCriteria',
+                                        required: false,
+                                        where: { canceled_at: null },
+                                    },
+                                    {
+                                        model: Chartofaccount,
+                                        as: 'chartOfAccount',
+                                        required: false,
+                                        where: { canceled_at: null },
+                                    },
+                                ],
                             },
                         ],
                     },
@@ -486,6 +487,46 @@ class RecurrenceController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const { filial, paymentMethod, paymentCriteria, chartOfAccount } =
+                req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            const paymentMethodExists = await PaymentMethod.findByPk(
+                paymentMethod.id
+            )
+
+            if (!paymentMethodExists) {
+                return res.status(400).json({
+                    error: 'Payment Method does not exist.',
+                })
+            }
+
+            const paymentCriteriaExists = await PaymentCriteria.findByPk(
+                paymentCriteria.id
+            )
+
+            if (!paymentCriteriaExists) {
+                return res.status(400).json({
+                    error: 'Payment Criteria does not exist.',
+                })
+            }
+
+            const chartOfAccountExists = await Chartofaccount.findByPk(
+                chartOfAccount.id
+            )
+
+            if (!chartOfAccountExists) {
+                return res.status(400).json({
+                    error: 'Chart of Account does not exist.',
+                })
+            }
+
             const issuer = await createIssuerFromStudent({
                 student_id: req.body.student_id,
                 created_by: req.userId,
@@ -493,7 +534,7 @@ class RecurrenceController {
             let recurrence = await Recurrence.findOne({
                 where: {
                     company_id: 1,
-                    filial_id: req.body.filial_id,
+                    filial_id: filialExists.id,
                     issuer_id: issuer.id,
                     canceled_at: null,
                 },
@@ -503,8 +544,12 @@ class RecurrenceController {
                 recurrence = await Recurrence.create(
                     {
                         company_id: 1,
-                        filial_id: req.body.filial_id,
+                        filial_id: filialExists.id,
+                        paymentmethod_id: paymentMethodExists.id,
+                        paymentcriteria_id: paymentCriteriaExists.id,
+                        chartofaccount_id: chartOfAccountExists.id,
                         ...req.body,
+
                         amount: req.body.prices.total_tuition,
                         issuer_id: issuer.id,
                         created_at: new Date(),
@@ -518,7 +563,11 @@ class RecurrenceController {
             } else {
                 await recurrence.update(
                     {
+                        filial_id: filialExists.id,
                         ...req.body,
+                        paymentmethod_id: paymentMethodExists.id,
+                        paymentcriteria_id: paymentCriteriaExists.id,
+                        chartofaccount_id: chartOfAccountExists.id,
                         amount: req.body.prices.total_tuition,
                         issuer_id: issuer.id,
                         updated_by: req.userId,
