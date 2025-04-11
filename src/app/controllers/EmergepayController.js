@@ -494,7 +494,7 @@ class EmergepayController {
                     justTransaction = false,
                 } = emergeData
 
-                console.log('uniqueTransId', uniqueTransId)
+                console.log('externalTransactionId', externalTransactionId)
 
                 await Emergepaytransaction.create({
                     account_card_type: accountCardType,
