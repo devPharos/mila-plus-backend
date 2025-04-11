@@ -1669,7 +1669,7 @@ class ReceivableController {
 
             if (!receivableExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Receivable does not exist.' })
             }
 
@@ -1683,7 +1683,7 @@ class ReceivableController {
 
             if (!settlements) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Receivable does not have a settlement.' })
             }
             const parcial =
@@ -1831,7 +1831,7 @@ class ReceivableController {
 
             if (!receivableExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Receivable does not exist.' })
             }
 
@@ -1946,7 +1946,7 @@ class ReceivableController {
                 const receivable = await Receivable.findByPk(rec.id)
 
                 if (!receivable) {
-                    return res.status(401).json({
+                    return res.status(400).json({
                         error: 'Receivable not found.',
                     })
                 }

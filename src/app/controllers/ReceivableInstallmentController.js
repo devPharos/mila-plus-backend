@@ -222,7 +222,7 @@ class ReceivableInstallmentController {
 
             if (!installmentExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Installment does not exist.' })
             }
 
