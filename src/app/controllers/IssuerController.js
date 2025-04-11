@@ -216,7 +216,7 @@ class IssuerController {
                 student_id = null,
             } = req.body
 
-            const filialExists = filial
+            const filialExists = filial.id
                 ? await Filial.findByPk(filial.id)
                 : null
 
@@ -225,7 +225,7 @@ class IssuerController {
                     error: 'Filial does not exist.',
                 })
             }
-            const merchantExists = merchant
+            const merchantExists = merchant.id
                 ? await Merchants.findByPk(merchant.id, {
                       where: { canceled_at: null, filial_id: filialExists.id },
                   })
@@ -247,12 +247,13 @@ class IssuerController {
                 })
             }
 
+            req.body.merchant_id = merchantExists ? merchantExists.id : null
+            req.body.student_id = studentExists ? studentExists.id : null
+            req.body.filial_id = filialExists ? filialExists.id : null
+
             const newIssuer = await Issuer.create(
                 {
                     ...req.body,
-                    filial_id: filialExists.id,
-                    merchant_id: merchantExists.id,
-                    student_id,
                     company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
