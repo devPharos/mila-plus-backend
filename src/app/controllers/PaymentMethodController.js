@@ -253,7 +253,7 @@ class PaymentMethodController {
 
             if (!paymentMethodExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Payment method does not exist.' })
             }
 
@@ -297,7 +297,7 @@ class PaymentMethodController {
 
             if (!paymentMethodExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Payment method does not exist.' })
             }
 

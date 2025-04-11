@@ -50,7 +50,7 @@ class ProspectPaymentController {
             const student = await Student.findByPk(student_id)
 
             if (!student) {
-                return res.status(401).json({
+                return res.status(400).json({
                     error: 'Student not found',
                 })
             }

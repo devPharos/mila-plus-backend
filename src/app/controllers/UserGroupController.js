@@ -91,7 +91,7 @@ class UserGroupController {
 
             if (!userGroupExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'User Group does not exist.' })
             }
 

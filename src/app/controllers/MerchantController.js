@@ -344,7 +344,7 @@ class MerchantController {
 
             if (!merchantExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Merchant does not exist.' })
             }
 
@@ -430,7 +430,7 @@ class MerchantController {
 
             if (!merchantExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Merchant does not exist.' })
             }
 

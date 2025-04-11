@@ -47,7 +47,7 @@ class AgentController {
             const agentExists = await Agent.findByPk(agent_id)
 
             if (!agentExists) {
-                return res.status(401).json({ error: 'Agent does not exist.' })
+                return res.status(400).json({ error: 'Agent does not exist.' })
             }
 
             await agentExists.update(

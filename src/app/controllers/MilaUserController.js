@@ -270,7 +270,7 @@ class MilaUserController {
             })
 
             if (!userExists) {
-                return res.status(401).json({ error: 'user-does-not-exist' })
+                return res.status(400).json({ error: 'user-does-not-exist' })
             }
 
             if (
@@ -283,17 +283,17 @@ class MilaUserController {
                     },
                 }))
             ) {
-                return res.status(401).json({
+                return res.status(400).json({
                     error: 'email-already-used',
                 })
             }
 
             if (oldPassword && !(await userExists.checkPassword(oldPassword))) {
-                return res.status(401).json({ error: 'wrong-password' })
+                return res.status(400).json({ error: 'wrong-password' })
             }
 
             if (confirmPassword !== password) {
-                return res.status(401).json({ error: 'passwords-do-not-match' })
+                return res.status(400).json({ error: 'passwords-do-not-match' })
             }
 
             await userExists.update(
@@ -584,7 +584,7 @@ class MilaUserController {
                     })
                 } else {
                     return res
-                        .status(401)
+                        .status(400)
                         .json({ error: 'association-already-exists' })
                 }
             }

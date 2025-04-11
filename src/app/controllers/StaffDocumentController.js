@@ -16,7 +16,7 @@ class StaffDocumentController {
 
             const staffExists = await Staff.findByPk(staff_id)
             if (!staffExists) {
-                return res.status(401).json({ error: 'staff does not exist.' })
+                return res.status(400).json({ error: 'staff does not exist.' })
             }
 
             if (files) {

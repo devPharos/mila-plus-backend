@@ -136,7 +136,7 @@ class BankController {
             const bankExists = await Bank.findByPk(bank_id)
 
             if (!bankExists) {
-                return res.status(401).json({ error: 'Bank does not exist.' })
+                return res.status(400).json({ error: 'Bank does not exist.' })
             }
 
             await bankExists.update(

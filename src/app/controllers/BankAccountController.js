@@ -198,7 +198,7 @@ class BankAccountController {
 
             if (!bankAccountExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Bank Account does not exist.' })
             }
 

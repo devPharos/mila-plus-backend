@@ -189,7 +189,7 @@ class PaymentCriteriaController {
 
             if (!criteriaExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Payment criteria does not exist.' })
             }
 
@@ -238,7 +238,7 @@ class PaymentCriteriaController {
 
             if (!criteriaExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Payment criteria does not exist.' })
             }
 

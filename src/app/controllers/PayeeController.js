@@ -394,7 +394,7 @@ class PayeeController {
             })
 
             if (!payeeExists) {
-                return res.status(401).json({ error: 'Payee does not exist.' })
+                return res.status(400).json({ error: 'Payee does not exist.' })
             }
 
             let { amount, fee, discount } = req.body
@@ -475,7 +475,7 @@ class PayeeController {
 
                 if (!payeeExists) {
                     return res
-                        .status(401)
+                        .status(400)
                         .json({ error: 'Payee does not exist.' })
                 }
 
@@ -534,7 +534,7 @@ class PayeeController {
             const payeeExists = await Payee.findByPk(id)
 
             if (!payeeExists) {
-                return res.status(401).json({ error: 'Payee does not exist.' })
+                return res.status(400).json({ error: 'Payee does not exist.' })
             }
 
             await payeeExists.update(

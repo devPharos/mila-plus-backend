@@ -171,7 +171,7 @@ class EnrollmentsponsorController {
 
             if (!enrollmentExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'enrollment does not exist.' })
             }
 

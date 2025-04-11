@@ -2047,7 +2047,7 @@ class ReceivableController {
                         }
                     }
                 } else {
-                    return res.status(401).json({
+                    return res.status(400).json({
                         error: 'Receivable already settled.',
                     })
                 }
@@ -2239,7 +2239,7 @@ class ReceivableController {
 
             if (!receivableExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Receivable does not exist.' })
             }
 

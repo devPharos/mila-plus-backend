@@ -45,7 +45,7 @@ class DocumentController {
 
             if (!documentExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'document does not exist.' })
             }
 

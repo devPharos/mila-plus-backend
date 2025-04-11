@@ -60,7 +60,7 @@ class StudentController {
 
             if (!studentExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Student does not exist.' })
             }
 

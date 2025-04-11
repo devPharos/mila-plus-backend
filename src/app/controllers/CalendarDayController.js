@@ -47,7 +47,7 @@ class CalendarDayController {
 
             if (!calendarDayExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'calendarDay does not exist.' })
             }
 

@@ -188,7 +188,7 @@ class EnrollmentController {
 
             if (!enrollmentExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'enrollment does not exist.' })
             }
 
@@ -228,7 +228,7 @@ class EnrollmentController {
 
             if (!enrollmentExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'enrollment does not exist.' })
             }
 
@@ -561,7 +561,7 @@ class EnrollmentController {
             if (req.body.students) {
                 if (!studentExists) {
                     return res
-                        .status(401)
+                        .status(400)
                         .json({ error: 'student does not exist.' })
                 }
                 promises.push(

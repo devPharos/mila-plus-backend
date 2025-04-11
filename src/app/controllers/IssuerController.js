@@ -343,7 +343,7 @@ class IssuerController {
             const issuerExists = await Issuer.findByPk(issuer_id)
 
             if (!issuerExists) {
-                return res.status(401).json({ error: 'Issuer does not exist.' })
+                return res.status(400).json({ error: 'Issuer does not exist.' })
             }
 
             await issuerExists.update(
@@ -393,7 +393,7 @@ class IssuerController {
             const issuerExists = await Issuer.findByPk(id)
 
             if (!issuerExists) {
-                return res.status(401).json({ error: 'Issuer does not exist.' })
+                return res.status(400).json({ error: 'Issuer does not exist.' })
             }
 
             await issuerExists.update(
