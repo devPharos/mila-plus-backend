@@ -304,6 +304,10 @@ class IssuerController {
                 })
             }
 
+            req.body.merchant_id = merchantExists ? merchantExists.id : null
+            req.body.student_id = studentExists ? studentExists.id : null
+            req.body.filial_id = filialExists ? filialExists.id : null
+
             const studentExists = student_id
                 ? await Student.findByPk(student_id)
                 : null
@@ -326,9 +330,6 @@ class IssuerController {
             await issuerExists.update(
                 {
                     ...req.body,
-                    filial_id: filialExists.id,
-                    merchant_id: merchantExists ? merchantExists.id : null,
-                    student_id,
                     company_id: 1,
                     updated_by: req.userId,
                     updated_at: new Date(),
