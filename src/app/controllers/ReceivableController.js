@@ -1934,6 +1934,7 @@ class ReceivableController {
                 paymentMethod,
                 settlement_date,
                 settlement_memo,
+                approvalData = null,
             } = req.body
 
             console.log('--- SETTLEMENT ---')
@@ -2020,6 +2021,65 @@ class ReceivableController {
                             }
                         )
                     }
+                    if (approvalData) {
+                        const {
+                            accountCardType,
+                            accountEntryMethod,
+                            accountExpiryDate,
+                            amount,
+                            amountBalance,
+                            amountProcessed,
+                            amountTaxed,
+                            amountTipped,
+                            approvalNumberResult,
+                            avsResponseCode,
+                            avsResponseText,
+                            batchNumber,
+                            billingName,
+                            cashier,
+                            cvvResponseCode,
+                            cvvResponseText,
+                            externalTransactionId,
+                            isPartialApproval,
+                            maskedAccount,
+                            resultMessage,
+                            resultStatus,
+                            transactionReference,
+                            transactionType,
+                            uniqueTransId,
+                        } = approvalData
+                        await Emergepaytransaction.create({
+                            account_card_type: accountCardType,
+                            account_entry_method: accountEntryMethod,
+                            account_expiry_date: accountExpiryDate,
+                            amount: parseFloat(total_amount_with_discount),
+                            amount_balance: parseFloat(amountBalance || 0),
+                            amount_processed: parseFloat(
+                                total_amount_with_discount || 0
+                            ),
+                            amount_taxed: parseFloat(amountTaxed || 0),
+                            amount_tipped: parseFloat(amountTipped || 0),
+                            approval_number_result: approvalNumberResult,
+                            avs_response_code: avsResponseCode,
+                            avs_response_text: avsResponseText,
+                            batch_number: batchNumber,
+                            billing_name: billingName,
+                            cashier: cashier,
+                            cvv_response_code: cvvResponseCode,
+                            cvv_response_text: cvvResponseText,
+                            external_transaction_id: externalTransactionId,
+                            is_partial_approval: isPartialApproval,
+                            masked_account: maskedAccount,
+                            result_message: resultMessage,
+                            result_status: resultStatus,
+                            transaction_reference: receivable.id,
+                            transaction_type: transactionType,
+                            unique_trans_id: uniqueTransId,
+                            created_at: new Date(),
+                            created_by: 2,
+                        })
+                    }
+
                     await settlement(
                         {
                             receivable_id: receivable.id,
