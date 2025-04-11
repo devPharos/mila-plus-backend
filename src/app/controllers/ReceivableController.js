@@ -1677,9 +1677,18 @@ class ReceivableController {
                 where: {
                     receivable_id: receivableExists.id,
                     canceled_at: null,
+                    paymentMethod_id: paymentMethod.id,
                 },
                 order: [['created_at', 'DESC']],
             })
+
+            paymentMethod = await PaymentMethod.findByPk(paymentMethod.id)
+
+            if (!paymentMethod) {
+                return res
+                    .status(400)
+                    .json({ error: 'Payment Method does not exist.' })
+            }
 
             if (!settlements) {
                 return res
@@ -1692,38 +1701,25 @@ class ReceivableController {
                     ? true
                     : false
 
-            paymentMethod = await PaymentMethod.findByPk(paymentMethod.id)
-
-            if (!paymentMethod) {
-                return res
-                    .status(400)
-                    .json({ error: 'Payment Method does not exist.' })
-            }
-
-            if (paymentMethod.dataValues.platform === 'Gravity - Online') {
-                const emergepaytransaction = await Emergepaytransaction.findOne(
-                    {
-                        where: {
-                            external_transaction_id: receivableExists.id,
-                            canceled_at: null,
-                            result_message: 'Approved',
-                            result_status: 'true',
-                        },
-                        order: [['created_at', 'DESC']],
-                    }
-                )
-                if (!emergepaytransaction) {
-                    return res.status(400).json({
-                        error: 'This receivable has not been paid by Gravity - Card. Please select another payment method.',
-                    })
-                }
-                emergepay.tokenizedRefundTransaction({
-                    uniqueTransId:
-                        emergepaytransaction.dataValues.unique_trans_id,
-                    externalTransactionId: receivableExists.id,
-                    amount: refund_amount.toString(),
+            const emergepaytransaction = await Emergepaytransaction.findOne({
+                where: {
+                    external_transaction_id: receivableExists.id,
+                    canceled_at: null,
+                    result_message: 'Approved',
+                    result_status: 'true',
+                },
+                order: [['created_at', 'DESC']],
+            })
+            if (!emergepaytransaction) {
+                return res.status(400).json({
+                    error: 'This receivable has not been paid by Gravity - Card. Please select another payment method.',
                 })
             }
+            emergepay.tokenizedRefundTransaction({
+                uniqueTransId: emergepaytransaction.dataValues.unique_trans_id,
+                externalTransactionId: receivableExists.id,
+                amount: refund_amount.toString(),
+            })
             await Refund.create(
                 {
                     receivable_id: receivableExists.id,
