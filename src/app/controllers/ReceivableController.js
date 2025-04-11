@@ -1673,15 +1673,6 @@ class ReceivableController {
                     .json({ error: 'Receivable does not exist.' })
             }
 
-            const settlements = await Settlement.findAll({
-                where: {
-                    receivable_id: receivableExists.id,
-                    canceled_at: null,
-                    paymentmethod_id: paymentMethod.id,
-                },
-                order: [['created_at', 'DESC']],
-            })
-
             paymentMethod = await PaymentMethod.findByPk(paymentMethod.id)
 
             if (!paymentMethod) {
@@ -1689,6 +1680,29 @@ class ReceivableController {
                     .status(400)
                     .json({ error: 'Payment Method does not exist.' })
             }
+
+            const emergepaytransaction = await Emergepaytransaction.findOne({
+                where: {
+                    external_transaction_id: receivable_id,
+                    canceled_at: null,
+                    result_message: 'Approved',
+                    result_status: 'true',
+                },
+                order: [['created_at', 'DESC']],
+            })
+            if (!emergepaytransaction) {
+                return res.status(400).json({
+                    error: 'This receivable has not been paid by Gravity - Card. Please select another payment method.',
+                })
+            }
+
+            const settlements = await Settlement.findAll({
+                where: {
+                    receivable_id: receivableExists.id,
+                    canceled_at: null,
+                },
+                order: [['created_at', 'DESC']],
+            })
 
             if (!settlements) {
                 return res
@@ -1701,20 +1715,6 @@ class ReceivableController {
                     ? true
                     : false
 
-            const emergepaytransaction = await Emergepaytransaction.findOne({
-                where: {
-                    external_transaction_id: receivableExists.id,
-                    canceled_at: null,
-                    result_message: 'Approved',
-                    result_status: 'true',
-                },
-                order: [['created_at', 'DESC']],
-            })
-            if (!emergepaytransaction) {
-                return res.status(400).json({
-                    error: 'This receivable has not been paid by Gravity - Card. Please select another payment method.',
-                })
-            }
             emergepay.tokenizedRefundTransaction({
                 uniqueTransId: emergepaytransaction.dataValues.unique_trans_id,
                 externalTransactionId: receivableExists.id,
@@ -1734,26 +1734,31 @@ class ReceivableController {
                 {
                     transaction: t,
                 }
-            ).then(async () => {
-                await receivableExists
-                    .update(
-                        {
-                            status: parcial ? 'Parcial Paid' : 'Pending',
-                            balance:
-                                receivableExists.dataValues.balance +
-                                refund_amount,
-                            updated_at: new Date(),
-                            updated_by: req.userId,
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
-                    .then(() => {
-                        t.commit()
-                        return res.json(receivableExists)
-                    })
-            })
+            )
+            await receivableExists.update(
+                {
+                    status: parcial ? 'Parcial Paid' : 'Pending',
+                    balance:
+                        receivableExists.dataValues.balance + refund_amount,
+                    updated_at: new Date(),
+                    updated_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+            const settlement = await Settlement.findByPk(settlements[0].id)
+            await settlement.update(
+                {
+                    canceled_at: new Date(),
+                    canceled_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+            t.commit()
+            return res.json(receivableExists)
         } catch (err) {
             await t.rollback()
             const className = 'ReceivableController'
@@ -2020,64 +2025,6 @@ class ReceivableController {
                                 transaction: t,
                             }
                         )
-                    }
-                    if (approvalData) {
-                        const {
-                            accountCardType,
-                            accountEntryMethod,
-                            accountExpiryDate,
-                            amount,
-                            amountBalance,
-                            amountProcessed,
-                            amountTaxed,
-                            amountTipped,
-                            approvalNumberResult,
-                            avsResponseCode,
-                            avsResponseText,
-                            batchNumber,
-                            billingName,
-                            cashier,
-                            cvvResponseCode,
-                            cvvResponseText,
-                            externalTransactionId,
-                            isPartialApproval,
-                            maskedAccount,
-                            resultMessage,
-                            resultStatus,
-                            transactionReference,
-                            transactionType,
-                            uniqueTransId,
-                        } = approvalData
-                        await Emergepaytransaction.create({
-                            account_card_type: accountCardType,
-                            account_entry_method: accountEntryMethod,
-                            account_expiry_date: accountExpiryDate,
-                            amount: parseFloat(total_amount_with_discount),
-                            amount_balance: parseFloat(amountBalance || 0),
-                            amount_processed: parseFloat(
-                                total_amount_with_discount || 0
-                            ),
-                            amount_taxed: parseFloat(amountTaxed || 0),
-                            amount_tipped: parseFloat(amountTipped || 0),
-                            approval_number_result: approvalNumberResult,
-                            avs_response_code: avsResponseCode,
-                            avs_response_text: avsResponseText,
-                            batch_number: batchNumber,
-                            billing_name: billingName,
-                            cashier: cashier,
-                            cvv_response_code: cvvResponseCode,
-                            cvv_response_text: cvvResponseText,
-                            external_transaction_id: externalTransactionId,
-                            is_partial_approval: isPartialApproval,
-                            masked_account: maskedAccount,
-                            result_message: resultMessage,
-                            result_status: resultStatus,
-                            transaction_reference: receivable.id,
-                            transaction_type: transactionType,
-                            unique_trans_id: uniqueTransId,
-                            created_at: new Date(),
-                            created_by: 2,
-                        })
                     }
 
                     await settlement(
