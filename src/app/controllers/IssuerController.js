@@ -291,7 +291,7 @@ class IssuerController {
                 })
             }
 
-            const merchantExists = merchant
+            const merchantExists = merchant.id
                 ? await Merchants.findByPk(merchant.id)
                 : null
 
