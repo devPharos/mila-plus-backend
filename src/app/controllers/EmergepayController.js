@@ -85,6 +85,7 @@ export async function settlement(
         settlement_date = format(new Date(), 'yyyyMMdd'),
         paymentmethod_id = null,
         settlement_memo = null,
+        t = null,
     },
     req = null
 ) {
@@ -115,30 +116,42 @@ export async function settlement(
             // amountPaidBalance !== 0 &&
             amountPaidBalance < receivable.dataValues.balance
 
-        await Settlement.create({
-            receivable_id: receivable.id,
-            amount: parcial
-                ? amountPaidBalance
-                : amountPaidBalance === 0
-                ? 0
-                : receivable.dataValues.balance,
-            paymentmethod_id,
-            settlement_date,
-            memo: settlement_memo,
-            created_at: new Date(),
-            created_by: 2,
-        })
-        await receivable.update({
-            status: parcial ? 'Parcial Paid' : 'Paid',
-            balance: (
-                receivable.balance -
-                (parcial ? amountPaidBalance : receivable.dataValues.balance)
-            ).toFixed(2),
-            status_date: settlement_date,
-            paymentmethod_id,
-            updated_at: new Date(),
-            updated_by: 2,
-        })
+        await Settlement.create(
+            {
+                receivable_id: receivable.id,
+                amount: parcial
+                    ? amountPaidBalance
+                    : amountPaidBalance === 0
+                    ? 0
+                    : receivable.dataValues.balance,
+                paymentmethod_id,
+                settlement_date,
+                memo: settlement_memo,
+                created_at: new Date(),
+                created_by: 2,
+            },
+            {
+                transaction: t,
+            }
+        )
+        await receivable.update(
+            {
+                status: parcial ? 'Parcial Paid' : 'Paid',
+                balance: (
+                    receivable.balance -
+                    (parcial
+                        ? amountPaidBalance
+                        : receivable.dataValues.balance)
+                ).toFixed(2),
+                status_date: settlement_date,
+                paymentmethod_id,
+                updated_at: new Date(),
+                updated_by: 2,
+            },
+            {
+                transaction: t,
+            }
+        )
         await createPaidTimeline()
         await SettlementMail({
             receivable_id: receivable.id,

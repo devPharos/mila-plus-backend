@@ -1956,9 +1956,6 @@ class ReceivableController {
                     })
                 }
 
-                // console.log(rec.id)
-                // console.log(receivable.dataValues)
-
                 let manual_discount = 0
 
                 if (receivables.length > 1) {
@@ -1993,19 +1990,24 @@ class ReceivableController {
 
                 const thisDiscounts = total_amount - total_amount_with_discount
 
-                await receivable.update({
-                    discount: (
-                        receivable.dataValues.discount + thisDiscounts
-                    ).toFixed(2),
-                    balance: (
-                        receivable.dataValues.balance - thisDiscounts
-                    ).toFixed(2),
-                    total: receivable.dataValues.total - thisDiscounts,
-                    manual_discount: manual_discount.toFixed(2),
-                })
-
                 // console.log(receivable.dataValues.status)
                 if (receivable.dataValues.status !== 'Paid') {
+                    await receivable.update(
+                        {
+                            discount: (
+                                receivable.dataValues.discount + thisDiscounts
+                            ).toFixed(2),
+                            balance: (
+                                receivable.dataValues.balance - thisDiscounts
+                            ).toFixed(2),
+                            total: receivable.dataValues.total - thisDiscounts,
+                            manual_discount: manual_discount.toFixed(2),
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+
                     if (prices.discounts && prices.discounts.length > 0) {
                         const discount = await FilialDiscountList.findByPk(
                             prices.discounts[0].filial_discount_list_id
@@ -2034,9 +2036,74 @@ class ReceivableController {
                             settlement_date,
                             paymentmethod_id: paymentMethod.id,
                             settlement_memo,
+                            t: t,
                         },
                         req
                     )
+                    if (approvalData) {
+                        const {
+                            accountCardType,
+                            accountEntryMethod,
+                            accountExpiryDate,
+                            amount,
+                            amountBalance,
+                            amountProcessed,
+                            amountTaxed,
+                            amountTipped,
+                            approvalNumberResult,
+                            avsResponseCode,
+                            avsResponseText,
+                            batchNumber,
+                            billingName,
+                            cashier,
+                            cvvResponseCode,
+                            cvvResponseText,
+                            externalTransactionId,
+                            isPartialApproval,
+                            maskedAccount,
+                            resultMessage,
+                            resultStatus,
+                            transactionReference,
+                            transactionType,
+                            uniqueTransId,
+                        } = approvalData
+
+                        await Emergepaytransaction.create(
+                            {
+                                account_card_type: accountCardType,
+                                account_entry_method: accountEntryMethod,
+                                account_expiry_date: accountExpiryDate,
+                                amount: parseFloat(amount),
+                                amount_balance: parseFloat(amountBalance || 0),
+                                amount_processed: parseFloat(
+                                    amountProcessed || 0
+                                ),
+                                amount_taxed: parseFloat(amountTaxed || 0),
+                                amount_tipped: parseFloat(amountTipped || 0),
+                                approval_number_result: approvalNumberResult,
+                                avs_response_code: avsResponseCode,
+                                avs_response_text: avsResponseText,
+                                batch_number: batchNumber,
+                                billing_name: billingName,
+                                cashier: cashier,
+                                cvv_response_code: cvvResponseCode,
+                                cvv_response_text: cvvResponseText,
+                                external_transaction_id: externalTransactionId,
+                                is_partial_approval: isPartialApproval,
+                                masked_account: maskedAccount,
+                                result_message: resultMessage,
+                                result_status: resultStatus,
+                                transaction_reference: transactionReference,
+                                transaction_type: transactionType,
+                                unique_trans_id: uniqueTransId,
+                                created_at: new Date(),
+                                created_by: 2,
+                            },
+                            {
+                                transaction: t,
+                            }
+                        )
+                    }
                     if (
                         rec.id === receivables[receivables.length - 1].id &&
                         receivable.dataValues.is_recurrence
