@@ -452,11 +452,10 @@ class EmergepayController {
             // const connection = new Sequelize(databaseConfig)
             // const t = await connection.transaction()
 
+            console.log('--- POSTBACK LISTENER ---')
             var hmacSignature = req.header('hmac-signature')
             var rawData = req.body
             var jsonData = JSON.stringify(rawData)
-
-            console.log('--- POSTBACK LISTENER ---')
 
             var signatureMatched = false
 
@@ -495,6 +494,8 @@ class EmergepayController {
                     justTransaction = false,
                 } = emergeData
 
+                console.log('uniqueTransId', uniqueTransId)
+
                 await Emergepaytransaction.create({
                     account_card_type: accountCardType,
                     account_entry_method: accountEntryMethod,
@@ -527,9 +528,9 @@ class EmergepayController {
                     externalTransactionId
                 )
                 if (
-                    !justTransaction &&
                     receivable &&
-                    resultMessage === 'Approved'
+                    resultMessage === 'Approved' &&
+                    parseFloat(amountProcessed) <= receivable.dataValues.balance
                 ) {
                     const amountPaidBalance = parseFloat(amountProcessed)
                     const paymentMethod = await PaymentMethod.findOne({
