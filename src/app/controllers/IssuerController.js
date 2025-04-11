@@ -211,38 +211,36 @@ class IssuerController {
         const t = await connection.transaction()
         try {
             const {
-                filial,
-                merchant,
-                student_id,
-                name,
-                email,
-                phone_number,
-                address,
-                city,
-                state,
-                zip,
-                country,
-                bank_account,
-                bank_routing_number,
-                bank_name,
+                filial = null,
+                merchant = null,
+                student_id = null,
             } = req.body
 
-            const filialExists = await Filial.findByPk(filial.id)
+            const filialExists = filial
+                ? await Filial.findByPk(filial.id)
+                : null
+
             if (!filialExists) {
                 return res.status(400).json({
                     error: 'Filial does not exist.',
                 })
             }
-            const merchantExists = await Merchants.findByPk(merchant.id, {
-                where: { canceled_at: null, filial_id: filialExists.id },
-            })
+            const merchantExists = merchant
+                ? await Merchants.findByPk(merchant.id, {
+                      where: { canceled_at: null, filial_id: filialExists.id },
+                  })
+                : null
+
             if (!merchantExists) {
                 return res.status(400).json({
                     error: 'Merchant does not exist.',
                 })
             }
 
-            const studentExists = await Student.findByPk(student_id)
+            const studentExists = student_id
+                ? await Student.findByPk(student_id)
+                : null
+
             if (!studentExists) {
                 return res.status(400).json({
                     error: 'Student does not exist.',
@@ -251,20 +249,10 @@ class IssuerController {
 
             const newIssuer = await Issuer.create(
                 {
+                    ...req.body,
                     filial_id: filialExists.id,
                     merchant_id: merchantExists.id,
                     student_id,
-                    name,
-                    email,
-                    phone_number,
-                    address,
-                    city,
-                    state,
-                    zip,
-                    country,
-                    bank_account,
-                    bank_routing_number,
-                    bank_name,
                     company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
@@ -294,22 +282,7 @@ class IssuerController {
         try {
             const { issuer_id } = req.params
 
-            const {
-                filial,
-                merchant,
-                student_id,
-                name,
-                email,
-                phone_number,
-                address,
-                city,
-                state,
-                zip,
-                country,
-                bank_account,
-                bank_routing_number,
-                bank_name,
-            } = req.body
+            const { filial = null, merchant = null, student_id } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
             if (!filialExists) {
@@ -331,7 +304,9 @@ class IssuerController {
                 })
             }
 
-            const studentExists = await Student.findByPk(student_id)
+            const studentExists = student_id
+                ? await Student.findByPk(student_id)
+                : null
 
             if (
                 studentExists &&
@@ -350,20 +325,10 @@ class IssuerController {
 
             await issuerExists.update(
                 {
+                    ...req.body,
                     filial_id: filialExists.id,
                     merchant_id: merchantExists ? merchantExists.id : null,
                     student_id,
-                    name,
-                    email,
-                    phone_number,
-                    address,
-                    city,
-                    state,
-                    zip,
-                    country,
-                    bank_account,
-                    bank_routing_number,
-                    bank_name,
                     company_id: 1,
                     updated_by: req.userId,
                     updated_at: new Date(),
