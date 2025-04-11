@@ -59,7 +59,11 @@ export async function generateSearchByFields(
     if (search && search !== 'null' && notModels.length > 0) {
         const orFields = []
         for (let field of notModels) {
-            orFields.push(await execFieldTypeSearch(field, search))
+            const fieldSearch = await execFieldTypeSearch(field, search)
+            if (fieldSearch) {
+                orFields.push(fieldSearch)
+            }
+            orFields.push()
         }
         searches = {
             [Op.or]: orFields,
@@ -75,7 +79,11 @@ export async function execFieldTypeSearch(field, search) {
                 [Op.eq]: search,
             },
         }
-    } else if (field.type === 'float') {
+    } else if (
+        field.type === 'float' &&
+        parseFloat(search) !== NaN &&
+        parseFloat(search) > 0
+    ) {
         return {
             [field.field]: {
                 [Op.eq]: parseFloat(search),

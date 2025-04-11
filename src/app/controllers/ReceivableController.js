@@ -1942,6 +1942,8 @@ class ReceivableController {
 
             let { total_amount } = req.body
 
+            console.log(req.body)
+
             for (let rec of receivables) {
                 const receivable = await Receivable.findByPk(rec.id)
 
