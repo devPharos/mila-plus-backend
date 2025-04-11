@@ -287,20 +287,24 @@ export async function generateRecurrenceReceivables({
                 })
             }
 
-            await Receivable.create(newReceivable).then((receivable) => {
-                appliedDiscounts.map((discount) => {
-                    Receivablediscounts.create({
-                        receivable_id: receivable.id,
-                        discount_id: discount.id,
-                        name: discount.name,
-                        type: discount.type,
-                        value: discount.value,
-                        percent: discount.percent,
-                        created_by: 2,
-                        created_at: new Date(),
+            await Receivable.create(newReceivable)
+                .then((receivable) => {
+                    appliedDiscounts.map((discount) => {
+                        Receivablediscounts.create({
+                            receivable_id: receivable.id,
+                            discount_id: discount.id,
+                            name: discount.name,
+                            type: discount.type,
+                            value: discount.value,
+                            percent: discount.percent,
+                            created_by: 2,
+                            created_at: new Date(),
+                        })
                     })
                 })
-            })
+                .catch((err) => {
+                    console.log(err)
+                })
         }
     } catch (err) {
         const className = 'RecurrenceController'
