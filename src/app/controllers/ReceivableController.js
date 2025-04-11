@@ -1953,6 +1953,9 @@ class ReceivableController {
                     })
                 }
 
+                console.log(rec.id)
+                console.log(receivable.dataValues)
+
                 let manual_discount = 0
 
                 if (receivables.length > 1) {
@@ -1998,6 +2001,7 @@ class ReceivableController {
                     manual_discount: manual_discount.toFixed(2),
                 })
 
+                console.log(receivable.dataValues.status)
                 if (receivable.dataValues.status !== 'Paid') {
                     if (prices.discounts && prices.discounts.length > 0) {
                         const discount = await FilialDiscountList.findByPk(
