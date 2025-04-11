@@ -1294,7 +1294,7 @@ class ReceivableController {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 10,
+                limit = 12,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Receivable)) {
@@ -1942,12 +1942,10 @@ class ReceivableController {
                 approvalData = null,
             } = req.body
 
-            console.log('--- SETTLEMENT ---')
-
             let { total_amount } = req.body
 
             for (let rec of receivables) {
-                console.log(rec.id)
+                console.log('--- SETTLEMENT ---', rec.id)
                 const receivable = await Receivable.findByPk(rec.id)
 
                 if (!receivable) {
