@@ -172,6 +172,8 @@ export async function generateRecurrenceReceivables({
             initialPeriod = pedings + 1
         }
 
+        console.log({ initialPeriod, totalPeriods })
+
         for (let i = initialPeriod; i <= totalPeriods; i++) {
             let entry_date = null
             let due_date = null
@@ -206,7 +208,7 @@ export async function generateRecurrenceReceivables({
             let totalAmount = filialPriceList.dataValues.tuition
 
             const appliedDiscounts = []
-            student.dataValues.discounts.map((discount) => {
+            for (let discount of student.dataValues.discounts) {
                 let applyDiscount = true
                 if (
                     discount.dataValues.start_date &&
@@ -234,7 +236,7 @@ export async function generateRecurrenceReceivables({
                 if (applyDiscount) {
                     appliedDiscounts.push(discount.discount)
                 }
-            })
+            }
 
             totalAmount = applyDiscounts({
                 applied_at: 'Tuition',
