@@ -318,7 +318,9 @@ class IssuerController {
                 })
             }
 
-            const merchantExists = await Merchants.findByPk(merchant.id)
+            const merchantExists = merchant
+                ? await Merchants.findByPk(merchant.id)
+                : null
 
             if (
                 merchantExists &&
@@ -349,7 +351,7 @@ class IssuerController {
             await issuerExists.update(
                 {
                     filial_id: filialExists.id,
-                    merchant_id: merchantExists.id,
+                    merchant_id: merchantExists ? merchantExists.id : null,
                     student_id,
                     name,
                     email,
