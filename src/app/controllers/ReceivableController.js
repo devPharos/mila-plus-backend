@@ -2051,9 +2051,7 @@ class ReceivableController {
                         }
                     }
                 } else {
-                    return res.status(400).json({
-                        error: 'Receivable already settled.',
-                    })
+                    console.log('Receivable already settled.')
                 }
             }
 

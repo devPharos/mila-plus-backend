@@ -456,6 +456,8 @@ class EmergepayController {
             var rawData = req.body
             var jsonData = JSON.stringify(rawData)
 
+            console.log('--- POSTBACK LISTENER ---')
+
             var signatureMatched = false
 
             if (hmacSignature) {
