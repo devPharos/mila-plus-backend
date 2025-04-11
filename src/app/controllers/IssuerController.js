@@ -304,10 +304,6 @@ class IssuerController {
                 })
             }
 
-            req.body.merchant_id = merchantExists ? merchantExists.id : null
-            req.body.student_id = studentExists ? studentExists.id : null
-            req.body.filial_id = filialExists ? filialExists.id : null
-
             const studentExists = student_id
                 ? await Student.findByPk(student_id)
                 : null
@@ -320,6 +316,10 @@ class IssuerController {
                     error: 'Student does not belong to this filial.',
                 })
             }
+
+            req.body.merchant_id = merchantExists ? merchantExists.id : null
+            req.body.student_id = studentExists ? studentExists.id : null
+            req.body.filial_id = filialExists ? filialExists.id : null
 
             const issuerExists = await Issuer.findByPk(issuer_id)
 
