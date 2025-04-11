@@ -508,6 +508,7 @@ class EmergepayController {
                     transactionReference,
                     transactionType,
                     uniqueTransId,
+                    justTransaction = false,
                 } = emergeData
 
                 await Emergepaytransaction.create({
@@ -541,7 +542,11 @@ class EmergepayController {
                 const receivable = await Receivable.findByPk(
                     externalTransactionId
                 )
-                if (receivable && resultMessage === 'Approved') {
+                if (
+                    !justTransaction &&
+                    receivable &&
+                    resultMessage === 'Approved'
+                ) {
                     const amountPaidBalance = parseFloat(amountProcessed)
                     const paymentMethod = await PaymentMethod.findOne({
                         where: {
