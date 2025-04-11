@@ -1940,6 +1940,8 @@ class ReceivableController {
                 settlement_memo,
             } = req.body
 
+            console.log(req.body)
+
             let { total_amount } = req.body
 
             for (let rec of receivables) {
