@@ -1018,7 +1018,7 @@ export async function TuitionMail({
         }
         if (
             !paymentInfoHTML &&
-            paymentMethod.dataValues.platform === 'Gravity'
+            paymentMethod.dataValues.platform === 'Gravity - Online'
         ) {
             let textPaymentTransaction = await Textpaymenttransaction.findOne({
                 where: {
@@ -1700,7 +1700,7 @@ class ReceivableController {
                     .json({ error: 'Payment Method does not exist.' })
             }
 
-            if (paymentMethod.dataValues.platform === 'Gravity') {
+            if (paymentMethod.dataValues.platform === 'Gravity - Online') {
                 const emergepaytransaction = await Emergepaytransaction.findOne(
                     {
                         where: {

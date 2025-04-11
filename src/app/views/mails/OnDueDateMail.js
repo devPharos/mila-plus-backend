@@ -41,7 +41,7 @@ export async function OnDueDateMail({ receivable_id = null, manual = false }) {
         if (!paymentMethod) {
             return false
         }
-        if (paymentMethod.dataValues.platform === 'Gravity') {
+        if (paymentMethod.dataValues.platform === 'Gravity - Online') {
             let textPaymentTransaction = await Textpaymenttransaction.findOne({
                 where: {
                     receivable_id: receivable.id,

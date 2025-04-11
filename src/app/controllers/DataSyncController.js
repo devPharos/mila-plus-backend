@@ -361,7 +361,7 @@ class DataSyncController {
                                 parseFloat(amountProcessed)
                             const paymentMethod = await PaymentMethod.findOne({
                                 where: {
-                                    platform: 'Gravity',
+                                    platform: 'Gravity - Online',
                                     canceled_at: null,
                                 },
                             })

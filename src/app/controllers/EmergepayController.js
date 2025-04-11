@@ -148,24 +148,6 @@ export async function settlement(
         if (amountPaidBalance <= 0) {
             return
         }
-
-        // const receivables = await Receivable.findAll({
-        //     where: {
-        //         company_id: receivable.dataValues.company_id,
-        //         filial_id: receivable.dataValues.filial_id,
-        //         invoice_number: receivable.dataValues.invoice_number,
-        //         status: 'Pending',
-        //         canceled_at: null,
-        //     },
-        // })
-        // for (let receivable of receivables) {
-        //     await settlement({
-        //         receivable_id: receivable.id,
-        //         amountPaidBalance,
-        //         settlement_date,
-        //         paymentmethod_id,
-        //     })
-        // }
     } catch (err) {
         const className = 'EmergepayController'
         const functionName = 'settlement'
@@ -191,7 +173,7 @@ export async function verifyAndCreateTextToPayTransaction(
         const paymentMethod = await PaymentMethod.findByPk(
             receivable.dataValues.paymentmethod_id
         )
-        if (paymentMethod.dataValues.platform !== 'Gravity') {
+        if (paymentMethod.dataValues.platform !== 'Gravity - Online') {
             return false
         }
         const textPaymentTransaction = await Textpaymenttransaction.findOne({
@@ -249,7 +231,7 @@ export async function verifyAndCancelTextToPayTransaction(
         const paymentMethod = await PaymentMethod.findByPk(
             receivable.dataValues.paymentmethod_id
         )
-        if (paymentMethod.dataValues.platform !== 'Gravity') {
+        if (paymentMethod.dataValues.platform !== 'Gravity - Online') {
             return false
         }
         const textPaymentTransaction = await Textpaymenttransaction.findOne({
@@ -327,7 +309,7 @@ export async function adjustPaidTransactions() {
             const amountPaidBalance = receivable.balance
             const paymentMethod = await PaymentMethod.findOne({
                 where: {
-                    platform: 'Gravity',
+                    platform: 'Gravity - Online',
                     canceled_at: null,
                 },
             })

@@ -208,7 +208,7 @@ class ProspectPaymentController {
                 amount += tuitionFee.dataValues.total
             }
 
-            if (paymentMethod.dataValues.platform === 'Gravity') {
+            if (paymentMethod.dataValues.platform === 'Gravity - Online') {
                 emergepay
                     .startTextToPayTransaction({
                         amount: amount.toFixed(2),

@@ -246,7 +246,7 @@ class SettlementController {
 
             if (
                 paymentMethod.dataValues.platform &&
-                paymentMethod.dataValues.platform.includes('Gravity')
+                paymentMethod.dataValues.platform.includes('Gravity - Online')
             ) {
                 return res.status(400).json({
                     error: 'Settlement paid by Gravity Card cannot be deleted. Use the refund function instead.',
