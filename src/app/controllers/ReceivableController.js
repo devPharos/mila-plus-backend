@@ -1677,7 +1677,7 @@ class ReceivableController {
                 where: {
                     receivable_id: receivableExists.id,
                     canceled_at: null,
-                    paymentMethod_id: paymentMethod.id,
+                    paymentmethod_id: paymentMethod.id,
                 },
                 order: [['created_at', 'DESC']],
             })
