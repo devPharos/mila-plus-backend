@@ -1940,11 +1940,12 @@ class ReceivableController {
                 settlement_memo,
             } = req.body
 
-            console.log(req.body)
+            console.log('--- SETTLEMENT ---')
 
             let { total_amount } = req.body
 
             for (let rec of receivables) {
+                console.log(rec.id)
                 const receivable = await Receivable.findByPk(rec.id)
 
                 if (!receivable) {
@@ -1953,8 +1954,8 @@ class ReceivableController {
                     })
                 }
 
-                console.log(rec.id)
-                console.log(receivable.dataValues)
+                // console.log(rec.id)
+                // console.log(receivable.dataValues)
 
                 let manual_discount = 0
 
@@ -2001,7 +2002,7 @@ class ReceivableController {
                     manual_discount: manual_discount.toFixed(2),
                 })
 
-                console.log(receivable.dataValues.status)
+                // console.log(receivable.dataValues.status)
                 if (receivable.dataValues.status !== 'Paid') {
                     if (prices.discounts && prices.discounts.length > 0) {
                         const discount = await FilialDiscountList.findByPk(
@@ -2051,7 +2052,9 @@ class ReceivableController {
                         }
                     }
                 } else {
-                    console.log('Receivable already settled.')
+                    return res.status(400).json({
+                        error: 'Receivable already settled.',
+                    })
                 }
             }
 
