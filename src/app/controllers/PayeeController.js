@@ -19,6 +19,7 @@ import {
     verifyFilialSearch,
 } from '../functions'
 import Milauser from '../models/Milauser'
+import BankAccounts from '../models/BankAccount'
 
 const xl = require('excel4node')
 const fs = require('fs')
@@ -762,7 +763,7 @@ class PayeeController {
                 filter.filial_id = req.headers.filial
             }
 
-            console.log({ filter, filterSettlement })
+            // console.log('aqui', filterSettlement.settlement_date)
             const payees = await Payee.findAll({
                 where: {
                     company_id: req.companyId,
@@ -837,6 +838,16 @@ class PayeeController {
                                 where: {
                                     canceled_at: null,
                                 },
+                                include: [
+                                    {
+                                        model: BankAccounts,
+                                        as: 'bankAccount',
+                                        required: false,
+                                        where: {
+                                            canceled_at: null,
+                                        },
+                                    },
+                                ],
                             },
                         ],
                     },
@@ -879,6 +890,9 @@ class PayeeController {
             ws2.column(col).width = 15
             col++
             ws2.cell(row, col).string('Payment Method').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Bank Account').style(styleBold)
             ws2.column(col).width = 15
             col++
             ws2.cell(row, col).string('Is Recurrence?').style(styleBold)
@@ -1001,6 +1015,15 @@ class PayeeController {
                     ws2.cell(index + 3, nCol).string(
                         payee.settlements[payee.settlements.length - 1]
                             .paymentMethod.description
+                    )
+                } else {
+                    ws2.cell(index + 3, nCol).string('')
+                }
+                nCol++
+                if (payee.settlements && payee.settlements.length > 0) {
+                    ws2.cell(index + 3, nCol).string(
+                        payee.settlements[payee.settlements.length - 1]
+                            .paymentMethod.bankAccount.account
                     )
                 } else {
                     ws2.cell(index + 3, nCol).string('')
