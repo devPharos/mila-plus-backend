@@ -69,10 +69,10 @@ module.exports = {
     },
 
     async down(queryInterface, Sequelize) {
-        // await queryInterface.removeColumn(
-        //     'emergepaytransactions',
-        //     'gravityreconcition_id'
-        // )
+        await queryInterface.removeColumn(
+            'emergepaytransactions',
+            'gravityreconcition_id'
+        )
         await queryInterface.dropTable('gravityreconciliations')
     },
 }
