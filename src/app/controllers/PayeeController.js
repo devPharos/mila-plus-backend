@@ -52,6 +52,12 @@ class PayeeController {
                     return: 'issuer_id',
                 },
                 {
+                    model: ChartOfAccount,
+                    field: 'name',
+                    type: 'string',
+                    return: 'chartofaccount_id',
+                },
+                {
                     field: 'issuer_id',
                     type: 'uuid',
                 },
@@ -90,6 +96,10 @@ class PayeeController {
                 {
                     field: 'balance',
                     type: 'float',
+                },
+                {
+                    field: 'memo',
+                    type: 'string',
                 },
             ]
             const { count, rows } = await Payee.findAndCountAll({
