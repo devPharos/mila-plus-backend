@@ -875,10 +875,10 @@ class PayeeController {
             ws2.cell(row, col).string('Status').style(styleBold)
             ws2.column(col).width = 15
             col++
-            ws2.cell(row, col).string('Last Payment Date').style(styleBold)
+            ws2.cell(row, col).string('Payment Date').style(styleBold)
             ws2.column(col).width = 15
             col++
-            ws2.cell(row, col).string('Last Payment Method').style(styleBold)
+            ws2.cell(row, col).string('Payment Method').style(styleBold)
             ws2.column(col).width = 15
             col++
             ws2.cell(row, col).string('Is Recurrence?').style(styleBold)
