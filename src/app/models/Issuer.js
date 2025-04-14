@@ -129,6 +129,10 @@ class Issuer extends Model {
             foreignKey: 'issuer_id',
             as: 'issuer_x_recurrence',
         })
+        this.hasMany(models.Payeerecurrence, {
+            foreignKey: 'issuer_id',
+            as: 'payee_recurrences',
+        })
     }
 }
 

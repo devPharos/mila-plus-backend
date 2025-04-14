@@ -115,6 +115,9 @@ class DataSyncController {
                                     ''
                                 )
                             ),
+                            status: capitalizeFirstLetter(
+                                values[headers.indexOf('Status')]
+                            ),
                             gender: capitalizeFirstLetter(
                                 values[headers.indexOf('Gender')]
                             ),

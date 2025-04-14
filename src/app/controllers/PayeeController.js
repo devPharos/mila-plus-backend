@@ -1,15 +1,16 @@
 import Sequelize, { Op } from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
-
+import { resolve } from 'path'
 import Payee from '../models/Payee'
 import PaymentMethod from '../models/PaymentMethod'
 import ChartOfAccount from '../models/Chartofaccount'
 import PaymentCriteria from '../models/PaymentCriteria'
 import Filial from '../models/Filial'
 import Issuer from '../models/Issuer'
+import Payeerecurrence from '../models/Payeerecurrence'
 import Payeesettlement from '../models/Payeesettlement'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import Merchants from '../models/Merchants'
 import {
     generateSearchByFields,
@@ -17,6 +18,10 @@ import {
     verifyFieldInModel,
     verifyFilialSearch,
 } from '../functions'
+import Milauser from '../models/Milauser'
+
+const xl = require('excel4node')
+const fs = require('fs')
 
 class PayeeController {
     async index(req, res) {
@@ -573,6 +578,537 @@ class PayeeController {
             await t.rollback()
             const className = 'PayeeController'
             const functionName = 'delete'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async excel(req, res) {
+        try {
+            const name = `payees_${Date.now()}`
+            const path = `${resolve(
+                __dirname,
+                '..',
+                '..',
+                '..',
+                'public',
+                'uploads'
+            )}/${name}`
+            const {
+                entry_date_from,
+                entry_date_to,
+                due_date_from,
+                due_date_to,
+                settlement_from,
+                settlement_to,
+                status,
+            } = req.body
+            const wb = new xl.Workbook()
+            // Add Worksheets to the workbook
+            var ws = wb.addWorksheet('Params')
+            var ws2 = wb.addWorksheet('Payees')
+
+            // Create a reusable style
+            var styleBold = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                    bold: true,
+                },
+            })
+
+            var styleTotal = wb.createStyle({
+                font: {
+                    color: '#00aa00',
+                    size: 12,
+                    bold: true,
+                },
+                fill: {
+                    type: 'pattern',
+                    fgColor: '#ff0000',
+                    bgColor: '#ffffff',
+                },
+                numberFormat: '$ #,##0.00; ($#,##0.00); -',
+            })
+
+            var styleTotalNegative = wb.createStyle({
+                font: {
+                    color: '#aa0000',
+                    size: 12,
+                    bold: true,
+                },
+                fill: {
+                    type: 'pattern',
+                    fgColor: '#ff0000',
+                    bgColor: '#ffffff',
+                },
+                numberFormat: '$ #,##0.00; ($#,##0.00); -',
+            })
+
+            var styleHeading = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 14,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+            })
+
+            ws.cell(1, 1).string('Params').style(styleHeading)
+            ws.cell(1, 2).string('Values').style(styleHeading)
+
+            ws.row(1).filter()
+            ws.row(1).freeze()
+
+            ws.cell(2, 1).string('Entry date from').style(styleBold)
+            ws.cell(3, 1).string('Entry date to').style(styleBold)
+            ws.cell(4, 1).string('Due date from').style(styleBold)
+            ws.cell(5, 1).string('Due date to').style(styleBold)
+            ws.cell(6, 1).string('Settlement date from').style(styleBold)
+            ws.cell(7, 1).string('Settlement date to').style(styleBold)
+            ws.cell(8, 1).string('Status').style(styleBold)
+
+            ws.cell(2, 2).string(entry_date_from || '')
+            ws.cell(3, 2).string(entry_date_to || '')
+            ws.cell(4, 2).string(due_date_from || '')
+            ws.cell(5, 2).string(due_date_to || '')
+            ws.cell(6, 2).string(settlement_from || '')
+            ws.cell(7, 2).string(settlement_to || '')
+            ws.cell(8, 2).string(status || '')
+
+            ws.column(1).width = 30
+            ws.column(2).width = 30
+
+            const filter = {}
+            const filterSettlement = {}
+            if (status !== 'All') {
+                filter.status = status
+            }
+            if (entry_date_from) {
+                let filterDate = entry_date_from.replace(/-/g, '')
+                filter.entry_date = {
+                    [Op.gte]: filterDate,
+                }
+            }
+            if (entry_date_to) {
+                let filterDate = entry_date_to.replace(/-/g, '')
+                if (filter.entry_date) {
+                    filter.entry_date = {
+                        [Op.and]: [
+                            filter.entry_date,
+                            {
+                                [Op.lte]: filterDate,
+                            },
+                        ],
+                    }
+                } else {
+                    filter.entry_date = {
+                        [Op.lte]: filterDate,
+                    }
+                }
+            }
+            if (due_date_from) {
+                let filterDate = due_date_from.replace(/-/g, '')
+                filter.due_date = {
+                    [Op.gte]: filterDate,
+                }
+            }
+            if (due_date_to) {
+                let filterDate = due_date_to.replace(/-/g, '')
+                if (filter.due_date) {
+                    filter.due_date = {
+                        [Op.and]: [
+                            filter.due_date,
+                            {
+                                [Op.lte]: filterDate,
+                            },
+                        ],
+                    }
+                } else {
+                    filter.due_date = {
+                        [Op.lte]: filterDate,
+                    }
+                }
+            }
+            if (settlement_from) {
+                let filterDate = settlement_from.replace(/-/g, '')
+                filterSettlement.settlement_date = {
+                    [Op.gte]: filterDate,
+                }
+            }
+            if (settlement_to) {
+                let filterDate = settlement_to.replace(/-/g, '')
+                if (filterSettlement.settlement_date) {
+                    filterSettlement.settlement_date = {
+                        [Op.and]: [
+                            filterSettlement.settlement_date,
+                            {
+                                [Op.lte]: filterDate,
+                            },
+                        ],
+                    }
+                } else {
+                    filterSettlement.settlement_date = {
+                        [Op.lte]: filterDate,
+                    }
+                }
+            }
+            if (req.headers.filial != 1) {
+                filter.filial_id = req.headers.filial
+            }
+
+            console.log({ filter, filterSettlement })
+            const payees = await Payee.findAll({
+                where: {
+                    company_id: req.companyId,
+                    canceled_at: null,
+                    ...filter,
+                },
+                include: [
+                    {
+                        model: ChartOfAccount,
+                        as: 'chartOfAccount',
+                        required: false,
+                        where: { canceled_at: null },
+                        include: [
+                            {
+                                model: ChartOfAccount,
+                                as: 'Father',
+                                required: false,
+                                where: { canceled_at: null },
+                                include: [
+                                    {
+                                        model: ChartOfAccount,
+                                        as: 'Father',
+                                        required: false,
+                                        where: { canceled_at: null },
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    {
+                        model: PaymentMethod,
+                        as: 'paymentMethod',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Issuer,
+                        as: 'issuer',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: PaymentCriteria,
+                        as: 'paymentCriteria',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Milauser,
+                        as: 'createdBy',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Milauser,
+                        as: 'updatedBy',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Payeesettlement,
+                        as: 'settlements',
+                        required: filterSettlement.settlement_date
+                            ? true
+                            : false,
+                        where: { canceled_at: null, ...filterSettlement },
+                        include: [
+                            {
+                                model: PaymentMethod,
+                                as: 'paymentMethod',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
+                    },
+                ],
+                order: [['due_date', 'DESC']],
+            })
+
+            let row = 1
+            let col = 1
+
+            row++
+            ws2.cell(row, col).string('Entry date').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Due date').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Issuer').style(styleBold)
+            ws2.column(col).width = 35
+            col++
+            ws2.cell(row, col).string('Amount').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Discount').style(styleBold)
+            ws2.column(col).width = 12
+            col++
+            ws2.cell(row, col).string('Fee').style(styleBold)
+            ws2.column(col).width = 12
+            col++
+            ws2.cell(row, col).string('Total').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Balance').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Status').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Last Payment Date').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Last Payment Method').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Is Recurrence?').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            // ws2.cell(row, col).string('Payment Method').style(styleBold)
+            // ws2.column(col).width = 20
+            // col++
+            ws2.cell(row, col).string('Payment Criteria').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            ws2.cell(row, col).string('Invoice Number').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            ws2.cell(row, col).string('Chart of Account').style(styleBold)
+            ws2.column(col).width = 40
+            col++
+            ws2.cell(row, col).string('Memo').style(styleBold)
+            ws2.column(col).width = 40
+            col++
+            ws2.cell(row, col).string('Created At').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Created By').style(styleBold)
+            ws2.column(col).width = 25
+            col++
+            ws2.cell(row, col).string('Updated At').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Updated By').style(styleBold)
+            ws2.column(col).width = 25
+            col++
+            ws2.cell(row, col).string('ID').style(styleBold)
+            ws2.column(col).width = 40
+
+            ws2.cell(1, 1, 1, col, true).string('Payees').style(styleHeading)
+
+            ws2.row(row).filter()
+            ws2.row(row).freeze()
+
+            payees.map(async (payee, index) => {
+                let chartOfAccount = ''
+                if (payee.chartOfAccount) {
+                    if (payee.chartOfAccount.Father) {
+                        if (payee.chartOfAccount.Father.Father) {
+                            chartOfAccount =
+                                payee.chartOfAccount.Father.Father.name +
+                                ' > ' +
+                                payee.chartOfAccount.Father.name +
+                                ' > ' +
+                                payee.chartOfAccount.name
+                        } else {
+                            chartOfAccount =
+                                payee.chartOfAccount.Father.name +
+                                ' > ' +
+                                payee.chartOfAccount.name
+                        }
+                    } else {
+                        chartOfAccount = payee.chartOfAccount.name
+                    }
+                }
+                let nCol = 1
+                ws2.cell(index + 3, nCol).date(
+                    format(parseISO(payee.entry_date), 'yyyy-MM-dd')
+                )
+                nCol++
+                ws2.cell(index + 3, nCol).date(
+                    format(parseISO(payee.due_date), 'yyyy-MM-dd')
+                )
+                nCol++
+                ws2.cell(index + 3, nCol).string(
+                    payee.issuer ? payee.issuer.name : ''
+                )
+                nCol++
+                ws2.cell(index + 3, nCol)
+                    .number(payee.amount)
+                    .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
+                nCol++
+                ws2.cell(index + 3, nCol)
+                    .number(payee.discount * -1)
+                    .style({
+                        numberFormat: '$ #,##0.00; ($#,##0.00); -',
+                        font: { color: '#aa0000' },
+                    })
+                nCol++
+                ws2.cell(index + 3, nCol)
+                    .number(payee.fee)
+                    .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
+                nCol++
+                ws2.cell(index + 3, nCol)
+                    .number(payee.total)
+                    .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
+                nCol++
+                ws2.cell(index + 3, nCol)
+                    .number(payee.balance)
+                    .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
+                nCol++
+                ws2.cell(index + 3, nCol).string(payee.status)
+                nCol++
+                if (
+                    payee.settlements &&
+                    payee.settlements.length > 0 &&
+                    payee.settlements[payee.settlements.length - 1]
+                        .settlement_date
+                ) {
+                    ws2.cell(index + 3, nCol).date(
+                        format(
+                            parseISO(
+                                payee.settlements[payee.settlements.length - 1]
+                                    .settlement_date
+                            ),
+                            'yyyy-MM-dd'
+                        )
+                    )
+                } else {
+                    ws2.cell(index + 3, nCol).string('')
+                }
+                nCol++
+                if (payee.settlements && payee.settlements.length > 0) {
+                    ws2.cell(index + 3, nCol).string(
+                        payee.settlements[payee.settlements.length - 1]
+                            .paymentMethod.description
+                    )
+                } else {
+                    ws2.cell(index + 3, nCol).string('')
+                }
+                nCol++
+                ws2.cell(index + 3, nCol).string(
+                    payee.is_recurrence ? 'Yes' : 'No'
+                )
+                nCol++
+                ws2.cell(index + 3, nCol).string(
+                    payee.paymentCriteria
+                        ? payee.paymentCriteria.description
+                        : ''
+                )
+                nCol++
+                if (payee.invoice_number) {
+                    ws2.cell(index + 3, nCol).string(
+                        payee.invoice_number.toString().padStart(6, '0')
+                    )
+                } else {
+                    ws2.cell(index + 3, nCol).string('')
+                }
+                nCol++
+                ws2.cell(index + 3, nCol).string(chartOfAccount)
+                nCol++
+                ws2.cell(index + 3, nCol).string(payee.memo)
+                nCol++
+                if (payee.created_at) {
+                    ws2.cell(index + 3, nCol).date(payee.created_at)
+                } else {
+                    ws2.cell(index + 3, nCol).string('')
+                }
+                nCol++
+                ws2.cell(index + 3, nCol).string(
+                    payee.createdBy ? payee.createdBy.name : ''
+                )
+                nCol++
+                if (payee.updated_at) {
+                    ws2.cell(index + 3, nCol).date(payee.updated_at)
+                } else {
+                    ws2.cell(index + 3, nCol).string('')
+                }
+                nCol++
+                ws2.cell(index + 3, nCol).string(
+                    payee.updatedBy ? payee.updatedBy.name : ''
+                )
+                nCol++
+                ws2.cell(index + 3, nCol).string(payee.id)
+                nCol++
+            })
+
+            row += payees.length + 1
+
+            ws2.cell(row, 4)
+                .number(
+                    payees.reduce((acc, curr) => {
+                        return acc + curr.amount
+                    }, 0)
+                )
+                .style(styleTotal)
+            ws2.cell(row, 5)
+                .number(
+                    payees.reduce((acc, curr) => {
+                        return acc + curr.discount * -1
+                    }, 0)
+                )
+                .style(styleTotalNegative)
+            ws2.cell(row, 6)
+                .number(
+                    payees.reduce((acc, curr) => {
+                        return acc + curr.fee
+                    }, 0)
+                )
+                .style(styleTotal)
+            ws2.cell(row, 7)
+                .number(
+                    payees.reduce((acc, curr) => {
+                        return acc + curr.total
+                    }, 0)
+                )
+                .style(styleTotal)
+            ws2.cell(row, 8)
+                .number(
+                    payees.reduce((acc, curr) => {
+                        return acc + curr.balance
+                    }, 0)
+                )
+                .style(styleTotal)
+
+            let ret = null
+            wb.write(path, (err, stats) => {
+                if (err) {
+                    ret = res.status(400).json({ err, stats })
+                } else {
+                    setTimeout(() => {
+                        fs.unlink(path, (err) => {
+                            if (err) {
+                                console.log(err)
+                            }
+                        })
+                    }, 10000)
+                    return res.json({ path, name })
+                }
+            })
+            return ret
+        } catch (err) {
+            const className = 'PayeeController'
+            const functionName = 'excel'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

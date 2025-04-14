@@ -370,6 +370,7 @@ routes.post('/payee', PayeeController.store)
 routes.put('/payee/:payee_id', PayeeController.update)
 routes.delete('/payee/:payee_id', PayeeController.delete)
 routes.post('/payee/settlement', PayeeController.settlement)
+routes.post('/payee/excel', PayeeController.excel)
 
 // settlements
 routes.get('/payeesettlements', PayeeSettlementController.index)

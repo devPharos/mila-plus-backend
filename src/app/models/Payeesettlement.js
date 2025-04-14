@@ -29,6 +29,10 @@ class Payeesettlement extends Model {
                         key: 'id',
                     },
                 },
+                settlement_date: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
                 created_at: {
                     allowNull: false,
                     type: Sequelize.DATE,

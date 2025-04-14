@@ -189,6 +189,18 @@ class Payee extends Model {
             foreignKey: 'issuer_id',
             as: 'issuer',
         })
+        this.hasMany(models.Payeesettlement, {
+            foreignKey: 'payee_id',
+            as: 'settlements',
+        })
+        this.belongsTo(models.Milauser, {
+            foreignKey: 'created_by',
+            as: 'createdBy',
+        })
+        this.belongsTo(models.Milauser, {
+            foreignKey: 'updated_by',
+            as: 'updatedBy',
+        })
     }
 }
 
