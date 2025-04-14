@@ -19,7 +19,7 @@ const { Op } = Sequelize
 class MerchantController {
     async index(req, res) {
         try {
-            const defaultOrderBy = { column: 'description', asc: 'ASC' }
+            const defaultOrderBy = { column: 'name', asc: 'ASC' }
             let {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,

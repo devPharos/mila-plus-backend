@@ -143,6 +143,7 @@ class PayeeController {
                     'status',
                     'amount',
                     'fee',
+                    'memo',
                     'discount',
                     'total',
                     'balance',
@@ -228,12 +229,12 @@ class PayeeController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const {
-                amount,
-                fee,
-                discount,
-                type,
-                type_detail,
+            let {
+                amount = '0',
+                fee = '0',
+                discount = '0',
+                type = 'Other',
+                type_detail = 'Other',
                 entry_date,
                 due_date,
                 memo,
@@ -244,6 +245,13 @@ class PayeeController {
                 filial,
                 invoice_number,
             } = req.body
+
+            if (fee === '') {
+                fee = '0'
+            }
+            if (discount === '') {
+                discount = '0'
+            }
 
             const filialExists = await Filial.findByPk(filial.id)
 
