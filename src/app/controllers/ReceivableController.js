@@ -2848,12 +2848,6 @@ class ReceivableController {
                         : 'No'
                 )
                 nCol++
-                // ws2.cell(index + 3, nCol).string(
-                //     receivable.paymentMethod
-                //         ? receivable.paymentMethod.description
-                //         : ''
-                // )
-                // nCol++
                 ws2.cell(index + 3, nCol).string(
                     receivable.paymentCriteria
                         ? receivable.paymentCriteria.description

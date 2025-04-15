@@ -309,19 +309,23 @@ class PayeeController {
                 {
                     company_id: 1,
                     filial_id: filialExists.id,
-                    amount: amount ? parseFloat(amount).toFixed(2) : 0,
-                    fee: fee ? parseFloat(fee).toFixed(2) : 0,
-                    discount: discount ? parseFloat(discount).toFixed(2) : 0,
-                    total: (
-                        parseFloat(amount) +
-                        parseFloat(fee) -
-                        parseFloat(discount)
-                    ).toFixed(2),
-                    balance: (
-                        parseFloat(amount) +
-                        parseFloat(fee) -
-                        parseFloat(discount)
-                    ).toFixed(2),
+                    amount: amount ? parseFloat(amount) : 0,
+                    fee: fee ? parseFloat(fee) : 0,
+                    discount: discount ? parseFloat(discount) : 0,
+                    total: parseFloat(
+                        (
+                            parseFloat(amount) +
+                            parseFloat(fee) -
+                            parseFloat(discount)
+                        ).toFixed(2)
+                    ),
+                    balance: parseFloat(
+                        (
+                            parseFloat(amount) +
+                            parseFloat(fee) -
+                            parseFloat(discount)
+                        ).toFixed(2)
+                    ),
                     type,
                     type_detail,
                     invoice_number,
@@ -440,16 +444,20 @@ class PayeeController {
                     chartofaccount_id: chartOfAccountExists.id,
                     issuer_id: issuer.id,
                     paymentmethod_id: paymentMethodExists.id,
-                    total: (
-                        parseFloat(amount) +
-                        parseFloat(fee) -
-                        parseFloat(discount)
-                    ).toFixed(2),
-                    balance: (
-                        parseFloat(amount) +
-                        parseFloat(fee) -
-                        parseFloat(discount)
-                    ).toFixed(2),
+                    total: parseFloat(
+                        (
+                            parseFloat(amount) +
+                            parseFloat(fee) -
+                            parseFloat(discount)
+                        ).toFixed(2)
+                    ),
+                    balance: parseFloat(
+                        (
+                            parseFloat(amount) +
+                            parseFloat(fee) -
+                            parseFloat(discount)
+                        ).toFixed(2)
+                    ),
                     updated_by: req.userId,
                     updated_at: new Date(),
                 },

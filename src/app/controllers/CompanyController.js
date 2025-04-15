@@ -1,30 +1,38 @@
-import Sequelize from 'sequelize';
-import Company from '../models/Company';
-import Filial from '../models/Filial';
-const { Op } = Sequelize;
+import Sequelize from 'sequelize'
+import Company from '../models/Company'
+import Filial from '../models/Filial'
+const { Op } = Sequelize
 
 class CompanyController {
-
     async index(req, res) {
-
-        const companies = await Company.findAll({
-            where: { canceled_at: null }, include: [
-                {
-                    model: Filial,
-                    as: 'filials',
-                    where: {
-                        canceled_at: null,
+        try {
+            const companies = await Company.findAll({
+                where: { canceled_at: null },
+                include: [
+                    {
+                        model: Filial,
+                        as: 'filials',
+                        where: {
+                            canceled_at: null,
+                        },
                     },
-                }
-            ]
-        })
-        if (!companies.length) {
-            return res.status(400).json({
-                error: 'No company exists.',
-            });
-        }
+                ],
+            })
+            if (!companies.length) {
+                return res.status(400).json({
+                    error: 'No company exists.',
+                })
+            }
 
-        return res.json(companies);
+            return res.json(companies)
+        } catch (err) {
+            // Log de erro simples, pode ser substituído por MailLog se desejar
+            console.error('CompanyController.index error:', err)
+            return res.status(500).json({
+                error: 'Internal server error',
+                details: err.message,
+            })
+        }
     }
 
     // async store(req, res) {
@@ -36,4 +44,4 @@ class CompanyController {
     // }
 }
 
-export default new CompanyController();
+export default new CompanyController()

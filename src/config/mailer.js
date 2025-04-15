@@ -11,13 +11,3 @@ export const mailer = nodemailer.createTransport({
         pass: process.env.MAIL_PW,
     },
 })
-
-mailer
-    .verify()
-    .then((result) =>
-        console.log(
-            `${
-                result === true ? '✅' : '❌'
-            } Mailer authenticated successfully!`
-        )
-    )
