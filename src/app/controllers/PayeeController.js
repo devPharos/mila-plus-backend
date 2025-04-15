@@ -363,12 +363,10 @@ class PayeeController {
                             parseFloat(discount)
                         ).toFixed(2)
                     ),
-                    type,
-                    type_detail,
-                    invoice_number,
+                    invoice_number: invoice_number ? invoice_number : null,
                     issuer_id: issuer.id,
-                    entry_date,
-                    due_date,
+                    entry_date: entry_date.replace(/-/g, ''),
+                    due_date: due_date.replace(/-/g, ''),
                     paymentmethod_id: paymentMethodExists.id,
                     memo,
                     contract_number,
