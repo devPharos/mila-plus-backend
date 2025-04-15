@@ -365,6 +365,8 @@ class PayeeController {
                     ),
                     invoice_number: invoice_number ? invoice_number : null,
                     issuer_id: issuer.id,
+                    type,
+                    type_detail,
                     entry_date: entry_date.replace(/-/g, ''),
                     due_date: due_date.replace(/-/g, ''),
                     paymentmethod_id: paymentMethodExists.id,
