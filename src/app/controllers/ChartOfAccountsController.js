@@ -259,12 +259,6 @@ class ChartOfAccountsController {
 
             const searchableFields = [
                 {
-                    model: Chartofaccount,
-                    field: 'name',
-                    type: 'string',
-                    return: 'father_id',
-                },
-                {
                     field: 'name',
                     type: 'string',
                 },

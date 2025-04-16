@@ -71,7 +71,8 @@ class Student extends Model {
                 discount_id: {
                     type: Sequelize.UUID,
                 },
-
+                studentgroup_id: Sequelize.INTEGER,
+                classroom_id: Sequelize.UUID,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -113,6 +114,14 @@ class Student extends Model {
         this.hasOne(models.Studentinactivation, {
             foreignKey: 'student_id',
             as: 'inactivation',
+        })
+        this.belongsTo(models.Studentgroup, {
+            foreignKey: 'studentgroup_id',
+            as: 'studentgroup',
+        })
+        this.belongsTo(models.Classroom, {
+            foreignKey: 'classroom_id',
+            as: 'classroom',
         })
     }
 }
