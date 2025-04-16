@@ -31,9 +31,6 @@ export default async function MailLog({
             subject: `MILA Plus - ${title}`,
             html: MailLayout({ title, content, filial: '' }),
         })
-        .then((res) => {
-            console.log(res)
-        })
         .catch((err) => {
             console.log(err)
         })
