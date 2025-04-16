@@ -305,43 +305,6 @@ class PayeeController {
                 })
             }
 
-            console.log({
-                company_id: 1,
-                filial_id: filialExists.id,
-                amount: amount ? parseFloat(amount) : 0,
-                fee: fee ? parseFloat(fee) : 0,
-                discount: discount ? parseFloat(discount) : 0,
-                total: parseFloat(
-                    (
-                        parseFloat(amount) +
-                        parseFloat(fee) -
-                        parseFloat(discount)
-                    ).toFixed(2)
-                ),
-                balance: parseFloat(
-                    (
-                        parseFloat(amount) +
-                        parseFloat(fee) -
-                        parseFloat(discount)
-                    ).toFixed(2)
-                ),
-                type,
-                type_detail,
-                invoice_number: invoice_number ? invoice_number : null,
-                issuer_id: issuer.id,
-                entry_date: entry_date.replace(/-/g, ''),
-                due_date: due_date.replace(/-/g, ''),
-                paymentmethod_id: paymentMethodExists.id,
-                memo,
-                contract_number,
-                chartofaccount_id: chartOfAccountExists.id,
-                is_recurrence: false,
-                status: 'Pending',
-                status_date: format(new Date(), 'yyyyMMdd'),
-                created_at: new Date(),
-                created_by: req.userId,
-            })
-
             const newPayee = await Payee.create(
                 {
                     company_id: 1,
