@@ -19,6 +19,8 @@ import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
 import { verifyAndCancelTextToPayTransaction } from './EmergepayController'
 import Processtype from '../models/Processtype'
 import Processsubstatus from '../models/Processsubstatus'
+import Staff from '../models/Staff'
+import Studentgroup from '../models/Studentgroup'
 
 const { Op } = Sequelize
 
@@ -179,7 +181,7 @@ class StudentController {
 
     async index(req, res) {
         try {
-            const defaultOrderBy = { column: 'name', asc: 'ASC' }
+            const defaultOrderBy = { column: 'name;last_name', asc: 'ASC' }
             let {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
@@ -214,6 +216,12 @@ class StudentController {
                     field: 'email',
                     type: 'string',
                 },
+                // {
+                //     model: Staff,
+                //     field: 'name',
+                //     type: 'string',
+                //     return: 'teacher_id',
+                // },
             ]
 
             const { count, rows } = await Student.findAndCountAll({
@@ -226,6 +234,19 @@ class StudentController {
                             company_id: 1,
                             canceled_at: null,
                         },
+                    },
+                    {
+                        model: Studentgroup,
+                        as: 'studentgroup',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Staff,
+                        as: 'teacher',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'name'],
                     },
                 ],
                 where: {
@@ -297,6 +318,19 @@ class StudentController {
                     {
                         model: Processsubstatus,
                         as: 'processsubstatuses',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'name'],
+                    },
+                    {
+                        model: Studentgroup,
+                        as: 'studentgroup',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Staff,
+                        as: 'teacher',
                         required: false,
                         where: { canceled_at: null },
                         attributes: ['id', 'name'],

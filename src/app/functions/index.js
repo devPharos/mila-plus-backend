@@ -22,15 +22,32 @@ export function verifyFieldInModel(field, model) {
 
 export function generateSearchOrder(orderBy, orderASC) {
     let searchOrder = []
-    if (orderBy.includes(',')) {
-        searchOrder.push([
-            orderBy.split(',')[0],
-            orderBy.split(',')[1],
-            orderASC,
-        ])
+    let orderBySplits = orderBy
+    if (orderBy.includes(';')) {
+        orderBySplits = orderBy.split(';')
+        for (let orderBySplit of orderBySplits) {
+            if (orderBySplit.includes(',')) {
+                searchOrder.push([
+                    orderBySplit.split(',')[0],
+                    orderBySplit.split(',')[1],
+                    orderASC,
+                ])
+            } else {
+                searchOrder.push([orderBySplit, orderASC])
+            }
+        }
     } else {
-        searchOrder.push([orderBy, orderASC])
+        if (orderBy.includes(',')) {
+            searchOrder.push([
+                orderBy.split(',')[0],
+                orderBy.split(',')[1],
+                orderASC,
+            ])
+        } else {
+            searchOrder.push([orderBy, orderASC])
+        }
     }
+
     return searchOrder
 }
 

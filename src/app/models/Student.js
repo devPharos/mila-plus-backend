@@ -73,6 +73,7 @@ class Student extends Model {
                 },
                 studentgroup_id: Sequelize.INTEGER,
                 classroom_id: Sequelize.UUID,
+                teacher_id: Sequelize.UUID,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -122,6 +123,10 @@ class Student extends Model {
         this.belongsTo(models.Classroom, {
             foreignKey: 'classroom_id',
             as: 'classroom',
+        })
+        this.belongsTo(models.Staff, {
+            foreignKey: 'teacher_id',
+            as: 'teacher',
         })
     }
 }

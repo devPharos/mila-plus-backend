@@ -430,6 +430,7 @@ class StudentgroupController {
                         {
                             studentgroup_id: null,
                             classroom_id: null,
+                            teacher_id: null,
                             status: 'Waiting',
                             updated_by: req.userId,
                             updated_at: new Date(),
@@ -451,12 +452,11 @@ class StudentgroupController {
                         canceled_at: null,
                     },
                 })
+                const { start_date, end_date } = req.body
+
+                const studentExists = await Student.findByPk(student.id)
 
                 if (!studentXGroupExists) {
-                    const { start_date, end_date } = req.body
-
-                    const studentExists = await Student.findByPk(student.id)
-
                     await StudentXGroup.create(
                         {
                             company_id: 1,
@@ -481,9 +481,20 @@ class StudentgroupController {
                         {
                             studentgroup_id: studentGroup.id,
                             classroom_id: classroomExists.id,
+                            teacher_id: staffExists.id,
                             status: 'In Class',
                             updated_by: req.userId,
                             updated_at: new Date(),
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+                } else {
+                    await studentExists.update(
+                        {
+                            classroom_id: classroomExists.id,
+                            teacher_id: staffExists.id,
                         },
                         {
                             transaction: t,
