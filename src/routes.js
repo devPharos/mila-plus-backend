@@ -56,6 +56,8 @@ import SettlementController from './app/controllers/SettlementController'
 import PublicFileController from './app/controllers/PublicFileController'
 import PayeeSettlementController from './app/controllers/PayeeSettlementController'
 import PayeeRecurrenceController from './app/controllers/PayeeRecurrenceController'
+import ClassroomController from './app/controllers/ClassroomController'
+import StudentgroupController from './app/controllers/StudentgroupController'
 
 const routes = new Router()
 
@@ -272,6 +274,16 @@ routes.post('/students', StudentController.store)
 routes.put('/students/:student_id', StudentController.update)
 routes.post('/students/inactivate', StudentController.inactivate)
 routes.post('/students/activate/:student_id', StudentController.activate)
+
+routes.get('/classrooms', ClassroomController.index)
+routes.get('/classrooms/:classroom_id', ClassroomController.show)
+routes.post('/classrooms', ClassroomController.store)
+routes.put('/classrooms/:classroom_id', ClassroomController.update)
+
+routes.get('/studentgroups', StudentgroupController.index)
+routes.get('/studentgroups/:studentgroup_id', StudentgroupController.show)
+routes.post('/studentgroups', StudentgroupController.store)
+routes.put('/studentgroups/:studentgroup_id', StudentgroupController.update)
 
 routes.get('/agents/:agent_id', AgentController.show)
 routes.post('/agents', AgentController.store)

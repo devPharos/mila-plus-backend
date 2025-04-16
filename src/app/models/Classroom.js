@@ -34,6 +34,10 @@ class Classroom extends Model {
             foreignKey: 'filial_id',
             as: 'filial',
         })
+        this.hasMany(models.Studentgroup, {
+            foreignKey: 'classroom_id',
+            as: 'studentgroups',
+        })
     }
 }
 

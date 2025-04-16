@@ -141,12 +141,13 @@ class StaffController {
 
     async index(req, res) {
         try {
-            const defaultOrderBy = { column: 'due_date', asc: 'ASC' }
+            const defaultOrderBy = { column: 'name', asc: 'ASC' }
             let {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 12,
+                type = '',
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Staff)) {
@@ -188,6 +189,13 @@ class StaffController {
                     company_id: 1,
                     ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
+                    ...(type !== 'null'
+                        ? {
+                              employee_type: {
+                                  [Op.in]: type.split(','),
+                              },
+                          }
+                        : {}),
                 },
                 limit,
                 order: searchOrder,

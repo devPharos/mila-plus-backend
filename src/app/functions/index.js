@@ -57,16 +57,27 @@ export async function generateSearchByFields(
     }
 
     if (search && search !== 'null' && notModels.length > 0) {
-        const orFields = []
-        for (let field of notModels) {
-            const fieldSearch = await execFieldTypeSearch(field, search)
-            if (fieldSearch) {
-                orFields.push(fieldSearch)
+        const andFields = []
+
+        const words = search.split(' ')
+        for (let word of words) {
+            const orFields = []
+            for (let field of notModels) {
+                const fieldSearch = await execFieldTypeSearch(
+                    field,
+                    word.trim()
+                )
+                if (fieldSearch) {
+                    orFields.push(fieldSearch)
+                }
             }
-            orFields.push()
+            andFields.push({
+                [Op.or]: orFields,
+            })
         }
+
         searches = {
-            [Op.or]: orFields,
+            [Op.and]: andFields,
         }
     }
     return searches

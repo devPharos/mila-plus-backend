@@ -64,7 +64,7 @@ module.exports = {
                 type: Sequelize.INTEGER,
             },
         })
-        await queryInterface.addColumn('students', 'classrooms_id', {
+        await queryInterface.addColumn('students', 'classroom_id', {
             type: Sequelize.UUID,
             allowNull: true,
             references: {
@@ -75,7 +75,7 @@ module.exports = {
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.removeColumn('students', 'classrooms_id')
+        await queryInterface.removeColumn('students', 'classroom_id')
         await queryInterface.dropTable('classrooms')
     },
 }
