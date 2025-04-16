@@ -277,7 +277,14 @@ class PayeeController {
                 })
             }
 
-            const issuer = await Issuer.findByPk(merchant.issuer)
+            const issuer = await Issuer.findOne({
+                where: {
+                    company_id: 1,
+                    filial_id: filialExists.id,
+                    merchant_id: merchant.id,
+                    canceled_at: null,
+                },
+            })
 
             if (!issuer) {
                 return res.status(400).json({
@@ -381,7 +388,14 @@ class PayeeController {
                 })
             }
 
-            const issuer = await Issuer.findByPk(merchant.issuer)
+            const issuer = await Issuer.findOne({
+                where: {
+                    company_id: 1,
+                    filial_id: filialExists.id,
+                    merchant_id: merchant.id,
+                    canceled_at: null,
+                },
+            })
 
             if (!issuer) {
                 return res.status(400).json({
