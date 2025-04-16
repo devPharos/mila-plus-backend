@@ -7,7 +7,13 @@ import { mailer } from '../../config/mailer'
 import File from '../models/File'
 import Staffdocument from '../models/Staffdocument'
 import MailLayout from '../../Mails/MailLayout'
-import { FRONTEND_URL } from '../functions'
+import {
+    FRONTEND_URL,
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
@@ -16,9 +22,16 @@ class StaffController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const { filial } = req.body
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
             const new_staff = await Staff.create(
                 {
-                    filial_id: req.headers.filial,
+                    filial_id: filialExists.id,
                     ...req.body,
                     company_id: 1,
                     created_at: new Date(),
@@ -47,6 +60,14 @@ class StaffController {
         const t = await connection.transaction()
         try {
             const { staff_id } = req.params
+            const { filial } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
 
             const staffExists = await Staff.findByPk(staff_id)
 
@@ -94,7 +115,12 @@ class StaffController {
             }
 
             await staffExists.update(
-                { ...req.body, updated_by: req.userId, updated_at: new Date() },
+                {
+                    filial_id: filialExists.id,
+                    ...req.body,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
                 {
                     transaction: t,
                 }
@@ -115,7 +141,43 @@ class StaffController {
 
     async index(req, res) {
         try {
-            const staffs = await Staff.findAll({
+            const defaultOrderBy = { column: 'due_date', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
+                search = '',
+                limit = 12,
+            } = req.query
+
+            if (!verifyFieldInModel(orderBy, Staff)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Staff, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+                {
+                    field: 'middle_name',
+                    type: 'string',
+                },
+                {
+                    field: 'last_name',
+                    type: 'string',
+                },
+                {
+                    field: 'email',
+                    type: 'string',
+                },
+            ]
+
+            const { count, rows } = await Staff.findAndCountAll({
                 include: [
                     {
                         model: Filial,
@@ -124,24 +186,14 @@ class StaffController {
                 ],
                 where: {
                     company_id: 1,
-                    [Op.or]: [
-                        {
-                            filial_id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            filial_id:
-                                req.headers.filial != 1
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                 },
-                order: [['name']],
+                limit,
+                order: searchOrder,
             })
 
-            return res.json(staffs)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'StaffController'
             const functionName = 'index'
@@ -158,6 +210,13 @@ class StaffController {
             const staff = await Staff.findByPk(staff_id, {
                 where: { canceled_at: null },
                 include: [
+                    {
+                        model: Filial,
+                        as: 'filial',
+                        where: {
+                            canceled_at: null,
+                        },
+                    },
                     {
                         model: Staffdocument,
                         as: 'staffdocuments',

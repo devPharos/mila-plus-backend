@@ -358,7 +358,7 @@ class ChartOfAccountsController {
             const chartofaccountExist = await Chartofaccount.findOne({
                 where: {
                     company_id: 1,
-                    father_id: req.body.Father.id,
+                    father_code: fatherExists.dataValues.code,
                     name: req.body.name,
                     canceled_at: null,
                 },
@@ -372,7 +372,8 @@ class ChartOfAccountsController {
 
             const lastCodeFromFather = await Chartofaccount.findOne({
                 where: {
-                    father_id: fatherExists.id,
+                    father_code: fatherExists.dataValues.code,
+                    canceled_at: null,
                 },
                 order: [['code', 'desc']],
                 attributes: ['code'],
@@ -390,21 +391,12 @@ class ChartOfAccountsController {
                 // nextCode = (Number(lastCodeFromFather.dataValues.code) + 1).toString();
             }
 
-            console.log({
-                company_id: 1,
-                code: nextCode,
-                father_id: fatherExists.id,
-                name,
-                visibility,
-                created_by: req.userId,
-                created_at: new Date(),
-            })
-
             const newChartofaccount = await Chartofaccount.create(
                 {
                     company_id: 1,
                     code: nextCode,
                     father_id: fatherExists.id,
+                    father_code: fatherExists.dataValues.code,
                     name,
                     visibility,
                     created_by: req.userId,
@@ -457,6 +449,7 @@ class ChartOfAccountsController {
             const chartofaccount = await chartofaccountExist.update(
                 {
                     father_id: fatherExists.id,
+                    father_code: fatherExists.dataValues.code,
                     name,
                     visibility,
                     updated_by: req.userId,

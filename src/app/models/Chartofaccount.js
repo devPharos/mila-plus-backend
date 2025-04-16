@@ -9,6 +9,7 @@ class Chartofaccount extends Model {
                 name: Sequelize.STRING,
                 father_id: Sequelize.INTEGER,
                 visibility: Sequelize.STRING,
+                father_code: Sequelize.STRING,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -24,9 +25,14 @@ class Chartofaccount extends Model {
         return this
     }
     static associate(models) {
+        // this.hasOne(models.Chartofaccount, {
+        //     sourceKey: 'father_id',
+        //     foreignKey: 'id',
+        //     as: 'Father',
+        // })
         this.hasOne(models.Chartofaccount, {
-            sourceKey: 'father_id',
-            foreignKey: 'id',
+            sourceKey: 'father_code',
+            foreignKey: 'code',
             as: 'Father',
         })
     }
