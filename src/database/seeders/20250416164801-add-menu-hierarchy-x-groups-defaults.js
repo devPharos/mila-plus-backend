@@ -1,6 +1,6 @@
 module.exports = {
     up: (queryInterface) => {
-        const pages = 50
+        const pages = 100
         const promises = []
         const groups = [
             'a05b7c30-e4bc-495c-85f3-b88b958b46fe',
@@ -13,7 +13,7 @@ module.exports = {
             '4524d55d-158e-470c-99af-9b7205939e07',
         ]
         for (let i = 1; i <= groups.length; i++) {
-            for (let j = 1; j <= pages; j++) {
+            for (let j = 51; j <= pages; j++) {
                 promises.push(
                     queryInterface.bulkInsert(
                         'menu_hierarchy_x_groups',
