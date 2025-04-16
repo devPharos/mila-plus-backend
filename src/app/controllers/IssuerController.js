@@ -210,11 +210,7 @@ class IssuerController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const {
-                filial = null,
-                merchant = null,
-                student_id = null,
-            } = req.body
+            const { filial = null, merchant = null, student = null } = req.body
 
             const filialExists = filial.id
                 ? await Filial.findByPk(filial.id)
@@ -225,35 +221,35 @@ class IssuerController {
                     error: 'Filial does not exist.',
                 })
             }
-            const merchantExists = merchant.id
-                ? await Merchants.findByPk(merchant.id, {
-                      where: { canceled_at: null, filial_id: filialExists.id },
-                  })
-                : null
 
-            if (!merchantExists) {
-                return res.status(400).json({
-                    error: 'Merchant does not exist.',
+            if (merchant.id) {
+                const merchantExists = await Merchants.findByPk(merchant.id, {
+                    where: { canceled_at: null, filial_id: filialExists.id },
                 })
+
+                if (!merchantExists) {
+                    return res.status(400).json({
+                        error: 'Merchant does not exist.',
+                    })
+                }
             }
 
-            const studentExists = student_id
-                ? await Student.findByPk(student_id)
-                : null
+            if (student.id) {
+                const studentExists = await Student.findByPk(student.id)
 
-            if (!studentExists) {
-                return res.status(400).json({
-                    error: 'Student does not exist.',
-                })
+                if (!studentExists) {
+                    return res.status(400).json({
+                        error: 'Student does not exist.',
+                    })
+                }
             }
-
-            req.body.merchant_id = merchantExists ? merchantExists.id : null
-            req.body.student_id = studentExists ? studentExists.id : null
-            req.body.filial_id = filialExists ? filialExists.id : null
 
             const newIssuer = await Issuer.create(
                 {
                     ...req.body,
+                    filial_id: filialExists.id,
+                    ...(merchant.id ? { merchant_id: merchant.id } : {}),
+                    ...(student.id ? { student_id: student.id } : {}),
                     company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
@@ -283,7 +279,7 @@ class IssuerController {
         try {
             const { issuer_id } = req.params
 
-            const { filial = null, merchant = null, student_id } = req.body
+            const { filial = null, merchant = null, student = null } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
             if (!filialExists) {
@@ -292,35 +288,27 @@ class IssuerController {
                 })
             }
 
-            const merchantExists = merchant.id
-                ? await Merchants.findByPk(merchant.id)
-                : null
-
-            if (
-                merchantExists &&
-                merchantExists.dataValues.filial_id !== filialExists.id
-            ) {
-                return res.status(400).json({
-                    error: 'Merchant does not belong to this filial.',
+            if (merchant.id) {
+                const merchantExists = await Merchants.findByPk(merchant.id, {
+                    where: { canceled_at: null, filial_id: filialExists.id },
                 })
+
+                if (!merchantExists) {
+                    return res.status(400).json({
+                        error: 'Merchant does not exist.',
+                    })
+                }
             }
 
-            const studentExists = student_id
-                ? await Student.findByPk(student_id)
-                : null
+            if (student.id) {
+                const studentExists = await Student.findByPk(student.id)
 
-            if (
-                studentExists &&
-                studentExists.dataValues.student_id !== filialExists.id
-            ) {
-                return res.status(400).json({
-                    error: 'Student does not belong to this filial.',
-                })
+                if (!studentExists) {
+                    return res.status(400).json({
+                        error: 'Student does not exist.',
+                    })
+                }
             }
-
-            req.body.merchant_id = merchantExists ? merchantExists.id : null
-            req.body.student_id = studentExists ? studentExists.id : null
-            req.body.filial_id = filialExists ? filialExists.id : null
 
             const issuerExists = await Issuer.findByPk(issuer_id)
 
@@ -331,6 +319,9 @@ class IssuerController {
             await issuerExists.update(
                 {
                     ...req.body,
+                    filial_id: filialExists.id,
+                    ...(merchant.id ? { merchant_id: merchant.id } : {}),
+                    ...(student.id ? { student_id: student.id } : {}),
                     company_id: 1,
                     updated_by: req.userId,
                     updated_at: new Date(),

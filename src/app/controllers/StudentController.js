@@ -36,7 +36,7 @@ class StudentController {
                 })
             }
 
-            if (processtype) {
+            if (processtype.id) {
                 const processtypeExists = await Processtype.findByPk(
                     processtype.id
                 )
@@ -47,7 +47,7 @@ class StudentController {
                 }
             }
 
-            if (processsubstatus) {
+            if (processsubstatus.id) {
                 const processsubstatusExists = await Processsubstatus.findByPk(
                     processsubstatus.id
                 )
@@ -62,8 +62,10 @@ class StudentController {
                 {
                     ...req.body,
                     filial_id: filialExists.id,
-                    ...(processtype ? { processtype_id: processtype.id } : {}),
-                    ...(processsubstatus
+                    ...(processtype.id
+                        ? { processtype_id: processtype.id }
+                        : {}),
+                    ...(processsubstatus.id
                         ? { processsubstatus_id: processsubstatus.id }
                         : {}),
                     company_id: 1,
@@ -108,7 +110,7 @@ class StudentController {
                 })
             }
 
-            if (processtype) {
+            if (processtype.id) {
                 const processtypeExists = await Processtype.findByPk(
                     processtype.id
                 )
@@ -119,7 +121,7 @@ class StudentController {
                 }
             }
 
-            if (processsubstatus) {
+            if (processsubstatus.id) {
                 const processsubstatusExists = await Processsubstatus.findByPk(
                     processsubstatus.id
                 )
@@ -142,8 +144,10 @@ class StudentController {
                 {
                     ...req.body,
                     filial_id: filialExists.id,
-                    ...(processtype ? { processtype_id: processtype.id } : {}),
-                    ...(processsubstatus
+                    ...(processtype.id
+                        ? { processtype_id: processtype.id }
+                        : {}),
+                    ...(processsubstatus.id
                         ? { processsubstatus_id: processsubstatus.id }
                         : {}),
                     updated_by: req.userId,
