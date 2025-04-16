@@ -13,7 +13,7 @@ import Staff from '../models/Staff'
 import Workload from '../models/Workload'
 import Classroom from '../models/Classroom'
 import Languagemode from '../models/Languagemode'
-import Programcategory from '../models/Programcategory'
+import Level from '../models/Level'
 import Student from '../models/Student'
 import StudentXGroup from '../models/StudentXGroup'
 
@@ -60,8 +60,8 @@ class StudentgroupController {
                         },
                     },
                     {
-                        model: Programcategory,
-                        as: 'programcategory',
+                        model: Level,
+                        as: 'level',
                         required: false,
                         where: {
                             canceled_at: null,
@@ -144,8 +144,8 @@ class StudentgroupController {
                         },
                     },
                     {
-                        model: Programcategory,
-                        as: 'programcategory',
+                        model: Level,
+                        as: 'level',
                         required: false,
                         where: {
                             canceled_at: null,
@@ -217,14 +217,8 @@ class StudentgroupController {
         const t = await connection.transaction()
 
         try {
-            const {
-                filial,
-                programcategory,
-                languagemode,
-                classroom,
-                workload,
-                staff,
-            } = req.body
+            const { filial, level, languagemode, classroom, workload, staff } =
+                req.body
 
             const filialExists = await Filial.findByPk(filial.id)
             if (!filialExists) {
@@ -233,12 +227,10 @@ class StudentgroupController {
                 })
             }
 
-            const programcategoryExists = await Programcategory.findByPk(
-                programcategory.id
-            )
-            if (!programcategoryExists) {
+            const levelExists = await Level.findByPk(level.id)
+            if (!levelExists) {
                 return res.status(400).json({
-                    error: 'Program Category does not exist.',
+                    error: 'Level does not exist.',
                 })
             }
 
@@ -277,7 +269,7 @@ class StudentgroupController {
                     ...req.body,
                     company_id: req.companyId,
                     filial_id: filialExists.id,
-                    programcategory_id: programcategoryExists.id,
+                    level_id: levelExists.id,
                     languagemode_id: languagemodeExists.id,
                     classroom_id: classroomExists.id,
                     workload_id: workloadExists.id,
@@ -311,7 +303,7 @@ class StudentgroupController {
 
             const {
                 filial,
-                programcategory,
+                level,
                 languagemode,
                 classroom,
                 workload,
@@ -326,12 +318,10 @@ class StudentgroupController {
                 })
             }
 
-            const programcategoryExists = await Programcategory.findByPk(
-                programcategory.id
-            )
-            if (!programcategoryExists) {
+            const levelExists = await Level.findByPk(level.id)
+            if (!levelExists) {
                 return res.status(400).json({
-                    error: 'Program Category does not exist.',
+                    error: 'Level does not exist.',
                 })
             }
 
@@ -377,7 +367,7 @@ class StudentgroupController {
                 {
                     ...req.body,
                     filial_id: filialExists.id,
-                    programcategory_id: programcategoryExists.id,
+                    level_id: levelExists.id,
                     languagemode_id: languagemodeExists.id,
                     classroom_id: classroomExists.id,
                     workload_id: workloadExists.id,

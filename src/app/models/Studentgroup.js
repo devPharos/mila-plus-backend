@@ -9,7 +9,7 @@ class Studentgroup extends Model {
                 name: Sequelize.STRING,
                 status: Sequelize.STRING,
                 private: Sequelize.BOOLEAN,
-                programcategory_id: Sequelize.UUID,
+                level_id: Sequelize.UUID,
                 languagemode_id: Sequelize.UUID,
                 classroom_id: Sequelize.UUID,
                 workload_id: Sequelize.UUID,
@@ -47,9 +47,9 @@ class Studentgroup extends Model {
             foreignKey: 'filial_id',
             as: 'filial',
         })
-        this.belongsTo(models.Programcategory, {
-            foreignKey: 'programcategory_id',
-            as: 'programcategory',
+        this.belongsTo(models.Level, {
+            foreignKey: 'level_id',
+            as: 'level',
         })
         this.belongsTo(models.Languagemode, {
             foreignKey: 'languagemode_id',

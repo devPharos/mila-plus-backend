@@ -216,12 +216,6 @@ class StudentController {
                     field: 'email',
                     type: 'string',
                 },
-                // {
-                //     model: Staff,
-                //     field: 'name',
-                //     type: 'string',
-                //     return: 'teacher_id',
-                // },
             ]
 
             const { count, rows } = await Student.findAndCountAll({

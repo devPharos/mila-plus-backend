@@ -27,22 +27,26 @@ export function generateSearchOrder(orderBy, orderASC) {
         orderBySplits = orderBy.split(';')
         for (let orderBySplit of orderBySplits) {
             if (orderBySplit.includes(',')) {
-                searchOrder.push([
-                    orderBySplit.split(',')[0],
-                    orderBySplit.split(',')[1],
-                    orderASC,
-                ])
+                const orderSplitted = orderBySplit.split(',')
+                let path = []
+                for (let orderSplit of orderSplitted) {
+                    path.push(orderSplit)
+                }
+                path.push(orderASC)
+                searchOrder.push(path)
             } else {
                 searchOrder.push([orderBySplit, orderASC])
             }
         }
     } else {
         if (orderBy.includes(',')) {
-            searchOrder.push([
-                orderBy.split(',')[0],
-                orderBy.split(',')[1],
-                orderASC,
-            ])
+            const orderSplitted = orderBy.split(',')
+            let path = []
+            for (let orderSplit of orderSplitted) {
+                path.push(orderSplit)
+            }
+            path.push(orderASC)
+            searchOrder.push(path)
         } else {
             searchOrder.push([orderBy, orderASC])
         }

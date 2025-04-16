@@ -37,11 +37,11 @@ module.exports = {
                 type: Sequelize.BOOLEAN,
                 defaultValue: false,
             },
-            programcategory_id: {
+            level_id: {
                 type: Sequelize.UUID,
                 allowNull: true,
                 references: {
-                    model: 'programcategories',
+                    model: 'levels',
                     key: 'id',
                 },
             },

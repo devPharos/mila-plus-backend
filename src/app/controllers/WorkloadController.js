@@ -9,6 +9,12 @@ import Paceguide from '../models/Paceguide'
 import File from '../models/File'
 import { app } from '../../config/firebase'
 import { deleteObject, getStorage, ref } from 'firebase/storage'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
@@ -55,32 +61,101 @@ class WorkloadController {
 
     async index(req, res) {
         try {
-            const workloads = await Workload.findAll({
+            const defaultOrderBy = {
+                column: 'Level,Programcategory,name;Level,name;name',
+                asc: 'ASC',
+            }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
+                search = '',
+                limit = 12,
+                type = '',
+            } = req.query
+
+            if (!verifyFieldInModel(orderBy, Workload)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Workload, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+            ]
+
+            let level_id = null
+            let languagemode_id = null
+
+            if (type !== 'null') {
+                const typeSplitted = type.split(',')
+                level_id = typeSplitted[0]
+                languagemode_id = typeSplitted[1]
+            }
+
+            const typeSearch = []
+            if (level_id && level_id != 'null') {
+                typeSearch.push({
+                    level_id: {
+                        [Op.eq]: level_id,
+                    },
+                })
+            }
+            if (languagemode_id && languagemode_id !== 'null') {
+                typeSearch.push({
+                    languagemode_id: {
+                        [Op.eq]: languagemode_id,
+                    },
+                })
+            }
+
+            const { count, rows } = await Workload.findAndCountAll({
                 where: {
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
+                    ...(typeSearch.length > 0
+                        ? {
+                              [Op.and]: typeSearch,
+                          }
+                        : {}),
                     canceled_at: null,
                     company_id: 1,
                 },
                 include: [
                     {
                         model: Level,
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
                         include: [
                             {
                                 model: Programcategory,
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
                             },
                         ],
                     },
                     {
                         model: Languagemode,
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
                     },
                 ],
-                order: [
-                    [Level, Programcategory, 'name'],
-                    [Level, 'name'],
-                    ['name'],
-                ],
+                limit,
+                order: searchOrder,
             })
 
-            return res.json(workloads)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'WorkloadController'
             const functionName = 'index'
