@@ -348,12 +348,14 @@ class StudentgroupController {
 
             if (morning) {
                 shift = 'Morning'
-            } else if (afternoon) {
+            }
+            if (afternoon) {
                 if (shift) {
                     shift += '/'
                 }
                 shift += 'Afternoon'
-            } else {
+            }
+            if (evening) {
                 if (shift) {
                     shift += '/'
                 }
@@ -598,12 +600,14 @@ class StudentgroupController {
 
             if (morning) {
                 shift = 'Morning'
-            } else if (afternoon) {
+            }
+            if (afternoon) {
                 if (shift) {
                     shift += '/'
                 }
                 shift += 'Afternoon'
-            } else {
+            }
+            if (evening) {
                 if (shift) {
                     shift += '/'
                 }
