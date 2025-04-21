@@ -407,6 +407,9 @@ class StudentgroupController {
                             verifyDate,
                             dayOfWeek,
                             shift,
+                            memo: hasAcademicFreeDay
+                                ? hasAcademicFreeDay.dataValues.title
+                                : null,
                         })
                         leftDays--
                     }
@@ -439,9 +442,10 @@ class StudentgroupController {
             )
 
             for (let {
-                verifyDate,
-                dayOfWeek,
-                shift,
+                verifyDate = null,
+                dayOfWeek = null,
+                shift = null,
+                memo = null,
             } of daysToAddToStudentGroup) {
                 await Studentgroupclass.create(
                     {
@@ -450,7 +454,7 @@ class StudentgroupController {
                         date: format(verifyDate, 'yyyy-MM-dd'),
                         weekday: weekDays[dayOfWeek],
                         shift,
-                        notes: null,
+                        notes: memo,
                         created_by: req.userId,
                         created_at: new Date(),
                     },
@@ -653,8 +657,10 @@ class StudentgroupController {
                             verifyDate,
                             dayOfWeek,
                             shift,
+                            memo: hasAcademicFreeDay
+                                ? hasAcademicFreeDay.dataValues.title
+                                : null,
                         })
-                        console.log(format(verifyDate, 'dd/MM/yyyy'), dayOfWeek)
                         leftDays--
                     }
                 }
@@ -686,9 +692,10 @@ class StudentgroupController {
             )
 
             for (let {
-                verifyDate,
-                dayOfWeek,
-                shift,
+                verifyDate = null,
+                dayOfWeek = null,
+                shift = null,
+                memo = null,
             } of daysToAddToStudentGroup) {
                 await Studentgroupclass.create(
                     {
@@ -697,7 +704,7 @@ class StudentgroupController {
                         date: format(verifyDate, 'yyyy-MM-dd'),
                         weekday: weekDays[dayOfWeek],
                         shift,
-                        notes: null,
+                        notes: memo,
                         created_by: req.userId,
                         created_at: new Date(),
                     },
