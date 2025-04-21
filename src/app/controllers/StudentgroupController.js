@@ -20,6 +20,8 @@ import Programcategory from '../models/Programcategory'
 import Calendarday from '../models/Calendarday'
 import { addDays, format, getDay, parseISO } from 'date-fns'
 import Studentgroupclass from '../models/Studentgroupclass'
+import Paceguide from '../models/Paceguide'
+import Studentgrouppaceguide from '../models/Studentgrouppaceguide'
 
 const { Op } = Sequelize
 
@@ -211,6 +213,16 @@ class StudentgroupController {
                         where: {
                             canceled_at: null,
                         },
+                        include: [
+                            {
+                                model: Studentgrouppaceguide,
+                                as: 'paceguides',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
                     },
                 ],
                 where: { canceled_at: null },
@@ -401,9 +413,7 @@ class StudentgroupController {
                     })
                     if (
                         !hasAcademicFreeDay ||
-                        (hasAcademicFreeDay &&
-                            hasAcademicFreeDay.dataValues.day ===
-                                hasAcademicFreeDay.dataValues.dayto)
+                        hasAcademicFreeDay.dataValues.date_type === 'Holiday'
                     ) {
                         daysToAddToStudentGroup.push({
                             verifyDate,
@@ -539,10 +549,27 @@ class StudentgroupController {
                 })
             }
 
-            const workloadExists = await Workload.findByPk(workload.id)
+            const workloadExists = await Workload.findByPk(workload.id, {
+                include: [
+                    {
+                        model: Paceguide,
+                        as: 'paceguides',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                    },
+                ],
+            })
             if (!workloadExists) {
                 return res.status(400).json({
                     error: 'Workload does not exist.',
+                })
+            }
+
+            if (!workloadExists.dataValues.paceguides) {
+                return res.status(400).json({
+                    error: 'Paceguide does not exist.',
                 })
             }
 
@@ -581,12 +608,24 @@ class StudentgroupController {
                     .json({ error: 'Student group does not exist.' })
             }
 
-            await Studentgroupclass.destroy({
+            const studentGroupClasses = await Studentgroupclass.findAll({
                 where: {
                     studentgroup_id: studentGroup.id,
+                    canceled_at: null,
                 },
-                transaction: t,
             })
+
+            if (studentGroupClasses) {
+                for (let studentGroupClass of studentGroupClasses) {
+                    await Studentgrouppaceguide.destroy({
+                        where: {
+                            studentgroupclass_id: studentGroupClass.id,
+                            canceled_at: null,
+                        },
+                    })
+                    await studentGroupClass.destroy()
+                }
+            }
 
             let end_date = null
 
@@ -626,6 +665,18 @@ class StudentgroupController {
 
             const daysToAddToStudentGroup = []
 
+            const { paceguides } = workloadExists.dataValues
+            const paceGuides = paceguides.map((paceguide) => {
+                const { id, day, type, description } = paceguide
+                return {
+                    id,
+                    day,
+                    type,
+                    description,
+                    used: false,
+                }
+            })
+
             while (leftDays > 0) {
                 const verifyDate = addDays(parseISO(start_date), passedDays)
                 const dayOfWeek = getDay(verifyDate)
@@ -653,10 +704,14 @@ class StudentgroupController {
                     })
                     if (
                         !hasAcademicFreeDay ||
-                        (hasAcademicFreeDay &&
-                            hasAcademicFreeDay.dataValues.day ===
-                                hasAcademicFreeDay.dataValues.dayto)
+                        hasAcademicFreeDay.dataValues.date_type === 'Holiday'
                     ) {
+                        const paceGuide = paceGuides.find(
+                            (paceGuide) => paceGuide.used === false
+                        )
+                        const dayPaceGuides = paceGuides.filter(
+                            (pace) => pace.day === paceGuide.day
+                        )
                         daysToAddToStudentGroup.push({
                             verifyDate,
                             dayOfWeek,
@@ -664,7 +719,19 @@ class StudentgroupController {
                             memo: hasAcademicFreeDay
                                 ? hasAcademicFreeDay.dataValues.title
                                 : null,
+                            paceGuides: hasAcademicFreeDay
+                                ? null
+                                : dayPaceGuides,
                         })
+                        // remove paceGuide from paceGuides
+                        paceGuides.splice(
+                            paceGuides.findIndex(
+                                (pace) => pace.day === paceGuide.day
+                            ),
+                            paceGuides.filter(
+                                (pace) => pace.day === paceGuide.day
+                            ).length
+                        )
                         leftDays--
                     }
                 }
@@ -700,6 +767,7 @@ class StudentgroupController {
                 dayOfWeek = null,
                 shift = null,
                 memo = null,
+                paceGuides = null,
             } of daysToAddToStudentGroup) {
                 await Studentgroupclass.create(
                     {
@@ -715,7 +783,25 @@ class StudentgroupController {
                     {
                         transaction: t,
                     }
-                )
+                ).then(async (studentGroupClass) => {
+                    if (paceGuides) {
+                        for (let paceGuide of paceGuides) {
+                            await Studentgrouppaceguide.create(
+                                {
+                                    studentgroupclass_id: studentGroupClass.id,
+                                    day: paceGuide.day,
+                                    type: paceGuide.type,
+                                    description: paceGuide.description,
+                                    created_by: req.userId,
+                                    created_at: new Date(),
+                                },
+                                {
+                                    transaction: t,
+                                }
+                            )
+                        }
+                    }
+                })
             }
 
             // verify students in group that are not in the students array

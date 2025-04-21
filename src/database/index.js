@@ -68,6 +68,7 @@ import Classroom from '../app/models/Classroom.js'
 import Studentgroup from '../app/models/Studentgroup.js'
 import StudentXGroup from '../app/models/StudentXGroup.js'
 import Studentgroupclass from '../app/models/Studentgroupclass.js'
+import Studentgrouppaceguide from '../app/models/Studentgrouppaceguide.js'
 
 const models = [
     Processtype,
@@ -132,6 +133,7 @@ const models = [
     Studentdiscount,
     Studentgroup,
     Studentgroupclass,
+    Studentgrouppaceguide,
     Studentinactivation,
     StudentXGroup,
     Staff,

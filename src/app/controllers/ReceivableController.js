@@ -673,7 +673,7 @@ export async function sendAutopayRecurrenceJob() {
 
             const alreadyPaid = await Emergepaytransaction.findOne({
                 where: {
-                    external_transaction_id: firstReceivable.id,
+                    external_transaction_id: receivable.id,
                     canceled_at: null,
                     result_status: 'true',
                     transaction_reference: 'I' + invoice_number,

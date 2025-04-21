@@ -1,6 +1,6 @@
 import Sequelize, { Model } from 'sequelize'
 
-class Calendarday extends Model {
+class Studentgrouppaceguide extends Model {
     static init(sequelize) {
         super.init(
             {
@@ -9,13 +9,10 @@ class Calendarday extends Model {
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true,
                 },
-                company_id: Sequelize.INTEGER,
-                filial_id: Sequelize.INTEGER,
-                day: Sequelize.STRING,
-                dayto: Sequelize.STRING,
+                studentgroupclass_id: Sequelize.UUID,
+                day: Sequelize.INTEGER,
                 type: Sequelize.STRING,
-                date_type: Sequelize.STRING,
-                title: Sequelize.STRING,
+                description: Sequelize.STRING,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -32,8 +29,11 @@ class Calendarday extends Model {
     }
 
     static associate(models) {
-        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
+        this.belongsTo(models.Studentgroupclass, {
+            sourceKey: { name: 'studentgroupclass_id' },
+            as: 'studentgroupclass',
+        })
     }
 }
 
-export default Calendarday
+export default Studentgrouppaceguide

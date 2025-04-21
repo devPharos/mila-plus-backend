@@ -39,6 +39,10 @@ class Studentgroupclass extends Model {
             foreignKey: 'studentgroup_id',
             as: 'studentgroup',
         })
+        this.hasMany(models.Studentgrouppaceguide, {
+            foreignKey: 'studentgroupclass_id',
+            as: 'paceguides',
+        })
     }
 }
 
