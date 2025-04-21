@@ -699,8 +699,9 @@ class StudentgroupController {
                         !hasAcademicFreeDay ||
                         hasAcademicFreeDay.dataValues.date_type === 'Holiday'
                     ) {
+                        considerDay++
                         const dayPaceGuides = paceGuides.filter(
-                            (pace) => pace.day === ++considerDay
+                            (pace) => pace.day === considerDay
                         )
                         daysToAddToStudentGroup.push({
                             verifyDate,
