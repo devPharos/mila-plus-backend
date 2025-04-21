@@ -67,6 +67,7 @@ import Payeesettlement from '../app/models/Payeesettlement.js'
 import Classroom from '../app/models/Classroom.js'
 import Studentgroup from '../app/models/Studentgroup.js'
 import StudentXGroup from '../app/models/StudentXGroup.js'
+import Studentgroupclass from '../app/models/Studentgroupclass.js'
 
 const models = [
     Processtype,
@@ -130,6 +131,7 @@ const models = [
     Student,
     Studentdiscount,
     Studentgroup,
+    Studentgroupclass,
     Studentinactivation,
     StudentXGroup,
     Staff,

@@ -19,6 +19,7 @@ import StudentXGroup from '../models/StudentXGroup'
 import Programcategory from '../models/Programcategory'
 import Calendarday from '../models/Calendarday'
 import { addDays, format, getDay, parseISO } from 'date-fns'
+import Studentgroupclass from '../models/Studentgroupclass'
 
 const { Op } = Sequelize
 
@@ -203,6 +204,14 @@ class StudentgroupController {
                             canceled_at: null,
                         },
                     },
+                    {
+                        model: Studentgroupclass,
+                        as: 'classes',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                    },
                 ],
                 where: { canceled_at: null },
             })
@@ -330,19 +339,50 @@ class StudentgroupController {
             const hoursPerDay = workloadExists.hours_per_day
 
             let leftDays = Math.ceil(totalHours / hoursPerDay)
+
+            console.log('Total Days', leftDays)
+
             let passedDays = 0
+
+            let shift = ''
+
+            if (morning) {
+                shift = 'Morning'
+            } else if (afternoon) {
+                if (shift) {
+                    shift += '/'
+                }
+                shift += 'Afternoon'
+            } else {
+                if (shift) {
+                    shift += '/'
+                }
+                shift += 'Evening'
+            }
+
+            const weekDays = [
+                'Sunday',
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday',
+            ]
+
+            const daysToAddToStudentGroup = []
 
             while (leftDays > 0) {
                 const verifyDate = addDays(parseISO(start_date), passedDays)
                 const dayOfWeek = getDay(verifyDate)
                 if (
-                    (monday && dayOfWeek === 1) ||
-                    (tuesday && dayOfWeek === 2) ||
-                    (wednesday && dayOfWeek === 3) ||
-                    (thursday && dayOfWeek === 4) ||
-                    (friday && dayOfWeek === 5) ||
-                    (saturday && dayOfWeek === 6) ||
-                    (sunday && dayOfWeek === 0)
+                    (monday === 'true' && dayOfWeek === 1) ||
+                    (tuesday === 'true' && dayOfWeek === 2) ||
+                    (wednesday === 'true' && dayOfWeek === 3) ||
+                    (thursday === 'true' && dayOfWeek === 4) ||
+                    (friday === 'true' && dayOfWeek === 5) ||
+                    (saturday === 'true' && dayOfWeek === 6) ||
+                    (sunday === 'true' && dayOfWeek === 0)
                 ) {
                     const hasAcademicFreeDay = await Calendarday.findOne({
                         where: {
@@ -357,7 +397,17 @@ class StudentgroupController {
                             canceled_at: null,
                         },
                     })
-                    if (!hasAcademicFreeDay) {
+                    if (
+                        !hasAcademicFreeDay ||
+                        (hasAcademicFreeDay &&
+                            hasAcademicFreeDay.dataValues.day ===
+                                hasAcademicFreeDay.dataValues.dayto)
+                    ) {
+                        daysToAddToStudentGroup.push({
+                            verifyDate,
+                            dayOfWeek,
+                            shift,
+                        })
                         leftDays--
                     }
                 }
@@ -387,6 +437,29 @@ class StudentgroupController {
                     transaction: t,
                 }
             )
+
+            for (let {
+                verifyDate,
+                dayOfWeek,
+                shift,
+            } of daysToAddToStudentGroup) {
+                await Studentgroupclass.create(
+                    {
+                        studentgroup_id: studentGroup.id,
+                        filial_id: filial.id,
+                        date: format(verifyDate, 'yyyy-MM-dd'),
+                        weekday: weekDays[dayOfWeek],
+                        shift,
+                        notes: null,
+                        created_by: req.userId,
+                        created_at: new Date(),
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+            }
+
             t.commit()
 
             return res.status(201).json(studentGroup)
@@ -502,6 +575,13 @@ class StudentgroupController {
                     .json({ error: 'Student group does not exist.' })
             }
 
+            await Studentgroupclass.destroy({
+                where: {
+                    studentgroup_id: studentGroup.id,
+                },
+                transaction: t,
+            })
+
             let end_date = null
 
             const totalHours = levelExists.total_hours
@@ -509,6 +589,34 @@ class StudentgroupController {
 
             let leftDays = Math.ceil(totalHours / hoursPerDay)
             let passedDays = 0
+
+            let shift = ''
+
+            if (morning) {
+                shift = 'Morning'
+            } else if (afternoon) {
+                if (shift) {
+                    shift += '/'
+                }
+                shift += 'Afternoon'
+            } else {
+                if (shift) {
+                    shift += '/'
+                }
+                shift += 'Evening'
+            }
+
+            const weekDays = [
+                'Sunday',
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday',
+            ]
+
+            const daysToAddToStudentGroup = []
 
             while (leftDays > 0) {
                 const verifyDate = addDays(parseISO(start_date), passedDays)
@@ -535,9 +643,19 @@ class StudentgroupController {
                             canceled_at: null,
                         },
                     })
-                    if (!hasAcademicFreeDay) {
-                        leftDays--
+                    if (
+                        !hasAcademicFreeDay ||
+                        (hasAcademicFreeDay &&
+                            hasAcademicFreeDay.dataValues.day ===
+                                hasAcademicFreeDay.dataValues.dayto)
+                    ) {
+                        daysToAddToStudentGroup.push({
+                            verifyDate,
+                            dayOfWeek,
+                            shift,
+                        })
                         console.log(format(verifyDate, 'dd/MM/yyyy'), dayOfWeek)
+                        leftDays--
                     }
                 }
                 passedDays++
@@ -566,6 +684,28 @@ class StudentgroupController {
                     transaction: t,
                 }
             )
+
+            for (let {
+                verifyDate,
+                dayOfWeek,
+                shift,
+            } of daysToAddToStudentGroup) {
+                await Studentgroupclass.create(
+                    {
+                        studentgroup_id: studentGroup.id,
+                        filial_id: filial.id,
+                        date: format(verifyDate, 'yyyy-MM-dd'),
+                        weekday: weekDays[dayOfWeek],
+                        shift,
+                        notes: null,
+                        created_by: req.userId,
+                        created_at: new Date(),
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+            }
 
             // verify students in group that are not in the students array
             const studentsInGroup = await StudentXGroup.findAll({
