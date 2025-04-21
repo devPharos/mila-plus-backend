@@ -558,6 +558,7 @@ class StudentgroupController {
                         where: {
                             canceled_at: null,
                         },
+                        order: [['day', 'ASC']],
                     },
                 ],
             })
