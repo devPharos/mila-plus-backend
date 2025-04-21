@@ -678,6 +678,8 @@ class StudentgroupController {
                 }
             })
 
+            console.log('paceGuides', paceGuides)
+
             while (leftDays > 0) {
                 const verifyDate = addDays(parseISO(start_date), passedDays)
                 const dayOfWeek = getDay(verifyDate)
@@ -710,9 +712,17 @@ class StudentgroupController {
                         const paceGuide = paceGuides.find(
                             (paceGuide) => paceGuide.used === false
                         )
-                        const dayPaceGuides = paceGuides.filter(
-                            (pace) => pace.day === paceGuide.day
-                        )
+                        let dayPaceGuides = []
+                        if (paceGuide) {
+                            dayPaceGuides = paceGuides.filter(
+                                (pace) => pace.day === paceGuide.day
+                            )
+                            console.log(
+                                'dayPaceGuides',
+                                paceGuide.day,
+                                dayPaceGuides
+                            )
+                        }
                         daysToAddToStudentGroup.push({
                             verifyDate,
                             dayOfWeek,
