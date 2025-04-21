@@ -329,6 +329,9 @@ class StudentgroupController {
                 friday,
                 saturday,
                 sunday,
+                morning,
+                afternoon,
+                evening,
             } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
@@ -372,6 +375,26 @@ class StudentgroupController {
             if (!staffExists) {
                 return res.status(400).json({
                     error: 'Staff does not exist.',
+                })
+            }
+
+            if (
+                !monday &&
+                !tuesday &&
+                !wednesday &&
+                !thursday &&
+                !friday &&
+                !saturday &&
+                !sunday
+            ) {
+                return res.status(400).json({
+                    error: 'At least one day of the week must be selected.',
+                })
+            }
+
+            if (!morning && !afternoon && !evening) {
+                return res.status(400).json({
+                    error: 'At least one shift must be selected.',
                 })
             }
 
