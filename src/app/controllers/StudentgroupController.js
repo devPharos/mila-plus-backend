@@ -17,6 +17,7 @@ import Level from '../models/Level'
 import Student from '../models/Student'
 import StudentXGroup from '../models/StudentXGroup'
 import Programcategory from '../models/Programcategory'
+import Calendarday from '../models/Calendarday'
 import { addDays, format, getDay, parseISO } from 'date-fns'
 
 const { Op } = Sequelize
@@ -392,9 +393,12 @@ class StudentgroupController {
 
             // consider only the days that are true weekdays
             while (leftDays > 0) {
-                const dayOfWeek = getDay(
-                    addDays(parseISO(start_date), passedDays)
-                )
+                const verifyDate = addDays(parseISO(start_date), passedDays)
+                const dayOfWeek = getDay(verifyDate)
+                // console.log({
+                //     verifyDate: format(verifyDate, 'yyyyMMdd'),
+                //     dayOfWeek,
+                // })
                 if (
                     (monday && dayOfWeek === 1) ||
                     (tuesday && dayOfWeek === 2) ||
@@ -404,8 +408,22 @@ class StudentgroupController {
                     (saturday && dayOfWeek === 6) ||
                     (sunday && dayOfWeek === 0)
                 ) {
-                    console.log(leftDays, dayOfWeek)
-                    leftDays--
+                    const hasAcademicFreeDay = await Calendarday.findOne({
+                        where: {
+                            day: {
+                                [Op.lte]: format(verifyDate, 'yyyy-MM-dd'),
+                            },
+                            dayto: {
+                                [Op.gte]: format(verifyDate, 'yyyy-MM-dd'),
+                            },
+                            type: 'Academic',
+                            filial_id: filial.id,
+                            canceled_at: null,
+                        },
+                    })
+                    if (!hasAcademicFreeDay) {
+                        leftDays--
+                    }
                 }
                 passedDays++
             }
