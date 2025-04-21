@@ -365,7 +365,7 @@ class StudentgroupController {
             }
             if (passedDays > 0) {
                 end_date = format(
-                    addDays(parseISO(start_date), passedDays),
+                    addDays(parseISO(start_date), passedDays - 1),
                     'yyyyMMdd'
                 )
             }
@@ -544,7 +544,7 @@ class StudentgroupController {
             }
             if (passedDays > 0) {
                 end_date = format(
-                    addDays(parseISO(start_date), passedDays),
+                    addDays(parseISO(start_date), passedDays - 1),
                     'yyyyMMdd'
                 )
             }
