@@ -346,16 +346,16 @@ class StudentgroupController {
 
             let shift = ''
 
-            if (morning) {
+            if (morning === 'true') {
                 shift = 'Morning'
             }
-            if (afternoon) {
+            if (afternoon === 'true') {
                 if (shift) {
                     shift += '/'
                 }
                 shift += 'Afternoon'
             }
-            if (evening) {
+            if (evening === 'true') {
                 if (shift) {
                     shift += '/'
                 }
@@ -598,16 +598,16 @@ class StudentgroupController {
 
             let shift = ''
 
-            if (morning) {
+            if (morning === 'true') {
                 shift = 'Morning'
             }
-            if (afternoon) {
+            if (afternoon === 'true') {
                 if (shift) {
                     shift += '/'
                 }
                 shift += 'Afternoon'
             }
-            if (evening) {
+            if (evening === 'true') {
                 if (shift) {
                     shift += '/'
                 }
