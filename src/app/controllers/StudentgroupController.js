@@ -666,19 +666,9 @@ class StudentgroupController {
 
             const daysToAddToStudentGroup = []
 
-            const { paceguides } = workloadExists.dataValues
-            const paceGuides = paceguides.map((paceguide) => {
-                const { id, day, type, description } = paceguide
-                return {
-                    id,
-                    day,
-                    type,
-                    description,
-                    used: false,
-                }
-            })
+            const { paceguides: paceGuides } = workloadExists.dataValues
 
-            console.log('paceGuides', paceGuides)
+            let considerDay = 0
 
             while (leftDays > 0) {
                 const verifyDate = addDays(parseISO(start_date), passedDays)
@@ -709,20 +699,9 @@ class StudentgroupController {
                         !hasAcademicFreeDay ||
                         hasAcademicFreeDay.dataValues.date_type === 'Holiday'
                     ) {
-                        const paceGuide = paceGuides.find(
-                            (paceGuide) => paceGuide.used === false
+                        const dayPaceGuides = paceGuides.filter(
+                            (pace) => pace.day === ++considerDay
                         )
-                        let dayPaceGuides = []
-                        if (paceGuide) {
-                            dayPaceGuides = paceGuides.filter(
-                                (pace) => pace.day === paceGuide.day
-                            )
-                            console.log(
-                                'dayPaceGuides',
-                                paceGuide.day,
-                                dayPaceGuides
-                            )
-                        }
                         daysToAddToStudentGroup.push({
                             verifyDate,
                             dayOfWeek,
