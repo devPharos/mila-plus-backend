@@ -229,90 +229,6 @@ class StudentgroupController {
         const t = await connection.transaction()
 
         try {
-            const { filial, level, languagemode, classroom, workload, staff } =
-                req.body
-
-            const filialExists = await Filial.findByPk(filial.id)
-            if (!filialExists) {
-                return res.status(400).json({
-                    error: 'Filial does not exist.',
-                })
-            }
-
-            const levelExists = await Level.findByPk(level.id)
-            if (!levelExists) {
-                return res.status(400).json({
-                    error: 'Level does not exist.',
-                })
-            }
-
-            const languagemodeExists = await Languagemode.findByPk(
-                languagemode.id
-            )
-            if (!languagemodeExists) {
-                return res.status(400).json({
-                    error: 'Language Mode does not exist.',
-                })
-            }
-
-            const classroomExists = await Classroom.findByPk(classroom.id)
-            if (!classroomExists) {
-                return res.status(400).json({
-                    error: 'Classroom does not exist.',
-                })
-            }
-
-            const workloadExists = await Workload.findByPk(workload.id)
-            if (!workloadExists) {
-                return res.status(400).json({
-                    error: 'Workload does not exist.',
-                })
-            }
-
-            const staffExists = await Staff.findByPk(staff.id)
-            if (!staffExists) {
-                return res.status(400).json({
-                    error: 'Staff does not exist.',
-                })
-            }
-
-            const studentGroup = await Studentgroup.create(
-                {
-                    ...req.body,
-                    company_id: req.companyId,
-                    filial_id: filialExists.id,
-                    level_id: levelExists.id,
-                    languagemode_id: languagemodeExists.id,
-                    classroom_id: classroomExists.id,
-                    workload_id: workloadExists.id,
-                    staff_id: staffExists.id,
-                    created_at: new Date(),
-                    created_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
-            t.commit()
-
-            return res.status(201).json(studentGroup)
-        } catch (err) {
-            await t.rollback()
-            const className = 'StudentgroupController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
-        }
-    }
-
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
-        try {
-            const { studentgroup_id } = req.params
-
             const {
                 filial,
                 level,
@@ -333,6 +249,8 @@ class StudentgroupController {
                 afternoon,
                 evening,
             } = req.body
+
+            delete req.body.end_date
 
             const filialExists = await Filial.findByPk(filial.id)
             if (!filialExists) {
@@ -406,7 +324,7 @@ class StudentgroupController {
                     .json({ error: 'Student group does not exist.' })
             }
 
-            let end_date = start_date
+            let end_date = null
 
             const totalHours = levelExists.total_hours
             const hoursPerDay = workloadExists.hours_per_day
@@ -414,14 +332,9 @@ class StudentgroupController {
             let leftDays = Math.ceil(totalHours / hoursPerDay)
             let passedDays = 0
 
-            // consider only the days that are true weekdays
             while (leftDays > 0) {
                 const verifyDate = addDays(parseISO(start_date), passedDays)
                 const dayOfWeek = getDay(verifyDate)
-                // console.log({
-                //     verifyDate: format(verifyDate, 'yyyyMMdd'),
-                //     dayOfWeek,
-                // })
                 if (
                     (monday && dayOfWeek === 1) ||
                     (tuesday && dayOfWeek === 2) ||
@@ -446,6 +359,185 @@ class StudentgroupController {
                     })
                     if (!hasAcademicFreeDay) {
                         leftDays--
+                    }
+                }
+                passedDays++
+            }
+            if (passedDays > 0) {
+                end_date = format(
+                    addDays(parseISO(start_date), passedDays),
+                    'yyyyMMdd'
+                )
+            }
+
+            await Studentgroup.create(
+                {
+                    ...req.body,
+                    company_id: req.companyId,
+                    filial_id: filialExists.id,
+                    level_id: levelExists.id,
+                    languagemode_id: languagemodeExists.id,
+                    classroom_id: classroomExists.id,
+                    workload_id: workloadExists.id,
+                    staff_id: staffExists.id,
+                    created_at: new Date(),
+                    created_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+            t.commit()
+
+            return res.status(201).json(studentGroup)
+        } catch (err) {
+            await t.rollback()
+            const className = 'StudentgroupController'
+            const functionName = 'store'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async update(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { studentgroup_id } = req.params
+
+            const {
+                filial,
+                level,
+                languagemode,
+                classroom,
+                workload,
+                staff,
+                students = [],
+                start_date,
+                monday,
+                tuesday,
+                wednesday,
+                thursday,
+                friday,
+                saturday,
+                sunday,
+                morning,
+                afternoon,
+                evening,
+            } = req.body
+
+            delete req.body.end_date
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            const levelExists = await Level.findByPk(level.id)
+            if (!levelExists) {
+                return res.status(400).json({
+                    error: 'Level does not exist.',
+                })
+            }
+
+            const languagemodeExists = await Languagemode.findByPk(
+                languagemode.id
+            )
+            if (!languagemodeExists) {
+                return res.status(400).json({
+                    error: 'Language Mode does not exist.',
+                })
+            }
+
+            const classroomExists = await Classroom.findByPk(classroom.id)
+            if (!classroomExists) {
+                return res.status(400).json({
+                    error: 'Classroom does not exist.',
+                })
+            }
+
+            const workloadExists = await Workload.findByPk(workload.id)
+            if (!workloadExists) {
+                return res.status(400).json({
+                    error: 'Workload does not exist.',
+                })
+            }
+
+            const staffExists = await Staff.findByPk(staff.id)
+            if (!staffExists) {
+                return res.status(400).json({
+                    error: 'Staff does not exist.',
+                })
+            }
+
+            if (
+                !monday &&
+                !tuesday &&
+                !wednesday &&
+                !thursday &&
+                !friday &&
+                !saturday &&
+                !sunday
+            ) {
+                return res.status(400).json({
+                    error: 'At least one day of the week must be selected.',
+                })
+            }
+
+            if (!morning && !afternoon && !evening) {
+                return res.status(400).json({
+                    error: 'At least one shift must be selected.',
+                })
+            }
+
+            const studentGroup = await Studentgroup.findByPk(studentgroup_id)
+
+            if (!studentGroup) {
+                return res
+                    .status(400)
+                    .json({ error: 'Student group does not exist.' })
+            }
+
+            let end_date = null
+
+            const totalHours = levelExists.total_hours
+            const hoursPerDay = workloadExists.hours_per_day
+
+            let leftDays = Math.ceil(totalHours / hoursPerDay)
+            let passedDays = 0
+
+            while (leftDays > 0) {
+                const verifyDate = addDays(parseISO(start_date), passedDays)
+                const dayOfWeek = getDay(verifyDate)
+                if (
+                    (monday === 'true' && dayOfWeek === 1) ||
+                    (tuesday === 'true' && dayOfWeek === 2) ||
+                    (wednesday === 'true' && dayOfWeek === 3) ||
+                    (thursday === 'true' && dayOfWeek === 4) ||
+                    (friday === 'true' && dayOfWeek === 5) ||
+                    (saturday === 'true' && dayOfWeek === 6) ||
+                    (sunday === 'true' && dayOfWeek === 0)
+                ) {
+                    const hasAcademicFreeDay = await Calendarday.findOne({
+                        where: {
+                            day: {
+                                [Op.lte]: format(verifyDate, 'yyyy-MM-dd'),
+                            },
+                            dayto: {
+                                [Op.gte]: format(verifyDate, 'yyyy-MM-dd'),
+                            },
+                            type: 'Academic',
+                            filial_id: filial.id,
+                            canceled_at: null,
+                        },
+                    })
+                    if (!hasAcademicFreeDay) {
+                        leftDays--
+                        console.log(format(verifyDate, 'dd/MM/yyyy'), dayOfWeek)
                     }
                 }
                 passedDays++
