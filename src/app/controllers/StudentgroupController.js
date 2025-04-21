@@ -722,15 +722,6 @@ class StudentgroupController {
                                 : null,
                             paceGuides: dayPaceGuides,
                         })
-                        // remove paceGuide from paceGuides
-                        paceGuides.splice(
-                            paceGuides.findIndex(
-                                (pace) => pace.day === considerDay
-                            ),
-                            paceGuides.filter(
-                                (pace) => pace.day === considerDay
-                            ).length
-                        )
                         leftDays--
                     }
                 }
