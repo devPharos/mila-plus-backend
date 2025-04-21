@@ -16,6 +16,8 @@ import Languagemode from '../models/Languagemode'
 import Level from '../models/Level'
 import Student from '../models/Student'
 import StudentXGroup from '../models/StudentXGroup'
+import Programcategory from '../models/Programcategory'
+import { addDays, format, getDay, parseISO } from 'date-fns'
 
 const { Op } = Sequelize
 
@@ -150,6 +152,15 @@ class StudentgroupController {
                         where: {
                             canceled_at: null,
                         },
+                        include: [
+                            {
+                                model: Programcategory,
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
                     },
                     {
                         model: Languagemode,
@@ -309,6 +320,14 @@ class StudentgroupController {
                 workload,
                 staff,
                 students = [],
+                start_date,
+                monday,
+                tuesday,
+                wednesday,
+                thursday,
+                friday,
+                saturday,
+                sunday,
             } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
@@ -363,6 +382,40 @@ class StudentgroupController {
                     .json({ error: 'Student group does not exist.' })
             }
 
+            let end_date = start_date
+
+            const totalHours = levelExists.total_hours
+            const hoursPerDay = workloadExists.hours_per_day
+
+            let leftDays = Math.ceil(totalHours / hoursPerDay)
+            let passedDays = 0
+
+            // consider only the days that are true weekdays
+            while (leftDays > 0) {
+                const dayOfWeek = getDay(
+                    addDays(parseISO(start_date), passedDays)
+                )
+                if (
+                    (monday && dayOfWeek === 1) ||
+                    (tuesday && dayOfWeek === 2) ||
+                    (wednesday && dayOfWeek === 3) ||
+                    (thursday && dayOfWeek === 4) ||
+                    (friday && dayOfWeek === 5) ||
+                    (saturday && dayOfWeek === 6) ||
+                    (sunday && dayOfWeek === 0)
+                ) {
+                    console.log(leftDays, dayOfWeek)
+                    leftDays--
+                }
+                passedDays++
+            }
+            if (passedDays > 0) {
+                end_date = format(
+                    addDays(parseISO(start_date), passedDays),
+                    'yyyyMMdd'
+                )
+            }
+
             await studentGroup.update(
                 {
                     ...req.body,
@@ -372,6 +425,7 @@ class StudentgroupController {
                     classroom_id: classroomExists.id,
                     workload_id: workloadExists.id,
                     staff_id: staffExists.id,
+                    end_date,
                     updated_by: req.userId,
                     updated_at: new Date(),
                 },
