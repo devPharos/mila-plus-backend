@@ -705,7 +705,13 @@ class StudentgroupController {
                             dayPaceGuides = paceGuides.filter(
                                 (pace) => pace.day === considerDay
                             )
-                            console.log({ considerDay, dayPaceGuides })
+                            console.log({
+                                considerDay,
+                                paceGuides: dayPaceGuides.length,
+                                freeDay: hasAcademicFreeDay
+                                    ? hasAcademicFreeDay.dataValues.title
+                                    : null,
+                            })
                         }
                         daysToAddToStudentGroup.push({
                             verifyDate,
