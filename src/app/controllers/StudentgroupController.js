@@ -515,6 +515,7 @@ class StudentgroupController {
                 morning,
                 afternoon,
                 evening,
+                status,
             } = req.body
 
             delete req.body.end_date
@@ -609,51 +610,7 @@ class StudentgroupController {
                     .json({ error: 'Student group does not exist.' })
             }
 
-            const studentGroupClasses = await Studentgroupclass.findAll({
-                where: {
-                    studentgroup_id: studentGroup.id,
-                    canceled_at: null,
-                },
-            })
-
-            if (studentGroupClasses) {
-                for (let studentGroupClass of studentGroupClasses) {
-                    await Studentgrouppaceguide.destroy({
-                        where: {
-                            studentgroupclass_id: studentGroupClass.id,
-                            canceled_at: null,
-                        },
-                    })
-                    await studentGroupClass.destroy()
-                }
-            }
-
             let end_date = null
-
-            const totalHours = levelExists.total_hours
-            const hoursPerDay = workloadExists.hours_per_day
-
-            let leftDays = Math.ceil(totalHours / hoursPerDay)
-            let passedDays = 0
-
-            let shift = ''
-
-            if (morning === 'true') {
-                shift = 'Morning'
-            }
-            if (afternoon === 'true') {
-                if (shift) {
-                    shift += '/'
-                }
-                shift += 'Afternoon'
-            }
-            if (evening === 'true') {
-                if (shift) {
-                    shift += '/'
-                }
-                shift += 'Evening'
-            }
-
             const weekDays = [
                 'Sunday',
                 'Monday',
@@ -666,72 +623,118 @@ class StudentgroupController {
 
             const daysToAddToStudentGroup = []
 
-            const { paceguides: paceGuides } = workloadExists.dataValues
+            if (status === 'In Formation') {
+                const studentGroupClasses = await Studentgroupclass.findAll({
+                    where: {
+                        studentgroup_id: studentGroup.id,
+                        canceled_at: null,
+                    },
+                })
 
-            let considerDay = 0
-
-            while (leftDays > 0) {
-                const verifyDate = addDays(parseISO(start_date), passedDays)
-                const dayOfWeek = getDay(verifyDate)
-                if (
-                    (monday === 'true' && dayOfWeek === 1) ||
-                    (tuesday === 'true' && dayOfWeek === 2) ||
-                    (wednesday === 'true' && dayOfWeek === 3) ||
-                    (thursday === 'true' && dayOfWeek === 4) ||
-                    (friday === 'true' && dayOfWeek === 5) ||
-                    (saturday === 'true' && dayOfWeek === 6) ||
-                    (sunday === 'true' && dayOfWeek === 0)
-                ) {
-                    const hasAcademicFreeDay = await Calendarday.findOne({
-                        where: {
-                            day: {
-                                [Op.lte]: format(verifyDate, 'yyyy-MM-dd'),
+                if (studentGroupClasses) {
+                    for (let studentGroupClass of studentGroupClasses) {
+                        await Studentgrouppaceguide.destroy({
+                            where: {
+                                studentgroupclass_id: studentGroupClass.id,
+                                canceled_at: null,
                             },
-                            dayto: {
-                                [Op.gte]: format(verifyDate, 'yyyy-MM-dd'),
-                            },
-                            type: 'Academic',
-                            filial_id: filial.id,
-                            canceled_at: null,
-                        },
-                    })
-                    if (
-                        !hasAcademicFreeDay ||
-                        hasAcademicFreeDay.dataValues.date_type === 'Holiday'
-                    ) {
-                        let dayPaceGuides = []
-                        if (!hasAcademicFreeDay) {
-                            considerDay++
-                            dayPaceGuides = paceGuides.filter(
-                                (pace) => pace.day === considerDay
-                            )
-                            console.log({
-                                considerDay,
-                                paceGuides: dayPaceGuides.length,
-                                freeDay: hasAcademicFreeDay
-                                    ? hasAcademicFreeDay.dataValues.title
-                                    : null,
-                            })
-                        }
-                        daysToAddToStudentGroup.push({
-                            verifyDate,
-                            dayOfWeek,
-                            shift,
-                            memo: hasAcademicFreeDay
-                                ? hasAcademicFreeDay.dataValues.title
-                                : null,
-                            paceGuides: dayPaceGuides,
                         })
-                        leftDays--
+                        await studentGroupClass.destroy()
                     }
                 }
-                passedDays++
-            }
-            if (passedDays > 0) {
-                end_date = format(
-                    addDays(parseISO(start_date), passedDays - 1),
-                    'yyyyMMdd'
-                )
+
+                const totalHours = levelExists.total_hours
+                const hoursPerDay = workloadExists.hours_per_day
+
+                let leftDays = Math.ceil(totalHours / hoursPerDay)
+                let passedDays = 0
+
+                let shift = ''
+
+                if (morning === 'true') {
+                    shift = 'Morning'
+                }
+                if (afternoon === 'true') {
+                    if (shift) {
+                        shift += '/'
+                    }
+                    shift += 'Afternoon'
+                }
+                if (evening === 'true') {
+                    if (shift) {
+                        shift += '/'
+                    }
+                    shift += 'Evening'
+                }
+
+                const { paceguides: paceGuides } = workloadExists.dataValues
+
+                let considerDay = 0
+
+                while (leftDays > 0) {
+                    const verifyDate = addDays(parseISO(start_date), passedDays)
+                    const dayOfWeek = getDay(verifyDate)
+                    if (
+                        (monday === 'true' && dayOfWeek === 1) ||
+                        (tuesday === 'true' && dayOfWeek === 2) ||
+                        (wednesday === 'true' && dayOfWeek === 3) ||
+                        (thursday === 'true' && dayOfWeek === 4) ||
+                        (friday === 'true' && dayOfWeek === 5) ||
+                        (saturday === 'true' && dayOfWeek === 6) ||
+                        (sunday === 'true' && dayOfWeek === 0)
+                    ) {
+                        const hasAcademicFreeDay = await Calendarday.findOne({
+                            where: {
+                                day: {
+                                    [Op.lte]: format(verifyDate, 'yyyy-MM-dd'),
+                                },
+                                dayto: {
+                                    [Op.gte]: format(verifyDate, 'yyyy-MM-dd'),
+                                },
+                                type: 'Academic',
+                                filial_id: filial.id,
+                                canceled_at: null,
+                            },
+                        })
+                        if (
+                            !hasAcademicFreeDay ||
+                            hasAcademicFreeDay.dataValues.date_type ===
+                                'Holiday'
+                        ) {
+                            let dayPaceGuides = []
+                            if (!hasAcademicFreeDay) {
+                                considerDay++
+                                dayPaceGuides = paceGuides.filter(
+                                    (pace) => pace.day === considerDay
+                                )
+                                console.log({
+                                    considerDay,
+                                    paceGuides: dayPaceGuides.length,
+                                    freeDay: hasAcademicFreeDay
+                                        ? hasAcademicFreeDay.dataValues.title
+                                        : null,
+                                })
+                            }
+                            daysToAddToStudentGroup.push({
+                                verifyDate,
+                                dayOfWeek,
+                                shift,
+                                memo: hasAcademicFreeDay
+                                    ? hasAcademicFreeDay.dataValues.title
+                                    : null,
+                                paceGuides: dayPaceGuides,
+                            })
+                            leftDays--
+                        }
+                    }
+                    passedDays++
+                }
+                if (passedDays > 0) {
+                    end_date = format(
+                        addDays(parseISO(start_date), passedDays - 1),
+                        'yyyyMMdd'
+                    )
+                }
             }
 
             await studentGroup.update(
