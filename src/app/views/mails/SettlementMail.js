@@ -9,7 +9,11 @@ import Maillog from '../../models/Maillog'
 import MailLog from '../../../Mails/MailLog'
 import Settlement from '../../models/Settlement'
 
-export async function SettlementMail({ receivable_id = null, amount = 0 }) {
+export async function SettlementMail({
+    receivable_id = null,
+    amount = 0,
+    retry = 0,
+}) {
     try {
         let paymentInfoHTML = ''
         const receivable = await Receivable.findByPk(receivable_id)
@@ -317,8 +321,18 @@ export async function SettlementMail({ receivable_id = null, amount = 0 }) {
         return true
     } catch (err) {
         console.log(
-            `❌ It wasnt possible to send the e-mail, errorCode: ${err.responseCode}`
+            `❌ It wasnt possible to send the e-mail, errorCode: ${err.responseCode} - retry: ${retry}`
         )
+
+        if (err.responseCode === 432 && retry < 5) {
+            setTimeout(async () => {
+                await SettlementMail({
+                    receivable_id,
+                    amount,
+                    retry: retry + 1,
+                })
+            }, 5000)
+        }
         MailLog({
             className: 'ReceivableController',
             functionName: 'SettlementMail',
