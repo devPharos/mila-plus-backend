@@ -85,6 +85,7 @@ export async function settlement(
         settlement_date = format(new Date(), 'yyyyMMdd'),
         paymentmethod_id = null,
         settlement_memo = null,
+        t = null,
     },
     req = null
 ) {
@@ -115,30 +116,42 @@ export async function settlement(
             // amountPaidBalance !== 0 &&
             amountPaidBalance < receivable.dataValues.balance
 
-        await Settlement.create({
-            receivable_id: receivable.id,
-            amount: parcial
-                ? amountPaidBalance
-                : amountPaidBalance === 0
-                ? 0
-                : receivable.dataValues.balance,
-            paymentmethod_id,
-            settlement_date,
-            memo: settlement_memo,
-            created_at: new Date(),
-            created_by: 2,
-        })
-        await receivable.update({
-            status: parcial ? 'Parcial Paid' : 'Paid',
-            balance: (
-                receivable.balance -
-                (parcial ? amountPaidBalance : receivable.dataValues.balance)
-            ).toFixed(2),
-            status_date: settlement_date,
-            paymentmethod_id,
-            updated_at: new Date(),
-            updated_by: 2,
-        })
+        await Settlement.create(
+            {
+                receivable_id: receivable.id,
+                amount: parcial
+                    ? amountPaidBalance
+                    : amountPaidBalance === 0
+                    ? 0
+                    : receivable.dataValues.balance,
+                paymentmethod_id,
+                settlement_date,
+                memo: settlement_memo,
+                created_at: new Date(),
+                created_by: 2,
+            },
+            {
+                transaction: t,
+            }
+        )
+        await receivable.update(
+            {
+                status: parcial ? 'Parcial Paid' : 'Paid',
+                balance: (
+                    receivable.balance -
+                    (parcial
+                        ? amountPaidBalance
+                        : receivable.dataValues.balance)
+                ).toFixed(2),
+                status_date: settlement_date,
+                paymentmethod_id,
+                updated_at: new Date(),
+                updated_by: 2,
+            },
+            {
+                transaction: t,
+            }
+        )
         await createPaidTimeline()
         await SettlementMail({
             receivable_id: receivable.id,
@@ -148,24 +161,6 @@ export async function settlement(
         if (amountPaidBalance <= 0) {
             return
         }
-
-        // const receivables = await Receivable.findAll({
-        //     where: {
-        //         company_id: receivable.dataValues.company_id,
-        //         filial_id: receivable.dataValues.filial_id,
-        //         invoice_number: receivable.dataValues.invoice_number,
-        //         status: 'Pending',
-        //         canceled_at: null,
-        //     },
-        // })
-        // for (let receivable of receivables) {
-        //     await settlement({
-        //         receivable_id: receivable.id,
-        //         amountPaidBalance,
-        //         settlement_date,
-        //         paymentmethod_id,
-        //     })
-        // }
     } catch (err) {
         const className = 'EmergepayController'
         const functionName = 'settlement'
@@ -191,7 +186,7 @@ export async function verifyAndCreateTextToPayTransaction(
         const paymentMethod = await PaymentMethod.findByPk(
             receivable.dataValues.paymentmethod_id
         )
-        if (paymentMethod.dataValues.platform !== 'Gravity') {
+        if (paymentMethod.dataValues.platform !== 'Gravity - Online') {
             return false
         }
         const textPaymentTransaction = await Textpaymenttransaction.findOne({
@@ -249,7 +244,7 @@ export async function verifyAndCancelTextToPayTransaction(
         const paymentMethod = await PaymentMethod.findByPk(
             receivable.dataValues.paymentmethod_id
         )
-        if (paymentMethod.dataValues.platform !== 'Gravity') {
+        if (paymentMethod.dataValues.platform !== 'Gravity - Online') {
             return false
         }
         const textPaymentTransaction = await Textpaymenttransaction.findOne({
@@ -327,7 +322,7 @@ export async function adjustPaidTransactions() {
             const amountPaidBalance = receivable.balance
             const paymentMethod = await PaymentMethod.findOne({
                 where: {
-                    platform: 'Gravity',
+                    platform: 'Gravity - Online',
                     canceled_at: null,
                 },
             })
@@ -470,6 +465,7 @@ class EmergepayController {
             // const connection = new Sequelize(databaseConfig)
             // const t = await connection.transaction()
 
+            console.log('--- POSTBACK LISTENER ---')
             var hmacSignature = req.header('hmac-signature')
             var rawData = req.body
             var jsonData = JSON.stringify(rawData)
@@ -508,7 +504,10 @@ class EmergepayController {
                     transactionReference,
                     transactionType,
                     uniqueTransId,
+                    justTransaction = false,
                 } = emergeData
+
+                console.log('externalTransactionId', externalTransactionId)
 
                 await Emergepaytransaction.create({
                     account_card_type: accountCardType,
@@ -541,11 +540,15 @@ class EmergepayController {
                 const receivable = await Receivable.findByPk(
                     externalTransactionId
                 )
-                if (receivable && resultMessage === 'Approved') {
+                if (
+                    receivable &&
+                    resultMessage === 'Approved' &&
+                    parseFloat(amountProcessed) <= receivable.dataValues.balance
+                ) {
                     const amountPaidBalance = parseFloat(amountProcessed)
                     const paymentMethod = await PaymentMethod.findOne({
                         where: {
-                            platform: 'Gravity',
+                            platform: 'Gravity - Online',
                             canceled_at: null,
                         },
                     })

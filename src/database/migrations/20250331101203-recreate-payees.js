@@ -118,8 +118,7 @@ module.exports = {
             },
             invoice_number: {
                 type: Sequelize.INTEGER,
-                autoIncrement: true,
-                allowNull: false,
+                allowNull: true,
             },
             type: {
                 type: Sequelize.STRING,

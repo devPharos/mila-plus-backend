@@ -9,25 +9,49 @@ class Payeerecurrence extends Model {
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true,
                 },
-                payee_id: {
+                company_id: {
+                    type: Sequelize.INTEGER,
+                    allowNull: false,
+                },
+                filial_id: {
+                    type: Sequelize.INTEGER,
+                    allowNull: false,
+                },
+                issuer_id: {
                     type: Sequelize.UUID,
                     allowNull: false,
-                    references: {
-                        model: 'payees',
-                        key: 'id',
-                    },
                 },
-                amount: {
-                    type: Sequelize.FLOAT,
+                entry_date: {
+                    type: Sequelize.STRING,
+                    allowNull: false,
+                },
+                first_due_date: {
+                    type: Sequelize.STRING,
                     allowNull: false,
                 },
                 paymentmethod_id: {
                     type: Sequelize.UUID,
                     allowNull: false,
-                    references: {
-                        model: 'paymentmethods',
-                        key: 'id',
-                    },
+                },
+                amount: {
+                    type: Sequelize.FLOAT,
+                    allowNull: false,
+                },
+                active: {
+                    type: Sequelize.BOOLEAN,
+                    defaultValue: true,
+                },
+                chartofaccount_id: {
+                    type: Sequelize.INTEGER,
+                    allowNull: false,
+                },
+                paymentcriteria_id: {
+                    type: Sequelize.UUID,
+                    allowNull: false,
+                },
+                memo: {
+                    type: Sequelize.TEXT,
+                    allowNull: true,
                 },
                 created_at: {
                     allowNull: false,
@@ -63,10 +87,26 @@ class Payeerecurrence extends Model {
     }
 
     static associate(models) {
-        this.belongsTo(models.Payee, { foreignKey: 'payee_id', as: 'payee' })
+        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
+        this.hasMany(models.Payee, {
+            foreignKey: 'payeerecurrence_id',
+            as: 'payees',
+        })
+        this.belongsTo(models.Issuer, {
+            foreignKey: 'issuer_id',
+            as: 'issuer',
+        })
         this.belongsTo(models.PaymentMethod, {
             foreignKey: 'paymentmethod_id',
             as: 'paymentMethod',
+        })
+        this.belongsTo(models.Chartofaccount, {
+            foreignKey: 'chartofaccount_id',
+            as: 'chartOfAccount',
+        })
+        this.belongsTo(models.PaymentCriteria, {
+            foreignKey: 'paymentcriteria_id',
+            as: 'paymentCriteria',
         })
     }
 }

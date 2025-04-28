@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class Calendarday extends Model {
     static init(sequelize) {
@@ -7,13 +7,14 @@ class Calendarday extends Model {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
-                    primaryKey: true
+                    primaryKey: true,
                 },
                 company_id: Sequelize.INTEGER,
                 filial_id: Sequelize.INTEGER,
                 day: Sequelize.STRING,
                 dayto: Sequelize.STRING,
                 type: Sequelize.STRING,
+                date_type: Sequelize.STRING,
                 title: Sequelize.STRING,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
@@ -25,14 +26,14 @@ class Calendarday extends Model {
             {
                 sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
-        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' });
+        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
     }
 }
 
-export default Calendarday;
+export default Calendarday

@@ -136,7 +136,7 @@ class MerchantXChartOfAccountController {
                 )
 
             if (!merchantXChartOfAccountExists) {
-                return res.status(401).json({
+                return res.status(400).json({
                     error: 'Merchant X Chart Of Account does not exist.',
                 })
             }
@@ -178,7 +178,7 @@ class MerchantXChartOfAccountController {
                 )
 
             if (!merchantXChartOfAccountExists) {
-                return res.status(401).json({
+                return res.status(400).json({
                     error: 'Merchant X Chart Of Account does not exist.',
                 })
             }

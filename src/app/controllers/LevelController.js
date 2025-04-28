@@ -47,6 +47,10 @@ class LevelController {
                 include: [
                     {
                         model: Programcategory,
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
                     },
                 ],
                 order: [[Programcategory, 'name'], ['name']],

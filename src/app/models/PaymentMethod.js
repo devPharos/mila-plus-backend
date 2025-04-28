@@ -33,7 +33,7 @@ class PaymentMethod extends Model {
                 },
                 type_of_payment: {
                     type: Sequelize.STRING,
-                    defaultValue: 'All',
+                    defaultValue: 'Inbounds & Outbounds',
                     allowNull: false,
                 },
                 payment_details: {

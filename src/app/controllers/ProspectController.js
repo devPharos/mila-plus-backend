@@ -12,7 +12,14 @@ import { mailer } from '../../config/mailer'
 import { addDays, format } from 'date-fns'
 import MailLayout from '../../Mails/MailLayout'
 import Filial from '../models/Filial'
-import { FRONTEND_URL, handleStudentDiscounts } from '../functions'
+import {
+    FRONTEND_URL,
+    generateSearchByFields,
+    generateSearchOrder,
+    handleStudentDiscounts,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 import { searchPromise } from '../functions/searchPromise'
 import Enrollmentsponsor from '../models/Enrollmentsponsor'
 import Receivable from '../models/Receivable'
@@ -25,10 +32,57 @@ class ProspectController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const { filial, agent, processtypes, processsubstatuses } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            if (agent.id) {
+                const agentExists = await Agent.findByPk(agent.id)
+                if (!agentExists) {
+                    return res.status(400).json({
+                        error: 'Agent does not exist.',
+                    })
+                }
+            }
+
+            if (processtypes.id) {
+                const processtypeExists = await Processtype.findByPk(
+                    processtypes.id
+                )
+                if (!processtypeExists) {
+                    return res.status(400).json({
+                        error: 'Process Type does not exist.',
+                    })
+                }
+            }
+
+            if (processsubstatuses.id) {
+                const processsubstatusExists = await Processsubstatus.findByPk(
+                    processsubstatuses.id
+                )
+                if (!processsubstatusExists) {
+                    return res.status(400).json({
+                        error: 'Process Sub Status does not exist.',
+                    })
+                }
+            }
+
             const newProspect = await Student.create(
                 {
-                    filial_id: req.headers.filial,
                     ...req.body,
+                    filial_id: filialExists.id,
+                    ...(agent.id ? { agent_id: agent.id } : {}),
+                    ...(processtypes.id
+                        ? { processtype_id: processtypes.id }
+                        : {}),
+                    ...(processsubstatuses.id
+                        ? { processsubstatus_id: processsubstatuses.id }
+                        : {}),
                     company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
@@ -38,9 +92,7 @@ class ProspectController {
                 }
             )
 
-            // Promise.all(promises).then(async () => {
             t.commit()
-            // });
 
             handleStudentDiscounts({
                 student_id: newProspect.id,
@@ -64,66 +116,44 @@ class ProspectController {
         const t = await connection.transaction()
         try {
             const { prospect_id } = req.params
-            const schema = Yup.object().shape({
-                email: Yup.string().email(),
-                first_name: Yup.string(),
-                last_name: Yup.string(),
-                gender: Yup.string(),
-                birth_country: Yup.string(),
-                birth_state: Yup.string(),
-                birth_city: Yup.string(),
-                state: Yup.string(),
-                city: Yup.string(),
-                zip: Yup.string(),
-                address: Yup.string(),
-                foreign_address: Yup.string(),
-                phone: Yup.string(),
-                home_country_phone: Yup.string(),
-                whatsapp: Yup.string(),
-                date_of_birth: Yup.string(),
-                preferred_contact_form: Yup.string(),
-                passport_number: Yup.string(),
-                visa_number: Yup.string(),
-                visa_expiration: Yup.string(),
-                nsevis: Yup.string(),
-                how_did_you_hear_about_us: Yup.string(),
-            })
-
-            if (!(await schema.isValid(req.body))) {
-                return res.status(400).json({ error: 'Erro de validação! ' })
+            const { filial, agent, processtypes, processsubstatuses } = req.body
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
             }
-            const {
-                filial_id,
-                email,
-                first_name,
-                last_name,
-                gender,
-                birth_country,
-                birth_state,
-                birth_city,
-                state,
-                city,
-                zip,
-                address,
-                foreign_address,
-                phone,
-                home_country_phone,
-                whatsapp,
-                date_of_birth,
-                responsible_agent_id,
-                preferred_contact_form,
-                passport_number,
-                visa_number,
-                visa_expiration,
-                nsevis,
-                how_did_you_hear_about_us,
-                category,
-                status,
-                sub_status,
-                type,
-                userId,
-                prices,
-            } = req.body
+
+            if (agent.id) {
+                const agentExists = await Agent.findByPk(agent.id)
+                if (!agentExists) {
+                    return res.status(400).json({
+                        error: 'Agent does not exist.',
+                    })
+                }
+            }
+
+            if (processtypes.id) {
+                const processtypeExists = await Processtype.findByPk(
+                    processtypes.id
+                )
+                if (!processtypeExists) {
+                    return res.status(400).json({
+                        error: 'Process Type does not exist.',
+                    })
+                }
+            }
+
+            if (processsubstatuses.id) {
+                const processsubstatusExists = await Processsubstatus.findByPk(
+                    processsubstatuses.id
+                )
+                if (!processsubstatusExists) {
+                    return res.status(400).json({
+                        error: 'Process Sub Status does not exist.',
+                    })
+                }
+            }
 
             const prospectExists = await Student.findByPk(prospect_id)
 
@@ -132,6 +162,8 @@ class ProspectController {
                     error: 'Prospect not found.',
                 })
             }
+
+            const { email } = req.body
 
             if (email && email.trim() != prospectExists.email.trim()) {
                 const studentByEmail = await Student.findOne({
@@ -145,45 +177,20 @@ class ProspectController {
                 }
             }
 
-            if (!userId) {
-                return res.status(400).json({
-                    error: 'Who is updating this prospect?',
-                })
-            }
-
             const changedProspect = await prospectExists.update(
                 {
+                    ...req.body,
                     ...prospectExists.dataValues,
-                    filial_id,
-                    email,
-                    first_name,
-                    last_name,
-                    gender,
-                    birth_country,
-                    birth_state,
-                    birth_city,
-                    state,
-                    city,
-                    zip,
-                    address,
-                    foreign_address,
-                    phone,
-                    home_country_phone,
-                    whatsapp,
-                    date_of_birth,
-                    responsible_agent_id,
-                    preferred_contact_form,
-                    passport_number,
-                    visa_number,
-                    visa_expiration,
-                    nsevis,
-                    how_did_you_hear_about_us,
-                    category,
-                    status,
-                    sub_status,
-                    type,
+                    filial_id: filialExists.id,
+                    ...(processtypes.id
+                        ? { processtype_id: processtypes.id }
+                        : {}),
+                    ...(processsubstatuses.id
+                        ? { processsubstatus_id: processsubstatuses.id }
+                        : {}),
+                    ...(agent.id ? { agent_id: agent.id } : {}),
                     updated_at: new Date(),
-                    updated_by: userId,
+                    updated_by: req.userId,
                 },
                 {
                     transaction: t,
@@ -192,9 +199,9 @@ class ProspectController {
 
             await Enrollment.update(
                 {
-                    agent_id: newProspect.agent_id,
-                    type: newProspect.type,
-                    substatus: newProspect.sub_status,
+                    agent_id: agent.id,
+                    type: processtypes.id,
+                    substatus: processsubstatuses.id,
                     updated_at: new Date(),
                     updated_by: req.userId,
                 },
@@ -206,16 +213,16 @@ class ProspectController {
                 }
             )
 
-            if (!changedProspect) {
-                return res.status(400).json({
-                    error: 'It was not possible to update this prospect, review your information.',
+            t.commit()
+
+            if (req.body.prices) {
+                handleStudentDiscounts({
+                    student_id: changedProspect.id,
+                    prices: req.body.prices,
                 })
             }
 
-            handleStudentDiscounts({
-                student_id: prospectExists.id,
-                prices,
-            })
+            return res.json(changedProspect)
         } catch (err) {
             await t.rollback()
             const className = 'ProspectController'
@@ -225,8 +232,6 @@ class ProspectController {
                 error: err,
             })
         }
-
-        return res.json(changedProspect)
     }
 
     async show(req, res) {
@@ -234,6 +239,19 @@ class ProspectController {
             const { prospect_id } = req.params
             const prospect = await Student.findByPk(prospect_id, {
                 include: [
+                    {
+                        model: Filial,
+                        as: 'filial',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Agent,
+                        as: 'agent',
+                        required: false,
+                        attributes: ['id', 'name'],
+                        where: { canceled_at: null },
+                    },
                     {
                         model: Enrollment,
                         as: 'enrollments',
@@ -304,6 +322,20 @@ class ProspectController {
                             },
                         ],
                     },
+                    {
+                        model: Processtype,
+                        as: 'processtypes',
+                        required: false,
+                        attributes: ['id', 'name'],
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Processsubstatus,
+                        as: 'processsubstatuses',
+                        required: false,
+                        attributes: ['id', 'name'],
+                        where: { canceled_at: null },
+                    },
                 ],
                 where: { canceled_at: null },
                 order: [
@@ -335,12 +367,44 @@ class ProspectController {
 
     async index(req, res) {
         try {
-            const {
-                orderBy = 'name',
-                orderASC = 'ASC',
+            const defaultOrderBy = { column: 'name;last_name', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
+                limit = 12,
+                type = '',
             } = req.query
-            const students = await Student.findAll({
+
+            if (!verifyFieldInModel(orderBy, Student)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Student, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'registration_number',
+                    type: 'string',
+                },
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+                {
+                    field: 'last_name',
+                    type: 'string',
+                },
+                {
+                    field: 'email',
+                    type: 'string',
+                },
+            ]
+
+            const { count, rows } = await Student.findAndCountAll({
                 include: [
                     {
                         model: Filial,
@@ -381,30 +445,21 @@ class ProspectController {
                 ],
                 where: {
                     category: 'Prospect',
-                    [Op.or]: [
-                        {
-                            filial_id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            filial_id:
-                                req.headers.filial != 1
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
+                    ...(type !== 'null'
+                        ? {
+                              status: {
+                                  [Op.in]: type.split(','),
+                              },
+                          }
+                        : {}),
                 },
-                // attributes: ['id', 'name', 'last_name', 'email', 'phone', 'salesagent_id', 'preferred_contact_form', 'canceled_at', 'filial_id'],
-                order: [['last_name'], ['name']],
+                limit,
+                order: searchOrder,
             })
 
-            const fields = ['name', 'last_name', 'email', ['agent', 'name']]
-            Promise.all([searchPromise(search, students, fields)]).then(
-                (students) => {
-                    return res.json(students[0])
-                }
-            )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'ProspectController'
             const functionName = 'index'

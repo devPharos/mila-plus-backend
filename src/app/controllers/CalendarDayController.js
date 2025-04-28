@@ -11,9 +11,20 @@ class CalendarDayController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const { filial, day, dayto } = req.body
+            if (!filial) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+            if (dayto < day) {
+                return res.status(400).json({
+                    error: '"Until Date" must be greater than "From Date".',
+                })
+            }
             const new_calendar = await Calendarday.create(
                 {
-                    filial_id: req.headers.filial,
+                    filial_id: filial.id,
                     ...req.body,
                     company_id: 1,
                     created_at: new Date(),
@@ -41,18 +52,34 @@ class CalendarDayController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const { filial, day, dayto } = req.body
+            if (!filial) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+            if (dayto < day) {
+                return res.status(400).json({
+                    error: '"Until Date" must be greater than "From Date".',
+                })
+            }
             const { calendarDay_id } = req.params
 
             const calendarDayExists = await Calendarday.findByPk(calendarDay_id)
 
             if (!calendarDayExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'calendarDay does not exist.' })
             }
 
             await calendarDayExists.update(
-                { ...req.body, updated_by: req.userId, updated_at: new Date() },
+                {
+                    ...req.body,
+                    filial_id: filial.id,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
                 {
                     transaction: t,
                 }
@@ -115,6 +142,16 @@ class CalendarDayController {
             const { calendarDay_id } = req.params
             const calendarDay = await Calendarday.findByPk(calendarDay_id, {
                 where: { canceled_at: null },
+                include: [
+                    {
+                        model: Filial,
+                        as: 'filial',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                    },
+                ],
             })
 
             if (!calendarDay) {

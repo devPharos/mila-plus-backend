@@ -5,12 +5,24 @@ import Student from '../models/Student'
 import Filial from '../models/Filial'
 import { searchPromise } from '../functions/searchPromise'
 import Studentinactivation from '../models/Studentinactivation'
-import { handleStudentDiscounts } from '../functions'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    handleStudentDiscounts,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 import Receivable from '../models/Receivable'
 import Issuer from '../models/Issuer'
 import Recurrence from '../models/Recurrence'
 import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
 import { verifyAndCancelTextToPayTransaction } from './EmergepayController'
+import Processtype from '../models/Processtype'
+import Processsubstatus from '../models/Processsubstatus'
+import Staff from '../models/Staff'
+import Studentgroup from '../models/Studentgroup'
+import StudentXGroup from '../models/StudentXGroup'
+import { addDays, format, parseISO, subDays } from 'date-fns'
 
 const { Op } = Sequelize
 
@@ -19,10 +31,47 @@ class StudentController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const { filial, processtype, processsubstatus } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            if (processtype.id) {
+                const processtypeExists = await Processtype.findByPk(
+                    processtype.id
+                )
+                if (!processtypeExists) {
+                    return res.status(400).json({
+                        error: 'Process Type does not exist.',
+                    })
+                }
+            }
+
+            if (processsubstatus.id) {
+                const processsubstatusExists = await Processsubstatus.findByPk(
+                    processsubstatus.id
+                )
+                if (!processsubstatusExists) {
+                    return res.status(400).json({
+                        error: 'Process Sub Status does not exist.',
+                    })
+                }
+            }
+
             const newStudent = await Student.create(
                 {
-                    filial_id: req.headers.filial,
                     ...req.body,
+                    filial_id: filialExists.id,
+                    ...(processtype.id
+                        ? { processtype_id: processtype.id }
+                        : {}),
+                    ...(processsubstatus.id
+                        ? { processsubstatus_id: processsubstatus.id }
+                        : {}),
                     company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
@@ -56,16 +105,58 @@ class StudentController {
         try {
             const { student_id } = req.params
 
+            const { filial, processtype, processsubstatus } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            if (processtype.id) {
+                const processtypeExists = await Processtype.findByPk(
+                    processtype.id
+                )
+                if (!processtypeExists) {
+                    return res.status(400).json({
+                        error: 'Process Type does not exist.',
+                    })
+                }
+            }
+
+            if (processsubstatus.id) {
+                const processsubstatusExists = await Processsubstatus.findByPk(
+                    processsubstatus.id
+                )
+                if (!processsubstatusExists) {
+                    return res.status(400).json({
+                        error: 'Process Sub Status does not exist.',
+                    })
+                }
+            }
+
             const studentExists = await Student.findByPk(student_id)
 
             if (!studentExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Student does not exist.' })
             }
 
             await studentExists.update(
-                { ...req.body, updated_by: req.userId, updated_at: new Date() },
+                {
+                    ...req.body,
+                    filial_id: filialExists.id,
+                    ...(processtype.id
+                        ? { processtype_id: processtype.id }
+                        : {}),
+                    ...(processsubstatus.id
+                        ? { processsubstatus_id: processsubstatus.id }
+                        : {}),
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
                 {
                     transaction: t,
                 }
@@ -92,12 +183,44 @@ class StudentController {
 
     async index(req, res) {
         try {
-            const {
-                orderBy = 'registration_number',
-                orderASC = 'ASC',
+            const defaultOrderBy = { column: 'name;last_name', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
+                limit = 12,
+                type = '',
             } = req.query
-            const students = await Student.findAll({
+
+            if (!verifyFieldInModel(orderBy, Student)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Student, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'registration_number',
+                    type: 'string',
+                },
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+                {
+                    field: 'last_name',
+                    type: 'string',
+                },
+                {
+                    field: 'email',
+                    type: 'string',
+                },
+            ]
+
+            const { count, rows } = await Student.findAndCountAll({
                 include: [
                     {
                         model: Filial,
@@ -108,41 +231,40 @@ class StudentController {
                             canceled_at: null,
                         },
                     },
+                    {
+                        model: Studentgroup,
+                        as: 'studentgroup',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Staff,
+                        as: 'teacher',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'name'],
+                    },
                 ],
                 where: {
                     category: {
                         [Op.in]: ['Student', 'Ex-student'],
                     },
-                    [Op.or]: [
-                        {
-                            filial_id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            filial_id:
-                                req.headers.filial != 1
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
+                    ...(type !== 'null'
+                        ? {
+                              status: {
+                                  [Op.in]: type.split(','),
+                              },
+                          }
+                        : {}),
                     canceled_at: null,
                 },
-                order: [[orderBy, orderASC]],
+                limit,
+                order: searchOrder,
             })
 
-            if (!students) {
-                return res.status(400).json({
-                    error: 'Students not found.',
-                })
-            }
-
-            const fields = ['registration_number', 'name', 'last_name']
-            Promise.all([searchPromise(search, students, fields)]).then(
-                (students) => {
-                    return res.json(students[0])
-                }
-            )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'StudentController'
             const functionName = 'index'
@@ -160,6 +282,12 @@ class StudentController {
                 where: { canceled_at: null },
                 include: [
                     {
+                        model: Filial,
+                        as: 'filial',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
                         association: 'discounts',
                         include: [
                             {
@@ -175,6 +303,33 @@ class StudentController {
                                 ],
                             },
                         ],
+                    },
+                    {
+                        model: Processtype,
+                        as: 'processtypes',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'name'],
+                    },
+                    {
+                        model: Processsubstatus,
+                        as: 'processsubstatuses',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'name'],
+                    },
+                    {
+                        model: Studentgroup,
+                        as: 'studentgroup',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Staff,
+                        as: 'teacher',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'name'],
                     },
                 ],
             })
@@ -201,6 +356,25 @@ class StudentController {
         const t = await connection.transaction()
         try {
             const { student_id, reason, date } = req.body
+
+            if (!student_id) {
+                return res.status(400).json({
+                    error: 'Student id not defined.',
+                })
+            }
+
+            if (!date) {
+                return res.status(400).json({
+                    error: 'Date not defined.',
+                })
+            }
+
+            if (!reason) {
+                return res.status(400).json({
+                    error: 'Reason not defined.',
+                })
+            }
+
             const student = await Student.findByPk(student_id, {
                 where: { canceled_at: null },
             })
@@ -286,6 +460,23 @@ class StudentController {
                 }
             )
 
+            await StudentXGroup.update(
+                {
+                    end_date: format(subDays(parseISO(date), 1), 'yyyy-MM-dd'),
+                    updated_at: new Date(),
+                    updated_by: req.userId,
+                },
+                {
+                    where: {
+                        student_id: student.id,
+                        group_id: student.dataValues.studentgroup_id,
+                        end_date: null,
+                        canceled_at: null,
+                    },
+                    transaction: t,
+                }
+            )
+
             t.commit()
 
             return res.status(200).json(student)
@@ -301,28 +492,184 @@ class StudentController {
     }
 
     async activate(req, res) {
-        const { student_id } = req.params
-        const studentExists = await Student.findByPk(student_id)
-
-        if (!studentExists) {
-            return res.status(400).json({
-                error: 'Student not found.',
-            })
-        }
-
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
         try {
-            await studentExists.update({
-                status: 'In Class',
-                updated_at: new Date(),
-                updated_by: req.userId,
-            })
+            const { student_id } = req.params
+            const studentExists = await Student.findByPk(student_id)
+            const { date, studentgroup } = req.body
+
+            if (!studentgroup) {
+                return res.status(400).json({
+                    error: 'Student group not defined.',
+                })
+            }
+
+            const studentgroupExists = await Studentgroup.findByPk(
+                studentgroup.id
+            )
+
+            if (!studentgroupExists) {
+                return res.status(400).json({
+                    error: 'Student group does not exist.',
+                })
+            }
+
+            if (!date) {
+                return res.status(400).json({
+                    error: 'Date not defined.',
+                })
+            }
+
+            if (!studentExists) {
+                return res.status(400).json({
+                    error: 'Student not found.',
+                })
+            }
+            await StudentXGroup.create(
+                {
+                    company_id: 1,
+                    filial_id: studentgroupExists.filial_id,
+                    student_id: studentExists.id,
+                    group_id: studentgroupExists.id,
+                    start_date: date,
+                    end_date: null,
+                    created_at: new Date(),
+                    created_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            await studentExists.update(
+                {
+                    status: 'In Class',
+                    studentgroup_id: studentgroupExists.id,
+                    classroom_id: studentgroupExists.dataValues.classroom_id,
+                    teacher_id: studentgroupExists.dataValues.staff_id,
+                    updated_at: new Date(),
+                    updated_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            t.commit()
 
             return res.status(200).json({
                 message: 'Student activated.',
             })
         } catch (err) {
+            await t.rollback()
             const className = 'StudentController'
             const functionName = 'activate'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async transfer(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { student_id } = req.params
+            const { date, studentgroup } = req.body
+
+            const studentgroupExists = await Studentgroup.findByPk(
+                studentgroup.id
+            )
+
+            if (!studentgroupExists) {
+                return res.status(400).json({
+                    error: 'Student group does not exist.',
+                })
+            }
+
+            if (!date) {
+                return res.status(400).json({
+                    error: 'Date not defined.',
+                })
+            }
+
+            if (!student_id) {
+                return res.status(400).json({
+                    error: 'Student id not defined.',
+                })
+            }
+
+            const studentExists = await Student.findByPk(student_id)
+
+            if (!studentExists) {
+                return res.status(400).json({
+                    error: 'Student not found.',
+                })
+            }
+
+            const activeStudentGroup = await StudentXGroup.findOne({
+                where: {
+                    student_id: studentExists.id,
+                    group_id: studentExists.dataValues.studentgroup_id,
+                    end_date: null,
+                    canceled_at: null,
+                },
+            })
+
+            if (!activeStudentGroup) {
+                return res.status(400).json({
+                    error: 'Student is not in a group to be transfered.',
+                })
+            }
+
+            await activeStudentGroup.update(
+                {
+                    end_date: format(subDays(parseISO(date), 1), 'yyyy-MM-dd'),
+                    updated_at: new Date(),
+                    updated_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            await StudentXGroup.create(
+                {
+                    company_id: 1,
+                    filial_id: studentgroupExists.filial_id,
+                    student_id: studentExists.id,
+                    group_id: studentgroupExists.id,
+                    start_date: date,
+                    end_date: null,
+                    created_at: new Date(),
+                    created_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            await studentExists.update(
+                {
+                    studentgroup_id: studentgroupExists.id,
+                    classroom_id: studentgroupExists.dataValues.classroom_id,
+                    teacher_id: studentgroupExists.dataValues.staff_id,
+                    updated_at: new Date(),
+                    updated_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            t.commit()
+
+            return res.json(studentExists)
+        } catch (err) {
+            const className = 'StudentController'
+            const functionName = 'transfer'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

@@ -3,36 +3,56 @@ import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Bank from '../models/Bank'
 import { searchPromise } from '../functions/searchPromise'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
 class BankController {
     async index(req, res) {
         try {
-            const {
-                orderBy = 'created_at',
-                orderASC = 'ASC',
+            const defaultOrderBy = { column: 'bank_name', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
+                limit = 10,
             } = req.query
-            const banks = await Bank.findAll({
-                include: [
-                    {
-                        association: 'company',
-                        attributes: ['name'],
-                    },
-                ],
+
+            if (!verifyFieldInModel(orderBy, Bank)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Bank, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'bank_name',
+                    type: 'string',
+                },
+                {
+                    field: 'bank_alias',
+                    type: 'string',
+                },
+            ]
+            const { count, rows } = await Bank.findAndCountAll({
                 where: {
                     canceled_at: null,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                 },
-                order: [[orderBy, orderASC]],
+                limit,
+                order: searchOrder,
             })
 
-            const fields = ['bank_name', 'bank_alias']
-            Promise.all([searchPromise(search, banks, fields)]).then(
-                (banks) => {
-                    return res.json(banks[0])
-                }
-            )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'BankController'
             const functionName = 'index'
@@ -116,7 +136,7 @@ class BankController {
             const bankExists = await Bank.findByPk(bank_id)
 
             if (!bankExists) {
-                return res.status(401).json({ error: 'Bank does not exist.' })
+                return res.status(400).json({ error: 'Bank does not exist.' })
             }
 
             await bankExists.update(

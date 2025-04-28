@@ -1,6 +1,6 @@
 module.exports = {
     up: (queryInterface) => {
-        const pages = 80
+        const pages = 50
         const promises = []
         const groups = [
             'a05b7c30-e4bc-495c-85f3-b88b958b46fe',

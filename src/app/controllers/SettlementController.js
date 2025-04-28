@@ -7,32 +7,77 @@ import ChartOfAccount from '../models/Chartofaccount'
 import PaymentCriteria from '../models/PaymentCriteria'
 import Filial from '../models/Filial'
 import Issuer from '../models/Issuer'
-import Student from '../models/Student'
 import { searchPromise } from '../functions/searchPromise'
 import Receivable from '../models/Receivable'
 import Settlement from '../models/Settlement'
 import Receivablediscounts from '../models/Receivablediscounts'
-import { applyDiscounts } from './ReceivableController'
+import Payee from '../models/Payee'
+import Merchants from '../models/Merchants'
+import Payeesettlement from '../models/Payeesettlement'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    getIssuerByName,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 class SettlementController {
     async index(req, res) {
         try {
-            const {
-                orderBy = 'due_date',
-                orderASC = 'ASC',
+            const defaultOrderBy = { column: 'settlement_date', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
+                limit = 10,
             } = req.query
-            let searchOrder = []
-            if (orderBy.includes(',')) {
-                searchOrder.push([
-                    orderBy.split(',')[0],
-                    orderBy.split(',')[1],
-                    orderASC,
-                ])
-            } else {
-                searchOrder.push([orderBy, orderASC])
+
+            if (!verifyFieldInModel(orderBy, Settlement)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
             }
-            const receivables = await Settlement.findAll({
+
+            const filialSearch = verifyFilialSearch(Receivable, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            let issuerSearch = null
+            if (search && search !== 'null') {
+                issuerSearch = await getIssuerByName(search)
+            }
+
+            const searchableFields = [
+                {
+                    model: Receivable,
+                    field: 'invoice_number',
+                    type: 'float',
+                    return: 'receivable_id',
+                },
+                {
+                    model: Receivable,
+                    field: 'due_date',
+                    type: 'date',
+                    return: 'receivable_id',
+                },
+                {
+                    field: 'settlement_date',
+                    type: 'date',
+                },
+                {
+                    field: 'amount',
+                    type: 'float',
+                },
+            ]
+            let searchable = null
+            if (!issuerSearch) {
+                searchable = await generateSearchByFields(
+                    search,
+                    searchableFields
+                )
+            }
+
+            const { count, rows } = await Settlement.findAndCountAll({
                 include: [
                     {
                         model: Receivable,
@@ -68,20 +113,9 @@ class SettlementController {
                             },
                         ],
                         where: {
-                            [Op.or]: [
-                                {
-                                    filial_id: {
-                                        [Op.gte]:
-                                            req.headers.filial == 1 ? 1 : 999,
-                                    },
-                                },
-                                {
-                                    filial_id:
-                                        req.headers.filial != 1
-                                            ? req.headers.filial
-                                            : 0,
-                                },
-                            ],
+                            ...filialSearch,
+                            ...issuerSearch,
+                            canceled_at: null,
                         },
                     },
                     {
@@ -93,17 +127,14 @@ class SettlementController {
                 ],
 
                 where: {
+                    ...searchable,
                     canceled_at: null,
                 },
+                limit,
                 order: searchOrder,
             })
 
-            const fields = ['status', ['receivable', 'memo'], 'amount']
-            Promise.all([searchPromise(search, receivables, fields)]).then(
-                (data) => {
-                    return res.json(data[0])
-                }
-            )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'SettlementController'
             const functionName = 'index'
@@ -116,9 +147,9 @@ class SettlementController {
 
     async show(req, res) {
         try {
-            const { receivable_id } = req.params
+            const { payee_id } = req.params
 
-            const receivable = await Receivable.findByPk(receivable_id, {
+            const payee = await Payee.findByPk(payee_id, {
                 where: { canceled_at: null },
                 include: [
                     {
@@ -140,14 +171,6 @@ class SettlementController {
                         where: { canceled_at: null },
                     },
                     {
-                        model: Receivablediscounts,
-                        as: 'discounts',
-                        required: false,
-                        where: {
-                            canceled_at: null,
-                        },
-                    },
-                    {
                         model: Filial,
                         as: 'filial',
                         required: false,
@@ -160,15 +183,15 @@ class SettlementController {
                         where: { canceled_at: null },
                         include: [
                             {
-                                model: Student,
-                                as: 'student',
+                                model: Merchants,
+                                as: 'merchant',
                                 required: false,
                                 where: { canceled_at: null },
                             },
                         ],
                     },
                     {
-                        model: Settlement,
+                        model: Payeesettlement,
                         as: 'settlements',
                         required: false,
                         where: { canceled_at: null },
@@ -176,9 +199,9 @@ class SettlementController {
                 ],
             })
 
-            return res.json(receivable)
+            return res.json(payee)
         } catch (err) {
-            const className = 'SettlementController'
+            const className = 'PayeeSettlementController'
             const functionName = 'show'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -221,7 +244,10 @@ class SettlementController {
                     .json({ error: 'Payment Method does not exist.' })
             }
 
-            if (paymentMethod.dataValues.platform === 'Gravity') {
+            if (
+                paymentMethod.dataValues.platform &&
+                paymentMethod.dataValues.platform.includes('Gravity - Online')
+            ) {
                 return res.status(400).json({
                     error: 'Settlement paid by Gravity Card cannot be deleted. Use the refund function instead.',
                 })

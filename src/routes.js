@@ -39,7 +39,6 @@ import EnrollmentDependentController from './app/controllers/EnrollmentDependent
 import MerchantController from './app/controllers/MerchantController'
 import MerchantXChartOfAccountController from './app/controllers/MerchantXChartOfAccountController'
 import PayeeController from './app/controllers/PayeeController'
-import PayeeInstallmentController from './app/controllers/PayeeInstallmentController'
 import PaymentCriteriaController from './app/controllers/PaymentCriteriaController'
 import PaymentMethodController from './app/controllers/PaymentMethodController'
 import ReceivableController from './app/controllers/ReceivableController'
@@ -55,6 +54,10 @@ import FilialDiscountListController from './app/controllers/FilialDiscountListCo
 import FileController from './app/controllers/FileController'
 import SettlementController from './app/controllers/SettlementController'
 import PublicFileController from './app/controllers/PublicFileController'
+import PayeeSettlementController from './app/controllers/PayeeSettlementController'
+import PayeeRecurrenceController from './app/controllers/PayeeRecurrenceController'
+import ClassroomController from './app/controllers/ClassroomController'
+import StudentgroupController from './app/controllers/StudentgroupController'
 
 const routes = new Router()
 
@@ -271,6 +274,25 @@ routes.post('/students', StudentController.store)
 routes.put('/students/:student_id', StudentController.update)
 routes.post('/students/inactivate', StudentController.inactivate)
 routes.post('/students/activate/:student_id', StudentController.activate)
+routes.post('/students/transfer/:student_id', StudentController.transfer)
+
+routes.get('/classrooms', ClassroomController.index)
+routes.get('/classrooms/:classroom_id', ClassroomController.show)
+routes.post('/classrooms', ClassroomController.store)
+routes.put('/classrooms/:classroom_id', ClassroomController.update)
+
+routes.get('/studentgroups', StudentgroupController.index)
+routes.get('/studentgroups/:studentgroup_id', StudentgroupController.show)
+routes.post('/studentgroups', StudentgroupController.store)
+routes.put('/studentgroups/:studentgroup_id', StudentgroupController.update)
+routes.post(
+    '/studentgroups/start/:studentgroup_id',
+    StudentgroupController.startGroup
+)
+routes.post(
+    '/studentgroups/pause/:studentgroup_id',
+    StudentgroupController.pauseGroup
+)
 
 routes.get('/agents/:agent_id', AgentController.show)
 routes.post('/agents', AgentController.store)
@@ -368,18 +390,28 @@ routes.get('/payee/:payee_id', PayeeController.show)
 routes.post('/payee', PayeeController.store)
 routes.put('/payee/:payee_id', PayeeController.update)
 routes.delete('/payee/:payee_id', PayeeController.delete)
+routes.post('/payee/settlement', PayeeController.settlement)
+routes.post('/payee/excel', PayeeController.excel)
 
-// payee installment
-routes.get('/payeeinstallments', PayeeInstallmentController.index)
+// settlements
+routes.get('/payeesettlements', PayeeSettlementController.index)
+routes.get('/payeesettlements/:payee_id', PayeeSettlementController.show)
+routes.delete(
+    '/payeesettlements/:settlement_id',
+    PayeeSettlementController.delete
+)
+
+// Recurrence
+routes.get('/payeerecurrences', PayeeRecurrenceController.index)
 routes.get(
-    '/payeeinstallments/:payeeinstallment_id',
-    PayeeInstallmentController.show
+    '/payeerecurrences/:payeerecurrence_id',
+    PayeeRecurrenceController.show
 )
-routes.post('/payeeinstallments/temp', PayeeInstallmentController.storeTemp)
 routes.put(
-    '/payeeinstallments/:payeeinstallment_id',
-    PayeeInstallmentController.update
+    '/payeerecurrences/:payeerecurrence_id',
+    PayeeRecurrenceController.update
 )
+routes.post('/payeerecurrences', PayeeRecurrenceController.store)
 
 // payment criteria
 routes.get('/paymentcriterias', PaymentCriteriaController.index)

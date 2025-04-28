@@ -2,7 +2,7 @@ require('dotenv').config()
 import { mailer } from '../config/mailer'
 import MailLayout from './MailLayout'
 
-export default function MailLog({
+export default async function MailLog({
     className = null,
     functionName = null,
     req = null,
@@ -24,11 +24,14 @@ export default function MailLog({
         <p><strong>Body:</strong> ${JSON.stringify(req.body)}</p>`
         : ``
     content += `<p><strong>Error:</strong> ${err}</p>`
-
-    mailer.sendMail({
-        from: `"MILA Plus" <${process.env.MAIL_FROM}>`,
-        to: process.env.MAIL_TO,
-        subject: `MILA Plus - ${title}`,
-        html: MailLayout({ title, content, filial: '' }),
-    })
+    mailer
+        .sendMail({
+            from: `"MILA Plus" <${process.env.MAIL_FROM}>`,
+            to: process.env.MAIL_TO,
+            subject: `MILA Plus - ${title}`,
+            html: MailLayout({ title, content, filial: '' }),
+        })
+        .catch((err) => {
+            console.log(err)
+        })
 }

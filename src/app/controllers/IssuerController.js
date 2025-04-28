@@ -6,7 +6,12 @@ import Company from '../models/Company'
 import Filial from '../models/Filial'
 import Student from '../models/Student'
 import Merchants from '../models/Merchants'
-import { searchPromise } from '../functions/searchPromise'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
@@ -81,19 +86,43 @@ export async function createIssuerFromStudent({
 class IssuerController {
     async index(req, res) {
         try {
-            const {
-                orderBy = 'created_at',
-                orderASC = 'DESC',
+            const defaultOrderBy = { column: 'name', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
+                limit = 10,
             } = req.query
-            const issuers = await Issuer.findAll({
+
+            if (!verifyFieldInModel(orderBy, Issuer)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Issuer, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+                {
+                    field: 'email',
+                    type: 'string',
+                },
+                {
+                    field: 'address',
+                    type: 'string',
+                },
+                {
+                    field: 'phone_number',
+                    type: 'string',
+                },
+            ]
+            const { count, rows } = await Issuer.findAndCountAll({
                 include: [
-                    {
-                        model: Company,
-                        as: 'company',
-                        required: false,
-                        where: { canceled_at: null },
-                    },
                     {
                         model: Filial,
                         as: 'filial',
@@ -115,29 +144,14 @@ class IssuerController {
                 ],
                 where: {
                     canceled_at: null,
-                    [Op.or]: [
-                        {
-                            filial_id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            filial_id:
-                                req.headers.filial != 1
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                 },
-                order: [[orderBy, orderASC]],
+                limit,
+                order: searchOrder,
             })
 
-            const fields = ['name', 'email', 'address']
-            Promise.all([searchPromise(search, issuers, fields)]).then(
-                (issuers) => {
-                    return res.json(issuers[0])
-                }
-            )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'IssuerController'
             const functionName = 'index'
@@ -196,12 +210,46 @@ class IssuerController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const { filial = null, merchant = null, student = null } = req.body
+
+            const filialExists = filial.id
+                ? await Filial.findByPk(filial.id)
+                : null
+
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            if (merchant.id) {
+                const merchantExists = await Merchants.findByPk(merchant.id, {
+                    where: { canceled_at: null, filial_id: filialExists.id },
+                })
+
+                if (!merchantExists) {
+                    return res.status(400).json({
+                        error: 'Merchant does not exist.',
+                    })
+                }
+            }
+
+            if (student.id) {
+                const studentExists = await Student.findByPk(student.id)
+
+                if (!studentExists) {
+                    return res.status(400).json({
+                        error: 'Student does not exist.',
+                    })
+                }
+            }
+
             const newIssuer = await Issuer.create(
                 {
                     ...req.body,
-                    filial_id: req.body.filial_id
-                        ? req.body.filial_id
-                        : req.headers.filial,
+                    filial_id: filialExists.id,
+                    ...(merchant.id ? { merchant_id: merchant.id } : {}),
+                    ...(student.id ? { student_id: student.id } : {}),
                     company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
@@ -231,15 +279,49 @@ class IssuerController {
         try {
             const { issuer_id } = req.params
 
+            const { filial = null, merchant = null, student = null } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            if (merchant.id) {
+                const merchantExists = await Merchants.findByPk(merchant.id, {
+                    where: { canceled_at: null, filial_id: filialExists.id },
+                })
+
+                if (!merchantExists) {
+                    return res.status(400).json({
+                        error: 'Merchant does not exist.',
+                    })
+                }
+            }
+
+            if (student.id) {
+                const studentExists = await Student.findByPk(student.id)
+
+                if (!studentExists) {
+                    return res.status(400).json({
+                        error: 'Student does not exist.',
+                    })
+                }
+            }
+
             const issuerExists = await Issuer.findByPk(issuer_id)
 
             if (!issuerExists) {
-                return res.status(401).json({ error: 'Issuer does not exist.' })
+                return res.status(400).json({ error: 'Issuer does not exist.' })
             }
 
             await issuerExists.update(
                 {
                     ...req.body,
+                    filial_id: filialExists.id,
+                    ...(merchant.id ? { merchant_id: merchant.id } : {}),
+                    ...(student.id ? { student_id: student.id } : {}),
                     company_id: 1,
                     updated_by: req.userId,
                     updated_at: new Date(),
@@ -271,7 +353,7 @@ class IssuerController {
             const issuerExists = await Issuer.findByPk(id)
 
             if (!issuerExists) {
-                return res.status(401).json({ error: 'Issuer does not exist.' })
+                return res.status(400).json({ error: 'Issuer does not exist.' })
             }
 
             await issuerExists.update(

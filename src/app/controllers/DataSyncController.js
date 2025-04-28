@@ -51,6 +51,20 @@ class DataSyncController {
                         const values = unescape(encodeURIComponent(line)).split(
                             ','
                         )
+
+                        const studentExists = await Student.findOne({
+                            where: {
+                                registration_number:
+                                    values[
+                                        headers.indexOf('RegistrationNumber')
+                                    ],
+                                canceled_at: null,
+                            },
+                        })
+
+                        if (studentExists) {
+                            continue
+                        }
                         const processType = values[headers.indexOf('Type')]
                             ? await Processtype.findOne({
                                   where: {
@@ -100,6 +114,35 @@ class DataSyncController {
 
                         if (!filial) {
                             continue
+                        }
+
+                        let preferred_contact_form = null
+                        if (values[headers.indexOf('WayContact')] === '1') {
+                            preferred_contact_form = 'Phone'
+                        } else if (
+                            values[headers.indexOf('WayContact')] === '2'
+                        ) {
+                            preferred_contact_form = 'Email'
+                        } else if (
+                            values[headers.indexOf('WayContact')] === '3'
+                        ) {
+                            preferred_contact_form = 'Website'
+                        } else if (
+                            values[headers.indexOf('WayContact')] === '4'
+                        ) {
+                            preferred_contact_form = 'In Person'
+                        } else if (
+                            values[headers.indexOf('WayContact')] === '5'
+                        ) {
+                            preferred_contact_form = 'Other'
+                        } else if (
+                            values[headers.indexOf('WayContact')] === '6'
+                        ) {
+                            preferred_contact_form = 'Text Message'
+                        } else if (
+                            values[headers.indexOf('WayContact')] === '7'
+                        ) {
+                            preferred_contact_form = 'WhatsApp'
                         }
 
                         const data = {
@@ -218,9 +261,7 @@ class DataSyncController {
                             category: capitalizeFirstLetter(
                                 values[headers.indexOf('Category')]
                             ),
-                            preferred_contact_form: capitalizeFirstLetter(
-                                values[headers.indexOf('WayContact')]
-                            ),
+                            preferred_contact_form,
                             passport_number:
                                 values[headers.indexOf('Passport Number')],
                             passport_expiration_date:

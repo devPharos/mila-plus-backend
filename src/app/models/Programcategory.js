@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class Programcategory extends Model {
     static init(sequelize) {
@@ -7,7 +7,7 @@ class Programcategory extends Model {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
-                    primaryKey: true
+                    primaryKey: true,
                 },
                 company_id: Sequelize.INTEGER,
                 language_id: Sequelize.UUID,
@@ -21,18 +21,22 @@ class Programcategory extends Model {
                 canceled_at: Sequelize.DATE,
             },
             {
-                sequelize
+                sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
         this.belongsTo(models.Language, {
-            sourceKey: 'language_id'
-        });
+            sourceKey: 'language_id',
+        })
+        this.hasMany(models.Level, {
+            foreignKey: 'programcategory_id',
+            as: 'levels',
+        })
     }
 }
 
-export default Programcategory;
+export default Programcategory

@@ -4,6 +4,12 @@ import databaseConfig from '../../config/database'
 import Agent from '../models/Agent'
 import Filial from '../models/Filial'
 import { searchPromise } from '../functions/searchPromise'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
@@ -47,7 +53,7 @@ class AgentController {
             const agentExists = await Agent.findByPk(agent_id)
 
             if (!agentExists) {
-                return res.status(401).json({ error: 'Agent does not exist.' })
+                return res.status(400).json({ error: 'Agent does not exist.' })
             }
 
             await agentExists.update(
@@ -72,12 +78,36 @@ class AgentController {
 
     async index(req, res) {
         try {
-            const {
-                orderBy = 'name',
-                orderASC = 'ASC',
+            const defaultOrderBy = { column: 'name', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
+                limit = 12,
+                type = '',
             } = req.query
-            const agents = await Agent.findAll({
+
+            if (!verifyFieldInModel(orderBy, Agent)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Agent, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+                {
+                    field: 'email',
+                    type: 'string',
+                },
+            ]
+
+            const { count, rows } = await Agent.findAndCountAll({
                 include: [
                     {
                         model: Filial,
@@ -88,36 +118,15 @@ class AgentController {
                     },
                 ],
                 where: {
-                    [Op.or]: [
-                        {
-                            filial_id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            filial_id:
-                                req.headers.filial != 1
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                     canceled_at: null,
                 },
-                order: [[orderBy, orderASC]],
+                limit,
+                order: searchOrder,
             })
 
-            if (!agents) {
-                return res.status(400).json({
-                    error: 'Agents not found.',
-                })
-            }
-
-            const fields = ['name', 'email']
-            Promise.all([searchPromise(search, agents, fields)]).then(
-                (agents) => {
-                    return res.json(agents[0])
-                }
-            )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'AgentController'
             const functionName = 'index'

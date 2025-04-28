@@ -114,10 +114,13 @@ class Payee extends Model {
                         key: 'id',
                     },
                 },
+                payeerecurrence_id: {
+                    type: Sequelize.UUID,
+                    allowNull: true,
+                },
                 invoice_number: {
                     type: Sequelize.INTEGER,
-                    autoIncrement: true,
-                    allowNull: false,
+                    allowNull: true,
                 },
                 type: {
                     type: Sequelize.STRING,
@@ -185,6 +188,18 @@ class Payee extends Model {
         this.belongsTo(models.Issuer, {
             foreignKey: 'issuer_id',
             as: 'issuer',
+        })
+        this.hasMany(models.Payeesettlement, {
+            foreignKey: 'payee_id',
+            as: 'settlements',
+        })
+        this.belongsTo(models.Milauser, {
+            foreignKey: 'created_by',
+            as: 'createdBy',
+        })
+        this.belongsTo(models.Milauser, {
+            foreignKey: 'updated_by',
+            as: 'updatedBy',
         })
     }
 }

@@ -16,7 +16,7 @@ class FilialDocumentController {
 
             const filialExist = await Filial.findByPk(filial_id)
             if (!filialExist) {
-                return res.status(401).json({ error: 'Filial does not exist.' })
+                return res.status(400).json({ error: 'Filial does not exist.' })
             }
 
             if (files) {

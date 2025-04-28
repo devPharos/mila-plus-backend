@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class Workload extends Model {
     static init(sequelize) {
@@ -7,7 +7,7 @@ class Workload extends Model {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
-                    primaryKey: true
+                    primaryKey: true,
                 },
                 company_id: Sequelize.INTEGER,
                 name: Sequelize.STRING,
@@ -24,24 +24,28 @@ class Workload extends Model {
                 canceled_at: Sequelize.DATE,
             },
             {
-                sequelize
+                sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
         this.belongsTo(models.Level, {
-            sourceKey: { name: 'level_id' }
-        });
+            sourceKey: { name: 'level_id' },
+        })
         this.belongsTo(models.Languagemode, {
-            sourceKey: { name: 'languagemode_id' }
-        });
+            sourceKey: { name: 'languagemode_id' },
+        })
         this.belongsTo(models.File, {
-            sourceKey: { name: 'file_id' }
-        });
+            sourceKey: { name: 'file_id' },
+        })
+        this.hasMany(models.Paceguide, {
+            foreignKey: 'workload_id',
+            as: 'paceguides',
+        })
     }
 }
 
-export default Workload;
+export default Workload

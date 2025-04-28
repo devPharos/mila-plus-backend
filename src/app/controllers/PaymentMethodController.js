@@ -6,23 +6,74 @@ import Company from '../models/Company'
 import Filial from '../models/Filial'
 import Bank from '../models/Bank'
 import BankAccounts from '../models/BankAccount'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
 class PaymentMethodController {
     async index(req, res) {
         try {
-            const paymentMethods = await PaymentMethod.findAll({
-                include: [
-                    {
-                        model: Company,
-                        as: 'company',
-                        where: { canceled_at: null },
+            const defaultOrderBy = { column: 'description', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
+                search = '',
+                limit = 10,
+                type = '',
+            } = req.query
+
+            if (!verifyFieldInModel(orderBy, PaymentMethod)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(PaymentMethod, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            let typeSearches = null
+            if (type && type !== 'null') {
+                typeSearches = {
+                    type_of_payment: {
+                        [Op.iLike]: `%${type}%`,
                     },
+                }
+            }
+
+            const searchableFields = [
+                {
+                    model: Filial,
+                    field: 'name',
+                    type: 'string',
+                    return: 'filial_id',
+                },
+                {
+                    field: 'description',
+                    type: 'string',
+                },
+                {
+                    field: 'platform',
+                    type: 'string',
+                },
+                {
+                    field: 'type_of_payment',
+                    type: 'string',
+                },
+            ]
+
+            const { count, rows } = await PaymentMethod.findAndCountAll({
+                include: [
                     {
                         model: Filial,
                         as: 'filial',
-                        where: { canceled_at: null },
+                        where: {
+                            canceled_at: null,
+                        },
                     },
                     {
                         model: BankAccounts,
@@ -39,24 +90,15 @@ class PaymentMethodController {
                 ],
                 where: {
                     canceled_at: null,
-                    [Op.or]: [
-                        {
-                            filial_id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            filial_id:
-                                req.headers.filial != 1
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
+                    ...typeSearches,
                 },
-                order: [['created_at', 'DESC']],
+                limit,
+                order: searchOrder,
             })
 
-            return res.json(paymentMethods)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'PaymentMethodController'
             const functionName = 'index'
@@ -118,12 +160,40 @@ class PaymentMethodController {
         const t = await connection.transaction()
 
         try {
+            const {
+                filial,
+                description,
+                platform,
+                bankAccount,
+                type_of_payment,
+                payment_details,
+            } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            const bankAccountExists = await BankAccounts.findByPk(
+                bankAccount.id
+            )
+
+            if (!bankAccountExists) {
+                return res.status(400).json({
+                    error: 'Bank Account does not exist.',
+                })
+            }
+
             const newPaymentMethod = await PaymentMethod.create(
                 {
-                    ...req.body,
-                    filial_id: req.body.filial_id
-                        ? req.body.filial_id
-                        : req.headers.filial,
+                    filial_id: filial.id,
+                    description,
+                    platform,
+                    bankaccount_id: bankAccountExists.id,
+                    type_of_payment,
+                    payment_details,
                     company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
@@ -151,6 +221,31 @@ class PaymentMethodController {
         const t = await connection.transaction()
         try {
             const { paymentmethod_id } = req.params
+            const {
+                filial,
+                description,
+                platform,
+                bankAccount,
+                type_of_payment,
+                payment_details,
+            } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            const bankAccountExists = await BankAccounts.findByPk(
+                bankAccount.id
+            )
+
+            if (!bankAccountExists) {
+                return res.status(400).json({
+                    error: 'Bank Account does not exist.',
+                })
+            }
 
             const paymentMethodExists = await PaymentMethod.findByPk(
                 paymentmethod_id
@@ -158,13 +253,18 @@ class PaymentMethodController {
 
             if (!paymentMethodExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Payment method does not exist.' })
             }
 
             await paymentMethodExists.update(
                 {
-                    ...req.body,
+                    filial_id: filial.id,
+                    description,
+                    platform,
+                    bankaccount_id: bankAccountExists.id,
+                    type_of_payment,
+                    payment_details,
                     company_id: 1,
                     updated_by: req.userId,
                     updated_at: new Date(),
@@ -197,7 +297,7 @@ class PaymentMethodController {
 
             if (!paymentMethodExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Payment method does not exist.' })
             }
 

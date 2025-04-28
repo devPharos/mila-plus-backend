@@ -12,7 +12,7 @@ import {
     sendBeforeDueDateInvoices,
     sendOnDueDateInvoices,
 } from './app/controllers/ReceivableController.js'
-import { adjustPaidTransactions } from './app/controllers/EmergepayController.js'
+import { mailer } from './config/mailer.js'
 
 class App {
     constructor() {
@@ -21,10 +21,17 @@ class App {
         this.middlewares()
         this.routes()
         this.exceptionHandler()
+        this.tests()
         this.schedule()
     }
 
     middlewares() {
+        // Configuração do CORS para permitir requisições de origens específicas
+        this.server.use(cors())
+        this.server.use(express.urlencoded({ extended: true }))
+        this.server.use(express.static('public'))
+
+        // Adiciona o middleware CORS antes de todas as rotas
         this.server.use(cors())
         this.server.use(express.json())
         this.server.use(
@@ -66,6 +73,21 @@ class App {
         })
     }
 
+    tests() {
+        mailer
+            .verify()
+            .then((result) =>
+                console.log(
+                    `${
+                        result === true ? '✅' : '❌'
+                    } Mailer authenticated successfully!`
+                )
+            )
+            .catch((error) =>
+                console.error('Mailer authentication failed:', error)
+            )
+    }
+
     async schedule() {
         schedule.scheduleJob(`0 0 4 * * *`, sendAutopayRecurrenceJob)
         schedule.scheduleJob(`0 15 4 * * *`, sendBeforeDueDateInvoices)
@@ -78,9 +100,7 @@ class App {
 
         // adjustPaidTransactions()
 
-        setTimeout(() => {
-            console.log('✅ Schedule jobs started!')
-        }, 1000)
+        console.log('✅ Schedule jobs started!')
     }
 }
 

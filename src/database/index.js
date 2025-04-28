@@ -64,6 +64,11 @@ import Studentinactivation from '../app/models/Studentinactivation.js'
 import Maillog from '../app/models/Maillog.js'
 import Payeerecurrence from '../app/models/Payeerecurrence.js'
 import Payeesettlement from '../app/models/Payeesettlement.js'
+import Classroom from '../app/models/Classroom.js'
+import Studentgroup from '../app/models/Studentgroup.js'
+import StudentXGroup from '../app/models/StudentXGroup.js'
+import Studentgroupclass from '../app/models/Studentgroupclass.js'
+import Studentgrouppaceguide from '../app/models/Studentgrouppaceguide.js'
 
 const models = [
     Processtype,
@@ -72,6 +77,7 @@ const models = [
     Bank,
     BankAccounts,
     Calendarday,
+    Classroom,
     Milauser,
     Company,
     Chartofaccount,
@@ -125,7 +131,11 @@ const models = [
     Settlement,
     Student,
     Studentdiscount,
+    Studentgroup,
+    Studentgroupclass,
+    Studentgrouppaceguide,
     Studentinactivation,
+    StudentXGroup,
     Staff,
     Staffdocument,
     Textpaymenttransaction,
