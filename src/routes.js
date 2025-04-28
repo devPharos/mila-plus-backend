@@ -53,10 +53,15 @@ import multer from 'multer'
 import RecurrenceController from './app/controllers/RecurrenceController'
 import FilialDiscountListController from './app/controllers/FilialDiscountListController'
 import FileController from './app/controllers/FileController'
+import SettlementController from './app/controllers/SettlementController'
+import PublicFileController from './app/controllers/PublicFileController'
 
 const routes = new Router()
 
 const upload = multer({ dest: 'public/uploads/' })
+
+// Public File
+routes.get('/get-file/:name', PublicFileController.show)
 
 routes.post('/emergepay/simple-form', EmergepayController.simpleForm)
 routes.post('/emergepay/text-to-pay', EmergepayController.textToPay)
@@ -264,7 +269,8 @@ routes.get('/students', StudentController.index)
 routes.get('/students/:student_id', StudentController.show)
 routes.post('/students', StudentController.store)
 routes.put('/students/:student_id', StudentController.update)
-routes.delete('/students/:student_id', StudentController.inactivate)
+routes.post('/students/inactivate', StudentController.inactivate)
+routes.post('/students/activate/:student_id', StudentController.activate)
 
 routes.get('/agents/:agent_id', AgentController.show)
 routes.post('/agents', AgentController.store)
@@ -418,6 +424,18 @@ routes.put('/receivables/:receivable_id', ReceivableController.update)
 routes.delete('/receivables/:receivable_id', ReceivableController.delete)
 routes.post('/receivables/refund/:receivable_id', ReceivableController.refund)
 routes.post('/receivables/settlement', ReceivableController.settlement)
+routes.post('/receivables/renegociation', ReceivableController.renegociation)
+routes.post('/receivables/feeadjustment', ReceivableController.feeAdjustment)
+routes.post('/receivables/excel', ReceivableController.excel)
+routes.post(
+    '/receivables/send-invoice/:receivable_id',
+    ReceivableController.sendInvoice
+)
+
+// settlements
+routes.get('/settlements', SettlementController.index)
+routes.get('/settlements/:receivable_id', SettlementController.show)
+routes.delete('/settlements/:settlement_id', SettlementController.delete)
 
 // receivable installment
 routes.get('/receivableinstallments', ReceivableInstallmentController.index)
@@ -449,6 +467,7 @@ routes.post(
 )
 
 routes.post('/recurrence', RecurrenceController.store)
+routes.delete('/recurrence/:student_id', RecurrenceController.stopRecurrence)
 
 routes.get('/filialdiscounts', FilialDiscountListController.index)
 routes.get('/files', FileController.index)

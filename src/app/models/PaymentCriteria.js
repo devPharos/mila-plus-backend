@@ -49,6 +49,10 @@ class PaymentCriteria extends Model {
                     type: Sequelize.FLOAT,
                     allowNull: true,
                 },
+                late_fee_description: {
+                    type: Sequelize.TEXT,
+                    allowNull: true,
+                },
                 created_at: {
                     type: Sequelize.DATE,
                     allowNull: false,

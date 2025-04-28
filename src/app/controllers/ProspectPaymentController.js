@@ -13,10 +13,14 @@ import { addDays, format, parseISO } from 'date-fns'
 import { emergepay } from '../../config/emergepay'
 import { createIssuerFromStudent } from './IssuerController'
 import {
+    cancelInvoice,
     createRegistrationFeeReceivable,
     createTuitionFeeReceivable,
 } from './ReceivableController'
 import PaymentMethod from '../models/PaymentMethod'
+import axios from 'axios'
+import Parcelowpaymentlink from '../models/Parcelowpaymentlink'
+import { parcelowAPI } from '../../config/parcelowAPI'
 
 const { Op } = Sequelize
 
@@ -84,85 +88,63 @@ class ProspectPaymentController {
                 },
             })
 
+            let create_tuition_fee = true
+
             if (tuitionFee && tuitionFee.dataValues.status === 'Pending') {
                 used_invoice = tuitionFee.dataValues.invoice_number
                 await tuitionFee.destroy()
-                tuitionFee = null
+            } else if (tuitionFee && tuitionFee.dataValues.status === 'Paid') {
+                create_tuition_fee = false
             }
+
+            let create_registration_fee = true
 
             if (
                 registrationFee &&
                 registrationFee.dataValues.status === 'Pending'
             ) {
+                create_registration_fee = true
                 if (!used_invoice) {
                     used_invoice = registrationFee.dataValues.invoice_number
                 }
-                const textPaymentTransaction =
-                    await Textpaymenttransaction.findOne({
-                        where: {
-                            receivable_id: registrationFee.id,
-                            canceled_at: null,
-                        },
+                await cancelInvoice(registrationFee.dataValues.invoice_number)
+                registrationFee = null
+            } else if (
+                registrationFee &&
+                registrationFee.dataValues.status === 'Paid'
+            ) {
+                create_registration_fee = false
+            }
+            setTimeout(async () => {
+                if (create_registration_fee) {
+                    registrationFee = await createRegistrationFeeReceivable({
+                        issuer_id: issuerExists.id,
+                        created_by: req.userId,
+                        paymentmethod_id,
+                        invoice_number: used_invoice,
                     })
-
-                if (textPaymentTransaction) {
-                    emergepay
-                        .cancelTextToPayTransaction({
-                            paymentPageId:
-                                textPaymentTransaction.dataValues
-                                    .payment_page_id,
-                        })
-                        .then(async () => {
-                            await textPaymentTransaction.destroy()
-                            await registrationFee.destroy()
-                            registrationFee = null
-                        })
-                        .catch((error) => {
-                            registrationFee = null
-                            console.log(error)
-                        })
-                } else {
-                    await registrationFee.destroy()
-                    registrationFee = null
                 }
-            }
 
-            if (!registrationFee) {
-                console.log(
-                    'creating registration fee receivable, invoice number:',
-                    used_invoice
-                )
-                registrationFee = await createRegistrationFeeReceivable({
-                    issuer_id: issuerExists.id,
-                    created_by: req.userId,
-                    paymentmethod_id,
-                    invoice_number: used_invoice,
+                if (create_tuition_fee) {
+                    tuitionFee = await createTuitionFeeReceivable({
+                        issuer_id: issuerExists.id,
+                        in_advance: true,
+                        created_by: req.userId,
+                        invoice_number: registrationFee
+                            ? registrationFee.invoice_number
+                            : used_invoice,
+                        paymentmethod_id,
+                        t,
+                    })
+                }
+
+                t.commit()
+                return res.json({
+                    issuer: issuerExists,
+                    registrationFee,
+                    tuitionFee,
                 })
-            }
-
-            if (!tuitionFee) {
-                console.log(
-                    'creating tuition fee receivable, invoice number:',
-                    used_invoice
-                )
-                tuitionFee = await createTuitionFeeReceivable({
-                    issuer_id: issuerExists.id,
-                    in_advance: true,
-                    created_by: req.userId,
-                    invoice_number: registrationFee
-                        ? registrationFee.invoice_number
-                        : used_invoice,
-                    paymentmethod_id,
-                    t,
-                })
-            }
-
-            t.commit()
-            return res.json({
-                issuer: issuerExists,
-                registrationFee,
-                tuitionFee,
-            })
+            }, 3000)
         } catch (err) {
             await t.rollback()
             const className = 'ProspectPaymentController'
@@ -226,11 +208,7 @@ class ProspectPaymentController {
                 amount += tuitionFee.dataValues.total
             }
 
-            if (
-                paymentMethod.dataValues.description
-                    .toUpperCase()
-                    .includes('GRAVITY')
-            ) {
+            if (paymentMethod.dataValues.platform === 'Gravity') {
                 emergepay
                     .startTextToPayTransaction({
                         amount: amount.toFixed(2),
@@ -248,7 +226,6 @@ class ProspectPaymentController {
                                 .padStart(6, '0'),
                     })
                     .then(async (response) => {
-                        console.log(response.data)
                         const { paymentPageUrl, paymentPageId } = response.data
                         await Textpaymenttransaction.create({
                             receivable_id: registrationFee_id,
@@ -274,6 +251,92 @@ class ProspectPaymentController {
                         t.rollback()
                         const className = 'EmergepayController'
                         const functionName = 'textToPay'
+                        MailLog({ className, functionName, req, err })
+                        return res.status(500).json({
+                            error: err,
+                        })
+                    })
+            } else if (paymentMethod.dataValues.platform === 'Parcelow') {
+                parcelowAPI
+                    .post(`/oauth/token`, {
+                        client_id: process.env.PARCELOW_CLIENT_ID,
+                        client_secret: process.env.PARCELOW_CLIENT_SECRET,
+                        grant_type: 'client_credentials',
+                    })
+                    .then(async (response) => {
+                        const { access_token } = response.data
+                        parcelowAPI.defaults.headers.common[
+                            'Authorization'
+                        ] = `Bearer ${access_token}`
+
+                        await parcelowAPI
+                            .post(`/api/orders`, {
+                                reference: 'OrderReference01',
+                                partner_reference: 'Reference_partner',
+                                client: {
+                                    cpf: '999.879.546-87',
+                                    name: 'John Doe',
+                                    email: 'john@doe.com',
+                                    birthdate: '1982-01-14',
+                                    cep: '12345698',
+                                    phone: '15985698569',
+                                    address_street: null,
+                                    address_number: null,
+                                    address_neighborhood: null,
+                                    address_city: null,
+                                    address_state: null,
+                                    address_complement: null,
+                                },
+                                items: [
+                                    {
+                                        reference: 'ItemReference01',
+                                        description: 'Registration fee',
+                                        quantity: 1,
+                                        amount: 260,
+                                    },
+                                    {
+                                        reference: 'ItemReference02',
+                                        description: 'Tuition Fee',
+                                        quantity: 1,
+                                        amount: 489,
+                                    },
+                                ],
+                                redirect: {
+                                    success:
+                                        'https://milaplus-tst.pharosit.com.br/parcelow_postback?success',
+                                    failed: 'https://milaplus-tst.pharosit.com.br/parcelow_postback?success',
+                                },
+                            })
+                            .then(async (response) => {
+                                const { order_id, url_checkout } = response.data
+                                await Parcelowpaymentlink.create({
+                                    receivable_id: registrationFee.id,
+                                    payment_page_url: url_checkout,
+                                    payment_page_id: url_checkout.substring(
+                                        url_checkout.lastIndexOf('/') + 1
+                                    ),
+                                    order_id,
+                                    created_by: req.userId,
+                                    created_at: new Date(),
+                                }).then(async () => {
+                                    generateEmail({
+                                        filial,
+                                        tuitionFee,
+                                        registrationFee,
+                                        amount,
+                                        paymentPageUrl,
+                                        issuerExists,
+                                        enrollment,
+                                        student,
+                                        paymentMethod,
+                                    })
+                                })
+                            })
+                    })
+                    .catch((err) => {
+                        t.rollback()
+                        const className = 'ParcelowController'
+                        const functionName = 'ParcelowPaymentLink'
                         MailLog({ className, functionName, req, err })
                         return res.status(500).json({
                             error: err,
@@ -317,7 +380,7 @@ class ProspectPaymentController {
             const tuitionHTML = tuitionFee
                 ? `<tr>
             <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
-                <strong>English course - 4 weeks</strong><br/>
+                <strong>English Class - 4 weeks</strong><br/>
                 <span style="font-size: 12px;">1 X $ ${tuitionFee.dataValues.total.toFixed(
                     2
                 )}</span>
@@ -355,7 +418,7 @@ class ProspectPaymentController {
                                         </tr>
                                         <tr>
                                             <td style="background-color: #f4f5f8; border-top: 1px solid #ccc;  text-align: center; padding: 4px;">
-                                                <h3 style="margin: 10px 0;line-height: 1.5;font-size: 16px;font-weight: normal;">MILA INTERNATIONAL LANGUAGE ACADEMY<br/><strong>${
+                                                <h3 style="margin: 10px 0;line-height: 1.5;font-size: 16px;font-weight: normal;">MILA INTERNATIONAL LANGUAGE ACADEMY - <strong>${
                                                     filial.dataValues.name
                                                 }</strong></h3>
                                             </td>
@@ -393,7 +456,9 @@ class ProspectPaymentController {
                                                     }
                                                 </table>
                                                 <p style="margin: 20px 40px;">Have a great day,</p>
-                                                <p style="margin: 20px 40px;">MILA - Miami International Language Academy</p>
+                                                <p style="margin: 20px 40px;">MILA - International Language Academy - <strong>${
+                                                    filial.dataValues.name
+                                                }</strong></p>
                                             </td>
                                         </tr>
                                         <tr>
@@ -431,6 +496,19 @@ class ProspectPaymentController {
                                                             }
                                                         </td>
                                                     </tr>
+                                                    ${
+                                                        paymentMethod.dataValues
+                                                            .payment_details
+                                                            ? `<tr>
+                                                        <td style=" text-align: left; padding: 20px;border-top: 1px dashed #babec5;">
+                                                            ↳ Payment Details
+                                                        </td>
+                                                        <td style=" text-align: right; padding: 20px;border-top: 1px dashed #babec5;">
+                                                            ${paymentMethod.dataValues.payment_details}
+                                                        </td>
+                                                    </tr>`
+                                                            : ``
+                                                    }
                                                 </table>
                                             </td>
                                         </tr>
@@ -439,7 +517,7 @@ class ProspectPaymentController {
                                                 <table width="100%" cellpadding="0" cellspacing="0" style="overflow: hidden;padding: 0 40px;">
                                                     <tr>
                                                         <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                            <strong>English course - Registration fee</strong><br/>
+                                                            <strong>English Class - Registration fee</strong><br/>
                                                             <span style="font-size: 12px;">1 X $ ${registrationFee.dataValues.total.toFixed(
                                                                 2
                                                             )}</span>
@@ -517,7 +595,8 @@ class ProspectPaymentController {
                                 student.dataValues.processsubstatus_id,
                             phase: 'Student Application',
                             phase_step: 'Payment Link Sent',
-                            step_status: 'The link has been sent to student.',
+                            step_status:
+                                'Payment link has been sent to student.',
                             expected_date: format(
                                 addDays(new Date(), 3),
                                 'yyyyMMdd'

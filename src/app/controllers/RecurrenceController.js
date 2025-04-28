@@ -23,10 +23,15 @@ import Studentdiscount from '../models/Studentdiscount'
 import FilialDiscountList from '../models/FilialDiscountList'
 import Receivablediscounts from '../models/Receivablediscounts'
 import { applyDiscounts } from './ReceivableController'
+import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
+import { verifyAndCancelTextToPayTransaction } from './EmergepayController'
 
-export async function generateRecurrenceReceivables(recurrence) {
+export async function generateRecurrenceReceivables({
+    recurrence = null,
+    clearAll = false,
+}) {
     try {
-        const issuer = await Issuer.findByPk(recurrence.issuer_id)
+        const issuer = await Issuer.findByPk(recurrence.dataValues.issuer_id)
         if (!issuer) {
             return null
         }
@@ -85,6 +90,7 @@ export async function generateRecurrenceReceivables(recurrence) {
                 issuer_id: issuer.id,
                 type_detail: 'Tuition fee',
                 canceled_at: null,
+                is_recurrence: true,
             },
             include: [
                 {
@@ -96,24 +102,41 @@ export async function generateRecurrenceReceivables(recurrence) {
                     },
                 },
             ],
+            order: [
+                ['due_date', 'ASC'],
+                ['created_at', 'ASC'],
+            ],
         })
 
-        receivables
-            .filter((receivable) => receivable.status === 'Pending')
-            .map((receivable) => {
-                receivable.update({
-                    canceled_at: new Date(),
-                    canceled_by: recurrence.dataValues.created_by,
-                })
-            })
+        let pedings = 0
+
+        if (clearAll) {
+            for (const receivable of receivables) {
+                if (
+                    receivable.dataValues.status === 'Pending' &&
+                    receivable.dataValues.fee === 0
+                ) {
+                    await receivable.update({
+                        canceled_at: new Date(),
+                        canceled_by: recurrence.dataValues.created_by,
+                    })
+                }
+            }
+        } else {
+            pedings = receivables.filter(
+                (receivable) => receivable.dataValues.status === 'Pending'
+            ).length
+        }
 
         let lastPaidReceivable = null
         const paid = receivables.filter(
-            (receivable) => receivable.status === 'Paid'
+            (receivable) =>
+                receivable.dataValues.status === 'Paid' ||
+                receivable.dataValues.status === 'Parcial Paid'
         )
 
         if (paid.length > 0) {
-            lastPaidReceivable = paid.sort((a, b) => a.due_date - b.due_date)[0]
+            lastPaidReceivable = paid[paid.length - 1]
         }
 
         const { recurring_metric, recurring_qt } = paymentCriteria.dataValues
@@ -122,7 +145,19 @@ export async function generateRecurrenceReceivables(recurrence) {
             ? parseISO(lastPaidReceivable.dataValues.due_date)
             : parseISO(recurrence.dataValues.first_due_date)
 
-        for (let i = paid.length; i < 12 + paid.length; i++) {
+        let totalPeriods = 11
+        let initialPeriod = 0
+
+        if (paid.length > 0) {
+            totalPeriods = 12
+            initialPeriod = 1
+        }
+
+        if (pedings > 0) {
+            initialPeriod = pedings + 1
+        }
+
+        for (let i = initialPeriod; i <= totalPeriods; i++) {
             let entry_date = null
             let due_date = null
             let qt = i * recurring_qt
@@ -433,7 +468,7 @@ class RecurrenceController {
                 prices: req.body.prices,
             })
 
-            generateRecurrenceReceivables(recurrence)
+            generateRecurrenceReceivables({ recurrence, clearAll: true })
             return res.json(recurrence)
         } catch (err) {
             await t.rollback()
@@ -464,12 +499,6 @@ class RecurrenceController {
                     .status(400)
                     .json({ error: 'Recurrence does not exist.' })
             }
-            // Mastercard	MC
-            // Diners Club	DN
-            // Visa	VS
-            // JCB	JC
-            // American Express	AX
-            // Discover	DC
 
             let cardType = ''
             if (accountCardType === 'AX') {
@@ -488,7 +517,6 @@ class RecurrenceController {
 
             await recurrence.update(
                 {
-                    is_autopay: true,
                     card_number: maskedAccount,
                     card_expiration_date:
                         accountExpiryDate.substring(0, 2) +
@@ -511,6 +539,95 @@ class RecurrenceController {
             await t.rollback()
             const className = 'RecurrenceController'
             const functionName = 'autopayData'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+    async stopRecurrence(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { student_id } = req.params
+            const student = await Student.findByPk(student_id)
+            if (!student) {
+                return res
+                    .status(400)
+                    .json({ error: 'Student does not exist.' })
+            }
+            const issuer = await Issuer.findOne({
+                where: {
+                    student_id: student.id,
+                    canceled_at: null,
+                },
+            })
+            if (!issuer) {
+                return res.status(400).json({ error: 'Issuer does not exist.' })
+            }
+
+            const recurrence = await Recurrence.findOne({
+                where: {
+                    company_id: 1,
+                    filial_id: issuer.dataValues.filial_id,
+                    issuer_id: issuer.id,
+                    canceled_at: null,
+                    active: true,
+                },
+            })
+
+            if (!recurrence) {
+                return res
+                    .status(400)
+                    .json({ error: 'Recurrence does not exist.' })
+            }
+
+            const receivables = await Receivable.findAll({
+                where: {
+                    company_id: 1,
+                    filial_id: issuer.dataValues.filial_id,
+                    issuer_id: issuer.id,
+                    type: 'Invoice',
+                    is_recurrence: true,
+                    type_detail: 'Tuition fee',
+                    status: 'Pending',
+                    canceled_at: null,
+                    due_date: {
+                        [Op.gte]: format(new Date(), 'yyyyMMdd'),
+                    },
+                },
+            })
+
+            await recurrence.update(
+                {
+                    active: false,
+                    canceled_at: new Date(),
+                    canceled_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            for (let receivable of receivables) {
+                await verifyAndCancelParcelowPaymentLink(receivable.id)
+                await verifyAndCancelTextToPayTransaction(receivable.id)
+                await receivable.update(
+                    {
+                        canceled_at: new Date(),
+                        canceled_by: req.userId,
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+            }
+            t.commit()
+            return res.json(recurrence)
+        } catch (err) {
+            await t.rollback()
+            const className = 'RecurrenceController'
+            const functionName = 'stopRecurrence'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

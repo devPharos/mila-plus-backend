@@ -41,6 +41,10 @@ class Refund extends Model {
                     type: Sequelize.STRING,
                     allowNull: true,
                 },
+                refund_date: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
                 created_at: {
                     type: Sequelize.DATE,
                     allowNull: false,

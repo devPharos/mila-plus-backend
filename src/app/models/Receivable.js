@@ -66,6 +66,10 @@ class Receivable extends Model {
                     type: Sequelize.FLOAT,
                     defaultValue: 0,
                 },
+                manual_discount: {
+                    type: Sequelize.FLOAT,
+                    defaultValue: 0,
+                },
                 fee: {
                     type: Sequelize.FLOAT,
                     defaultValue: 0,
@@ -109,10 +113,22 @@ class Receivable extends Model {
                 paymentcriteria_id: {
                     type: Sequelize.UUID,
                     allowNull: true,
+                },
+                notification_sent: {
+                    type: Sequelize.BOOLEAN,
+                    defaultValue: false,
+                },
+                renegociation_from: {
+                    type: Sequelize.UUID,
+                    allowNull: true,
+                },
+                renegociation_to: {
+                    type: Sequelize.UUID,
                     references: {
-                        model: 'paymentcriterias',
+                        model: 'renegociations',
                         key: 'id',
                     },
+                    allowNull: true,
                 },
                 created_at: {
                     type: Sequelize.DATE,
@@ -176,6 +192,34 @@ class Receivable extends Model {
         this.hasMany(models.Settlement, {
             foreignKey: 'receivable_id',
             as: 'settlements',
+        })
+        this.hasMany(models.Refund, {
+            foreignKey: 'receivable_id',
+            as: 'refunds',
+        })
+        this.hasMany(models.Feeadjustment, {
+            foreignKey: 'receivable_id',
+            as: 'feeadjustments',
+        })
+        this.belongsTo(models.Milauser, {
+            foreignKey: 'created_by',
+            as: 'createdBy',
+        })
+        this.belongsTo(models.Milauser, {
+            foreignKey: 'updated_by',
+            as: 'updatedBy',
+        })
+        this.belongsTo(models.Renegociation, {
+            foreignKey: 'renegociation_from',
+            as: 'renegociationFrom',
+        })
+        this.belongsTo(models.Renegociation, {
+            foreignKey: 'renegociation_to',
+            as: 'renegociationTo',
+        })
+        this.hasMany(models.Maillog, {
+            foreignKey: 'receivable_id',
+            as: 'maillogs',
         })
     }
 }

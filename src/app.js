@@ -7,8 +7,12 @@ import schedule from 'node-schedule'
 import './database/index.js'
 import {
     calculateFeesRecurrenceJob,
-    sendInvoiceRecurrenceJob,
+    sendAfterDueDateInvoices,
+    sendAutopayRecurrenceJob,
+    sendBeforeDueDateInvoices,
+    sendOnDueDateInvoices,
 } from './app/controllers/ReceivableController.js'
+import { adjustPaidTransactions } from './app/controllers/EmergepayController.js'
 
 class App {
     constructor() {
@@ -62,10 +66,21 @@ class App {
         })
     }
 
-    schedule() {
-        schedule.scheduleJob('0 0 8 * * *', sendInvoiceRecurrenceJob)
-        schedule.scheduleJob('0 0 7 * * *', calculateFeesRecurrenceJob)
-        console.log('✅ Schedule jobs started!')
+    async schedule() {
+        schedule.scheduleJob(`0 0 4 * * *`, sendAutopayRecurrenceJob)
+        schedule.scheduleJob(`0 15 4 * * *`, sendBeforeDueDateInvoices)
+        schedule.scheduleJob(`0 30 4 * * *`, sendOnDueDateInvoices)
+        schedule.scheduleJob(`0 45 4 * * *`, sendAfterDueDateInvoices)
+        schedule.scheduleJob('0 0 5 * * *', calculateFeesRecurrenceJob)
+
+        // sendAutopayRecurrenceJob()
+        // calculateFeesRecurrenceJob()
+
+        // adjustPaidTransactions()
+
+        setTimeout(() => {
+            console.log('✅ Schedule jobs started!')
+        }, 1000)
     }
 }
 

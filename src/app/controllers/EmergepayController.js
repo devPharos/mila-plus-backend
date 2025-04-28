@@ -3,7 +3,7 @@ import { mailer } from '../../config/mailer'
 import databaseConfig from '../../config/database'
 import Emergepaytransaction from '../models/Emergepaytransaction'
 import { v4 as uuidv4 } from 'uuid'
-import { Sequelize } from 'sequelize'
+import { Op, Sequelize } from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import Receivable from '../models/Receivable'
 import { emergepay } from '../../config/emergepay'
@@ -11,77 +11,336 @@ import crypto from 'crypto'
 import { format } from 'date-fns'
 import Issuer from '../models/Issuer'
 import Settlement from '../models/Settlement'
+import Student from '../models/Student'
+import Enrollment from '../models/Enrollment'
+import Enrollmenttimeline from '../models/Enrollmenttimeline'
+import Textpaymenttransaction from '../models/Textpaymenttransaction'
+import PaymentMethod from '../models/PaymentMethod'
+import { SettlementMail } from '../views/mails/SettlementMail'
 
-export async function settlement({
-    receivable_id = null,
-    amountPaidBalance = 0,
-}) {
+export async function createPaidTimeline(receivable_id = null) {
     const receivable = await Receivable.findByPk(receivable_id)
 
-    if (!receivable || !amountPaidBalance) {
-        return false
+    if (!receivable) return false
+
+    if (
+        receivable.dataValues.type_detail === 'Registration fee' ||
+        receivable.dataValues.type_detail === 'Tuition fee'
+    ) {
+        const issuer = await Issuer.findByPk(receivable.dataValues.issuer_id)
+
+        const student = await Student.findByPk(issuer.dataValues.student_id)
+
+        const enrollment = await Enrollment.findOne({
+            where: {
+                student_id: student.dataValues.id,
+                canceled_at: null,
+            },
+        })
+
+        if (!enrollment || !issuer || !student) {
+            return false
+        }
+
+        const lastTimeline = await Enrollmenttimeline.findOne({
+            where: {
+                enrollment_id: enrollment.dataValues.id,
+                canceled_at: null,
+            },
+            order: [['created_at', 'DESC']],
+        })
+
+        if (!lastTimeline) {
+            return false
+        }
+
+        const {
+            enrollment_id,
+            processtype_id,
+            status,
+            processsubstatus_id,
+            phase,
+            phase_step,
+        } = lastTimeline.dataValues
+
+        await Enrollmenttimeline.create({
+            enrollment_id,
+            processtype_id,
+            status,
+            processsubstatus_id,
+            phase,
+            phase_step,
+            step_status: `Paid by the student.`,
+            expected_date: null,
+            created_at: new Date(),
+            created_by: 2,
+        })
     }
+}
 
-    const parcial = amountPaidBalance < receivable.dataValues.balance
+export async function settlement(
+    {
+        receivable_id = null,
+        amountPaidBalance = 0,
+        settlement_date = format(new Date(), 'yyyyMMdd'),
+        paymentmethod_id = null,
+        settlement_memo = null,
+    },
+    req = null
+) {
+    try {
+        const receivable = await Receivable.findByPk(receivable_id)
 
-    await Settlement.create({
-        receivable_id: receivable.id,
-        amount: parcial ? amountPaidBalance : receivable.dataValues.balance,
-        paymentmethod_id: 'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
-        created_at: new Date(),
-        created_by: 2,
-    })
-    await receivable
-        .update({
+        if (!receivable) {
+            return false
+        }
+
+        if (receivable.dataValues.status === 'Paid') {
+            return false
+        }
+
+        if (
+            receivable.dataValues.status === 'Parcial Paid' &&
+            receivable.dataValues.balance < amountPaidBalance
+        ) {
+            return false
+        }
+
+        if (!paymentmethod_id) {
+            paymentmethod_id = receivable.dataValues.paymentmethod_id
+        }
+
+        const parcial =
+            receivable.dataValues.manual_discount !== 0 &&
+            // amountPaidBalance !== 0 &&
+            amountPaidBalance < receivable.dataValues.balance
+
+        await Settlement.create({
+            receivable_id: receivable.id,
+            amount: parcial
+                ? amountPaidBalance
+                : amountPaidBalance === 0
+                ? 0
+                : receivable.dataValues.balance,
+            paymentmethod_id,
+            settlement_date,
+            memo: settlement_memo,
+            created_at: new Date(),
+            created_by: 2,
+        })
+        await receivable.update({
             status: parcial ? 'Parcial Paid' : 'Paid',
-            status_date: format(new Date(), 'yyyyMMdd'),
+            balance: (
+                receivable.balance -
+                (parcial ? amountPaidBalance : receivable.dataValues.balance)
+            ).toFixed(2),
+            status_date: settlement_date,
+            paymentmethod_id,
             updated_at: new Date(),
             updated_by: 2,
         })
-        .then(async () => {
-            amountPaidBalance -=
-                receivable.dataValues.balance > amountPaidBalance
-                    ? amountPaidBalance
-                    : receivable.dataValues.balance
-            if (amountPaidBalance <= 0) {
-                return
-            }
-            await Receivable.findAll({
+        await createPaidTimeline()
+        await SettlementMail({
+            receivable_id: receivable.id,
+            amount: amountPaidBalance,
+        })
+
+        if (amountPaidBalance <= 0) {
+            return
+        }
+
+        // const receivables = await Receivable.findAll({
+        //     where: {
+        //         company_id: receivable.dataValues.company_id,
+        //         filial_id: receivable.dataValues.filial_id,
+        //         invoice_number: receivable.dataValues.invoice_number,
+        //         status: 'Pending',
+        //         canceled_at: null,
+        //     },
+        // })
+        // for (let receivable of receivables) {
+        //     await settlement({
+        //         receivable_id: receivable.id,
+        //         amountPaidBalance,
+        //         settlement_date,
+        //         paymentmethod_id,
+        //     })
+        // }
+    } catch (err) {
+        const className = 'EmergepayController'
+        const functionName = 'settlement'
+        MailLog({ className, functionName, req, err })
+    }
+}
+
+export async function verifyAndCreateTextToPayTransaction(
+    receivable_id = null
+) {
+    try {
+        if (!receivable_id) {
+            return false
+        }
+        const receivable = await Receivable.findByPk(receivable_id)
+        if (!receivable) {
+            return false
+        }
+        const issuer = await Issuer.findByPk(receivable.dataValues.issuer_id)
+        if (!issuer) {
+            return false
+        }
+        const paymentMethod = await PaymentMethod.findByPk(
+            receivable.dataValues.paymentmethod_id
+        )
+        if (paymentMethod.dataValues.platform !== 'Gravity') {
+            return false
+        }
+        const textPaymentTransaction = await Textpaymenttransaction.findOne({
+            where: {
+                receivable_id: receivable.id,
+                canceled_at: null,
+            },
+            order: [['created_at', 'DESC']],
+        })
+        if (textPaymentTransaction) {
+            return false
+        }
+        const response = await emergepay.startTextToPayTransaction({
+            amount: receivable.dataValues.balance.toFixed(2),
+            externalTransactionId: receivable_id,
+            promptTip: false,
+            pageDescription: `${receivable.dataValues.type_detail} - ${issuer.dataValues.name}`,
+            transactionReference:
+                'I' +
+                receivable.dataValues.invoice_number
+                    .toString()
+                    .padStart(6, '0'),
+        })
+
+        const { paymentPageUrl, paymentPageId } = response.data
+        const retTextPaymentTransaction = await Textpaymenttransaction.create({
+            receivable_id: receivable.dataValues.id,
+            payment_page_url: paymentPageUrl,
+            payment_page_id: paymentPageId,
+            created_by: 2,
+            created_at: new Date(),
+        })
+        await receivable.update({
+            notification_sent: false,
+        })
+        return retTextPaymentTransaction
+    } catch (err) {
+        const className = 'EmergepayController'
+        const functionName = 'verifyAndCreateTextToPayTransaction'
+        MailLog({ className, functionName, req: null, err })
+    }
+}
+
+export async function verifyAndCancelTextToPayTransaction(
+    receivable_id = null
+) {
+    try {
+        if (!receivable_id) {
+            return false
+        }
+        const receivable = await Receivable.findByPk(receivable_id)
+        if (!receivable) {
+            return false
+        }
+        const paymentMethod = await PaymentMethod.findByPk(
+            receivable.dataValues.paymentmethod_id
+        )
+        if (paymentMethod.dataValues.platform !== 'Gravity') {
+            return false
+        }
+        const textPaymentTransaction = await Textpaymenttransaction.findOne({
+            where: {
+                receivable_id: receivable.id,
+                canceled_at: null,
+            },
+            order: [['created_at', 'DESC']],
+        })
+        if (!textPaymentTransaction) {
+            return true
+        }
+        await emergepay.cancelTextToPayTransaction({
+            paymentPageId: textPaymentTransaction.dataValues.payment_page_id,
+        })
+        await textPaymentTransaction.destroy().then(() => {
+            return true
+        })
+    } catch (err) {
+        const className = 'EmergepayController'
+        const functionName = 'verifyAndCancelTextToPayTransaction'
+        MailLog({ className, functionName, req: null, err })
+    }
+}
+
+export async function adjustPaidTransactions() {
+    try {
+        const receivables = await Receivable.findAll({
+            where: {
+                status: 'Pending',
+                canceled_at: null,
+                [Op.or]: [
+                    {
+                        invoice_number: 10047,
+                    },
+                    {
+                        invoice_number: 10023,
+                    },
+                    {
+                        invoice_number: 10011,
+                    },
+                    {
+                        invoice_number: 10143,
+                    },
+                    {
+                        invoice_number: 10035,
+                    },
+                    {
+                        invoice_number: 10107,
+                    },
+                    {
+                        invoice_number: 10083,
+                    },
+                    {
+                        invoice_number: 10131,
+                    },
+                ],
+            },
+        })
+        for (let receivable of receivables) {
+            const paid = await Emergepaytransaction.findOne({
                 where: {
-                    company_id: receivable.dataValues.company_id,
-                    filial_id: receivable.dataValues.filial_id,
-                    invoice_number: receivable.dataValues.invoice_number,
-                    status: 'Pending',
+                    external_transaction_id: receivable.id,
+                    canceled_at: null,
+                    result_status: 'true',
+                    transaction_reference:
+                        'I' +
+                        receivable.invoice_number.toString().padStart(6, '0'),
+                },
+            })
+            if (!paid) {
+                console.log('Not paid')
+                continue
+            }
+            const amountPaidBalance = receivable.balance
+            const paymentMethod = await PaymentMethod.findOne({
+                where: {
+                    platform: 'Gravity',
                     canceled_at: null,
                 },
-            }).then((receivables) => {
-                receivables.forEach(async (receivable) => {
-                    const parcial =
-                        amountPaidBalance < receivable.dataValues.balance
-                    await Settlement.create({
-                        receivable_id: receivable.id,
-                        amount: parcial
-                            ? amountPaidBalance
-                            : receivable.dataValues.balance,
-                        paymentmethod_id:
-                            'dcbe2b5b-c088-4107-ae32-efb4e7c4b161',
-                        created_at: new Date(),
-                        created_by: 2,
-                    })
-                    await receivable.update({
-                        status: parcial ? 'Parcial Paid' : 'Paid',
-                        status_date: format(new Date(), 'yyyyMMdd'),
-                        authorization_code: approvalNumberResult,
-                        updated_at: new Date(),
-                        updated_by: 2,
-                    })
-                    amountPaidBalance -=
-                        receivable.dataValues.balance > amountPaidBalance
-                            ? amountPaidBalance
-                            : receivable.dataValues.balance
-                })
             })
-        })
+            await settlement({
+                receivable_id: receivable.id,
+                amountPaidBalance,
+                settlement_date: format(new Date(), 'yyyyMMdd'),
+                paymentmethod_id: paymentMethod.id,
+            })
+        }
+    } catch (err) {
+        console.log(err)
+    }
 }
 
 class EmergepayController {
@@ -102,22 +361,21 @@ class EmergepayController {
                         id: 'external_tran_id',
                         value: receivable_id,
                     },
-                    // {
-                    //     id: 'billing_name',
-                    //     value: issuer.dataValues.name,
-                    // },
-                    // {
-                    //     id: 'billing_address',
-                    //     value: issuer.dataValues.address,
-                    // },
-                    // {
-                    //     id: 'billing_postal_code',
-                    //     value: issuer.dataValues.zip,
-                    // },
+                    {
+                        id: 'billing_name',
+                        value: issuer.dataValues.name,
+                    },
+                    {
+                        id: 'billing_address',
+                        value: issuer.dataValues.address,
+                    },
+                    {
+                        id: 'billing_postal_code',
+                        value: issuer.dataValues.zip,
+                    },
                 ],
             }
 
-            console.log(config)
             emergepay
                 .startTransaction(config)
                 .then(function (transactionToken) {
@@ -163,10 +421,6 @@ class EmergepayController {
                 .startTextToPayTransaction({
                     amount: amount.toFixed(2),
                     externalTransactionId: fileUuid,
-                    // Optional
-                    billingName: 'Denis Varella',
-                    billingAddress: 'Rua Primeiro de Maio, 56',
-                    billingPostalCode: '12345',
                     promptTip: false,
                     pageDescription,
                     transactionReference: receivable_id,
@@ -283,18 +537,30 @@ class EmergepayController {
                     unique_trans_id: uniqueTransId,
                     created_at: new Date(),
                     created_by: 2,
-                }).then(async (emergepaytransaction) => {
-                    const receivable = await Receivable.findByPk(
-                        externalTransactionId
-                    )
-                    if (receivable && resultMessage === 'Approved') {
-                        const amountPaidBalance = parseFloat(amountProcessed)
-                        settlement({
+                })
+                const receivable = await Receivable.findByPk(
+                    externalTransactionId
+                )
+                if (receivable && resultMessage === 'Approved') {
+                    const amountPaidBalance = parseFloat(amountProcessed)
+                    const paymentMethod = await PaymentMethod.findOne({
+                        where: {
+                            platform: 'Gravity',
+                            canceled_at: null,
+                        },
+                    })
+                    await settlement(
+                        {
                             receivable_id: receivable.id,
                             amountPaidBalance,
-                        })
-                    }
-                })
+                            settlement_date: format(new Date(), 'yyyyMMdd'),
+                            paymentmethod_id: paymentMethod.id,
+                        },
+                        req
+                    )
+                }
+                res.sendStatus(200)
+                return
             } else {
                 console.log('Hmac não corresponde')
             }

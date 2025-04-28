@@ -199,8 +199,6 @@ class PayeeInstallmentController {
 
             await t.commit()
 
-            console.log(installmentsItens)
-
             return res.json(installmentsItens)
         } catch (err) {
             await t.rollback()

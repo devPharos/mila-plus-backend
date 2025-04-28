@@ -44,6 +44,7 @@ class Student extends Model {
                 category: Sequelize.STRING,
                 processtype_id: Sequelize.INTEGER,
                 status: Sequelize.STRING,
+                inactive_reason: Sequelize.STRING,
                 processsubstatus_id: Sequelize.INTEGER,
                 agent_id: Sequelize.UUID,
                 preferred_contact_form: Sequelize.STRING,
@@ -60,7 +61,7 @@ class Student extends Model {
                 level_id: Sequelize.INTEGER,
                 class_id: Sequelize.INTEGER,
                 expected_start_date: Sequelize.STRING,
-
+                inactivation_id: Sequelize.UUID,
                 registration_fee: Sequelize.FLOAT,
                 books: Sequelize.FLOAT,
                 tuition_original_price: Sequelize.FLOAT,
@@ -108,6 +109,10 @@ class Student extends Model {
         this.hasMany(models.Studentdiscount, {
             foreignKey: 'student_id',
             as: 'discounts',
+        })
+        this.hasOne(models.Studentinactivation, {
+            foreignKey: 'student_id',
+            as: 'inactivation',
         })
     }
 }

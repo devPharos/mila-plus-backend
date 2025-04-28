@@ -1,3 +1,4 @@
+import Student from '../models/Student'
 import Studentdiscount from '../models/Studentdiscount'
 
 export function randomPassword() {
@@ -28,6 +29,8 @@ export async function handleStudentDiscounts({
             canceled_at: null,
         },
     })
+
+    const student = await Student.findByPk(student_id)
 
     if (prices && prices.discounts) {
         prices.discounts.map(async (discount) => {

@@ -10,7 +10,16 @@ import Issuer from '../models/Issuer'
 import FilialPriceList from '../models/FilialPriceList'
 import FilialDiscountList from '../models/FilialDiscountList'
 import Student from '../models/Student'
-import { addDays, differenceInDays, format, parseISO, subDays } from 'date-fns'
+import {
+    addDays,
+    addMonths,
+    addWeeks,
+    addYears,
+    differenceInDays,
+    format,
+    parseISO,
+    subDays,
+} from 'date-fns'
 import { searchPromise } from '../functions/searchPromise'
 import { mailer } from '../../config/mailer'
 import { emergepay } from '../../config/emergepay'
@@ -19,6 +28,29 @@ import Emergepaytransaction from '../models/Emergepaytransaction'
 import Receivablediscounts from '../models/Receivablediscounts'
 import Studentdiscount from '../models/Studentdiscount'
 import Settlement from '../models/Settlement'
+import {
+    createPaidTimeline,
+    settlement,
+    verifyAndCancelTextToPayTransaction,
+    verifyAndCreateTextToPayTransaction,
+} from './EmergepayController'
+import Refund from '../models/Refund'
+import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
+import Feeadjustment from '../models/Feeadjustment'
+import { resolve } from 'path'
+import Milauser from '../models/Milauser'
+import Textpaymenttransaction from '../models/Textpaymenttransaction'
+import Renegociation from '../models/Renegociation'
+import Maillog from '../models/Maillog'
+import { BeforeDueDateMail } from '../views/mails/BeforeDueDateMail'
+import { OnDueDateMail } from '../views/mails/OnDueDateMail'
+import { SettlementMail } from '../views/mails/SettlementMail'
+import { AfterDueDateMail } from '../views/mails/AfterDueDateMail'
+import { FeeChargedMail } from '../views/mails/FeeChargedMail'
+import { generateRecurrenceReceivables } from './RecurrenceController'
+
+const xl = require('excel4node')
+const fs = require('fs')
 
 export async function createRegistrationFeeReceivable({
     issuer_id,
@@ -102,9 +134,9 @@ export async function createRegistrationFeeReceivable({
             is_recurrence: false,
             contract_number: '',
             discount: discount.toFixed(2),
-            amount: filialPriceList.dataValues.registration_fee,
-            total: totalAmount,
-            balance: totalAmount,
+            amount: filialPriceList.dataValues.registration_fee.toFixed(2),
+            total: totalAmount.toFixed(2),
+            balance: totalAmount.toFixed(2),
             paymentmethod_id,
             paymentcriteria_id: '97db98d7-6ce3-4fe1-83e8-9042d41404ce',
             created_at: new Date(),
@@ -187,8 +219,6 @@ export async function createTuitionFeeReceivable({
 
         const discount = filialPriceList.dataValues.tuition - totalAmount
 
-        console.log({ invoice_number })
-
         const receivable = await Receivable.create({
             company_id,
             filial_id,
@@ -207,9 +237,9 @@ export async function createTuitionFeeReceivable({
             chartofaccount_id: 8,
             is_recurrence: false,
             contract_number: '',
-            amount: filialPriceList.dataValues.tuition,
-            total: totalAmount,
-            balance: totalAmount,
+            amount: filialPriceList.dataValues.tuition.toFixed(2),
+            total: totalAmount.toFixed(2),
+            balance: totalAmount.toFixed(2),
             paymentmethod_id,
             paymentcriteria_id: '97db98d7-6ce3-4fe1-83e8-9042d41404ce',
             created_at: new Date(),
@@ -218,7 +248,7 @@ export async function createTuitionFeeReceivable({
         return receivable
     } catch (err) {
         const className = 'ReceivableController'
-        const functionName = 'createRegistrationFeeReceivable'
+        const functionName = 'createTuitionFeeReceivable'
         MailLog({ className, functionName, req: null, err })
         return null
     }
@@ -228,7 +258,7 @@ export function applyDiscounts({
     applied_at,
     type = null,
     studentDiscounts,
-    totalAmount,
+    totalAmount = 0,
     due_date = null,
 }) {
     if (studentDiscounts && studentDiscounts.length > 0) {
@@ -241,7 +271,6 @@ export function applyDiscounts({
                     discount.discount.dataValues.type === type &&
                     discount.discount.dataValues.active
                 ) {
-                    console.log('Discount founded')
                     return true
                 }
             }
@@ -272,14 +301,18 @@ export function applyDiscounts({
     return totalAmount
 }
 
-export async function sendInvoiceRecurrenceJob() {
+export async function sendBeforeDueDateInvoices() {
+    console.log('Executing sendBeforeDueDateInvoices')
     try {
-        const date = subDays(new Date(), 2)
+        const days_before = 4
+        const date = addDays(new Date(), days_before)
         const searchDate =
             date.getFullYear() +
             (date.getMonth() + 1).toString().padStart(2, '0') +
-            date.getDate()
-        console.log(`Verifying Invoice Recurrence Job on date: ${searchDate}`)
+            date.getDate().toString().padStart(2, '0')
+        console.log(
+            `[Before Due] - Verifying Recurrence regular invoices on due date: ${searchDate}`
+        )
         const receivables = await Receivable.findAll({
             include: [
                 {
@@ -295,6 +328,7 @@ export async function sendInvoiceRecurrenceJob() {
                             as: 'issuer_x_recurrence',
                             required: true,
                             where: {
+                                is_autopay: false,
                                 canceled_at: null,
                             },
                         },
@@ -309,11 +343,282 @@ export async function sendInvoiceRecurrenceJob() {
                 type_detail: 'Tuition fee',
                 due_date: `${searchDate}`,
             },
+            order: [['memo', 'ASC']],
         })
 
-        console.log(`Receivables found:`, receivables.length)
+        console.log(
+            `[Regular Invoices] - Receivables found:`,
+            receivables.length
+        )
 
-        receivables.map(async (receivable) => {
+        let sent_number = 0
+
+        for (const receivable of receivables) {
+            const issuerExists = await Issuer.findByPk(
+                receivable.dataValues.issuer_id
+            )
+            const student = await Student.findByPk(
+                issuerExists.dataValues.student_id
+            )
+            const tuitionFee = await Receivable.findByPk(receivable.id)
+
+            const filial = await Filial.findByPk(
+                receivable.dataValues.filial_id
+            )
+
+            if (issuerExists && student && filial) {
+                await BeforeDueDateMail({
+                    receivable_id: tuitionFee.dataValues.id,
+                })
+                sent_number++
+                console.log(
+                    `✅ [Before Due] - sent_number: ${sent_number} not sent: ${
+                        receivables.length - sent_number
+                    }`
+                )
+            }
+        }
+    } catch (err) {
+        MailLog({
+            className: 'ReceivableController',
+            functionName: 'sendBeforeDueDateInvoices',
+            req: null,
+            err,
+        })
+        console.log({ err })
+        return false
+    }
+}
+
+export async function sendOnDueDateInvoices() {
+    console.log('Executing sendOnDueDateInvoices')
+    try {
+        const days_before = 0
+        const date = addDays(new Date(), days_before)
+        const searchDate =
+            date.getFullYear() +
+            (date.getMonth() + 1).toString().padStart(2, '0') +
+            date.getDate().toString().padStart(2, '0')
+        console.log(
+            `[Regular Invoices] - Verifying Recurrence regular invoices on due date: ${searchDate}`
+        )
+        const receivables = await Receivable.findAll({
+            include: [
+                {
+                    model: Issuer,
+                    as: 'issuer',
+                    required: true,
+                    where: {
+                        canceled_at: null,
+                    },
+                    include: [
+                        {
+                            model: Recurrence,
+                            as: 'issuer_x_recurrence',
+                            required: true,
+                            where: {
+                                is_autopay: false,
+                                canceled_at: null,
+                            },
+                        },
+                    ],
+                },
+            ],
+            where: {
+                is_recurrence: true,
+                canceled_at: null,
+                status: 'Pending',
+                type: 'Invoice',
+                type_detail: 'Tuition fee',
+                due_date: `${searchDate}`,
+            },
+            order: [['memo', 'ASC']],
+        })
+
+        console.log(`[On Due] - Receivables found:`, receivables.length)
+
+        let sent_number = 0
+
+        for (const receivable of receivables) {
+            const issuerExists = await Issuer.findByPk(
+                receivable.dataValues.issuer_id
+            )
+            const student = await Student.findByPk(
+                issuerExists.dataValues.student_id
+            )
+            const tuitionFee = await Receivable.findByPk(receivable.id)
+
+            const filial = await Filial.findByPk(
+                receivable.dataValues.filial_id
+            )
+
+            if (issuerExists && student && filial) {
+                await OnDueDateMail({
+                    receivable_id: tuitionFee.dataValues.id,
+                })
+                sent_number++
+                console.log(
+                    `✅ [On Due] - sent_number: ${sent_number} not sent: ${
+                        receivables.length - sent_number
+                    }`
+                )
+            }
+        }
+    } catch (err) {
+        MailLog({
+            className: 'ReceivableController',
+            functionName: 'sendOnDueDateInvoices',
+            req: null,
+            err,
+        })
+        console.log({ err })
+        return false
+    }
+}
+
+export async function sendAfterDueDateInvoices() {
+    console.log('Executing sendAfterDueDateInvoices')
+    try {
+        const days_after = 4
+        const date = subDays(new Date(), days_after)
+        const searchDate =
+            date.getFullYear() +
+            (date.getMonth() + 1).toString().padStart(2, '0') +
+            date.getDate().toString().padStart(2, '0')
+        console.log(
+            `[After Due] - Verifying Recurrence regular invoices on due date: ${searchDate}`
+        )
+        const receivables = await Receivable.findAll({
+            include: [
+                {
+                    model: Issuer,
+                    as: 'issuer',
+                    required: true,
+                    where: {
+                        canceled_at: null,
+                    },
+                    include: [
+                        {
+                            model: Recurrence,
+                            as: 'issuer_x_recurrence',
+                            required: true,
+                            where: {
+                                is_autopay: false,
+                                canceled_at: null,
+                            },
+                        },
+                    ],
+                },
+            ],
+            where: {
+                is_recurrence: true,
+                canceled_at: null,
+                status: 'Pending',
+                type: 'Invoice',
+                type_detail: 'Tuition fee',
+                due_date: `${searchDate}`,
+            },
+            order: [['memo', 'ASC']],
+        })
+
+        console.log(
+            `[Regular Invoices] - Receivables found:`,
+            receivables.length
+        )
+
+        let sent_number = 0
+
+        for (const receivable of receivables) {
+            const issuerExists = await Issuer.findByPk(
+                receivable.dataValues.issuer_id
+            )
+            const student = await Student.findByPk(
+                issuerExists.dataValues.student_id
+            )
+            const tuitionFee = await Receivable.findByPk(receivable.id)
+
+            const filial = await Filial.findByPk(
+                receivable.dataValues.filial_id
+            )
+
+            if (issuerExists && student && filial) {
+                await AfterDueDateMail({
+                    receivable_id: tuitionFee.dataValues.id,
+                })
+                sent_number++
+                console.log(
+                    `✅ [After Due] - Payment sent to student successfully! sent_number: ${sent_number} not sent: ${
+                        receivables.length - sent_number
+                    }`
+                )
+            }
+        }
+    } catch (err) {
+        MailLog({
+            className: 'ReceivableController',
+            functionName: 'sendAfterDueDateInvoices',
+            req: null,
+            err,
+        })
+        console.log({ err })
+        return false
+    }
+}
+
+export async function sendAutopayRecurrenceJob() {
+    try {
+        const days_before = 1
+        const date = subDays(
+            new Date(new Date().setHours(0, 0, 0, 0)),
+            days_before
+        )
+        const searchDate =
+            date.getFullYear() +
+            (date.getMonth() + 1).toString().padStart(2, '0') +
+            date.getDate().toString().padStart(2, '0')
+        console.log(
+            `[Autopay Invoices] - Verifying Recurrence autopay invoices on due date: ${searchDate}`
+        )
+        const receivables = await Receivable.findAll({
+            include: [
+                {
+                    model: Issuer,
+                    as: 'issuer',
+                    required: true,
+                    where: {
+                        canceled_at: null,
+                    },
+                    include: [
+                        {
+                            model: Recurrence,
+                            as: 'issuer_x_recurrence',
+                            required: true,
+                            where: {
+                                is_autopay: true,
+                                canceled_at: null,
+                            },
+                        },
+                    ],
+                },
+            ],
+            where: {
+                is_recurrence: true,
+                notification_sent: false,
+                canceled_at: null,
+                status: 'Pending',
+                type: 'Invoice',
+                type_detail: 'Tuition fee',
+                due_date: `${searchDate}`,
+            },
+            order: [['memo', 'ASC']],
+        })
+
+        console.log(
+            `[Autopay Invoices] - Receivables found:`,
+            receivables.length
+        )
+
+        for (const receivable of receivables) {
             const issuerExists = await Issuer.findByPk(
                 receivable.dataValues.issuer_id
             )
@@ -321,9 +626,7 @@ export async function sendInvoiceRecurrenceJob() {
                 issuerExists.dataValues.student_id
             )
             if (!issuerExists || !student) {
-                return res.status(400).json({
-                    error: 'Issuer or student not found',
-                })
+                return
             }
             const tuitionFee = await Receivable.findByPk(receivable.id)
 
@@ -331,17 +634,14 @@ export async function sendInvoiceRecurrenceJob() {
                 receivable.dataValues.filial_id
             )
             if (!filial) {
-                return res.status(400).json({
-                    error: 'Filial not found.',
-                })
+                return
             }
 
-            let amount = tuitionFee.dataValues.total
+            let amount = tuitionFee.dataValues.balance
             const invoice_number = tuitionFee.dataValues.invoice_number
                 .toString()
                 .padStart(6, '0')
 
-            let paymentInfoHTML = ''
             const firstReceivable = await Receivable.findOne({
                 where: {
                     company_id: receivable.dataValues.company_id,
@@ -354,297 +654,209 @@ export async function sendInvoiceRecurrenceJob() {
                 },
                 order: [['due_date', 'DESC']],
             })
-            const tokenizedTransaction = await Emergepaytransaction.findOne({
+
+            let tokenizedTransaction = null
+            if (firstReceivable) {
+                tokenizedTransaction = await Emergepaytransaction.findOne({
+                    where: {
+                        external_transaction_id: firstReceivable.id,
+                        canceled_at: null,
+                        result_status: 'true',
+                    },
+                    order: [['created_at', 'DESC']],
+                })
+            }
+
+            const alreadyPaid = await Emergepaytransaction.findOne({
                 where: {
                     external_transaction_id: firstReceivable.id,
                     canceled_at: null,
+                    result_status: 'true',
+                    transaction_reference: 'I' + invoice_number,
                 },
             })
+
+            if (alreadyPaid) {
+                return
+            }
+
             if (
                 receivable.dataValues.issuer?.dataValues?.issuer_x_recurrence
                     ?.dataValues?.is_autopay &&
                 tokenizedTransaction
             ) {
-                emergepay
+                await emergepay
                     .tokenizedPaymentTransaction({
-                        uniqueTransId: tokenizedTransaction.dataValues.id,
+                        uniqueTransId:
+                            tokenizedTransaction.dataValues.unique_trans_id,
                         externalTransactionId: receivable.id,
                         amount: amount.toFixed(2),
-                        billingName: issuerExists.dataValues.name,
+                        billingName:
+                            tokenizedTransaction.dataValues.billing_name,
                         billingAddress: issuerExists.dataValues.address,
                         billingPostalCode: issuerExists.dataValues.zip,
-                        promptTip: false,
-                        pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
                         transactionReference: 'I' + invoice_number,
                     })
                     .then(async (response) => {
-                        paymentInfoHTML = `<tr>
-                            <td style="text-align: center;padding: 10px 0 30px;">
-                                <div style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Autopay Status: ${
-                                    response.data.resultMessage === 'Approved'
-                                        ? 'Approved'
-                                        : 'Declined'
-                                }</div>
-                            </td>
-                        </tr>`
-                        Mail(
-                            issuerExists,
-                            filial,
-                            tuitionFee,
-                            amount,
-                            invoice_number,
-                            paymentInfoHTML
+                        console.log(
+                            `${
+                                response.data.resultMessage === 'Approved'
+                                    ? '✅'
+                                    : '❌'
+                            } [Autopay Invoices] - Tokenized payment transaction realized. Status: ${
+                                response.data.resultMessage
+                            }`
                         )
-                        console.log('Payment sent to student successfully!')
-                    })
-            } else {
-                console.log('is not autopay')
-                emergepay
-                    .startTextToPayTransaction({
-                        amount: amount.toFixed(2),
-                        externalTransactionId: receivable.dataValues.id,
-                        // Optional
-                        // billingName: issuerExists.dataValues.name,
-                        // billingAddress: issuerExists.dataValues.address,
-                        // billingPostalCode: issuerExists.dataValues.zip,
-                        promptTip: false,
-                        pageDescription: `Tuition Fee - ${issuerExists.dataValues.name}`,
-                        transactionReference: 'I' + invoice_number,
-                    })
-                    .then((response) => {
-                        const { paymentPageUrl } = response.data
+                        const {
+                            accountCardType,
+                            accountEntryMethod,
+                            accountExpiryDate,
+                            amount,
+                            amountBalance,
+                            amountProcessed,
+                            amountTaxed,
+                            amountTipped,
+                            approvalNumberResult,
+                            avsResponseCode,
+                            avsResponseText,
+                            batchNumber,
+                            billingName,
+                            cashier,
+                            cvvResponseCode,
+                            cvvResponseText,
+                            externalTransactionId,
+                            isPartialApproval,
+                            maskedAccount,
+                            resultMessage,
+                            resultStatus,
+                            transactionReference,
+                            transactionType,
+                            uniqueTransId,
+                        } = response.data
 
-                        paymentInfoHTML = `<tr>
-                    <td style="text-align: center;padding: 10px 0 30px;">
-                        <a href="${paymentPageUrl}" target="_blank" style="background-color: #444; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
-                    </td>
-                </tr>`
-                        Mail(
-                            issuerExists,
-                            filial,
-                            tuitionFee,
-                            amount,
-                            invoice_number,
-                            paymentInfoHTML
+                        await Emergepaytransaction.create({
+                            account_card_type: accountCardType,
+                            account_entry_method: accountEntryMethod,
+                            account_expiry_date: accountExpiryDate,
+                            amount: parseFloat(amount),
+                            amount_balance: parseFloat(amountBalance || 0),
+                            amount_processed: parseFloat(amountProcessed || 0),
+                            amount_taxed: parseFloat(amountTaxed || 0),
+                            amount_tipped: parseFloat(amountTipped || 0),
+                            approval_number_result: approvalNumberResult,
+                            avs_response_code: avsResponseCode,
+                            avs_response_text: avsResponseText,
+                            batch_number: batchNumber,
+                            billing_name: billingName,
+                            cashier: cashier,
+                            cvv_response_code: cvvResponseCode,
+                            cvv_response_text: cvvResponseText,
+                            external_transaction_id: externalTransactionId,
+                            is_partial_approval: isPartialApproval,
+                            masked_account: maskedAccount,
+                            result_message: resultMessage,
+                            result_status: resultStatus,
+                            transaction_reference: transactionReference,
+                            transaction_type: transactionType,
+                            unique_trans_id: uniqueTransId,
+                            created_at: new Date(),
+                            created_by: 2,
+                        })
+                        const receivable = await Receivable.findByPk(
+                            externalTransactionId
                         )
-                        console.log('Payment sent to student successfully!')
+                        if (receivable && resultMessage === 'Approved') {
+                            const amountPaidBalance =
+                                parseFloat(amountProcessed)
+                            const paymentMethod = await PaymentMethod.findOne({
+                                where: {
+                                    platform: 'Gravity',
+                                    canceled_at: null,
+                                },
+                            })
+                            await settlement({
+                                receivable_id: receivable.id,
+                                amountPaidBalance,
+                                settlement_date: format(new Date(), 'yyyyMMdd'),
+                                paymentmethod_id: paymentMethod.id,
+                            })
+                        }
+                    })
+                    .catch((err) => {
+                        console.log(err)
                     })
             }
-        })
-
-        function Mail(
-            issuerExists,
-            filial,
-            tuitionFee,
-            amount,
-            invoice_number,
-            paymentInfoHTML
-        ) {
-            mailer.sendMail({
-                from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
-                // to: issuerExists.dataValues.email,
-                to: 'denis@pharosit.com.br;dansouz1712@gmail.com',
-                subject: `MILA Plus - Tuition Fee - ${issuerExists.dataValues.name}`,
-                html: `<!DOCTYPE html>
-                                <html lang="en">
-                                <head>
-                                    <meta charset="UTF-8">
-                                    <title>Invoice for Payment</title>
-                                </head>
-                                <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: Arial, sans-serif;color: #444;font-size: 16px;">
-                                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; padding: 20px;">
-                                        <tr>
-                                            <td align="center">
-                                                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 6px; overflow: hidden; border: 1px solid #e0e0e0;">
-                                                    <tr>
-                                                        <td style="background-color: #fff;  text-align: center; padding: 20px;">
-                                                            <h1 style="margin: 0; font-size: 24px;">INVOICE I${invoice_number} - DETAILS</h1>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td style="background-color: #f4f5f8; border-top: 1px solid #ccc;  text-align: center; padding: 4px;">
-                                                            <h3 style="margin: 10px 0;line-height: 1.5;font-size: 16px;font-weight: normal;">MILA INTERNATIONAL LANGUAGE ACADEMY<br/><strong>${
-                                                                filial
-                                                                    .dataValues
-                                                                    .name
-                                                            }</strong></h3>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td style="padding: 20px 0;">
-                                                            <p style="margin: 20px 40px;">Dear ${
-                                                                issuerExists
-                                                                    .dataValues
-                                                                    .name
-                                                            },</p>
-                                                            <p style="margin: 20px 40px;">Here's your invoice! We appreciate your prompt payment.</p>
-                                                            <table width="100%" cellpadding="10" cellspacing="0" style="background-color: #dbe9f1; border-radius: 4px; margin: 20px 0;padding: 10px 0;">
-                                                                <tr>
-                                                                    <td style="font-weight: bold;text-align: center;color: #444;">DUE ${format(
-                                                                        parseISO(
-                                                                            tuitionFee
-                                                                                .dataValues
-                                                                                .due_date
-                                                                        ),
-                                                                        'MM/dd/yyyy'
-                                                                    )}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td style="font-weight: bold;text-align: center;font-size: 36px;color: #444;">$ ${amount.toFixed(
-                                                                        2
-                                                                    )}</td>
-                                                                </tr>
-                                                                ${paymentInfoHTML}
-                                                            </table>
-                                                            <p style="margin: 20px 40px;">Have a great day,</p>
-                                                            <p style="margin: 20px 40px;">MILA - Miami International Language Academy</p>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td style="background-color: #f4f5f8; border-top: 1px solid #ccc;  text-align: center; padding: 4px;">
-                                                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f5f8; overflow: hidden;padding: 0 40px;">
-                                                                <tr>
-                                                                    <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                                        <strong>Bill to</strong>
-                                                                    </td>
-                                                                    <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                                        ${
-                                                                            issuerExists
-                                                                                .dataValues
-                                                                                .name
-                                                                        }
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td style=" text-align: left; padding: 20px;">
-                                                                        <strong>Terms</strong>
-                                                                    </td>
-                                                                    <td style=" text-align: right; padding: 20px;">
-                                                                        Due on receipt
-                                                                    </td>
-                                                                </tr>
-                                                            </table>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td style="color: #444; text-align: center; padding: 4px;">
-                                                            <table width="100%" cellpadding="0" cellspacing="0" style="overflow: hidden;padding: 0 40px;">
-                                                                <tr>
-                                                                    <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                                        <strong>English course - 4 weeks</strong><br/>
-                                                                        <span style="font-size: 12px;">1 X $ ${tuitionFee.dataValues.total.toFixed(
-                                                                            2
-                                                                        )}</span>
-                                                                    </td>
-                                                                    <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                                        $ ${tuitionFee.dataValues.total.toFixed(
-                                                                            2
-                                                                        )}
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td colspan="2" style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
-                                                                        Balance due <span style="margin-left: 10px;">$ ${amount.toFixed(
-                                                                            2
-                                                                        )}</span>
-                                                                    </td>
-                                                                </tr>
-                                                            </table>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td style="padding: 40px;font-size: 12px;">
-                                                            *.*Este pagamento não isenta invoices anteriores.<br/>
-                                                            *.*This payment does not exempt previous invoices
-                                                        </td>
-                                                    </tr>
-                                                    ${paymentInfoHTML}
-                                                    <tr>
-                                                        <td style="text-align: center; padding: 10px; line-height: 1.5; background-color: #f1f3f5; font-size: 12px; color: #6c757d;">
-                                                            MILA INTERNATIONAL LANGUAGE ACADEMY - ${
-                                                                filial
-                                                                    .dataValues
-                                                                    .name
-                                                            }<br/>
-                                                            ${
-                                                                filial
-                                                                    .dataValues
-                                                                    .address
-                                                            } ${
-                    filial.dataValues.name
-                }, ${filial.dataValues.state} ${filial.dataValues.zipcode} US
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </body>
-                                </html>`,
-            })
         }
     } catch (err) {
-        console.log({ err })
+        MailLog({
+            className: 'ReceivableController',
+            functionName: 'sendAutopayRecurrenceJob',
+            req: null,
+            err,
+        })
+        return false
     }
 }
 
-export async function calculateFee(receivable = null) {
+export async function calculateFee(receivable_id = null) {
     try {
-        if (!receivable) {
-            console.log('no receivable')
-            return 0
-        }
+        const receivable = await Receivable.findByPk(receivable_id)
 
-        if (
-            receivable.dataValues.id !== '4600995c-0f87-4ef3-bd1d-b70e85d9d87a'
-        ) {
-            return 0
-        } else {
-            console.log('Test')
+        if (!receivable) {
+            return false
         }
 
         const paymentCriteria = await PaymentCriteria.findByPk(
             receivable.dataValues.paymentcriteria_id
         )
 
-        if (receivable.dataValues.due_date >= new Date()) {
-            console.log('receivable due date is greater than today')
-            return 0
+        if (!paymentCriteria) {
+            return false
+        }
+
+        if (receivable.dataValues.due_date >= format(new Date(), 'yyyyMMdd')) {
+            return false
         }
 
         if (paymentCriteria.dataValues.fee_value === 0) {
-            console.log('fee value is 0')
-            return 0
+            return false
         }
 
         const daysPassed = differenceInDays(
-            new Date(),
+            new Date(new Date().setHours(0, 0, 0, 0)),
             parseISO(receivable.dataValues.due_date)
         )
+        // console.log(
+        //     'daysPassed',
+        //     daysPassed,
+        //     new Date(new Date().setHours(0, 0, 0, 0)),
+        //     parseISO(receivable.dataValues.due_date)
+        // )
         let how_many_times = 0
 
         if (daysPassed < paymentCriteria.dataValues.fee_qt) {
-            console.log('days passed is less than fee quantity')
-            return 0
+            return false
         }
 
         if (paymentCriteria.dataValues.fee_metric === 'Day') {
-            how_many_times = Math.round(
+            how_many_times = Math.floor(
                 daysPassed / paymentCriteria.dataValues.fee_qt
             )
         } else if (paymentCriteria.dataValues.fee_metric === 'Week') {
-            how_many_times = Math.round(
+            how_many_times = Math.floor(
                 (daysPassed / paymentCriteria.dataValues.fee_qt) * 7
             )
         } else if (paymentCriteria.dataValues.fee_metric === 'Month') {
-            how_many_times = Math.round(
+            how_many_times = Math.floor(
                 (daysPassed / paymentCriteria.dataValues.fee_qt) * 30
             )
         } else if (paymentCriteria.dataValues.fee_metric === 'Year') {
-            how_many_times = Math.round(
+            how_many_times = Math.floor(
                 (daysPassed / paymentCriteria.dataValues.fee_qt) * 365
             )
         }
+
+        // console.log('how many times:', how_many_times)
 
         let receivableTotalWithFees = receivable.dataValues.total
         let feesAmount = 0
@@ -664,7 +876,7 @@ export async function calculateFee(receivable = null) {
         }
 
         const { amount, discount } = receivable.dataValues
-        const settled = Settlement.findAll({
+        const settled = await Settlement.findAll({
             where: {
                 receivable_id: receivable.id,
                 canceled_at: null,
@@ -676,15 +888,37 @@ export async function calculateFee(receivable = null) {
                 settledAmount += curr.dataValues.amount
                 return acc + curr.dataValues.amount
             }, 0)
-        receivable.update({
-            total: amount - discount + feesAmount,
-            balance: amount - discount + feesAmount - settledAmount,
-            fee: feesAmount,
+
+        if (receivable.dataValues.fee.toFixed(2) === feesAmount.toFixed(2)) {
+            // console.log('Already calculated fees')
+            return false
+        }
+
+        await Feeadjustment.create({
+            receivable_id: receivable.id,
+            old_fee: receivable.dataValues.fee,
+            new_fee: feesAmount,
+            reason: 'Automatic fee adjustment',
+            created_by: 2,
+            created_at: new Date(),
+        })
+
+        await receivable.update({
+            total: (amount - discount + feesAmount).toFixed(2),
+            balance: (amount - discount + feesAmount - settledAmount).toFixed(
+                2
+            ),
+            fee: feesAmount.toFixed(2),
+            notification_sent: false,
             updated_at: new Date(),
             updated_by: 2,
         })
 
-        return receivable
+        await verifyAndCancelTextToPayTransaction(receivable.id)
+        await verifyAndCreateTextToPayTransaction(receivable.id)
+        await verifyAndCancelParcelowPaymentLink(receivable.id)
+
+        return true
     } catch (err) {
         const className = 'ReceivableController'
         const functionName = 'calculateFee'
@@ -693,19 +927,29 @@ export async function calculateFee(receivable = null) {
 }
 
 export async function calculateFeesRecurrenceJob() {
+    console.log('Executing calculateFeesRecurrenceJob')
     try {
         const receivables = await Receivable.findAll({
             where: {
                 status: 'Pending',
+                canceled_at: null,
                 due_date: {
                     [Op.lt]: format(new Date(), 'yyyyMMdd'),
                 },
             },
         })
-        console.log(receivables.length)
-        receivables.forEach(async (receivable) => {
-            calculateFee(receivable)
-        })
+        let sent_number = 0
+        for (let receivable of receivables) {
+            if ((await calculateFee(receivable.dataValues.id)) === true) {
+                await FeeChargedMail({
+                    receivable_id: receivable.dataValues.id,
+                })
+                sent_number++
+            }
+        }
+        console.log(
+            `✅ Fee Charged calculated successfully! sent_number: ${sent_number}`
+        )
     } catch (err) {
         MailLog({
             className: 'ReceivableController',
@@ -714,6 +958,328 @@ export async function calculateFeesRecurrenceJob() {
             err,
         })
     }
+}
+
+export async function cancelInvoice(invoice_number = null) {
+    try {
+        if (!invoice_number) return false
+        const receivables = await Receivable.findAll({
+            where: {
+                invoice_number,
+                canceled_at: null,
+            },
+        })
+
+        for (let receivable of receivables) {
+            await verifyAndCancelParcelowPaymentLink(receivable.id)
+            await verifyAndCancelTextToPayTransaction(receivable.id)
+            await receivable.destroy()
+        }
+    } catch (err) {
+        const className = 'ReceivableController'
+        const functionName = 'cancelInvoice'
+        MailLog({ className, functionName, req: null, err })
+        return false
+    }
+}
+
+export async function TuitionMail({
+    receivable_id = null,
+    paymentInfoHTML = '',
+}) {
+    try {
+        const receivable = await Receivable.findByPk(receivable_id)
+        if (!receivable) {
+            return false
+        }
+        const issuer = await Issuer.findByPk(receivable.dataValues.issuer_id)
+        if (!issuer) {
+            return false
+        }
+        const filial = await Filial.findByPk(receivable.dataValues.filial_id)
+        if (!filial) {
+            return false
+        }
+        const paymentCriteria = await PaymentCriteria.findByPk(
+            receivable.dataValues.paymentcriteria_id
+        )
+        if (!paymentCriteria) {
+            return false
+        }
+        const paymentMethod = await PaymentMethod.findByPk(
+            receivable.dataValues.paymentmethod_id
+        )
+        if (!paymentMethod) {
+            return false
+        }
+        if (
+            !paymentInfoHTML &&
+            paymentMethod.dataValues.platform === 'Gravity'
+        ) {
+            let textPaymentTransaction = await Textpaymenttransaction.findOne({
+                where: {
+                    receivable_id: receivable.id,
+                    canceled_at: null,
+                },
+                order: [['created_at', 'DESC']],
+            })
+            if (!textPaymentTransaction) {
+                textPaymentTransaction =
+                    await verifyAndCreateTextToPayTransaction(receivable.id)
+            }
+            if (textPaymentTransaction) {
+                paymentInfoHTML = `<tr>
+                <td style="text-align: center;padding: 10px 0 30px;">
+                    <a href="${textPaymentTransaction.dataValues.payment_page_url}" target="_blank" style="background-color: #0a0; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
+                </td>
+            </tr>`
+            }
+        }
+        const amount = receivable.dataValues.total
+        const invoice_number = receivable.dataValues.invoice_number
+            .toString()
+            .padStart(6, '0')
+
+        await mailer
+            .sendMail({
+                from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+                to:
+                    process.env.NODE_ENV === 'production'
+                        ? issuer.dataValues.email
+                        : 'denis@pharosit.com.br',
+                bcc:
+                    process.env.NODE_ENV === 'production'
+                        ? 'it.admin@milaorlandousa.com;denis@pharosit.com.br'
+                        : '',
+                subject: `MILA Plus - Tuition Fee - Resend - ${issuer.dataValues.name}`,
+                html: `<!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8">
+                            <title>Invoice for Payment</title>
+                        </head>
+                        <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: Arial, sans-serif;color: #444;font-size: 16px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; padding: 20px;">
+                                <tr>
+                                    <td align="center">
+                                        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 6px; overflow: hidden; border: 1px solid #e0e0e0;">
+                                            <tr>
+                                                <td style="background-color: #fff;  text-align: center; padding: 20px;">
+                                                    <h1 style="margin: 0; font-size: 24px;">INVOICE I${invoice_number} - DETAILS</h1>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="background-color: #f4f5f8; border-top: 1px solid #ccc;  text-align: center; padding: 4px;">
+                                                    <h3 style="margin: 10px 0;line-height: 1.5;font-size: 16px;font-weight: normal;">MILA INTERNATIONAL LANGUAGE ACADEMY - <strong>${
+                                                        filial.dataValues.name
+                                                    }</strong></h3>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 20px 0;">
+                                                    <p style="margin: 20px 40px;">Dear ${
+                                                        issuer.dataValues.name
+                                                    },</p>
+                                                    <p style="margin: 20px 40px;">Here's your invoice! We appreciate your prompt payment.</p>
+                                                    <table width="100%" cellpadding="10" cellspacing="0" style="background-color: #dbe9f1; border-radius: 4px; margin: 20px 0;padding: 10px 0;">
+                                                        <tr>
+                                                            <td style="font-weight: bold;text-align: center;color: #c00;">DUE ${format(
+                                                                parseISO(
+                                                                    receivable
+                                                                        .dataValues
+                                                                        .due_date
+                                                                ),
+                                                                'MM/dd/yyyy'
+                                                            )}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="font-weight: bold;text-align: center;font-size: 36px;color: #444;">$ ${amount.toFixed(
+                                                                2
+                                                            )}</td>
+                                                        </tr>
+                                                        ${paymentInfoHTML}
+                                                    </table>
+                                                    <p style="margin: 20px 40px;">Have a great day,</p>
+                                                    <p style="margin: 20px 40px;">MILA - International Language Academy - <strong>${
+                                                        filial.dataValues.name
+                                                    }</strong></p>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="background-color: #f4f5f8; border-top: 1px solid #ccc;  text-align: center; padding: 4px;">
+                                                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f5f8; overflow: hidden;padding: 0 40px;">
+                                                        <tr>
+                                                            <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                <strong>Bill to</strong>
+                                                            </td>
+                                                            <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                ${
+                                                                    issuer
+                                                                        .dataValues
+                                                                        .name
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                <strong>Terms</strong>
+                                                            </td>
+                                                            <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                Due on receipt
+                                                            </td>
+                                                        </tr>
+                                                    <tr>
+                                                        <td style=" text-align: left; padding: 20px;">
+                                                            <strong>Payment Method</strong>
+                                                        </td>
+                                                        <td style=" text-align: right; padding: 20px;">
+                                                            ${
+                                                                paymentMethod
+                                                                    .dataValues
+                                                                    .description
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                    ${
+                                                        paymentMethod.dataValues
+                                                            .payment_details
+                                                            ? `<tr>
+                                                        <td style=" text-align: left; padding: 20px;border-top: 1px dashed #babec5;">
+                                                            ↳ Payment Details
+                                                        </td>
+                                                        <td style=" text-align: right; padding: 20px;border-top: 1px dashed #babec5;">
+                                                            ${paymentMethod.dataValues.payment_details}
+                                                        </td>
+                                                    </tr>`
+                                                            : ``
+                                                    }
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #444; text-align: center; padding: 4px;">
+                                                    <table width="100%" cellpadding="0" cellspacing="0" style="overflow: hidden;padding: 0 40px;">
+                                                        <tr>
+                                                            <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                <strong>English Class - 4 weeks</strong><br/>
+                                                                <span style="font-size: 12px;">1 X $ ${receivable.dataValues.amount.toFixed(
+                                                                    2
+                                                                )}</span>
+                                                            </td>
+                                                            <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                $ ${receivable.dataValues.amount.toFixed(
+                                                                    2
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                        ${
+                                                            receivable
+                                                                .dataValues
+                                                                .discount > 0
+                                                                ? `<tr>
+                                                                <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                    Discounts
+                                                                </td>
+                                                                <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                    - $ ${receivable.dataValues.discount.toFixed(
+                                                                        2
+                                                                    )}
+                                                                </td>
+                                                            </tr>`
+                                                                : ''
+                                                        }
+                                                        ${
+                                                            receivable
+                                                                .dataValues
+                                                                .fee > 0
+                                                                ? `<tr>
+                                                                            <td style=" text-align: left; padding: 20px;border-bottom: 1px dotted #babec5;color: #a00;">
+                                                                                Late payment fee
+                                                                            </td>
+                                                                            <td style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;color: #a00;">
+                                                                                $ ${receivable.dataValues.fee.toFixed(
+                                                                                    2
+                                                                                )}
+                                                                            </td>
+                                                        </tr>`
+                                                                : ''
+                                                        }
+                                                        <tr>
+                                                            <td colspan="2" style=" text-align: right; padding: 20px;border-bottom: 1px dotted #babec5;">
+                                                                Balance due <span style="margin-left: 10px;">$ ${amount.toFixed(
+                                                                    2
+                                                                )}</span>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            ${
+                                                receivable.dataValues.fee > 0 &&
+                                                paymentCriteria.dataValues
+                                                    .late_fee_description
+                                                    ? `<tr>
+                                                <td style="padding: 40px;font-size: 12px;text-align: justify;">
+                                                    <strong style='color:#a00;'>LATE Payments:</strong> - ${paymentCriteria.dataValues.late_fee_description}
+                                                </td>
+                                            </tr>`
+                                                    : ''
+                                            }
+                                            <tr>
+                                                <td style="padding: 40px;font-size: 12px;">
+                                                    *.*Este pagamento não isenta invoices anteriores.<br/>
+                                                    *.*This payment does not exempt previous invoices
+                                                </td>
+                                            </tr>
+                                            ${paymentInfoHTML}
+                                            <tr>
+                                                <td style="text-align: center; padding: 10px; line-height: 1.5; background-color: #f1f3f5; font-size: 12px; color: #6c757d;">
+                                                    MILA INTERNATIONAL LANGUAGE ACADEMY - ${
+                                                        filial.dataValues.name
+                                                    }<br/>
+                                                    ${
+                                                        filial.dataValues
+                                                            .address
+                                                    } ${
+                    filial.dataValues.name
+                }, ${filial.dataValues.state} ${filial.dataValues.zipcode} US
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </body>
+                        </html>`,
+            })
+            .then(async () => {
+                await receivable.update({
+                    notification_sent: true,
+                })
+                return true
+            })
+            .catch((err) => {
+                console.log(err)
+                return false
+            })
+    } catch (err) {
+        console.log(
+            `❌ It wasnt possible to send the e-mail, errorCode: ${err.responseCode}`
+        )
+        // console.log(err)
+        return false
+    }
+}
+
+export function isUUIDv4(str) {
+    const uuidv4Regex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    return uuidv4Regex.test(str)
+}
+
+export function canBeFloat(str) {
+    // Aceita formatos como: "123", "-123.45", "0.123", ".123", "-.123"
+    return /^[-+]?(?:\d*\.\d+|\d+\.?\d*)$/.test(str.trim())
 }
 
 class ReceivableController {
@@ -734,39 +1300,132 @@ class ReceivableController {
             } else {
                 searchOrder.push([orderBy, orderASC])
             }
-            const receivables = await Receivable.findAll({
+
+            // Contém letras
+            let searches = null
+            if (search) {
+                if (isUUIDv4(search)) {
+                    searches = {
+                        [Op.or]: [
+                            {
+                                issuer_id: search,
+                            },
+                        ],
+                    }
+                } else if (search.split('/').length === 3) {
+                    const date = search.split('/')
+                    searches = {
+                        [Op.or]: [
+                            {
+                                due_date: date[2] + date[0] + date[1],
+                            },
+                        ],
+                    }
+                } else if (
+                    search.split('/').length === 2 &&
+                    search.length === 5
+                ) {
+                    const date = search.split('/')
+                    searches = {
+                        [Op.or]: [
+                            {
+                                due_date: {
+                                    [Op.like]: `%${date[0] + date[1]}`,
+                                },
+                            },
+                        ],
+                    }
+                } else if (/[^0-9]/.test(search) && !canBeFloat(search)) {
+                    searches = {
+                        [Op.or]: [
+                            {
+                                memo: {
+                                    [Op.iLike]: `%${search.toUpperCase()}%`,
+                                },
+                            },
+                        ],
+                    }
+                } else {
+                    searches = {
+                        [Op.or]: [
+                            {
+                                invoice_number: {
+                                    [Op.or]: [
+                                        {
+                                            [Op.eq]: parseInt(search),
+                                        },
+                                    ],
+                                },
+                            },
+                            {
+                                amount: {
+                                    [Op.eq]: parseFloat(search),
+                                },
+                            },
+                            {
+                                total: {
+                                    [Op.eq]: parseFloat(search),
+                                },
+                            },
+                            {
+                                balance: {
+                                    [Op.eq]: parseFloat(search),
+                                },
+                            },
+                        ],
+                    }
+                }
+            }
+
+            const { count, rows } = await Receivable.findAndCountAll({
                 include: [
                     {
                         model: PaymentMethod,
                         as: 'paymentMethod',
                         required: false,
                         where: { canceled_at: null },
+                        attributes: ['id', 'description', 'platform'],
                     },
                     {
                         model: ChartOfAccount,
                         as: 'chartOfAccount',
                         required: false,
                         where: { canceled_at: null },
+                        attributes: ['id', 'name'],
                     },
                     {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
                         required: false,
+                        attributes: ['id', 'description'],
                         where: { canceled_at: null },
                     },
                     {
                         model: Filial,
                         as: 'filial',
                         required: false,
+                        attributes: ['id', 'name'],
                         where: { canceled_at: null },
                     },
                     {
                         model: Issuer,
                         as: 'issuer',
+                        attributes: ['id', 'name'],
                         required: false,
                         where: {
                             canceled_at: null,
                         },
+                        include: [
+                            {
+                                model: Recurrence,
+                                as: 'issuer_x_recurrence',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                                attributes: ['id', 'is_autopay'],
+                            },
+                        ],
                     },
                 ],
                 where: {
@@ -784,21 +1443,39 @@ class ReceivableController {
                                     : 0,
                         },
                     ],
+                    ...searches,
                 },
+                attributes: [
+                    'id',
+                    'invoice_number',
+                    'status',
+                    'amount',
+                    'fee',
+                    'discount',
+                    'total',
+                    'balance',
+                    'due_date',
+                    'entry_date',
+                    'is_recurrence',
+                ],
                 order: searchOrder,
             })
 
-            const fields = [
-                'status',
-                ['filial', 'name'],
-                ['issuer', 'name'],
-                'amount',
-            ]
-            Promise.all([searchPromise(search, receivables, fields)]).then(
-                (data) => {
-                    return res.json(data[0])
-                }
-            )
+            // const fields = [
+            //     'status',
+            //     ['filial', 'name'],
+            //     ['issuer', 'id'],
+            //     ['issuer', 'name'],
+            //     'invoice_number',
+            //     'issuer_id',
+            //     'amount',
+            // ]
+            // Promise.all([searchPromise(search, receivables, fields)]).then(
+            //     (data) => {
+            // return res.json({ totalRows, rows: data[0] })
+            //     }
+            // )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'ReceivableController'
             const functionName = 'index'
@@ -868,6 +1545,26 @@ class ReceivableController {
                         required: false,
                         where: { canceled_at: null },
                     },
+                    {
+                        model: Refund,
+                        as: 'refunds',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Feeadjustment,
+                        as: 'feeadjustments',
+                        required: false,
+                        where: { canceled_at: null },
+                        order: [['created_at', 'DESC']],
+                    },
+                    {
+                        model: Maillog,
+                        as: 'maillogs',
+                        required: false,
+                        where: { canceled_at: null },
+                        order: [['created_at', 'DESC']],
+                    },
                 ],
             })
 
@@ -886,24 +1583,42 @@ class ReceivableController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const {
+                amount,
+                fee,
+                discount,
+                total,
+                type,
+                type_detail,
+                issuer_id,
+                entry_date,
+                due_date,
+                paymentmethod_id,
+                memo,
+                contract_number,
+                chartofaccount_id,
+            } = req.body
             const newReceivable = await Receivable.create(
                 {
-                    ...req.body,
-                    fee: req.body.fee ? req.body.fee : 0,
-                    is_recurrence: req.body.is_recurrence
-                        ? req.body.is_recurrence
-                        : false,
-                    total: req.body.total
-                        ? req.body.total
-                        : req.body.amount
-                        ? req.body.amount
-                        : 0,
                     company_id: 1,
+                    filial_id: req.body.filial_id,
+                    amount: amount ? parseFloat(amount).toFixed(2) : 0,
+                    fee: fee ? parseFloat(fee).toFixed(2) : 0,
+                    discount: discount ? parseFloat(discount).toFixed(2) : 0,
+                    total: total ? parseFloat(total).toFixed(2) : 0,
+                    balance: total ? parseFloat(total).toFixed(2) : 0,
+                    type,
+                    type_detail,
+                    issuer_id,
+                    entry_date,
+                    due_date,
+                    paymentmethod_id,
+                    memo,
+                    contract_number,
+                    chartofaccount_id,
+                    is_recurrence: false,
                     status: 'Pending',
-                    status_date: new Date().toString(),
-                    filial_id: req.body.filial_id
-                        ? req.body.filial_id
-                        : req.headers.filial,
+                    status_date: format(new Date(), 'yyyyMMdd'),
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -931,7 +1646,10 @@ class ReceivableController {
         const t = await connection.transaction()
         try {
             const { receivable_id } = req.params
-            const { refund_amount, refund_reason } = req.body
+            let { refund_amount } = req.body
+            const { refund_reason, paymentmethod_id } = req.body
+
+            refund_amount = parseFloat(refund_amount)
 
             const receivableExists = await Receivable.findByPk(receivable_id)
 
@@ -941,26 +1659,94 @@ class ReceivableController {
                     .json({ error: 'Receivable does not exist.' })
             }
 
-            if (receivableExists.dataValues.status !== 'Paid') {
+            const settlements = await Settlement.findAll({
+                where: {
+                    receivable_id: receivableExists.id,
+                    canceled_at: null,
+                },
+                order: [['created_at', 'DESC']],
+            })
+
+            if (!settlements) {
                 return res
                     .status(401)
-                    .json({ error: 'Receivable is not paid yet.' })
+                    .json({ error: 'Receivable does not have a settlement.' })
+            }
+            const parcial =
+                receivableExists.dataValues.balance + refund_amount <
+                receivableExists.dataValues.total
+                    ? true
+                    : false
+
+            const paymentMethod = await PaymentMethod.findByPk(
+                receivableExists.dataValues.paymentmethod_id
+            )
+
+            if (!paymentMethod) {
+                return res
+                    .status(400)
+                    .json({ error: 'Payment Method does not exist.' })
             }
 
-            await receivableExists.update(
+            if (paymentMethod.dataValues.platform === 'Gravity') {
+                const emergepaytransaction = await Emergepaytransaction.findOne(
+                    {
+                        where: {
+                            external_transaction_id: receivableExists.id,
+                            canceled_at: null,
+                            result_message: 'Approved',
+                            result_status: 'true',
+                        },
+                        order: [['created_at', 'DESC']],
+                    }
+                )
+                if (!emergepaytransaction) {
+                    return res.status(400).json({
+                        error: 'This receivable has not been paid by Gravity - Card. Please select another payment method.',
+                    })
+                }
+                emergepay.tokenizedRefundTransaction({
+                    uniqueTransId:
+                        emergepaytransaction.dataValues.unique_trans_id,
+                    externalTransactionId: receivableExists.id,
+                    amount: refund_amount.toString(),
+                })
+            }
+
+            await Refund.create(
                 {
-                    status: 'Pending',
-                    updated_at: new Date(),
-                    updated_by: req.userId,
+                    receivable_id: receivableExists.id,
+                    settlement_id: settlements[0].id,
+                    amount: refund_amount,
+                    paymentmethod_id: paymentmethod_id,
+                    refund_reason: refund_reason,
+                    refund_date: format(new Date(), 'yyyyMMdd'),
+                    created_at: new Date(),
+                    created_by: req.userId,
                 },
                 {
                     transaction: t,
                 }
-            )
-
-            await t.commit()
-
-            return res.json(receivableExists)
+            ).then(async () => {
+                await receivableExists
+                    .update(
+                        {
+                            status: parcial ? 'Parcial Paid' : 'Pending',
+                            balance:
+                                receivableExists.dataValues.balance +
+                                refund_amount,
+                            updated_at: new Date(),
+                            updated_by: req.userId,
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+                    .then(() => {
+                        t.commit()
+                        return res.json(receivableExists)
+                    })
+            })
         } catch (err) {
             await t.rollback()
             const className = 'ReceivableController'
@@ -997,14 +1783,6 @@ class ReceivableController {
                     .json({ error: 'Receivable does not exist.' })
             }
 
-            if (
-                req.body.due_date &&
-                receivableExists.due_date &&
-                req.body.due_date !== receivableExists.due_date
-            ) {
-                oldDueDate = receivableExists.due_date
-            }
-
             await receivableExists.update(
                 {
                     ...req.body,
@@ -1034,14 +1812,26 @@ class ReceivableController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { id } = req.params
+            const { receivable_id } = req.params
 
-            const receivableExists = await Receivable.findByPk(id)
+            const receivableExists = await Receivable.findByPk(receivable_id)
 
             if (!receivableExists) {
                 return res
-                    .status(401)
+                    .status(400)
                     .json({ error: 'Receivable does not exist.' })
+            }
+
+            if (receivableExists.dataValues.is_recurrence) {
+                return res.status(400).json({
+                    error: 'Recurrence payments cannot be deleted.',
+                })
+            }
+
+            if (receivableExists.dataValues.status !== 'Pending') {
+                return res.status(400).json({
+                    error: 'Settled receivables cannot be deleted.',
+                })
             }
 
             await receivableExists.update(
@@ -1072,16 +1862,20 @@ class ReceivableController {
     }
 
     async settlement(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
         try {
             const {
                 receivables,
                 prices,
                 paymentmethod_id,
                 settlement_date,
-                total_amount,
+                settlement_memo,
             } = req.body
 
-            receivables.map(async (rec, index) => {
+            let { total_amount } = req.body
+
+            for (let rec of receivables) {
                 const receivable = await Receivable.findByPk(rec.id)
 
                 if (!receivable) {
@@ -1090,15 +1884,24 @@ class ReceivableController {
                     })
                 }
 
-                let totalAmount = receivable.dataValues.total
+                let manual_discount = 0
 
-                if (prices.discounts.length > 0) {
+                if (receivables.length > 1) {
+                    total_amount = receivable.dataValues.balance
+                } else {
+                    manual_discount =
+                        receivable.dataValues.balance - total_amount
+                }
+
+                let total_amount_with_discount = total_amount
+
+                if (prices.discounts && prices.discounts.length > 0) {
                     const discount = await FilialDiscountList.findByPk(
                         prices.discounts[0].filial_discount_list_id
                     )
 
                     if (discount) {
-                        totalAmount = applyDiscounts({
+                        total_amount_with_discount = applyDiscounts({
                             applied_at: 'Settlement',
                             type: 'Financial',
                             studentDiscounts: [
@@ -1108,59 +1911,80 @@ class ReceivableController {
                                     },
                                 },
                             ],
-                            totalAmount,
+                            totalAmount: total_amount,
                         })
                     }
                 }
 
-                const difference = receivable.dataValues.total - totalAmount
+                const thisDiscounts = total_amount - total_amount_with_discount
 
-                const settledAmount =
-                    totalAmount > rec.total ? rec.total : totalAmount
+                await receivable.update({
+                    discount: (
+                        receivable.dataValues.discount + thisDiscounts
+                    ).toFixed(2),
+                    balance: (
+                        receivable.dataValues.balance - thisDiscounts
+                    ).toFixed(2),
+                    total: receivable.dataValues.total - thisDiscounts,
+                    manual_discount: manual_discount.toFixed(2),
+                })
 
                 if (receivable.dataValues.status !== 'Paid') {
-                    Settlement.create({
-                        receivable_id: receivable.id,
-                        amount: settledAmount,
-                        paymentmethod_id,
-                        created_at: settlement_date,
-                        created_by: req.userId,
-                    }).then(() => {
-                        receivable
-                            .update({
-                                status: 'Paid',
-                                discount:
-                                    receivable.dataValues.discount + difference,
-                                total: receivable.dataValues.total - difference,
-                                balance: 0,
-                                updated_at: new Date(),
-                                updated_by: req.userId,
+                    if (prices.discounts && prices.discounts.length > 0) {
+                        const discount = await FilialDiscountList.findByPk(
+                            prices.discounts[0].filial_discount_list_id
+                        )
+                        await Receivablediscounts.create(
+                            {
+                                receivable_id: receivable.id,
+                                discount_id: discount.id,
+                                name: discount.name,
+                                type: discount.type,
+                                value: discount.value,
+                                percent: discount.percent,
+                                created_by: 2,
+                                created_at: new Date(),
+                            },
+                            {
+                                transaction: t,
+                            }
+                        )
+                    }
+                    await settlement(
+                        {
+                            receivable_id: receivable.id,
+                            amountPaidBalance: total_amount_with_discount,
+                            settlement_date,
+                            paymentmethod_id,
+                            settlement_memo,
+                        },
+                        req
+                    )
+                    if (
+                        rec.id === receivables[receivables.length - 1].id &&
+                        receivable.dataValues.is_recurrence
+                    ) {
+                        const recurrence = await Recurrence.findOne({
+                            where: {
+                                issuer_id: receivable.dataValues.issuer_id,
+                                canceled_at: null,
+                            },
+                        })
+                        if (recurrence) {
+                            await generateRecurrenceReceivables({
+                                recurrence,
+                                clearAll: false,
                             })
-                            .then(async (receivable) => {
-                                const discount =
-                                    await FilialDiscountList.findByPk(
-                                        prices.discounts[0]
-                                            .filial_discount_list_id
-                                    )
-                                Receivablediscounts.create({
-                                    receivable_id: receivable.id,
-                                    discount_id: discount.id,
-                                    name: discount.name,
-                                    type: discount.type,
-                                    value: discount.value,
-                                    percent: discount.percent,
-                                    created_by: 2,
-                                    created_at: new Date(),
-                                })
-                                console.log('receivable updated')
-                            })
-                    })
+                        }
+                    }
                 } else {
                     return res.status(401).json({
                         error: 'Receivable already settled.',
                     })
                 }
-            })
+            }
+
+            t.commit()
 
             return res.json({
                 message: 'Settlements created successfully.',
@@ -1169,6 +1993,900 @@ class ReceivableController {
             await t.rollback()
             const className = 'ReceivableController'
             const functionName = 'settlement'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async renegociation(req, res) {
+        console.log('Executing renegociation')
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const {
+                receivables,
+                installment_amount,
+                number_of_installments,
+                payment_method_id,
+                payment_criteria_id,
+                observations,
+                send_invoice,
+            } = req.body
+
+            let { first_due_date } = req.body
+
+            first_due_date = addDays(first_due_date, 1)
+
+            const renegociation = await Renegociation.create(
+                {
+                    first_due_date: format(first_due_date, 'yyyyMMdd'),
+                    number_of_installments,
+                    payment_method_id,
+                    payment_criteria_id,
+                    observations,
+                    created_at: new Date(),
+                    created_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            for (let receivableFind of receivables) {
+                const receivable = await Receivable.findByPk(receivableFind.id)
+                await receivable.update(
+                    {
+                        status: 'Renegociated',
+                        balance: 0,
+                        updated_at: new Date(),
+                        updated_by: req.userId,
+                        renegociation_to: renegociation.id,
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+                await verifyAndCancelParcelowPaymentLink(receivable.id)
+                await verifyAndCancelTextToPayTransaction(receivable.id)
+            }
+
+            const paymentCriteria = await PaymentCriteria.findByPk(
+                payment_criteria_id
+            )
+
+            if (!paymentCriteria) {
+                return null
+            }
+            const { recurring_metric, recurring_qt } =
+                paymentCriteria.dataValues
+
+            let firstGeneratedReceivable = null
+
+            for (
+                let installment = 0;
+                installment < number_of_installments;
+                installment++
+            ) {
+                let entry_date = null
+                let due_date = null
+                let qt = installment * recurring_qt
+
+                if (recurring_metric === 'Day') {
+                    entry_date = format(
+                        subDays(addDays(first_due_date, qt), 3),
+                        'yyyyMMdd'
+                    )
+                    due_date = format(addDays(first_due_date, qt), 'yyyyMMdd')
+                } else if (recurring_metric === 'Week') {
+                    entry_date = format(
+                        subDays(addWeeks(first_due_date, qt), 3),
+                        'yyyyMMdd'
+                    )
+                    due_date = format(addWeeks(first_due_date, qt), 'yyyyMMdd')
+                } else if (recurring_metric === 'Month') {
+                    entry_date = format(
+                        subDays(addMonths(first_due_date, qt), 3),
+                        'yyyyMMdd'
+                    )
+                    due_date = format(addMonths(first_due_date, qt), 'yyyyMMdd')
+                } else if (recurring_metric === 'Year') {
+                    entry_date = format(
+                        subDays(addYears(first_due_date, qt), 3),
+                        'yyyyMMdd'
+                    )
+                    due_date = format(addYears(first_due_date, qt), 'yyyyMMdd')
+                }
+
+                const firstReceivable = await Receivable.findByPk(
+                    receivables[0].id
+                )
+                await Receivable.create(
+                    {
+                        company_id: firstReceivable.company_id,
+                        filial_id: firstReceivable.filial_id,
+                        issuer_id: firstReceivable.issuer_id,
+                        type: firstReceivable.type,
+                        type_detail: firstReceivable.type_detail,
+                        entry_date: format(new Date(), 'yyyyMMdd'),
+                        due_date,
+                        memo: firstReceivable.memo,
+                        is_recurrence: false,
+                        amount: installment_amount,
+                        total: installment_amount,
+                        balance: installment_amount,
+                        paymentmethod_id: payment_method_id,
+                        status: 'Pending',
+                        status_date: format(new Date(), 'yyyyMMdd'),
+                        chartofaccount_id: firstReceivable.chartofaccount_id,
+                        paymentcriteria_id: payment_criteria_id,
+                        notification_sent: false,
+                        renegociation_from: renegociation.id,
+                        created_at: new Date(),
+                        created_by: req.userId,
+                    },
+                    {
+                        transaction: t,
+                    }
+                ).then(async (receivable) => {
+                    if (installment === 0) {
+                        firstGeneratedReceivable = receivable
+                    }
+                })
+            }
+
+            t.commit()
+
+            setTimeout(() => {
+                if (send_invoice && firstGeneratedReceivable) {
+                    TuitionMail({
+                        receivable_id: firstGeneratedReceivable.dataValues.id,
+                    })
+                }
+            }, 1000)
+
+            return res.json(renegociation)
+        } catch (err) {
+            const className = 'ReceivableController'
+            const functionName = 'renegociation'
+            MailLog({ className, functionName, req, err })
+            await t.rollback()
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async feeAdjustment(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { receivable_id, fee, reason } = req.body
+
+            const receivableExists = await Receivable.findByPk(receivable_id)
+
+            if (!receivableExists) {
+                return res
+                    .status(401)
+                    .json({ error: 'Receivable does not exist.' })
+            }
+
+            Feeadjustment.create(
+                {
+                    receivable_id: receivableExists.id,
+                    old_fee: receivableExists.dataValues.fee,
+                    new_fee: fee,
+                    reason,
+                    created_by: req.userId,
+                    created_at: new Date(),
+                },
+                {
+                    transaction: t,
+                }
+            )
+                .then(async () => {
+                    const difference = receivableExists.dataValues.fee - fee
+                    receivableExists
+                        .update(
+                            {
+                                fee,
+                                balance:
+                                    receivableExists.dataValues.balance -
+                                    difference,
+                                total:
+                                    receivableExists.dataValues.total -
+                                    difference,
+                                updated_by: req.userId,
+                                updated_at: new Date(),
+                            },
+                            {
+                                transaction: t,
+                            }
+                        )
+                        .then(async (receivable) => {
+                            t.commit()
+                            return res.json(receivable)
+                        })
+                        .catch((err) => {
+                            return res.status(400).json({
+                                error: err,
+                            })
+                        })
+                })
+                .catch((err) => {
+                    return res.status(400).json({
+                        error: err,
+                    })
+                })
+        } catch (err) {
+            await t.rollback()
+            const className = 'ReceivableController'
+            const functionName = 'feeAdjustment'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async excel(req, res) {
+        try {
+            const name = `receivables_${Date.now()}`
+            const path = `${resolve(
+                __dirname,
+                '..',
+                '..',
+                '..',
+                'public',
+                'uploads'
+            )}/${name}`
+            const {
+                entry_date_from,
+                entry_date_to,
+                due_date_from,
+                due_date_to,
+                settlement_from,
+                settlement_to,
+                status,
+                type,
+                type_detail,
+            } = req.body
+            const wb = new xl.Workbook()
+            // Add Worksheets to the workbook
+            var ws = wb.addWorksheet('Params')
+            var ws2 = wb.addWorksheet('Receivables')
+
+            // Create a reusable style
+            var styleBold = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                    bold: true,
+                },
+            })
+
+            var styleTotal = wb.createStyle({
+                font: {
+                    color: '#00aa00',
+                    size: 12,
+                    bold: true,
+                },
+                fill: {
+                    type: 'pattern',
+                    fgColor: '#ff0000',
+                    bgColor: '#ffffff',
+                },
+                numberFormat: '$ #,##0.00; ($#,##0.00); -',
+            })
+
+            var styleTotalNegative = wb.createStyle({
+                font: {
+                    color: '#aa0000',
+                    size: 12,
+                    bold: true,
+                },
+                fill: {
+                    type: 'pattern',
+                    fgColor: '#ff0000',
+                    bgColor: '#ffffff',
+                },
+                numberFormat: '$ #,##0.00; ($#,##0.00); -',
+            })
+
+            var styleHeading = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 14,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+            })
+
+            ws.cell(1, 1).string('Params').style(styleHeading)
+            ws.cell(1, 2).string('Values').style(styleHeading)
+
+            ws.row(1).filter()
+            ws.row(1).freeze()
+
+            ws.cell(2, 1).string('Entry date from').style(styleBold)
+            ws.cell(3, 1).string('Entry date to').style(styleBold)
+            ws.cell(4, 1).string('Due date from').style(styleBold)
+            ws.cell(5, 1).string('Due date to').style(styleBold)
+            ws.cell(6, 1).string('Settlement date from').style(styleBold)
+            ws.cell(7, 1).string('Settlement date to').style(styleBold)
+            ws.cell(8, 1).string('Status').style(styleBold)
+            ws.cell(9, 1).string('Type').style(styleBold)
+            ws.cell(10, 1).string('Type Detail').style(styleBold)
+
+            ws.cell(2, 2).string(entry_date_from || '')
+            ws.cell(3, 2).string(entry_date_to || '')
+            ws.cell(4, 2).string(due_date_from || '')
+            ws.cell(5, 2).string(due_date_to || '')
+            ws.cell(6, 2).string(settlement_from || '')
+            ws.cell(7, 2).string(settlement_to || '')
+            ws.cell(8, 2).string(status || '')
+            ws.cell(9, 2).string(type || '')
+            ws.cell(10, 2).string(type_detail || '')
+
+            ws.column(1).width = 30
+            ws.column(2).width = 30
+
+            const filter = {}
+            const filterSettlement = {}
+            if (status !== 'All') {
+                filter.status = status
+            }
+            if (type !== 'All') {
+                filter.type = type
+            }
+            if (type_detail !== 'All') {
+                filter.type_detail = type_detail
+            }
+            if (entry_date_from) {
+                let filterDate = entry_date_from.replace(/-/g, '')
+                filter.entry_date = {
+                    [Op.gte]: filterDate,
+                }
+            }
+            if (entry_date_to) {
+                let filterDate = entry_date_to.replace(/-/g, '')
+                if (filter.entry_date) {
+                    filter.entry_date = {
+                        [Op.and]: [
+                            filter.entry_date,
+                            {
+                                [Op.lte]: filterDate,
+                            },
+                        ],
+                    }
+                } else {
+                    filter.entry_date = {
+                        [Op.lte]: filterDate,
+                    }
+                }
+            }
+            if (due_date_from) {
+                let filterDate = due_date_from.replace(/-/g, '')
+                filter.due_date = {
+                    [Op.gte]: filterDate,
+                }
+            }
+            if (due_date_to) {
+                let filterDate = due_date_to.replace(/-/g, '')
+                if (filter.due_date) {
+                    filter.due_date = {
+                        [Op.and]: [
+                            filter.due_date,
+                            {
+                                [Op.lte]: filterDate,
+                            },
+                        ],
+                    }
+                } else {
+                    filter.due_date = {
+                        [Op.lte]: filterDate,
+                    }
+                }
+            }
+            if (settlement_from) {
+                let filterDate = settlement_from.replace(/-/g, '')
+                filterSettlement.settlement_date = {
+                    [Op.gte]: filterDate,
+                }
+            }
+            if (settlement_to) {
+                let filterDate = settlement_to.replace(/-/g, '')
+                if (filterSettlement.settlement_date) {
+                    filterSettlement.settlement_date = {
+                        [Op.and]: [
+                            filterSettlement.settlement_date,
+                            {
+                                [Op.lte]: filterDate,
+                            },
+                        ],
+                    }
+                } else {
+                    filterSettlement.settlement_date = {
+                        [Op.lte]: filterDate,
+                    }
+                }
+            }
+            if (req.headers.filial != 1) {
+                filter.filial_id = req.headers.filial
+            }
+            const receivables = await Receivable.findAll({
+                where: {
+                    company_id: req.companyId,
+                    canceled_at: null,
+                    ...filter,
+                },
+                include: [
+                    {
+                        model: ChartOfAccount,
+                        as: 'chartOfAccount',
+                        required: false,
+                        where: { canceled_at: null },
+                        include: [
+                            {
+                                model: ChartOfAccount,
+                                as: 'Father',
+                                required: false,
+                                where: { canceled_at: null },
+                                include: [
+                                    {
+                                        model: ChartOfAccount,
+                                        as: 'Father',
+                                        required: false,
+                                        where: { canceled_at: null },
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    {
+                        model: PaymentMethod,
+                        as: 'paymentMethod',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Issuer,
+                        as: 'issuer',
+                        required: false,
+                        where: { canceled_at: null },
+                        include: [
+                            {
+                                model: Recurrence,
+                                as: 'issuer_x_recurrence',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                                attributes: ['id', 'is_autopay'],
+                            },
+                        ],
+                    },
+                    {
+                        model: PaymentCriteria,
+                        as: 'paymentCriteria',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Milauser,
+                        as: 'createdBy',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Milauser,
+                        as: 'updatedBy',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Settlement,
+                        as: 'settlements',
+                        required: filterSettlement.settlement_date
+                            ? true
+                            : false,
+                        where: { canceled_at: null, ...filterSettlement },
+                        include: [
+                            {
+                                model: PaymentMethod,
+                                as: 'paymentMethod',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
+                    },
+                ],
+                order: [['due_date', 'DESC']],
+            })
+
+            let row = 1
+            let col = 1
+
+            row++
+            ws2.cell(row, col).string('Entry date').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Due date').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Issuer').style(styleBold)
+            ws2.column(col).width = 35
+            col++
+            ws2.cell(row, col).string('Amount').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Discount').style(styleBold)
+            ws2.column(col).width = 12
+            col++
+            ws2.cell(row, col).string('Fee').style(styleBold)
+            ws2.column(col).width = 12
+            col++
+            ws2.cell(row, col).string('Total').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Balance').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Status').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Last Payment Date').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Last Payment Method').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Type').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Type Detail').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            ws2.cell(row, col).string('Is Recurrence?').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            ws2.cell(row, col).string('Is Autopay?').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            // ws2.cell(row, col).string('Payment Method').style(styleBold)
+            // ws2.column(col).width = 20
+            // col++
+            ws2.cell(row, col).string('Payment Criteria').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            ws2.cell(row, col).string('Invoice Number').style(styleBold)
+            ws2.column(col).width = 20
+            col++
+            ws2.cell(row, col).string('Chart of Account').style(styleBold)
+            ws2.column(col).width = 40
+            col++
+            ws2.cell(row, col).string('Memo').style(styleBold)
+            ws2.column(col).width = 40
+            col++
+            ws2.cell(row, col).string('Created At').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Created By').style(styleBold)
+            ws2.column(col).width = 25
+            col++
+            ws2.cell(row, col).string('Updated At').style(styleBold)
+            ws2.column(col).width = 15
+            col++
+            ws2.cell(row, col).string('Updated By').style(styleBold)
+            ws2.column(col).width = 25
+            col++
+            ws2.cell(row, col).string('ID').style(styleBold)
+            ws2.column(col).width = 40
+
+            ws2.cell(1, 1, 1, col, true)
+                .string('Receivables')
+                .style(styleHeading)
+
+            ws2.row(row).filter()
+            ws2.row(row).freeze()
+
+            receivables.map((receivable, index) => {
+                let chartOfAccount = ''
+                if (receivable.chartOfAccount) {
+                    if (receivable.chartOfAccount.Father) {
+                        if (receivable.chartOfAccount.Father.Father) {
+                            chartOfAccount =
+                                receivable.chartOfAccount.Father.Father.name +
+                                ' > ' +
+                                receivable.chartOfAccount.Father.name +
+                                ' > ' +
+                                receivable.chartOfAccount.name
+                        } else {
+                            chartOfAccount =
+                                receivable.chartOfAccount.Father.name +
+                                ' > ' +
+                                receivable.chartOfAccount.name
+                        }
+                    } else {
+                        chartOfAccount = receivable.chartOfAccount.name
+                    }
+                }
+                let nCol = 1
+                ws2.cell(index + 3, nCol).date(
+                    format(parseISO(receivable.entry_date), 'yyyy-MM-dd')
+                )
+                nCol++
+                ws2.cell(index + 3, nCol).date(
+                    format(parseISO(receivable.due_date), 'yyyy-MM-dd')
+                )
+                nCol++
+                ws2.cell(index + 3, nCol).string(
+                    receivable.issuer ? receivable.issuer.name : ''
+                )
+                nCol++
+                ws2.cell(index + 3, nCol)
+                    .number(receivable.amount)
+                    .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
+                nCol++
+                ws2.cell(index + 3, nCol)
+                    .number(receivable.discount * -1)
+                    .style({
+                        numberFormat: '$ #,##0.00; ($#,##0.00); -',
+                        font: { color: '#aa0000' },
+                    })
+                nCol++
+                ws2.cell(index + 3, nCol)
+                    .number(receivable.fee)
+                    .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
+                nCol++
+                ws2.cell(index + 3, nCol)
+                    .number(receivable.total)
+                    .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
+                nCol++
+                ws2.cell(index + 3, nCol)
+                    .number(receivable.balance)
+                    .style({ numberFormat: '$ #,##0.00; ($#,##0.00); -' })
+                nCol++
+                ws2.cell(index + 3, nCol).string(receivable.status)
+                nCol++
+                if (
+                    receivable.settlements &&
+                    receivable.settlements.length > 0 &&
+                    receivable.settlements[receivable.settlements.length - 1]
+                        .settlement_date
+                ) {
+                    ws2.cell(index + 3, nCol).date(
+                        format(
+                            parseISO(
+                                receivable.settlements[
+                                    receivable.settlements.length - 1
+                                ].settlement_date
+                            ),
+                            'yyyy-MM-dd'
+                        )
+                    )
+                } else {
+                    ws2.cell(index + 3, nCol).string('')
+                }
+                nCol++
+                if (
+                    receivable.settlements &&
+                    receivable.settlements.length > 0
+                ) {
+                    ws2.cell(index + 3, nCol).string(
+                        receivable.settlements[
+                            receivable.settlements.length - 1
+                        ].paymentMethod.description
+                    )
+                } else {
+                    ws2.cell(index + 3, nCol).string('')
+                }
+                nCol++
+                ws2.cell(index + 3, nCol).string(receivable.type)
+                nCol++
+                ws2.cell(index + 3, nCol).string(receivable.type_detail)
+                nCol++
+                ws2.cell(index + 3, nCol).string(
+                    receivable.is_recurrence ? 'Yes' : 'No'
+                )
+                nCol++
+                ws2.cell(index + 3, nCol).string(
+                    receivable.issuer &&
+                        receivable.issuer.issuer_x_recurrence &&
+                        receivable.issuer.issuer_x_recurrence.is_autopay
+                        ? 'Yes'
+                        : 'No'
+                )
+                nCol++
+                // ws2.cell(index + 3, nCol).string(
+                //     receivable.paymentMethod
+                //         ? receivable.paymentMethod.description
+                //         : ''
+                // )
+                // nCol++
+                ws2.cell(index + 3, nCol).string(
+                    receivable.paymentCriteria
+                        ? receivable.paymentCriteria.description
+                        : ''
+                )
+                nCol++
+                if (receivable.invoice_number) {
+                    ws2.cell(index + 3, nCol).string(
+                        receivable.invoice_number.toString().padStart(6, '0')
+                    )
+                } else {
+                    ws2.cell(index + 3, nCol).string('')
+                }
+                nCol++
+                ws2.cell(index + 3, nCol).string(chartOfAccount)
+                nCol++
+                ws2.cell(index + 3, nCol).string(receivable.memo)
+                nCol++
+                if (receivable.created_at) {
+                    ws2.cell(index + 3, nCol).date(receivable.created_at)
+                } else {
+                    ws2.cell(index + 3, nCol).string('')
+                }
+                nCol++
+                ws2.cell(index + 3, nCol).string(
+                    receivable.createdBy ? receivable.createdBy.name : ''
+                )
+                nCol++
+                if (receivable.updated_at) {
+                    ws2.cell(index + 3, nCol).date(receivable.updated_at)
+                } else {
+                    ws2.cell(index + 3, nCol).string('')
+                }
+                nCol++
+                ws2.cell(index + 3, nCol).string(
+                    receivable.updatedBy ? receivable.updatedBy.name : ''
+                )
+                nCol++
+                ws2.cell(index + 3, nCol).string(receivable.id)
+                nCol++
+            })
+
+            row += receivables.length + 1
+
+            ws2.cell(row, 4)
+                .number(
+                    receivables.reduce((acc, curr) => {
+                        return acc + curr.amount
+                    }, 0)
+                )
+                .style(styleTotal)
+            ws2.cell(row, 5)
+                .number(
+                    receivables.reduce((acc, curr) => {
+                        return acc + curr.discount * -1
+                    }, 0)
+                )
+                .style(styleTotalNegative)
+            ws2.cell(row, 6)
+                .number(
+                    receivables.reduce((acc, curr) => {
+                        return acc + curr.fee
+                    }, 0)
+                )
+                .style(styleTotal)
+            ws2.cell(row, 7)
+                .number(
+                    receivables.reduce((acc, curr) => {
+                        return acc + curr.total
+                    }, 0)
+                )
+                .style(styleTotal)
+            ws2.cell(row, 8)
+                .number(
+                    receivables.reduce((acc, curr) => {
+                        return acc + curr.balance
+                    }, 0)
+                )
+                .style(styleTotal)
+
+            let ret = null
+            wb.write(path, (err, stats) => {
+                if (err) {
+                    ret = res.status(400).json({ err, stats })
+                } else {
+                    setTimeout(() => {
+                        fs.unlink(path, (err) => {
+                            if (err) {
+                                console.log(err)
+                            }
+                        })
+                    }, 10000)
+                    return res.json({ path, name })
+                }
+            })
+            return ret
+        } catch (err) {
+            const className = 'ReceivableController'
+            const functionName = 'excel'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async sendInvoice(req, res) {
+        console.log('Executing sendInvoice')
+        try {
+            const { receivable_id } = req.params
+            const receivable = await Receivable.findByPk(receivable_id)
+            if (!receivable) {
+                return res.status(400).json({
+                    error: 'Receivable does not exist.',
+                })
+            }
+
+            await verifyAndCancelTextToPayTransaction(receivable.id)
+            await verifyAndCreateTextToPayTransaction(receivable.id)
+            await verifyAndCancelParcelowPaymentLink(receivable.id)
+
+            if (
+                receivable.dataValues.due_date > format(new Date(), 'yyyyMMdd')
+            ) {
+                await BeforeDueDateMail({
+                    receivable_id: receivable.id,
+                    manual: true,
+                })
+            } else if (
+                receivable.dataValues.due_date ===
+                format(new Date(), 'yyyyMMdd')
+            ) {
+                await OnDueDateMail({
+                    receivable_id: receivable.id,
+                    manual: true,
+                })
+            } else {
+                await AfterDueDateMail({
+                    receivable_id: receivable.id,
+                    manual: true,
+                })
+            }
+            // const { paymentmethod_id } = receivable.dataValues
+            // const paymentMethod = await PaymentMethod.findByPk(paymentmethod_id)
+            // if (!paymentMethod) {
+            //     return res.status(400).json({
+            //         error: 'Payment Method does not exist.',
+            //     })
+            // }
+            // const textPaymentTransaction = await Textpaymenttransaction.findOne(
+            //     {
+            //         where: {
+            //             receivable_id: receivable.id,
+            //             canceled_at: null,
+            //         },
+            //         order: [['created_at', 'DESC']],
+            //     }
+            // )
+            // let paymentInfoHTML = ''
+            // if (textPaymentTransaction) {
+            //     paymentInfoHTML = `<tr>
+            //     <td style="text-align: center;padding: 10px 0 30px;">
+            //         <a href="${textPaymentTransaction.dataValues.payment_page_url}" target="_blank" style="background-color: #0a0; color: #ffffff; text-decoration: none; padding: 10px 40px; border-radius: 4px; font-size: 16px; display: inline-block;">Review and pay</a>
+            //     </td>
+            //     </tr>`
+            // }
+            // await TuitionMail({
+            //     receivable_id: receivable.id,
+            //     paymentInfoHTML,
+            // })
+            // await receivable.update({
+            //     notification_sent: true,
+            // })
+            return res.json(receivable)
+        } catch (err) {
+            const className = 'ReceivableController'
+            const functionName = 'sendInvoice'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

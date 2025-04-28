@@ -212,9 +212,7 @@ class WorkloadController {
                         )
 
                         deleteObject(fileRef)
-                            .then(() => {
-                                console.log('removeu')
-                            })
+                            .then(() => {})
                             .catch((error) => {
                                 console.log(error)
                             })

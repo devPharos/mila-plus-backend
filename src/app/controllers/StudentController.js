@@ -4,8 +4,13 @@ import databaseConfig from '../../config/database'
 import Student from '../models/Student'
 import Filial from '../models/Filial'
 import { searchPromise } from '../functions/searchPromise'
-import Studentdiscount from '../models/Studentdiscount'
+import Studentinactivation from '../models/Studentinactivation'
 import { handleStudentDiscounts } from '../functions'
+import Receivable from '../models/Receivable'
+import Issuer from '../models/Issuer'
+import Recurrence from '../models/Recurrence'
+import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
+import { verifyAndCancelTextToPayTransaction } from './EmergepayController'
 
 const { Op } = Sequelize
 
@@ -195,7 +200,7 @@ class StudentController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { student_id } = req.params
+            const { student_id, reason, date } = req.body
             const student = await Student.findByPk(student_id, {
                 where: { canceled_at: null },
             })
@@ -206,29 +211,80 @@ class StudentController {
                 })
             }
 
-            if (student.canceled_at) {
-                await student.update(
-                    {
+            const inactivation = await Studentinactivation.create(
+                {
+                    student_id: student.id,
+                    reason,
+                    date,
+                    created_at: new Date(),
+                    created_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            const issuer = await Issuer.findOne({
+                where: {
+                    student_id: student.id,
+                    canceled_at: null,
+                },
+            })
+
+            if (issuer) {
+                const receivables = await Receivable.findAll({
+                    where: {
+                        issuer_id: issuer.id,
+                        due_date: {
+                            [Op.gte]: date,
+                        },
                         canceled_at: null,
-                        canceled_by: null,
+                    },
+                })
+
+                for (let receivable of receivables) {
+                    await verifyAndCancelParcelowPaymentLink(receivable.id)
+                    await verifyAndCancelTextToPayTransaction(receivable.id)
+                    await receivable.update(
+                        {
+                            canceled_at: new Date(),
+                            canceled_by: req.userId,
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+                }
+
+                await Recurrence.update(
+                    {
+                        active: false,
                         updated_at: new Date(),
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
-                    }
-                )
-            } else {
-                await student.update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
+                        where: {
+                            issuer_id: issuer.id,
+                            canceled_at: null,
+                        },
                         transaction: t,
                     }
                 )
             }
+
+            await student.update(
+                {
+                    inactivation_id: inactivation.id,
+                    status: 'Inactive',
+                    category: 'Ex-student',
+                    inactive_reason: reason,
+                    updated_at: new Date(),
+                    updated_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
 
             t.commit()
 
@@ -237,6 +293,36 @@ class StudentController {
             await t.rollback()
             const className = 'StudentController'
             const functionName = 'inactivate'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async activate(req, res) {
+        const { student_id } = req.params
+        const studentExists = await Student.findByPk(student_id)
+
+        if (!studentExists) {
+            return res.status(400).json({
+                error: 'Student not found.',
+            })
+        }
+
+        try {
+            await studentExists.update({
+                status: 'In Class',
+                updated_at: new Date(),
+                updated_by: req.userId,
+            })
+
+            return res.status(200).json({
+                message: 'Student activated.',
+            })
+        } catch (err) {
+            const className = 'StudentController'
+            const functionName = 'activate'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

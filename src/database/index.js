@@ -43,7 +43,6 @@ import BankAccounts from '../app/models/BankAccount'
 import MerchantXChartOfAccount from '../app/models/MerchantXChartOfAccounts'
 import Issuer from '../app/models/Issuer'
 import Payee from '../app/models/Payee'
-import PayeeInstallment from '../app/models/PayeeInstallment'
 import PaymentCriteria from '../app/models/PaymentCriteria'
 import PaymentMethod from '../app/models/PaymentMethod'
 import Receivable from '../app/models/Receivable'
@@ -57,12 +56,21 @@ import Receivablediscounts from '../app/models/Receivablediscounts'
 import Textpaymenttransaction from '../app/models/Textpaymenttransaction'
 import Refund from '../app/models/Refund.js'
 import Settlement from '../app/models/Settlement'
-// import UserGroup from '../app/models/usergroup'
+import Parcelowpaymentlink from '../app/models/Parcelowpaymentlink.js'
+import Parcelowtransaction from '../app/models/Parcelowtransaction.js'
+import Feeadjustment from '../app/models/Feeadjustment.js'
+import Renegociation from '../app/models/Renegociation.js'
+import Studentinactivation from '../app/models/Studentinactivation.js'
+import Maillog from '../app/models/Maillog.js'
+import Payeerecurrence from '../app/models/Payeerecurrence.js'
+import Payeesettlement from '../app/models/Payeesettlement.js'
 
 const models = [
     Processtype,
     Processsubstatus,
     Agent,
+    Bank,
+    BankAccounts,
     Calendarday,
     Milauser,
     Company,
@@ -78,13 +86,14 @@ const models = [
     Enrollmentemergency,
     Enrollmenttimeline,
     Enrollmenttransfer,
+    Feeadjustment,
     File,
     Filial,
     Filialtype,
     FilialPriceList,
     FilialDiscountList,
     Filialdocument,
-    Parameter,
+    Issuer,
     Language,
     Languagemode,
     Level,
@@ -94,19 +103,17 @@ const models = [
     UserGroup,
     UserGroupXUser,
     UserXFilial,
+    Maillog,
     MenuHierarchy,
     MenuHierarchyXGroups,
-    Student,
-    Studentdiscount,
-    Staff,
-    Staffdocument,
-    Bank,
-    BankAccounts,
     Merchants,
     MerchantXChartOfAccount,
-    Issuer,
+    Parameter,
+    Parcelowpaymentlink,
+    Parcelowtransaction,
     Payee,
-    PayeeInstallment,
+    Payeerecurrence,
+    Payeesettlement,
     PaymentCriteria,
     PaymentMethod,
     Receivable,
@@ -114,7 +121,13 @@ const models = [
     ReceivableInstallment,
     Recurrence,
     Refund,
+    Renegociation,
     Settlement,
+    Student,
+    Studentdiscount,
+    Studentinactivation,
+    Staff,
+    Staffdocument,
     Textpaymenttransaction,
 ]
 
