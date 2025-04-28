@@ -8,6 +8,11 @@ import Processsubstatus from '../models/Processsubstatus'
 import Level from '../models/Level'
 import Filial from '../models/Filial'
 import { unescape } from 'node:querystring'
+import Receivable from '../models/Receivable'
+import Emergepaytransaction from '../models/Emergepaytransaction'
+import PaymentMethod from '../models/PaymentMethod'
+import { settlement } from './EmergepayController'
+import { format } from 'date-fns/format'
 
 const { Op } = Sequelize
 const fs = require('node:fs')
@@ -31,214 +36,357 @@ class DataSyncController {
 
             const studentsCreationPromise = []
 
-            fs.readFile(file.path, 'utf8', (err, data) => {
-                if (err) {
-                    console.error(err)
-                    return
-                }
-                const lines = data.split('\n')
-                const headers = lines[0].split(',')
+            if (importType === 'Students') {
+                fs.readFile(file.path, 'utf8', async (err, data) => {
+                    if (err) {
+                        console.error(err)
+                        return
+                    }
+                    const lines = data.split('\n')
+                    const headers = lines[0].split(',')
 
-                studentsCreationPromise.push(
-                    lines.forEach(async (line, index) => {
-                        if (index === 0) return
+                    for (let line of lines.filter(
+                        (line, index) => index !== 0 && line[0]
+                    )) {
                         const values = unescape(encodeURIComponent(line)).split(
                             ','
                         )
-                        const processType = await Processtype.findOne({
-                            where: {
-                                name: values[headers.indexOf('Type')],
-                            },
-                        })
-                        const processSubStatus = await Processsubstatus.findOne(
-                            {
-                                where: {
-                                    name: {
-                                        [Op.like]:
-                                            '%' +
-                                            values[
-                                                headers.indexOf('Sub Status')
-                                            ]
-                                                .substring(1, 5)
-                                                .toLowerCase() +
-                                            '%',
-                                    },
-                                },
-                            }
-                        )
+                        const processType = values[headers.indexOf('Type')]
+                            ? await Processtype.findOne({
+                                  where: {
+                                      name: values[headers.indexOf('Type')],
+                                  },
+                              })
+                            : null
+                        const processSubStatus = values[
+                            headers.indexOf('Sub Status')
+                        ]
+                            ? await Processsubstatus.findOne({
+                                  where: {
+                                      name: {
+                                          [Op.like]:
+                                              '%' +
+                                              values[
+                                                  headers.indexOf('Sub Status')
+                                              ]
+                                                  .substring(1, 5)
+                                                  .toLowerCase() +
+                                              '%',
+                                      },
+                                  },
+                              })
+                            : null
 
-                        const level = await Level.findOne({
-                            where: {
-                                name: values[headers.indexOf('Level')],
-                            },
-                        })
+                        const level = values[headers.indexOf('Level')]
+                            ? await Level.findOne({
+                                  where: {
+                                      name: values[headers.indexOf('Level')],
+                                  },
+                              })
+                            : null
 
-                        const filial = await Filial.findOne({
-                            where: {
-                                alias: values[0].substring(0, 3),
-                            },
-                        })
-                        return await Student.create(
-                            {
-                                company_id: 1,
-                                filial_id: filial.id,
-                                registration_number: values[0],
-                                name: capitalizeFirstLetter(
-                                    values[headers.indexOf('First Name')]
-                                ),
-                                middle_name: capitalizeFirstLetter(
-                                    values[headers.indexOf('Middle Name')]
-                                ),
-                                last_name: capitalizeFirstLetter(
-                                    values[headers.indexOf('Last Name')]
-                                ),
-                                gender: capitalizeFirstLetter(
-                                    values[headers.indexOf('Gender')]
-                                ),
-                                marital_status:
-                                    values[headers.indexOf('Marital Status')],
-                                birth_country: capitalizeFirstLetter(
-                                    values[headers.indexOf('Origin')]
-                                ),
-                                birth_state: capitalizeFirstLetter(
-                                    values[
-                                        headers.indexOf(
-                                            'State/Province of Birth'
-                                        )
-                                    ]
-                                ),
-                                birth_city: capitalizeFirstLetter(
-                                    values[headers.indexOf('City of Birth')]
-                                ),
-                                citizen_country: capitalizeFirstLetter(
-                                    values[headers.indexOf('City')]
-                                ),
-                                state: capitalizeFirstLetter(
-                                    values[headers.indexOf('State/Province')]
-                                ),
-                                city: capitalizeFirstLetter(
-                                    values[headers.indexOf('City')]
-                                ),
-                                zip: values[headers.indexOf('Zip Code')],
-                                address: capitalizeFirstLetter(
-                                    values[headers.indexOf('Address')]
-                                ),
-                                foreign_address: capitalizeFirstLetter(
-                                    values[headers.indexOf('ForeignAddress')]
-                                ),
-                                phone_ddi:
-                                    values[headers.indexOf('Cell Phone')],
-                                phone: values[headers.indexOf('Cell Phone')],
-                                native_language: capitalizeFirstLetter(
-                                    values[
-                                        headers.indexOf('Native Language')
-                                    ] || ''
-                                ),
-                                home_country_phone_ddi:
-                                    values[
-                                        headers.indexOf(
-                                            'HomeCountryPhoneNumber'
-                                        )
-                                    ],
-                                home_country_phone:
-                                    values[
-                                        headers.indexOf(
-                                            'HomeCountryPhoneNumber'
-                                        )
-                                    ],
-                                home_country_address: capitalizeFirstLetter(
-                                    values[headers.indexOf('Address')]
-                                ),
-                                home_country_zip:
-                                    values[headers.indexOf('Zip Code')],
-                                home_country_city: capitalizeFirstLetter(
-                                    values[headers.indexOf('City')]
-                                ),
-                                home_country_state: capitalizeFirstLetter(
-                                    values[headers.indexOf('State/Province')]
-                                ),
-                                home_country_country: capitalizeFirstLetter(
-                                    values[headers.indexOf('City')]
-                                ),
-                                whatsapp_ddi:
-                                    values[
-                                        headers.indexOf('WhatsAppPhoneNumber')
-                                    ],
-                                whatsapp:
-                                    values[
-                                        headers.indexOf('WhatsAppPhoneNumber')
-                                    ],
-                                email: values[
-                                    headers.indexOf('Email')
-                                ].toLowerCase(),
-                                date_of_birth: values[
-                                    headers.indexOf('Date of Birth')
+                        const filial = values[
+                            headers.indexOf('RegistrationNumber')
+                        ]
+                            ? await Filial.findOne({
+                                  where: {
+                                      alias: values[
+                                          headers.indexOf('RegistrationNumber')
+                                      ].substring(0, 3),
+                                      canceled_at: null,
+                                  },
+                              })
+                            : null
+
+                        if (!filial) {
+                            continue
+                        }
+
+                        const data = {
+                            company_id: 1,
+                            filial_id: filial.id,
+                            registration_number: values[0],
+                            name: capitalizeFirstLetter(
+                                values[headers.indexOf('First Name')].replace(
+                                    '’',
+                                    ''
+                                )
+                            ),
+                            middle_name: capitalizeFirstLetter(
+                                values[headers.indexOf('Middle Name')].replace(
+                                    '’',
+                                    ''
+                                )
+                            ),
+                            last_name: capitalizeFirstLetter(
+                                values[headers.indexOf('Last Name')].replace(
+                                    '’',
+                                    ''
+                                )
+                            ),
+                            status: capitalizeFirstLetter(
+                                values[headers.indexOf('Status')]
+                            ),
+                            gender: capitalizeFirstLetter(
+                                values[headers.indexOf('Gender')]
+                            ),
+                            marital_status:
+                                values[headers.indexOf('Marital Status')],
+                            birth_country: capitalizeFirstLetter(
+                                values[headers.indexOf('Origin')].replace(
+                                    '’',
+                                    ''
+                                )
+                            ),
+                            birth_state: capitalizeFirstLetter(
+                                values[
+                                    headers.indexOf('State/Province of Birth')
+                                ].replace('’', '')
+                            ),
+                            birth_city: capitalizeFirstLetter(
+                                values[
+                                    headers.indexOf('City of Birth')
+                                ].replace('’', '')
+                            ),
+                            citizen_country: capitalizeFirstLetter(
+                                values[headers.indexOf('City')].replace('’', '')
+                            ),
+                            state: capitalizeFirstLetter(
+                                values[
+                                    headers.indexOf('State/Province')
+                                ].replace('’', '')
+                            ),
+                            city: capitalizeFirstLetter(
+                                values[headers.indexOf('City')].replace('’', '')
+                            ),
+                            zip: values[headers.indexOf('Zip Code')],
+                            address: capitalizeFirstLetter(
+                                values[headers.indexOf('Address')].replace(
+                                    '’',
+                                    ''
+                                )
+                            ),
+                            foreign_address: capitalizeFirstLetter(
+                                values[
+                                    headers.indexOf('ForeignAddress')
+                                ].replace('’', '')
+                            ),
+                            phone_ddi: values[headers.indexOf('Cell Phone')],
+                            phone: values[headers.indexOf('Cell Phone')],
+                            native_language: capitalizeFirstLetter(
+                                values[headers.indexOf('Native Language')] || ''
+                            ),
+                            // home_country_phone_ddi:
+                            //     values[
+                            //         headers.indexOf('HomeCountryPhoneNumber')
+                            //     ],
+                            home_country_phone:
+                                values[
+                                    headers.indexOf('HomeCountryPhoneNumber')
+                                ],
+                            home_country_address: capitalizeFirstLetter(
+                                values[headers.indexOf('Address')].replace(
+                                    '’',
+                                    ''
+                                )
+                            ),
+                            home_country_zip:
+                                values[headers.indexOf('Zip Code')],
+                            home_country_city: capitalizeFirstLetter(
+                                values[headers.indexOf('City')].replace('’', '')
+                            ),
+                            home_country_state: capitalizeFirstLetter(
+                                values[
+                                    headers.indexOf('State/Province')
+                                ].replace('’', '')
+                            ),
+                            home_country_country: capitalizeFirstLetter(
+                                values[headers.indexOf('City')].replace('’', '')
+                            ),
+                            // whatsapp_ddi:
+                            //     values[headers.indexOf('WhatsAppPhoneNumber')],
+                            whatsapp:
+                                values[headers.indexOf('WhatsAppPhoneNumber')],
+                            email: values[
+                                headers.indexOf('Email')
+                            ].toLowerCase(),
+                            date_of_birth: values[
+                                headers.indexOf('Date of Birth')
+                            ]
+                                .replace('/', '-')
+                                .replace('/', '-'),
+                            category: capitalizeFirstLetter(
+                                values[headers.indexOf('Category')]
+                            ),
+                            preferred_contact_form: capitalizeFirstLetter(
+                                values[headers.indexOf('WayContact')]
+                            ),
+                            passport_number:
+                                values[headers.indexOf('Passport Number')],
+                            passport_expiration_date:
+                                values[headers.indexOf('Visa Expiration')],
+                            i94_expiration_date:
+                                values[headers.indexOf('Grace Period Ends')],
+                            visa_number: values[headers.indexOf('Visa Number')],
+                            visa_expiration:
+                                values[headers.indexOf('Visa Expiration')],
+                            nsevis: values[headers.indexOf('Nsevis')],
+                            how_did_you_hear_about_us: capitalizeFirstLetter(
+                                values[
+                                    headers.indexOf(
+                                        'How did you hear about MILA?'
+                                    )
                                 ]
-                                    .replace('/', '-')
-                                    .replace('/', '-'),
-                                category: capitalizeFirstLetter(
-                                    values[headers.indexOf('Category')]
-                                ),
-                                processtype_id: processType.id,
-                                status: capitalizeFirstLetter(
-                                    values[headers.indexOf('Status')]
-                                ),
-                                processsubstatus_id: processSubStatus.id,
-                                // agent_id: values[headers.indexOf('Agent')],
-                                preferred_contact_form: capitalizeFirstLetter(
-                                    values[headers.indexOf('WayContact')]
-                                ),
-                                passport_number:
-                                    values[headers.indexOf('Passport Number')],
-                                passport_expiration_date:
-                                    values[headers.indexOf('Visa Expiration')],
-                                i94_expiration_date:
-                                    values[
-                                        headers.indexOf('Grace Period Ends')
-                                    ],
-                                visa_number:
-                                    values[headers.indexOf('Visa Number')],
-                                visa_expiration:
-                                    values[headers.indexOf('Visa Expiration')],
-                                nsevis: values[headers.indexOf('Nsevis')],
-                                how_did_you_hear_about_us:
-                                    capitalizeFirstLetter(
-                                        values[
-                                            headers.indexOf(
-                                                'How did you hear about MILA?'
-                                            )
-                                        ]
-                                    ),
-                                preferred_shift: capitalizeFirstLetter(
-                                    values[headers.indexOf('PreferedMorning')]
-                                ),
-                                // expected_level_id: level.id,
-                                shift: capitalizeFirstLetter(
-                                    values[headers.indexOf('Shift')] || ''
-                                ),
-                                // level_id: level.id,
-                                // class_id: values[headers.indexOf('Class')],
-                                expected_start_date:
-                                    values[
-                                        headers.indexOf('Expected Start Date')
-                                    ],
-                                created_by: 2,
-                                created_at: new Date(),
-                            }
-                            // {
-                            //     transaction: t,
-                            // }
-                        )
-                    })
-                )
-            })
+                            ),
+                            preferred_shift: capitalizeFirstLetter(
+                                values[headers.indexOf('PreferedMorning')]
+                            ),
+                            // expected_level_id: level.id,
+                            shift: capitalizeFirstLetter(
+                                values[headers.indexOf('Shift')] || ''
+                            ),
+                            // level_id: level.id,
+                            // class_id: values[headers.indexOf('Class')],
+                            expected_start_date:
+                                values[headers.indexOf('Expected Start Date')],
+                            created_by: 2,
+                            created_at: new Date(),
+                        }
 
-            Promise.all(studentsCreationPromise).then(() => {
-                // t.commit()
-                res.status(200).json({
-                    message: 'Students imported successfully!',
+                        if (processType) {
+                            data.processtype_id = processType.id
+                        }
+                        if (processSubStatus) {
+                            data.processsubstatus_id = processSubStatus.id
+                        }
+                        if (level) {
+                            data.level_id = level.id
+                        }
+
+                        await Student.create(data, {
+                            transaction: t,
+                        })
+                    }
+                    t.commit()
+                    res.status(200).json({
+                        message: 'Students imported successfully!',
+                    })
                 })
-            })
+            } else if (importType === 'EmergepayTransactions') {
+                fs.readFile(file.path, 'utf8', async (err, data) => {
+                    // console.log(data.replaceAll('"', ''))
+                    const lines = data.replaceAll('"', '').split('\n')
+                    const head = lines[0].split(',')
+
+                    // console.log(head)
+                    // console.log(lines)
+
+                    for (let line of lines.filter((_, index) => index !== 0)) {
+                        const values = line.split(',')
+
+                        const invoice_number = values[head.indexOf('Reference')]
+
+                        const receivable = await Receivable.findOne({
+                            where: {
+                                invoice_number: parseInt(
+                                    invoice_number.substring(1)
+                                ),
+                                canceled_at: null,
+                            },
+                        })
+
+                        if (!receivable) {
+                            continue
+                        }
+
+                        const accountCardType =
+                            values[head.indexOf('Card Type')]
+                        const accountEntryMethod = 'Keyed'
+                        const accountExpiryDate = '1230'
+                        const amount = values[head.indexOf('Sale Amount')]
+                        const amountBalance = '0'
+                        const amountProcessed = values[head.indexOf('Total')]
+                        const amountTaxed = '0'
+                        const amountTipped = '0'
+                        const approvalNumberResult =
+                            values[head.indexOf('Approval')]
+                        const avsResponseCode = 'NA'
+                        const avsResponseText = 'Not applicable'
+                        const batchNumber = '0'
+                        const billingName = ''
+                        const cashier = ''
+                        const cvvResponseCode = 'M'
+                        const cvvResponseText = 'Match'
+                        const externalTransactionId = receivable.id
+                        const isPartialApproval = false
+                        const maskedAccount = values[head.indexOf('Card')]
+                        const resultMessage = 'Approved'
+                        const resultStatus = 'true'
+                        const transactionReference =
+                            values[head.indexOf('Reference')]
+                        const transactionType = 'CreditSale'
+                        const uniqueTransId =
+                            values[head.indexOf('Transaction ID')]
+
+                        const transactionExists =
+                            await Emergepaytransaction.findOne({
+                                where: {
+                                    unique_trans_id: uniqueTransId,
+                                    canceled_at: null,
+                                },
+                            })
+
+                        if (transactionExists) {
+                            continue
+                        }
+
+                        await Emergepaytransaction.create({
+                            account_card_type: accountCardType,
+                            account_entry_method: accountEntryMethod,
+                            account_expiry_date: accountExpiryDate,
+                            amount: parseFloat(amount),
+                            amount_balance: parseFloat(amountBalance || 0),
+                            amount_processed: parseFloat(amountProcessed || 0),
+                            amount_taxed: parseFloat(amountTaxed || 0),
+                            amount_tipped: parseFloat(amountTipped || 0),
+                            approval_number_result: approvalNumberResult,
+                            avs_response_code: avsResponseCode,
+                            avs_response_text: avsResponseText,
+                            batch_number: batchNumber,
+                            billing_name: billingName,
+                            cashier: cashier,
+                            cvv_response_code: cvvResponseCode,
+                            cvv_response_text: cvvResponseText,
+                            external_transaction_id: externalTransactionId,
+                            is_partial_approval: isPartialApproval,
+                            masked_account: maskedAccount,
+                            result_message: resultMessage,
+                            result_status: resultStatus,
+                            transaction_reference: transactionReference,
+                            transaction_type: transactionType,
+                            unique_trans_id: uniqueTransId,
+                            created_at: new Date(),
+                            created_by: 2,
+                        })
+                        if (receivable && resultMessage === 'Approved') {
+                            const amountPaidBalance =
+                                parseFloat(amountProcessed)
+                            const paymentMethod = await PaymentMethod.findOne({
+                                where: {
+                                    platform: 'Gravity - Online',
+                                    canceled_at: null,
+                                },
+                            })
+                            await settlement({
+                                receivable_id: receivable.id,
+                                amountPaidBalance,
+                                settlement_date: format(new Date(), 'yyyyMMdd'),
+                                paymentmethod_id: paymentMethod.id,
+                            })
+                        }
+                    }
+                })
+            }
         } catch (err) {
             await t.rollback()
             const className = 'DataSyncController'
