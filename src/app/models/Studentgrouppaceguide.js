@@ -13,6 +13,7 @@ class Studentgrouppaceguide extends Model {
                 day: Sequelize.INTEGER,
                 type: Sequelize.STRING,
                 description: Sequelize.STRING,
+                status: Sequelize.STRING,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,

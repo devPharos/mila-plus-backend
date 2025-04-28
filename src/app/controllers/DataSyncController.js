@@ -85,13 +85,22 @@ class DataSyncController {
                               })
                             : null
 
-                        const filial = values[0]
+                        const filial = values[
+                            headers.indexOf('RegistrationNumber')
+                        ]
                             ? await Filial.findOne({
                                   where: {
-                                      alias: values[0].substring(0, 3),
+                                      alias: values[
+                                          headers.indexOf('RegistrationNumber')
+                                      ].substring(0, 3),
+                                      canceled_at: null,
                                   },
                               })
                             : null
+
+                        if (!filial) {
+                            continue
+                        }
 
                         const data = {
                             company_id: 1,
@@ -167,10 +176,10 @@ class DataSyncController {
                             native_language: capitalizeFirstLetter(
                                 values[headers.indexOf('Native Language')] || ''
                             ),
-                            home_country_phone_ddi:
-                                values[
-                                    headers.indexOf('HomeCountryPhoneNumber')
-                                ],
+                            // home_country_phone_ddi:
+                            //     values[
+                            //         headers.indexOf('HomeCountryPhoneNumber')
+                            //     ],
                             home_country_phone:
                                 values[
                                     headers.indexOf('HomeCountryPhoneNumber')
@@ -194,8 +203,8 @@ class DataSyncController {
                             home_country_country: capitalizeFirstLetter(
                                 values[headers.indexOf('City')].replace('’', '')
                             ),
-                            whatsapp_ddi:
-                                values[headers.indexOf('WhatsAppPhoneNumber')],
+                            // whatsapp_ddi:
+                            //     values[headers.indexOf('WhatsAppPhoneNumber')],
                             whatsapp:
                                 values[headers.indexOf('WhatsAppPhoneNumber')],
                             email: values[

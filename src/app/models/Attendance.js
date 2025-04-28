@@ -1,6 +1,6 @@
 import Sequelize, { Model } from 'sequelize'
 
-class Studentgroupclass extends Model {
+class Attendance extends Model {
     static init(sequelize) {
         super.init(
             {
@@ -9,15 +9,14 @@ class Studentgroupclass extends Model {
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true,
                 },
-                filial_id: Sequelize.INTEGER,
                 studentgroup_id: Sequelize.INTEGER,
-                date: Sequelize.STRING,
-                weekday: Sequelize.STRING,
+                student_id: Sequelize.UUID,
                 shift: Sequelize.STRING,
-                notes: Sequelize.TEXT,
+                first_check: Sequelize.STRING,
+                second_check: Sequelize.STRING,
                 status: Sequelize.STRING,
-                locked_by: Sequelize.INTEGER,
-                locked_at: Sequelize.DATE,
+                studentvacation_id: Sequelize.UUID,
+                studentmedicalexcuse_id: Sequelize.UUID,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -34,19 +33,23 @@ class Studentgroupclass extends Model {
     }
 
     static associate(models) {
-        this.belongsTo(models.Filial, {
-            foreignKey: 'filial_id',
-            as: 'filial',
-        })
         this.belongsTo(models.Studentgroup, {
-            foreignKey: 'studentgroup_id',
+            sourceKey: { name: 'studentgroup_id' },
             as: 'studentgroup',
         })
-        this.hasMany(models.Studentgrouppaceguide, {
-            foreignKey: 'studentgroupclass_id',
-            as: 'paceguides',
+        this.belongsTo(models.Student, {
+            sourceKey: { name: 'student_id' },
+            as: 'student',
+        })
+        this.belongsTo(models.Studentvacation, {
+            sourceKey: { name: 'studentvacation_id' },
+            as: 'studentvacation',
+        })
+        this.belongsTo(models.Studentmedicalexcuse, {
+            sourceKey: { name: 'studentmedicalexcuse_id' },
+            as: 'studentmedicalexcuse',
         })
     }
 }
 
-export default Studentgroupclass
+export default Attendance

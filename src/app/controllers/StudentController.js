@@ -21,6 +21,8 @@ import Processtype from '../models/Processtype'
 import Processsubstatus from '../models/Processsubstatus'
 import Staff from '../models/Staff'
 import Studentgroup from '../models/Studentgroup'
+import StudentXGroup from '../models/StudentXGroup'
+import { addDays, format, parseISO, subDays } from 'date-fns'
 
 const { Op } = Sequelize
 
@@ -354,6 +356,25 @@ class StudentController {
         const t = await connection.transaction()
         try {
             const { student_id, reason, date } = req.body
+
+            if (!student_id) {
+                return res.status(400).json({
+                    error: 'Student id not defined.',
+                })
+            }
+
+            if (!date) {
+                return res.status(400).json({
+                    error: 'Date not defined.',
+                })
+            }
+
+            if (!reason) {
+                return res.status(400).json({
+                    error: 'Reason not defined.',
+                })
+            }
+
             const student = await Student.findByPk(student_id, {
                 where: { canceled_at: null },
             })
@@ -439,6 +460,23 @@ class StudentController {
                 }
             )
 
+            await StudentXGroup.update(
+                {
+                    end_date: format(subDays(parseISO(date), 1), 'yyyy-MM-dd'),
+                    updated_at: new Date(),
+                    updated_by: req.userId,
+                },
+                {
+                    where: {
+                        student_id: student.id,
+                        group_id: student.dataValues.studentgroup_id,
+                        end_date: null,
+                        canceled_at: null,
+                    },
+                    transaction: t,
+                }
+            )
+
             t.commit()
 
             return res.status(200).json(student)
@@ -454,28 +492,184 @@ class StudentController {
     }
 
     async activate(req, res) {
-        const { student_id } = req.params
-        const studentExists = await Student.findByPk(student_id)
-
-        if (!studentExists) {
-            return res.status(400).json({
-                error: 'Student not found.',
-            })
-        }
-
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
         try {
-            await studentExists.update({
-                status: 'In Class',
-                updated_at: new Date(),
-                updated_by: req.userId,
-            })
+            const { student_id } = req.params
+            const studentExists = await Student.findByPk(student_id)
+            const { date, studentgroup } = req.body
+
+            if (!studentgroup) {
+                return res.status(400).json({
+                    error: 'Student group not defined.',
+                })
+            }
+
+            const studentgroupExists = await Studentgroup.findByPk(
+                studentgroup.id
+            )
+
+            if (!studentgroupExists) {
+                return res.status(400).json({
+                    error: 'Student group does not exist.',
+                })
+            }
+
+            if (!date) {
+                return res.status(400).json({
+                    error: 'Date not defined.',
+                })
+            }
+
+            if (!studentExists) {
+                return res.status(400).json({
+                    error: 'Student not found.',
+                })
+            }
+            await StudentXGroup.create(
+                {
+                    company_id: 1,
+                    filial_id: studentgroupExists.filial_id,
+                    student_id: studentExists.id,
+                    group_id: studentgroupExists.id,
+                    start_date: date,
+                    end_date: null,
+                    created_at: new Date(),
+                    created_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            await studentExists.update(
+                {
+                    status: 'In Class',
+                    studentgroup_id: studentgroupExists.id,
+                    classroom_id: studentgroupExists.dataValues.classroom_id,
+                    teacher_id: studentgroupExists.dataValues.staff_id,
+                    updated_at: new Date(),
+                    updated_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            t.commit()
 
             return res.status(200).json({
                 message: 'Student activated.',
             })
         } catch (err) {
+            await t.rollback()
             const className = 'StudentController'
             const functionName = 'activate'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async transfer(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { student_id } = req.params
+            const { date, studentgroup } = req.body
+
+            const studentgroupExists = await Studentgroup.findByPk(
+                studentgroup.id
+            )
+
+            if (!studentgroupExists) {
+                return res.status(400).json({
+                    error: 'Student group does not exist.',
+                })
+            }
+
+            if (!date) {
+                return res.status(400).json({
+                    error: 'Date not defined.',
+                })
+            }
+
+            if (!student_id) {
+                return res.status(400).json({
+                    error: 'Student id not defined.',
+                })
+            }
+
+            const studentExists = await Student.findByPk(student_id)
+
+            if (!studentExists) {
+                return res.status(400).json({
+                    error: 'Student not found.',
+                })
+            }
+
+            const activeStudentGroup = await StudentXGroup.findOne({
+                where: {
+                    student_id: studentExists.id,
+                    group_id: studentExists.dataValues.studentgroup_id,
+                    end_date: null,
+                    canceled_at: null,
+                },
+            })
+
+            if (!activeStudentGroup) {
+                return res.status(400).json({
+                    error: 'Student is not in a group to be transfered.',
+                })
+            }
+
+            await activeStudentGroup.update(
+                {
+                    end_date: format(subDays(parseISO(date), 1), 'yyyy-MM-dd'),
+                    updated_at: new Date(),
+                    updated_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            await StudentXGroup.create(
+                {
+                    company_id: 1,
+                    filial_id: studentgroupExists.filial_id,
+                    student_id: studentExists.id,
+                    group_id: studentgroupExists.id,
+                    start_date: date,
+                    end_date: null,
+                    created_at: new Date(),
+                    created_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            await studentExists.update(
+                {
+                    studentgroup_id: studentgroupExists.id,
+                    classroom_id: studentgroupExists.dataValues.classroom_id,
+                    teacher_id: studentgroupExists.dataValues.staff_id,
+                    updated_at: new Date(),
+                    updated_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            t.commit()
+
+            return res.json(studentExists)
+        } catch (err) {
+            const className = 'StudentController'
+            const functionName = 'transfer'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

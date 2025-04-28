@@ -274,6 +274,7 @@ routes.post('/students', StudentController.store)
 routes.put('/students/:student_id', StudentController.update)
 routes.post('/students/inactivate', StudentController.inactivate)
 routes.post('/students/activate/:student_id', StudentController.activate)
+routes.post('/students/transfer/:student_id', StudentController.transfer)
 
 routes.get('/classrooms', ClassroomController.index)
 routes.get('/classrooms/:classroom_id', ClassroomController.show)
@@ -284,6 +285,14 @@ routes.get('/studentgroups', StudentgroupController.index)
 routes.get('/studentgroups/:studentgroup_id', StudentgroupController.show)
 routes.post('/studentgroups', StudentgroupController.store)
 routes.put('/studentgroups/:studentgroup_id', StudentgroupController.update)
+routes.post(
+    '/studentgroups/start/:studentgroup_id',
+    StudentgroupController.startGroup
+)
+routes.post(
+    '/studentgroups/pause/:studentgroup_id',
+    StudentgroupController.pauseGroup
+)
 
 routes.get('/agents/:agent_id', AgentController.show)
 routes.post('/agents', AgentController.store)

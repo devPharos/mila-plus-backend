@@ -26,6 +26,8 @@ class Studentgroup extends Model {
                 morning: Sequelize.BOOLEAN,
                 afternoon: Sequelize.BOOLEAN,
                 evening: Sequelize.BOOLEAN,
+                content_percentage: Sequelize.FLOAT,
+                class_percentage: Sequelize.FLOAT,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -77,6 +79,10 @@ class Studentgroup extends Model {
         this.hasMany(models.Studentgroupclass, {
             foreignKey: 'studentgroup_id',
             as: 'classes',
+        })
+        this.hasMany(models.StudentXGroup, {
+            foreignKey: 'group_id',
+            as: 'studentxgroups',
         })
     }
 }

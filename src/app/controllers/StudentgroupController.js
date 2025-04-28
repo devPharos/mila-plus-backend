@@ -199,6 +199,24 @@ class StudentgroupController {
                         },
                     },
                     {
+                        model: StudentXGroup,
+                        as: 'studentxgroups',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                        include: [
+                            {
+                                model: Student,
+                                as: 'student',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
+                    },
+                    {
                         model: Student,
                         as: 'students',
                         required: false,
@@ -998,6 +1016,92 @@ class StudentgroupController {
             await t.rollback()
             const className = 'StudentgroupController'
             const functionName = 'update'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async startGroup(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { studentgroup_id } = req.params
+            const studentgroup = await Studentgroup.findByPk(studentgroup_id)
+
+            if (!studentgroup) {
+                return res.status(400).json({
+                    error: 'Student Group does not exist.',
+                })
+            }
+
+            if (studentgroup.dataValues.status !== 'In Formation') {
+                return res.status(400).json({
+                    error: 'Student Group is not in formation.',
+                })
+            }
+
+            await studentgroup.update(
+                {
+                    status: 'Ongoing',
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
+                {
+                    transaction: t,
+                }
+            )
+            t.commit()
+
+            return res.status(200).json(studentgroup)
+        } catch (err) {
+            await t.rollback()
+            const className = 'StudentgroupController'
+            const functionName = 'startGroup'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async pauseGroup(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { studentgroup_id } = req.params
+            const studentgroup = await Studentgroup.findByPk(studentgroup_id)
+
+            if (!studentgroup) {
+                return res.status(400).json({
+                    error: 'Student Group does not exist.',
+                })
+            }
+
+            if (studentgroup.dataValues.status !== 'Ongoing') {
+                return res.status(400).json({
+                    error: 'Student Group is not ongoing.',
+                })
+            }
+
+            await studentgroup.update(
+                {
+                    status: 'In Formation',
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
+                {
+                    transaction: t,
+                }
+            )
+            t.commit()
+
+            return res.status(200).json(studentgroup)
+        } catch (err) {
+            await t.rollback()
+            const className = 'StudentgroupController'
+            const functionName = 'pauseGroup'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,
