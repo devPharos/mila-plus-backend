@@ -3,12 +3,12 @@
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.addColumn('recurrences', 'memo', {
+        await queryInterface.addColumn('payeerecurrences', 'memo', {
             type: Sequelize.TEXT,
             allowNull: true,
         })
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.removeColumn('recurrences', 'memo')
+        await queryInterface.removeColumn('payeerecurrences', 'memo')
     },
 }
