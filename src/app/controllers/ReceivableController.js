@@ -1294,7 +1294,7 @@ class ReceivableController {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 12,
+                limit = 50,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Receivable)) {
@@ -1323,13 +1323,9 @@ class ReceivableController {
                     field: 'issuer_id',
                     type: 'uuid',
                 },
-                // {
-                //     field: 'invoice_number',
-                //     type: 'float',
-                // },
                 {
-                    field: 'entry_date',
-                    type: 'date',
+                    field: 'invoice_number',
+                    type: 'float',
                 },
                 {
                     field: 'due_date',
