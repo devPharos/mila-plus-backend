@@ -138,13 +138,18 @@ export async function generateRecurrenceReceivables({
                     })
                     await verifyAndCancelTextToPayTransaction(receivable.id)
                     await verifyAndCancelParcelowPaymentLink(receivable.id)
-                    await Receivablediscounts.destroy({
-                        where: {
-                            receivable_id: receivable.id,
-                            canceled_at: null,
+                    await receivable.update(
+                        {
+                            canceled_at: new Date(),
+                            canceled_by: req.userId,
                         },
-                    })
-                    await receivable.destroy()
+                        {
+                            where: {
+                                id: receivable.id,
+                                canceled_at: null,
+                            },
+                        }
+                    )
                 }
             }
         } else {
