@@ -394,7 +394,24 @@ class PayeeRecurrenceController {
                 })
             }
 
-            const issuer = await Issuer.findByPk(merchant.issuer)
+            const merchantExists = await Merchants.findByPk(merchant.id, {
+                include: [
+                    {
+                        model: Issuer,
+                        as: 'issuer',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                ],
+            })
+
+            if (!merchantExists) {
+                return res.status(400).json({
+                    error: 'Merchant does not exist.',
+                })
+            }
+
+            const issuer = await Issuer.findByPk(merchantExists.issuer.id)
 
             if (!issuer) {
                 return res.status(400).json({

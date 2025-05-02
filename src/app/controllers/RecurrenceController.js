@@ -119,8 +119,13 @@ export async function generateRecurrenceReceivables({
 
         let invoices_number = []
 
+        console.log({ clearAll })
         if (clearAll) {
             for (const receivable of receivables) {
+                console.log(
+                    receivable.dataValues.status,
+                    receivable.dataValues.fee
+                )
                 if (
                     receivable.dataValues.status === 'Pending' &&
                     receivable.dataValues.fee === 0
@@ -131,6 +136,12 @@ export async function generateRecurrenceReceivables({
                     })
                     await verifyAndCancelTextToPayTransaction(receivable.id)
                     await verifyAndCancelParcelowPaymentLink(receivable.id)
+                    await Receivablediscounts.destroy({
+                        where: {
+                            receivable_id: receivable.id,
+                            canceled_at: null,
+                        },
+                    })
                     await receivable.destroy()
                 }
             }
@@ -139,6 +150,7 @@ export async function generateRecurrenceReceivables({
                 (receivable) => receivable.dataValues.status === 'Pending'
             ).length
         }
+        console.log('Go on')
 
         let lastPaidReceivable = null
         const paid = receivables.filter(
@@ -168,8 +180,6 @@ export async function generateRecurrenceReceivables({
         if (pedings > 0) {
             initialPeriod = pedings + 1
         }
-
-        console.log({ initialPeriod, totalPeriods })
 
         for (let i = initialPeriod; i <= totalPeriods; i++) {
             let entry_date = null
@@ -212,6 +222,7 @@ export async function generateRecurrenceReceivables({
                     due_date < discount.dataValues.start_date
                 ) {
                     applyDiscount = false
+                    console.log('start date')
                 }
 
                 if (
@@ -219,6 +230,7 @@ export async function generateRecurrenceReceivables({
                     due_date > discount.dataValues.end_date
                 ) {
                     applyDiscount = false
+                    console.log('end date')
                 }
 
                 // Contains Tuition
@@ -228,6 +240,7 @@ export async function generateRecurrenceReceivables({
                     )
                 ) {
                     applyDiscount = false
+                    console.log('not tuition')
                 }
 
                 if (applyDiscount) {
@@ -552,7 +565,6 @@ class RecurrenceController {
                         paymentcriteria_id: paymentCriteriaExists.id,
                         chartofaccount_id: chartOfAccountExists.id,
                         ...req.body,
-
                         amount: req.body.prices.total_tuition,
                         issuer_id: issuer.id,
                         created_at: new Date(),
@@ -748,6 +760,54 @@ class RecurrenceController {
             await t.rollback()
             const className = 'RecurrenceController'
             const functionName = 'stopRecurrence'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+    async recurrenceReceivables(req, res) {
+        try {
+            const { recurrence_id } = req.params
+            const recurrence = await Recurrence.findByPk(recurrence_id)
+            if (!recurrence) {
+                return res
+                    .status(400)
+                    .json({ error: 'Recurrence does not exist.' })
+            }
+            const { count, rows } = await Receivable.findAndCountAll({
+                where: {
+                    issuer_id: recurrence.dataValues.issuer_id,
+                    is_recurrence: true,
+                    canceled_at: null,
+                },
+                include: [
+                    {
+                        model: PaymentMethod,
+                        as: 'paymentMethod',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Chartofaccount,
+                        as: 'chartOfAccount',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: PaymentCriteria,
+                        as: 'paymentCriteria',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                ],
+                order: [['due_date', 'ASC']],
+            })
+
+            return res.json({ totalRows: count, rows })
+        } catch (err) {
+            const className = 'RecurrenceController'
+            const functionName = 'recurrenceReceivables'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,
