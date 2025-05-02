@@ -59,6 +59,9 @@ export async function generateSearchByFields(
     search = '',
     searchableFields = []
 ) {
+    if (search === 'null' || search === null || search === '') {
+        return null
+    }
     let searches = null
 
     const modelIds = await generateSearchByModel(

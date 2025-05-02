@@ -292,13 +292,9 @@ class ChartOfAccountsController {
                     ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
                     ...typeSearches,
-                    [Op.and]: [
-                        {
-                            code: {
-                                [Op.notIn]: ['01', '02'],
-                            },
-                        },
-                    ],
+                    code: {
+                        [Op.notIn]: ['01', '02'],
+                    },
                 },
                 include: [
                     {
