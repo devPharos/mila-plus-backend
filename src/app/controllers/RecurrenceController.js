@@ -92,6 +92,8 @@ export async function generateRecurrenceReceivables({
             return null
         }
 
+        console.log('issuer.id', issuer.id)
+
         const receivables = await Receivable.findAll({
             where: {
                 issuer_id: issuer.id,
