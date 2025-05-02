@@ -92,8 +92,6 @@ export async function generateRecurrenceReceivables({
             return null
         }
 
-        console.log('issuer.id', issuer.id)
-
         const receivables = await Receivable.findAll({
             where: {
                 issuer_id: issuer.id,
@@ -121,13 +119,8 @@ export async function generateRecurrenceReceivables({
 
         let invoices_number = []
 
-        console.log({ clearAll })
         if (clearAll) {
             for (const receivable of receivables) {
-                console.log(
-                    receivable.dataValues.status,
-                    receivable.dataValues.fee
-                )
                 if (
                     receivable.dataValues.status === 'Pending' &&
                     receivable.dataValues.fee === 0
@@ -137,14 +130,11 @@ export async function generateRecurrenceReceivables({
                         invoice_number: receivable.dataValues.invoice_number,
                     })
                     await verifyAndCancelTextToPayTransaction(receivable.id)
-                    console.log(1)
                     await verifyAndCancelParcelowPaymentLink(receivable.id)
-                    console.log(2)
                     await receivable.update({
                         canceled_at: new Date(),
                         canceled_by: 2,
                     })
-                    console.log(3)
                 }
             }
         } else {
@@ -152,7 +142,6 @@ export async function generateRecurrenceReceivables({
                 (receivable) => receivable.dataValues.status === 'Pending'
             ).length
         }
-        console.log('Go on')
 
         let lastPaidReceivable = null
         const paid = receivables.filter(
@@ -224,7 +213,6 @@ export async function generateRecurrenceReceivables({
                     due_date < discount.dataValues.start_date
                 ) {
                     applyDiscount = false
-                    console.log('start date')
                 }
 
                 if (
@@ -232,7 +220,6 @@ export async function generateRecurrenceReceivables({
                     due_date > discount.dataValues.end_date
                 ) {
                     applyDiscount = false
-                    console.log('end date')
                 }
 
                 // Contains Tuition
@@ -242,7 +229,6 @@ export async function generateRecurrenceReceivables({
                     )
                 ) {
                     applyDiscount = false
-                    console.log('not tuition')
                 }
 
                 if (applyDiscount) {
