@@ -98,7 +98,7 @@ class App {
 
         schedule.scheduleJob('0 0 4 * *', jobPutInClass)
 
-        jobPutInClass()
+        // jobPutInClass()
 
         console.log('✅ Schedule jobs started!')
     }
