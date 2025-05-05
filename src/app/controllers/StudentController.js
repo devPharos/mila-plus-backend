@@ -23,6 +23,9 @@ import Staff from '../models/Staff'
 import Studentgroup from '../models/Studentgroup'
 import StudentXGroup from '../models/StudentXGroup'
 import { addDays, format, parseISO, subDays } from 'date-fns'
+import Studentprogram from '../models/Studentprogram'
+import File from '../models/File'
+import { putInClass } from './StudentgroupController'
 
 const { Op } = Sequelize
 
@@ -323,6 +326,18 @@ class StudentController {
                         as: 'studentgroup',
                         required: false,
                         where: { canceled_at: null },
+                        include: [
+                            {
+                                model: StudentXGroup,
+                                as: 'studentxgroups',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                    student_id: student_id,
+                                },
+                                order: [['created_at', 'DESC']],
+                            },
+                        ],
                     },
                     {
                         model: Staff,
@@ -330,6 +345,40 @@ class StudentController {
                         required: false,
                         where: { canceled_at: null },
                         attributes: ['id', 'name'],
+                    },
+                    {
+                        model: Studentprogram,
+                        as: 'programs',
+                        required: false,
+                        where: { canceled_at: null },
+                        include: [
+                            {
+                                model: File,
+                                as: 'i20',
+                                required: false,
+                                where: { canceled_at: null },
+                            },
+                        ],
+                        order: [['created_at', 'DESC']],
+                    },
+                    {
+                        model: StudentXGroup,
+                        as: 'studentxgroups',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                            status: {
+                                [Op.in]: ['Not started', 'Transferred'],
+                            },
+                        },
+                        include: [
+                            {
+                                model: Studentgroup,
+                                as: 'group',
+                                required: false,
+                                where: { canceled_at: null },
+                            },
+                        ],
                     },
                 ],
             })
@@ -515,6 +564,20 @@ class StudentController {
                 })
             }
 
+            const studentXGroupExists = await StudentXGroup.findOne({
+                where: {
+                    student_id: studentExists.id,
+                    group_id: studentgroupExists.id,
+                    canceled_at: null,
+                },
+            })
+
+            if (studentXGroupExists) {
+                return res.status(400).json({
+                    error: 'Student is already in a group.',
+                })
+            }
+
             if (!date) {
                 return res.status(400).json({
                     error: 'Date not defined.',
@@ -526,7 +589,7 @@ class StudentController {
                     error: 'Student not found.',
                 })
             }
-            await StudentXGroup.create(
+            const studentXGroup = await StudentXGroup.create(
                 {
                     company_id: 1,
                     filial_id: studentgroupExists.filial_id,
@@ -534,6 +597,7 @@ class StudentController {
                     group_id: studentgroupExists.id,
                     start_date: date,
                     end_date: null,
+                    status: 'Not started',
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -542,19 +606,9 @@ class StudentController {
                 }
             )
 
-            await studentExists.update(
-                {
-                    status: 'In Class',
-                    studentgroup_id: studentgroupExists.id,
-                    classroom_id: studentgroupExists.dataValues.classroom_id,
-                    teacher_id: studentgroupExists.dataValues.staff_id,
-                    updated_at: new Date(),
-                    updated_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            if (date <= format(new Date(), 'yyyy-MM-dd')) {
+                await putInClass(studentExists.id, studentgroupExists.id, t)
+            }
 
             t.commit()
 
@@ -609,33 +663,53 @@ class StudentController {
                 })
             }
 
-            const activeStudentGroup = await StudentXGroup.findOne({
-                where: {
-                    student_id: studentExists.id,
-                    group_id: studentExists.dataValues.studentgroup_id,
-                    end_date: null,
-                    canceled_at: null,
-                },
-            })
-
-            if (!activeStudentGroup) {
+            if (!studentExists.dataValues.studentgroup_id) {
                 return res.status(400).json({
-                    error: 'Student is not in a group to be transfered.',
+                    error: 'Student is not in a group to be transferred.',
                 })
             }
 
-            await activeStudentGroup.update(
-                {
-                    end_date: format(subDays(parseISO(date), 1), 'yyyy-MM-dd'),
-                    updated_at: new Date(),
-                    updated_by: req.userId,
+            const activeStudentGroup = await StudentXGroup.findOne({
+                where: {
+                    student_id: studentExists.id,
+                    group_id: {
+                        [Op.not]: null,
+                    },
+                    end_date: null,
+                    canceled_at: null,
                 },
-                {
-                    transaction: t,
-                }
-            )
+                order: [['created_at', 'DESC']],
+            })
 
-            await StudentXGroup.create(
+            if (activeStudentGroup) {
+                if (activeStudentGroup.dataValues.start_date === date) {
+                    await activeStudentGroup.update(
+                        {
+                            canceled_at: new Date(),
+                            canceled_by: req.userId,
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+                } else {
+                    await activeStudentGroup.update(
+                        {
+                            end_date: format(
+                                subDays(parseISO(date), 1),
+                                'yyyy-MM-dd'
+                            ),
+                            updated_at: new Date(),
+                            updated_by: req.userId,
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+                }
+            }
+
+            const studentXGroup = await StudentXGroup.create(
                 {
                     company_id: 1,
                     filial_id: studentgroupExists.filial_id,
@@ -643,6 +717,7 @@ class StudentController {
                     group_id: studentgroupExists.id,
                     start_date: date,
                     end_date: null,
+                    status: 'Transferred',
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -651,18 +726,31 @@ class StudentController {
                 }
             )
 
-            await studentExists.update(
-                {
-                    studentgroup_id: studentgroupExists.id,
-                    classroom_id: studentgroupExists.dataValues.classroom_id,
-                    teacher_id: studentgroupExists.dataValues.staff_id,
-                    updated_at: new Date(),
-                    updated_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            if (date <= format(new Date(), 'yyyy-MM-dd')) {
+                await studentExists.update(
+                    {
+                        studentgroup_id: studentgroupExists.id,
+                        classroom_id:
+                            studentgroupExists.dataValues.classroom_id,
+                        teacher_id: studentgroupExists.dataValues.staff_id,
+                        updated_at: new Date(),
+                        updated_by: req.userId,
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+                await studentXGroup.update(
+                    {
+                        status: 'Active',
+                        updated_by: req.userId,
+                        updated_at: new Date(),
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+            }
 
             t.commit()
 
@@ -670,6 +758,31 @@ class StudentController {
         } catch (err) {
             const className = 'StudentController'
             const functionName = 'transfer'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async deleteTransfer(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { transfer_id } = req.params
+
+            const transfer = await StudentXGroup.findByPk(transfer_id)
+
+            await transfer.update({
+                canceled_at: new Date(),
+                canceled_by: req.userId,
+            })
+
+            return res.status(200).json(transfer)
+        } catch (err) {
+            await t.rollback()
+            const className = 'StudentController'
+            const functionName = 'deleteTransfer'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

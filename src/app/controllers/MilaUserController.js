@@ -71,9 +71,9 @@ class MilaUserController {
                         <br/>
                         <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
 
-                console.log('from: ' + process.env.MAIL_FROM)
-                console.log('to: ' + email)
-                console.log('title: ' + title)
+                // console.log('from: ' + process.env.MAIL_FROM)
+                // console.log('to: ' + email)
+                // console.log('title: ' + title)
 
                 mailer.sendMail({
                     from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
@@ -189,9 +189,9 @@ class MilaUserController {
                         <br/>
                         <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
 
-                console.log('from: ' + process.env.MAIL_FROM)
-                console.log('to: ' + email)
-                console.log('title: ' + title)
+                // console.log('from: ' + process.env.MAIL_FROM)
+                // console.log('to: ' + email)
+                // console.log('title: ' + title)
 
                 mailer.sendMail({
                     from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
@@ -312,9 +312,9 @@ class MilaUserController {
                         <br/>
                         <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
 
-                console.log('from: ' + process.env.MAIL_FROM)
-                console.log('to: ' + email)
-                console.log('title: ' + title)
+                // console.log('from: ' + process.env.MAIL_FROM)
+                // console.log('to: ' + email)
+                // console.log('title: ' + title)
 
                 mailer.sendMail({
                     from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',

@@ -15,6 +15,7 @@ class StudentXGroup extends Model {
                 group_id: Sequelize.INTEGER,
                 start_date: Sequelize.STRING,
                 end_date: Sequelize.STRING,
+                status: Sequelize.STRING,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,

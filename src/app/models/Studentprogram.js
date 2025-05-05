@@ -1,6 +1,6 @@
 import Sequelize, { Model } from 'sequelize'
 
-class Enrollmentdependentdocument extends Model {
+class Studentprogram extends Model {
     static init(sequelize) {
         super.init(
             {
@@ -9,10 +9,10 @@ class Enrollmentdependentdocument extends Model {
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true,
                 },
-                enrollment_id: Sequelize.UUID,
-                dependent_id: Sequelize.UUID,
+                student_id: Sequelize.UUID,
                 file_id: Sequelize.UUID,
-                document_id: Sequelize.UUID,
+                start_date: Sequelize.STRING,
+                end_date: Sequelize.STRING,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -29,20 +29,15 @@ class Enrollmentdependentdocument extends Model {
     }
 
     static associate(models) {
-        this.belongsTo(models.Enrollment, {
-            foreignKey: 'enrollment_id',
-            as: 'enrollments',
+        this.belongsTo(models.Student, {
+            foreignKey: 'student_id',
+            as: 'student',
         })
-        this.belongsTo(models.Document, {
-            foreignKey: 'document_id',
-            as: 'documents',
+        this.belongsTo(models.File, {
+            foreignKey: 'file_id',
+            as: 'i20',
         })
-        this.belongsTo(models.Enrollmentdependent, {
-            foreignKey: 'dependent_id',
-            as: 'dependents',
-        })
-        this.belongsTo(models.File, { foreignKey: 'file_id', as: 'file' })
     }
 }
 
-export default Enrollmentdependentdocument
+export default Studentprogram

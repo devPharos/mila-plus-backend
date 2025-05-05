@@ -58,6 +58,7 @@ import PayeeSettlementController from './app/controllers/PayeeSettlementControll
 import PayeeRecurrenceController from './app/controllers/PayeeRecurrenceController'
 import ClassroomController from './app/controllers/ClassroomController'
 import StudentgroupController from './app/controllers/StudentgroupController'
+import StudentProgramController from './app/controllers/StudentProgramController'
 
 const routes = new Router()
 
@@ -275,6 +276,12 @@ routes.put('/students/:student_id', StudentController.update)
 routes.post('/students/inactivate', StudentController.inactivate)
 routes.post('/students/activate/:student_id', StudentController.activate)
 routes.post('/students/transfer/:student_id', StudentController.transfer)
+routes.delete(
+    '/students/transfer/:transfer_id',
+    StudentController.deleteTransfer
+)
+
+routes.post('/studentprogram', StudentProgramController.store)
 
 routes.get('/classrooms', ClassroomController.index)
 routes.get('/classrooms/:classroom_id', ClassroomController.show)
