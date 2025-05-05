@@ -13,6 +13,7 @@ import {
     sendOnDueDateInvoices,
 } from './app/controllers/ReceivableController.js'
 import { mailer } from './config/mailer.js'
+import { jobPutInClass } from './app/controllers/StudentgroupController.js'
 
 class App {
     constructor() {
@@ -95,10 +96,9 @@ class App {
         schedule.scheduleJob(`0 45 4 * * *`, sendAfterDueDateInvoices)
         schedule.scheduleJob('0 0 5 * * *', calculateFeesRecurrenceJob)
 
-        // sendAutopayRecurrenceJob()
-        // calculateFeesRecurrenceJob()
+        schedule.scheduleJob('0 0 4 * *', jobPutInClass)
 
-        // adjustPaidTransactions()
+        jobPutInClass()
 
         console.log('✅ Schedule jobs started!')
     }

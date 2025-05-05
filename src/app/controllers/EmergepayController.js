@@ -465,7 +465,7 @@ class EmergepayController {
             // const connection = new Sequelize(databaseConfig)
             // const t = await connection.transaction()
 
-            console.log('--- POSTBACK LISTENER ---')
+            // console.log('--- POSTBACK LISTENER ---')
             var hmacSignature = req.header('hmac-signature')
             var rawData = req.body
             var jsonData = JSON.stringify(rawData)
@@ -507,7 +507,7 @@ class EmergepayController {
                     justTransaction = false,
                 } = emergeData
 
-                console.log('externalTransactionId', externalTransactionId)
+                // console.log('externalTransactionId', externalTransactionId)
 
                 await Emergepaytransaction.create({
                     account_card_type: accountCardType,
@@ -565,7 +565,7 @@ class EmergepayController {
                 res.sendStatus(200)
                 return
             } else {
-                console.log('Hmac não corresponde')
+                // console.log('Hmac não corresponde')
             }
         } catch (err) {
             console.log({ err })

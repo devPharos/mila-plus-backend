@@ -22,8 +22,101 @@ import { addDays, format, getDay, parseISO } from 'date-fns'
 import Studentgroupclass from '../models/Studentgroupclass'
 import Paceguide from '../models/Paceguide'
 import Studentgrouppaceguide from '../models/Studentgrouppaceguide'
+import Studentinactivation from '../models/Studentinactivation'
 
 const { Op } = Sequelize
+
+export async function jobPutInClass() {
+    const connection = new Sequelize(databaseConfig)
+    const t = await connection.transaction()
+    try {
+        const pendingStudents = await StudentXGroup.findAll({
+            where: {
+                start_date: {
+                    [Op.lte]: format(new Date(), 'yyyy-MM-dd'),
+                },
+                status: {
+                    [Op.in]: ['Not started', 'Transferred'],
+                },
+                canceled_at: null,
+            },
+            include: [
+                {
+                    model: Student,
+                    as: 'student',
+                    required: false,
+                    where: {
+                        canceled_at: null,
+                    },
+                },
+            ],
+            attributes: ['student_id', 'group_id'],
+        })
+
+        for (let pendingStudent of pendingStudents) {
+            await putInClass(
+                pendingStudent.student_id,
+                pendingStudent.group_id,
+                t
+            )
+        }
+
+        t.commit()
+
+        return true
+    } catch (err) {
+        await t.rollback()
+        const className = 'StudentgroupController'
+        const functionName = 'jobPutInClass'
+        MailLog({ className, functionName, req: null, err })
+        return false
+    }
+}
+
+export async function putInClass(student_id, studentgroup_id, t) {
+    const student = await Student.findByPk(student_id)
+    const studentGroup = await Studentgroup.findByPk(studentgroup_id)
+
+    if (!student || !studentGroup) {
+        return false
+    }
+
+    await student.update(
+        {
+            studentgroup_id: studentGroup.id,
+            classroom_id: studentGroup.dataValues.classroom_id,
+            teacher_id: studentGroup.dataValues.staff_id,
+            status: 'In Class',
+            updated_by: 2,
+            updated_at: new Date(),
+        },
+        {
+            transaction: t || null,
+        }
+    )
+
+    await StudentXGroup.update(
+        {
+            status: 'Active',
+            updated_by: 2,
+            updated_at: new Date(),
+        },
+        {
+            where: {
+                student_id: student_id,
+                group_id: studentgroup_id,
+                status: 'Pending',
+                start_date: {
+                    [Op.lte]: format(new Date(), 'yyyy-MM-dd'),
+                },
+                canceled_at: null,
+            },
+            transaction: t || null,
+        }
+    )
+
+    return true
+}
 
 class StudentgroupController {
     async index(req, res) {
@@ -213,6 +306,16 @@ class StudentgroupController {
                                 where: {
                                     canceled_at: null,
                                 },
+                                include: [
+                                    {
+                                        model: Studentinactivation,
+                                        as: 'inactivation',
+                                        required: false,
+                                        where: {
+                                            canceled_at: null,
+                                        },
+                                    },
+                                ],
                             },
                         ],
                     },
@@ -505,29 +608,6 @@ class StudentgroupController {
                     transaction: t,
                 }
             ).then(async (studentGroup) => {
-                for (let {
-                    verifyDate = null,
-                    dayOfWeek = null,
-                    shift = null,
-                    memo = null,
-                } of daysToAddToStudentGroup) {
-                    await Studentgroupclass.create(
-                        {
-                            studentgroup_id: studentGroup.id,
-                            filial_id: filial.id,
-                            date: format(verifyDate, 'yyyy-MM-dd'),
-                            weekday: weekDays[dayOfWeek],
-                            shift,
-                            notes: memo,
-                            created_by: req.userId,
-                            created_at: new Date(),
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
-                }
-
                 for (let {
                     verifyDate = null,
                     dayOfWeek = null,
@@ -897,117 +977,111 @@ class StudentgroupController {
             }
 
             // verify students in group that are not in the students array
-            const studentsInGroup = await StudentXGroup.findAll({
-                where: {
-                    company_id: 1,
-                    filial_id: filialExists.id,
-                    group_id: studentGroup.id,
-                    canceled_at: null,
-                    student_id: {
-                        [Op.notIn]: students.map((student) => student.id),
-                    },
-                },
-                attributes: ['student_id'],
-            })
+            // const studentsInGroup = await StudentXGroup.findAll({
+            //     where: {
+            //         company_id: 1,
+            //         filial_id: filialExists.id,
+            //         group_id: studentGroup.id,
+            //         canceled_at: null,
+            //         student_id: {
+            //             [Op.notIn]: students.map((student) => student.id),
+            //         },
+            //     },
+            //     attributes: ['student_id'],
+            // })
 
-            if (studentsInGroup.length > 0) {
-                for (let studentInGroup of studentsInGroup) {
-                    const student = await Student.findByPk(
-                        studentInGroup.dataValues.student_id
-                    )
-                    await StudentXGroup.update(
-                        {
-                            canceled_at: new Date(),
-                            canceled_by: req.userId,
-                        },
-                        {
-                            where: {
-                                company_id: 1,
-                                filial_id: filialExists.id,
-                                student_id: student.id,
-                                group_id: studentGroup.id,
-                                canceled_at: null,
-                            },
-                            transaction: t,
-                        }
-                    )
+            // if (studentsInGroup.length > 0) {
+            //     for (let studentInGroup of studentsInGroup) {
+            //         const student = await Student.findByPk(
+            //             studentInGroup.dataValues.student_id
+            //         )
+            //         await StudentXGroup.update(
+            //             {
+            //                 canceled_at: new Date(),
+            //                 canceled_by: req.userId,
+            //             },
+            //             {
+            //                 where: {
+            //                     company_id: 1,
+            //                     filial_id: filialExists.id,
+            //                     student_id: student.id,
+            //                     group_id: studentGroup.id,
+            //                     canceled_at: null,
+            //                 },
+            //                 transaction: t,
+            //             }
+            //         )
 
-                    await student.update(
-                        {
-                            studentgroup_id: null,
-                            classroom_id: null,
-                            teacher_id: null,
-                            status: 'Waiting',
-                            updated_by: req.userId,
-                            updated_at: new Date(),
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
-                }
-            }
+            //         await student.update(
+            //             {
+            //                 studentgroup_id: null,
+            //                 classroom_id: null,
+            //                 teacher_id: null,
+            //                 status: 'Waiting',
+            //                 updated_by: req.userId,
+            //                 updated_at: new Date(),
+            //             },
+            //             {
+            //                 transaction: t,
+            //             }
+            //         )
+            //     }
+            // }
 
-            for (let student of students) {
-                const studentXGroupExists = await StudentXGroup.findOne({
-                    where: {
-                        company_id: 1,
-                        filial_id: filialExists.id,
-                        student_id: student.id,
-                        group_id: studentGroup.id,
-                        canceled_at: null,
-                    },
-                })
-                const { start_date, end_date } = req.body
+            // for (let student of students) {
+            //     const studentXGroupExists = await StudentXGroup.findOne({
+            //         where: {
+            //             company_id: 1,
+            //             filial_id: filialExists.id,
+            //             student_id: student.id,
+            //             group_id: studentGroup.id,
+            //             canceled_at: null,
+            //         },
+            //     })
+            //     const { start_date, end_date } = req.body
 
-                const studentExists = await Student.findByPk(student.id)
+            //     const studentExists = await Student.findByPk(student.id)
 
-                if (!studentXGroupExists) {
-                    await StudentXGroup.create(
-                        {
-                            company_id: 1,
-                            filial_id: filialExists.id,
-                            student_id: studentExists.id,
-                            group_id: studentGroup.id,
-                            start_date: start_date
-                                ? start_date.replaceAll('-', '')
-                                : null,
-                            end_date: end_date
-                                ? end_date.replaceAll('-', '')
-                                : null,
-                            created_at: new Date(),
-                            created_by: req.userId,
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
+            //     if (!studentXGroupExists) {
+            //         const studentXGroup = await StudentXGroup.create(
+            //             {
+            //                 company_id: 1,
+            //                 filial_id: filialExists.id,
+            //                 student_id: studentExists.id,
+            //                 group_id: studentGroup.id,
+            //                 start_date: start_date
+            //                     ? start_date.replaceAll('-', '')
+            //                     : null,
+            //                 end_date: end_date
+            //                     ? end_date.replaceAll('-', '')
+            //                     : null,
+            //                 status: 'Pending',
+            //                 created_at: new Date(),
+            //                 created_by: req.userId,
+            //             },
+            //             {
+            //                 transaction: t,
+            //             }
+            //         )
 
-                    await studentExists.update(
-                        {
-                            studentgroup_id: studentGroup.id,
-                            classroom_id: classroomExists.id,
-                            teacher_id: staffExists.id,
-                            status: 'In Class',
-                            updated_by: req.userId,
-                            updated_at: new Date(),
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
-                } else {
-                    await studentExists.update(
-                        {
-                            classroom_id: classroomExists.id,
-                            teacher_id: staffExists.id,
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
-                }
-            }
+            //         if (
+            //             studentGroup.dataValues.start_date >=
+            //             format(new Date(), 'yyyy-MM-dd')
+            //         ) {
+            //             putInClass(studentExists.id, studentGroup.id, t)
+            //         }
+            //     } else {
+            //         await studentExists.update(
+            //             {
+            //                 classroom_id: classroomExists.id,
+            //                 teacher_id: staffExists.id,
+            //             },
+            //             {
+            //                 transaction: t,
+            //             }
+            //         )
+            //     }
+            // }
 
             t.commit()
 
