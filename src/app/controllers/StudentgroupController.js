@@ -119,6 +119,70 @@ export async function putInClass(student_id, studentgroup_id, t) {
     return true
 }
 
+async function StudentGroupProgress(studentgroup_id = null) {
+    const progress = {
+        content: 0,
+        class: 0,
+    }
+    try {
+        if (!studentgroup_id) {
+            return progress
+        }
+        const studentGroupClasses = await Studentgroupclass.findAll({
+            where: {
+                studentgroup_id,
+                canceled_at: null,
+            },
+            attributes: ['id', 'locked_at', 'status'],
+        })
+
+        progress.content =
+            (
+                (studentGroupClasses.filter((class_) => class_.locked_at)
+                    .length /
+                    studentGroupClasses.length) *
+                100
+            ).toFixed(0) || 0
+
+        const studentGroupPaceguides = await Studentgrouppaceguide.findAll({
+            where: {
+                studentgroup_id,
+                canceled_at: null,
+            },
+            include: [
+                {
+                    model: Studentgroupclass,
+                    as: 'studentgroupclass',
+                    required: false,
+                    where: {
+                        canceled_at: null,
+                    },
+                    attributes: ['id', 'status', 'locked_at'],
+                },
+            ],
+            attributes: ['id', 'status'],
+        })
+
+        progress.class =
+            (
+                (studentGroupPaceguides.filter(
+                    (paceguide) =>
+                        paceguide.status === 'Done' &&
+                        paceguide.studentgroupclass.locked_at
+                ).length /
+                    studentGroupPaceguides.length) *
+                100
+            ).toFixed(0) || 0
+
+        return progress
+    } catch (err) {
+        const className = 'StudentgroupController'
+        const functionName = 'StudentGroupProgress'
+        MailLog({ className, functionName, req: null, err })
+        return false
+    }
+}
+
 class StudentgroupController {
     async index(req, res) {
         try {
@@ -204,6 +268,17 @@ class StudentgroupController {
                         as: 'students',
                         required: false,
                         where: {
+                            canceled_at: null,
+                        },
+                    },
+                    {
+                        model: Studentgroupclass,
+                        as: 'classes',
+                        required: false,
+                        where: {
+                            locked_at: {
+                                [Op.not]: null,
+                            },
                             canceled_at: null,
                         },
                     },
@@ -1085,6 +1160,22 @@ class StudentgroupController {
                 })
             }
 
+            const studentGroupClass = await Studentgroupclass.findOne({
+                where: {
+                    studentgroup_id: studentgroup.dataValues.id,
+                    locked_at: {
+                        [Op.not]: null,
+                    },
+                    canceled_at: null,
+                },
+            })
+
+            if (studentGroupClass) {
+                return res.status(400).json({
+                    error: 'This group has a locked attendance already. It cannont be paused',
+                })
+            }
+
             await studentgroup.update(
                 {
                     status: 'In Formation',
@@ -1112,6 +1203,7 @@ class StudentgroupController {
     async attendance(req, res) {
         try {
             const { studentgroup_id } = req.params
+            const { attendanceId = null } = req.query
             const studentgroup = await Studentgroup.findByPk(studentgroup_id)
 
             if (!studentgroup) {
@@ -1128,14 +1220,42 @@ class StudentgroupController {
 
             const filialSearch = verifyFilialSearch(Studentgroup, req)
 
-            const attendance = await Studentgroupclass.findOne({
+            const otherPaceGuides = await Studentgroupclass.findAll({
                 where: {
                     ...filialSearch,
                     studentgroup_id: studentgroup.id,
-                    locked_at: null,
-                    date: {
-                        [Op.lte]: format(new Date(), 'yyyy-MM-dd'),
-                    },
+                    canceled_at: null,
+                },
+                attributes: [
+                    'id',
+                    'date',
+                    'weekday',
+                    'shift',
+                    'notes',
+                    'locked_at',
+                    'status',
+                ],
+                order: [['date', 'ASC']],
+            })
+
+            let attendanceFilter = {
+                locked_at: null,
+                date: {
+                    [Op.lte]: format(new Date(), 'yyyy-MM-dd'),
+                },
+            }
+            if (attendanceId !== 'null') {
+                attendanceFilter = {
+                    id: attendanceId,
+                }
+            }
+
+            const attendance = await Studentgroupclass.findOne({
+                where: {
+                    ...attendanceFilter,
+                    ...filialSearch,
+                    studentgroup_id: studentgroup.id,
+
                     canceled_at: null,
                 },
                 include: [
@@ -1144,6 +1264,7 @@ class StudentgroupController {
                         as: 'paceguides',
                         required: false,
                         where: {
+                            studentgroup_id: studentgroup_id,
                             canceled_at: null,
                         },
                         attributes: [
@@ -1210,21 +1331,11 @@ class StudentgroupController {
                     },
                 ],
                 where: {
+                    studentgroup_id: studentgroup_id,
                     canceled_at: null,
-                    [Op.or]: [
-                        {
-                            day: {
-                                [Op.gte]:
-                                    attendance.dataValues.paceguides[0]
-                                        .dataValues.day,
-                            },
-                        },
-                        {
-                            status: {
-                                [Op.ne]: 'Done',
-                            },
-                        },
-                    ],
+                    status: {
+                        [Op.ne]: 'Done',
+                    },
                 },
                 order: [
                     ['day', 'ASC'],
@@ -1233,7 +1344,16 @@ class StudentgroupController {
                 attributes: ['id', 'type', 'description', 'status'],
             })
 
-            return res.json({ attendance, pendingPaceguides })
+            const studentGroupProgress = await StudentGroupProgress(
+                studentgroup_id
+            )
+
+            return res.json({
+                attendance,
+                pendingPaceguides,
+                otherPaceGuides,
+                studentGroupProgress,
+            })
         } catch (err) {
             const className = 'StudentgroupController'
             const functionName = 'attendance'
@@ -1288,14 +1408,29 @@ class StudentgroupController {
                 for (let student of shift.students) {
                     let firstCheck = 'Absent'
                     let secondCheck = 'Absent'
-                    if (student.first_check_present === 'true') {
+                    console.log(
+                        student[`first_check_${shift.shift}_${student.id}`]
+                    )
+                    if (
+                        student[`first_check_${shift.shift}_${student.id}`] ===
+                        'Present'
+                    ) {
                         firstCheck = 'Present'
-                    } else if (student.first_check_late === 'true') {
+                    } else if (
+                        student[`first_check_${shift.shift}_${student.id}`] ===
+                        'Late'
+                    ) {
                         firstCheck = 'Late'
                     }
-                    if (student.second_check_present === 'true') {
+                    if (
+                        student[`second_check_${shift.shift}_${student.id}`] ===
+                        'Present'
+                    ) {
                         secondCheck = 'Present'
-                    } else if (student.second_check_late === 'true') {
+                    } else if (
+                        student[`second_check_${shift.shift}_${student.id}`] ===
+                        'Late'
+                    ) {
                         secondCheck = 'Late'
                     }
                     const attendanceExists = await Attendance.findOne({
