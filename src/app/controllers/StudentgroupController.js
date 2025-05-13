@@ -23,6 +23,7 @@ import Studentgroupclass from '../models/Studentgroupclass'
 import Paceguide from '../models/Paceguide'
 import Studentgrouppaceguide from '../models/Studentgrouppaceguide'
 import Studentinactivation from '../models/Studentinactivation'
+import Attendance from '../models/Attendance'
 
 const { Op } = Sequelize
 
@@ -623,6 +624,7 @@ class StudentgroupController {
                             weekday: weekDays[dayOfWeek],
                             shift,
                             notes: memo,
+                            status: 'Pending',
                             created_by: req.userId,
                             created_at: new Date(),
                         },
@@ -825,7 +827,6 @@ class StudentgroupController {
                                 canceled_at: null,
                             },
                         })
-                        await studentGroupClass.destroy()
                     }
                 }
 
@@ -941,147 +942,72 @@ class StudentgroupController {
                 memo = null,
                 paceGuides = null,
             } of daysToAddToStudentGroup) {
-                await Studentgroupclass.create(
-                    {
+                let studentGroupClassExists = await Studentgroupclass.findOne({
+                    where: {
                         studentgroup_id: studentGroup.id,
                         filial_id: filial.id,
                         date: format(verifyDate, 'yyyy-MM-dd'),
                         weekday: weekDays[dayOfWeek],
                         shift,
-                        notes: memo,
-                        created_by: req.userId,
-                        created_at: new Date(),
+                        canceled_at: null,
                     },
-                    {
-                        transaction: t,
-                    }
-                ).then(async (studentGroupClass) => {
-                    if (paceGuides) {
-                        for (let paceGuide of paceGuides) {
-                            await Studentgrouppaceguide.create(
+                })
+                if (!studentGroupClassExists) {
+                    studentGroupClassExists = await Studentgroupclass.create(
+                        {
+                            studentgroup_id: studentGroup.id,
+                            filial_id: filial.id,
+                            date: format(verifyDate, 'yyyy-MM-dd'),
+                            weekday: weekDays[dayOfWeek],
+                            shift,
+                            notes: memo,
+                            status: 'Pending',
+                            created_by: req.userId,
+                            created_at: new Date(),
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+                }
+                if (paceGuides) {
+                    for (let paceGuide of paceGuides) {
+                        const paceGuideExists =
+                            await Studentgrouppaceguide.findOne(
                                 {
-                                    studentgroupclass_id: studentGroupClass.id,
-                                    day: paceGuide.day,
-                                    type: paceGuide.type,
-                                    description: paceGuide.description,
-                                    created_by: req.userId,
-                                    created_at: new Date(),
+                                    where: {
+                                        studentgroupclass_id:
+                                            studentGroupClassExists.id,
+                                        day: paceGuide.day,
+                                        type: paceGuide.type,
+                                        canceled_at: null,
+                                    },
                                 },
                                 {
                                     transaction: t,
                                 }
                             )
+                        if (paceGuideExists) {
+                            continue
                         }
+                        await Studentgrouppaceguide.create(
+                            {
+                                studentgroup_id: studentGroup.id,
+                                studentgroupclass_id:
+                                    studentGroupClassExists.id,
+                                day: paceGuide.day,
+                                type: paceGuide.type,
+                                description: paceGuide.description,
+                                created_by: req.userId,
+                                created_at: new Date(),
+                            },
+                            {
+                                transaction: t,
+                            }
+                        )
                     }
-                })
+                }
             }
-
-            // verify students in group that are not in the students array
-            // const studentsInGroup = await StudentXGroup.findAll({
-            //     where: {
-            //         company_id: 1,
-            //         filial_id: filialExists.id,
-            //         group_id: studentGroup.id,
-            //         canceled_at: null,
-            //         student_id: {
-            //             [Op.notIn]: students.map((student) => student.id),
-            //         },
-            //     },
-            //     attributes: ['student_id'],
-            // })
-
-            // if (studentsInGroup.length > 0) {
-            //     for (let studentInGroup of studentsInGroup) {
-            //         const student = await Student.findByPk(
-            //             studentInGroup.dataValues.student_id
-            //         )
-            //         await StudentXGroup.update(
-            //             {
-            //                 canceled_at: new Date(),
-            //                 canceled_by: req.userId,
-            //             },
-            //             {
-            //                 where: {
-            //                     company_id: 1,
-            //                     filial_id: filialExists.id,
-            //                     student_id: student.id,
-            //                     group_id: studentGroup.id,
-            //                     canceled_at: null,
-            //                 },
-            //                 transaction: t,
-            //             }
-            //         )
-
-            //         await student.update(
-            //             {
-            //                 studentgroup_id: null,
-            //                 classroom_id: null,
-            //                 teacher_id: null,
-            //                 status: 'Waiting',
-            //                 updated_by: req.userId,
-            //                 updated_at: new Date(),
-            //             },
-            //             {
-            //                 transaction: t,
-            //             }
-            //         )
-            //     }
-            // }
-
-            // for (let student of students) {
-            //     const studentXGroupExists = await StudentXGroup.findOne({
-            //         where: {
-            //             company_id: 1,
-            //             filial_id: filialExists.id,
-            //             student_id: student.id,
-            //             group_id: studentGroup.id,
-            //             canceled_at: null,
-            //         },
-            //     })
-            //     const { start_date, end_date } = req.body
-
-            //     const studentExists = await Student.findByPk(student.id)
-
-            //     if (!studentXGroupExists) {
-            //         const studentXGroup = await StudentXGroup.create(
-            //             {
-            //                 company_id: 1,
-            //                 filial_id: filialExists.id,
-            //                 student_id: studentExists.id,
-            //                 group_id: studentGroup.id,
-            //                 start_date: start_date
-            //                     ? start_date.replaceAll('-', '')
-            //                     : null,
-            //                 end_date: end_date
-            //                     ? end_date.replaceAll('-', '')
-            //                     : null,
-            //                 status: 'Pending',
-            //                 created_at: new Date(),
-            //                 created_by: req.userId,
-            //             },
-            //             {
-            //                 transaction: t,
-            //             }
-            //         )
-
-            //         if (
-            //             studentGroup.dataValues.start_date >=
-            //             format(new Date(), 'yyyy-MM-dd')
-            //         ) {
-            //             putInClass(studentExists.id, studentGroup.id, t)
-            //         }
-            //     } else {
-            //         await studentExists.update(
-            //             {
-            //                 classroom_id: classroomExists.id,
-            //                 teacher_id: staffExists.id,
-            //             },
-            //             {
-            //                 transaction: t,
-            //             }
-            //         )
-            //     }
-            // }
 
             t.commit()
 
@@ -1176,6 +1102,279 @@ class StudentgroupController {
             await t.rollback()
             const className = 'StudentgroupController'
             const functionName = 'pauseGroup'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async attendance(req, res) {
+        try {
+            const { studentgroup_id } = req.params
+            const studentgroup = await Studentgroup.findByPk(studentgroup_id)
+
+            if (!studentgroup) {
+                return res.status(400).json({
+                    error: 'Student Group does not exist.',
+                })
+            }
+
+            if (studentgroup.dataValues.status !== 'Ongoing') {
+                return res.status(400).json({
+                    error: 'Student Group is not ongoing.',
+                })
+            }
+
+            const filialSearch = verifyFilialSearch(Studentgroup, req)
+
+            const attendance = await Studentgroupclass.findOne({
+                where: {
+                    ...filialSearch,
+                    studentgroup_id: studentgroup.id,
+                    locked_at: null,
+                    date: {
+                        [Op.lte]: format(new Date(), 'yyyy-MM-dd'),
+                    },
+                    canceled_at: null,
+                },
+                include: [
+                    {
+                        model: Studentgrouppaceguide,
+                        as: 'paceguides',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                        attributes: [
+                            'id',
+                            'day',
+                            'type',
+                            'description',
+                            'status',
+                        ],
+                        order: [['day', 'ASC']],
+                    },
+                    {
+                        model: Attendance,
+                        as: 'attendances',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                        order: [['id', 'ASC']],
+                    },
+                    {
+                        model: Studentgroup,
+                        as: 'studentgroup',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                        attributes: ['id', 'name'],
+                        include: [
+                            {
+                                model: Student,
+                                as: 'students',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                                attributes: ['id', 'name', 'last_name'],
+                            },
+                            {
+                                model: Staff,
+                                as: 'staff',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                                attributes: ['id', 'name', 'last_name'],
+                            },
+                        ],
+                    },
+                ],
+                order: [['date', 'ASC']],
+            })
+
+            const pendingPaceguides = await Studentgrouppaceguide.findAll({
+                include: [
+                    {
+                        model: Studentgroup,
+                        as: 'studentgroup',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                        attributes: ['id', 'name'],
+                    },
+                ],
+                where: {
+                    canceled_at: null,
+                    [Op.or]: [
+                        {
+                            day: {
+                                [Op.gte]:
+                                    attendance.dataValues.paceguides[0]
+                                        .dataValues.day,
+                            },
+                        },
+                        {
+                            status: {
+                                [Op.ne]: 'Done',
+                            },
+                        },
+                    ],
+                },
+                order: [
+                    ['day', 'ASC'],
+                    ['description', 'ASC'],
+                ],
+                attributes: ['id', 'type', 'description', 'status'],
+            })
+
+            return res.json({ attendance, pendingPaceguides })
+        } catch (err) {
+            const className = 'StudentgroupController'
+            const functionName = 'attendance'
+
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async storeAttendance(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { shifts, studentgroupclass_id, paceguides, lock } = req.body
+
+            const studentgroupclass = await Studentgroupclass.findByPk(
+                studentgroupclass_id
+            )
+
+            if (!studentgroupclass) {
+                return res.status(400).json({
+                    error: 'Student Group Class does not exist.',
+                })
+            }
+
+            const studentgroup = await Studentgroup.findByPk(
+                studentgroupclass.studentgroup_id
+            )
+
+            if (!studentgroup) {
+                return res.status(400).json({
+                    error: 'Student Group does not exist.',
+                })
+            }
+
+            await studentgroupclass.update(
+                {
+                    locked_at: lock ? new Date() : null,
+                    locked_by: lock ? req.userId : null,
+                    status: lock ? 'Locked' : 'Started',
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            for (let shift of shifts) {
+                for (let student of shift.students) {
+                    let firstCheck = 'Absent'
+                    let secondCheck = 'Absent'
+                    if (student.first_check_present === 'true') {
+                        firstCheck = 'Present'
+                    } else if (student.first_check_late === 'true') {
+                        firstCheck = 'Late'
+                    }
+                    if (student.second_check_present === 'true') {
+                        secondCheck = 'Present'
+                    } else if (student.second_check_late === 'true') {
+                        secondCheck = 'Late'
+                    }
+                    const attendanceExists = await Attendance.findOne({
+                        where: {
+                            studentgroupclass_id: studentgroupclass.id,
+                            student_id: student.id,
+                            shift: shift.shift,
+                            canceled_at: null,
+                        },
+                    })
+
+                    if (attendanceExists) {
+                        await attendanceExists.update(
+                            {
+                                first_check: firstCheck,
+                                second_check: secondCheck,
+                                updated_by: req.userId,
+                                updated_at: new Date(),
+                            },
+                            {
+                                transaction: t,
+                            }
+                        )
+                    } else {
+                        await Attendance.create(
+                            {
+                                studentgroupclass_id: studentgroupclass.id,
+                                student_id: student.id,
+                                shift: shift.shift,
+                                first_check: firstCheck,
+                                second_check: secondCheck,
+                                created_by: req.userId,
+                                created_at: new Date(),
+                            },
+                            {
+                                transaction: t,
+                            }
+                        )
+                    }
+                }
+            }
+
+            for (let paceguide of paceguides) {
+                const paceguideExists = await Studentgrouppaceguide.findByPk(
+                    paceguide.id
+                )
+
+                if (!paceguideExists) {
+                    return res.status(400).json({
+                        error: 'Paceguide does not exist.',
+                    })
+                }
+
+                await paceguideExists.update(
+                    {
+                        studentgroup_id: studentgroup.id,
+                        studentgroupclass_id:
+                            paceguide.checked === 'true'
+                                ? studentgroupclass.id
+                                : paceguideExists.dataValues
+                                      .studentgroupclass_id,
+                        status:
+                            paceguide.checked === 'true' ? 'Done' : 'Pending',
+                        updated_by: req.userId,
+                        updated_at: new Date(),
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+            }
+
+            t.commit()
+
+            return res.status(200).json(studentgroup)
+        } catch (err) {
+            await t.rollback()
+            const className = 'StudentgroupController'
+            const functionName = 'storeAttendance'
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
                 error: err,

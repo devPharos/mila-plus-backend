@@ -9,7 +9,7 @@ class Attendance extends Model {
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true,
                 },
-                studentgroup_id: Sequelize.INTEGER,
+                studentgroupclass_id: Sequelize.UUID,
                 student_id: Sequelize.UUID,
                 shift: Sequelize.STRING,
                 first_check: Sequelize.STRING,
@@ -33,21 +33,13 @@ class Attendance extends Model {
     }
 
     static associate(models) {
-        this.belongsTo(models.Studentgroup, {
-            sourceKey: { name: 'studentgroup_id' },
-            as: 'studentgroup',
-        })
         this.belongsTo(models.Student, {
-            sourceKey: { name: 'student_id' },
+            foreignKey: 'student_id',
             as: 'student',
         })
-        this.belongsTo(models.Studentvacation, {
-            sourceKey: { name: 'studentvacation_id' },
-            as: 'studentvacation',
-        })
-        this.belongsTo(models.Studentmedicalexcuse, {
-            sourceKey: { name: 'studentmedicalexcuse_id' },
-            as: 'studentmedicalexcuse',
+        this.belongsTo(models.Studentgroupclass, {
+            foreignKey: 'studentgroupclass_id',
+            as: 'studentgroupclasses',
         })
     }
 }
