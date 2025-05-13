@@ -71,6 +71,7 @@ import StudentXGroup from '../app/models/StudentXGroup.js'
 import Studentgroupclass from '../app/models/Studentgroupclass.js'
 import Studentgrouppaceguide from '../app/models/Studentgrouppaceguide.js'
 import Studentprogram from '../app/models/Studentprogram.js'
+import Grade from '../app/models/Grade.js'
 
 const models = [
     Processtype,
@@ -102,6 +103,7 @@ const models = [
     FilialPriceList,
     FilialDiscountList,
     Filialdocument,
+    Grade,
     Issuer,
     Language,
     Languagemode,

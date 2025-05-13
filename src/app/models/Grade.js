@@ -1,6 +1,6 @@
 import Sequelize, { Model } from 'sequelize'
 
-class Studentgrouppaceguide extends Model {
+class Grade extends Model {
     static init(sequelize) {
         super.init(
             {
@@ -9,12 +9,11 @@ class Studentgrouppaceguide extends Model {
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true,
                 },
-                studentgroup_id: Sequelize.INTEGER,
                 studentgroupclass_id: Sequelize.UUID,
-                day: Sequelize.INTEGER,
-                type: Sequelize.STRING,
-                description: Sequelize.STRING,
-                status: Sequelize.STRING,
+                student_id: Sequelize.UUID,
+                studentgrouppaceguide_id: Sequelize.UUID,
+                score: Sequelize.FLOAT,
+                discarded: Sequelize.BOOLEAN,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -31,19 +30,19 @@ class Studentgrouppaceguide extends Model {
     }
 
     static associate(models) {
-        this.belongsTo(models.Studentgroup, {
-            sourceKey: { name: 'studentgroup_id' },
-            as: 'studentgroup',
+        this.belongsTo(models.Student, {
+            foreignKey: 'student_id',
+            as: 'student',
         })
         this.belongsTo(models.Studentgroupclass, {
-            sourceKey: { name: 'studentgroupclass_id' },
-            as: 'studentgroupclass',
+            foreignKey: 'studentgroupclass_id',
+            as: 'studentgroupclasses',
         })
-        this.hasMany(models.Grade, {
+        this.belongsTo(models.Studentgrouppaceguide, {
             foreignKey: 'studentgrouppaceguide_id',
-            as: 'grades',
+            as: 'studentgrouppaceguides',
         })
     }
 }
 
-export default Studentgrouppaceguide
+export default Grade

@@ -50,6 +50,10 @@ class Studentgroupclass extends Model {
             foreignKey: 'studentgroupclass_id',
             as: 'attendances',
         })
+        this.hasMany(models.Grade, {
+            foreignKey: 'studentgroupclass_id',
+            as: 'grades',
+        })
     }
 }
 
