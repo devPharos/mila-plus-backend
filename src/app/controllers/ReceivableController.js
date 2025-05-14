@@ -618,7 +618,7 @@ export async function sendAutopayRecurrenceJob() {
         })
 
         console.log(
-            `❌ [Autopay Invoices] - Receivables found:`,
+            `[Autopay Invoices] - Receivables found:`,
             receivables.length
         )
 
