@@ -24,9 +24,12 @@ class SessionController {
 
         const user = await Milauser.findOne({
             where: {
-                email,
+                email: {
+                    [Op.iLike]: email,
+                },
+                canceled_at: null,
             },
-            attributes: ['id', 'password_hash'],
+            attributes: ['id', 'password_hash', 'email'],
         })
 
         if (!user) {

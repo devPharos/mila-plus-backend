@@ -56,7 +56,10 @@ class UserGroupController {
                         MenuHierarchyXGroups.create({
                             group_id: group.id,
                             access_id: menu.id,
-                            view: false,
+                            view:
+                                menu.dataValues.father_id === null
+                                    ? true
+                                    : false,
                             edit: false,
                             create: false,
                             inactivate: false,
@@ -95,38 +98,92 @@ class UserGroupController {
                     .json({ error: 'User Group does not exist.' })
             }
 
-            groupAccess.map((module) => {
-                module.menus.map((menu) => {
-                    const { view, edit, create, inactivate } = menu
-                    MenuHierarchyXGroups.findByPk(menu.id)
+            await userGroupExists.update(
+                {
+                    name,
+                    filialtype_id,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            for (let module of groupAccess) {
+                for (let menu of module.menus) {
+                    const { view, edit, create, inactivate, fatherId, menuId } =
+                        menu
+                    MenuHierarchyXGroups.findOne({
+                        where: {
+                            group_id: group_id,
+                            access_id: menuId,
+                            canceled_at: null,
+                        },
+                    })
                         .then((findMenu) => {
-                            findMenu.update({
-                                view,
-                                edit,
-                                create,
-                                inactivate,
-                                updated_at: new Date(),
-                                updated_by: req.userId,
-                            })
+                            findMenu
+                                .update(
+                                    {
+                                        view,
+                                        edit,
+                                        create,
+                                        inactivate,
+                                        updated_at: new Date(),
+                                        updated_by: req.userId,
+                                    },
+                                    {
+                                        transaction: t,
+                                    }
+                                )
+                                .then((son) => {
+                                    if (view === 'Yes') {
+                                        MenuHierarchyXGroups.findOne({
+                                            where: {
+                                                group_id: son.group_id,
+                                                access_id: fatherId,
+                                                canceled_at: null,
+                                            },
+                                        }).then((father) => {
+                                            if (
+                                                father &&
+                                                !father.dataValues.view
+                                            ) {
+                                                father.update(
+                                                    {
+                                                        view: true,
+                                                        updated_at: new Date(),
+                                                        updated_by: req.userId,
+                                                    },
+                                                    {
+                                                        transaction: t,
+                                                    }
+                                                )
+                                            }
+                                        })
+                                    }
+                                })
                         })
                         .catch(() => {
-                            MenuHierarchyXGroups.create({
-                                group_id,
-                                access_id: menu.menuId,
-                                view,
-                                edit,
-                                create,
-                                inactivate,
-                                created_at: new Date(),
-                                created_by: req.userId,
-                            })
+                            MenuHierarchyXGroups.create(
+                                {
+                                    group_id,
+                                    access_id: menu.menuId,
+                                    view,
+                                    edit,
+                                    create,
+                                    inactivate,
+                                    created_at: new Date(),
+                                    created_by: req.userId,
+                                },
+                                {
+                                    transaction: t,
+                                }
+                            )
                         })
-                })
-            })
+                }
+            }
 
-            // await userGroupExists.update({ name, filialtype_id, updated_by: req.userId, updated_at: new Date() }, {
-            //   transaction: t
-            // })
             t.commit()
 
             return res.status(200).json(userGroupExists)

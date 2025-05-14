@@ -17,9 +17,10 @@ class MilaUserController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            const { name, email } = req.body
             const userExists = await Milauser.findOne({
                 where: {
-                    email: req.body.email,
+                    email: email,
                     canceled_at: null,
                 },
                 attributes: ['id'],
@@ -38,7 +39,8 @@ class MilaUserController {
                     company_id: 1,
                     created_at: new Date(),
                     created_by: req.userId,
-                    ...req.body,
+                    name,
+                    email,
                     password,
                 },
                 {
@@ -83,7 +85,7 @@ class MilaUserController {
                 })
             })
 
-            const { id, name, email } = newUser
+            const { id } = newUser
             return res.json({ id, name, email })
         } catch (err) {
             await t.rollback()

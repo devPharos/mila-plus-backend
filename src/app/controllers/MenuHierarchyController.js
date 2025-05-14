@@ -82,68 +82,63 @@ class MenuHierarchyController {
             raw: false,
         })
 
-        const promises = groups.map((group) => {
-            return group.group_id
-        })
-        Promise.all(promises).then(async (groupIds) => {
-            const hierarchy = await MenuHierarchy.findAll({
-                include: [
-                    {
-                        model: MenuHierarchy,
-                        as: 'children',
-                        required: true,
-                        include: [
-                            {
-                                model: MenuHierarchyXGroups,
-                                attributes: [
-                                    'id',
-                                    'view',
-                                    'edit',
-                                    'create',
-                                    'inactivate',
-                                ],
-                                required: true,
-                                where: {
-                                    view: true,
-                                    group_id: {
-                                        [Op.in]: groupIds,
-                                    },
-                                    canceled_at: null,
-                                },
-                            },
-                        ],
-                        where: {
-                            canceled_at: null,
-                        },
-                    },
-                    {
-                        model: MenuHierarchyXGroups,
-                        attributes: [
-                            'id',
-                            'view',
-                            'edit',
-                            'create',
-                            'inactivate',
-                        ],
-                        required: true,
-                        where: {
-                            view: true,
-                            group_id: {
-                                [Op.in]: groupIds,
-                            },
-                            canceled_at: null,
-                        },
-                    },
-                ],
-                where: {
-                    father_id: null,
-                    canceled_at: null,
-                },
-                attributes: ['alias', 'father_id', 'name'],
-            })
+        let groupIds = []
 
-            return res.json({ hierarchy, groups })
+        for (let group of groups) {
+            groupIds.push(group.group_id)
+        }
+
+        const hierarchy = await MenuHierarchy.findAll({
+            include: [
+                {
+                    model: MenuHierarchy,
+                    as: 'children',
+                    required: true,
+                    include: [
+                        {
+                            model: MenuHierarchyXGroups,
+                            attributes: [
+                                'id',
+                                'view',
+                                'edit',
+                                'create',
+                                'inactivate',
+                            ],
+                            required: true,
+                            where: {
+                                view: true,
+                                group_id: {
+                                    [Op.in]: groupIds,
+                                },
+                                canceled_at: null,
+                            },
+                        },
+                    ],
+                    where: {
+                        canceled_at: null,
+                    },
+                },
+                {
+                    model: MenuHierarchyXGroups,
+                    attributes: ['id', 'view', 'edit', 'create', 'inactivate'],
+                    required: true,
+                    where: {
+                        view: true,
+                        group_id: {
+                            [Op.in]: groupIds,
+                        },
+                        canceled_at: null,
+                    },
+                },
+            ],
+            where: {
+                father_id: null,
+                canceled_at: null,
+            },
+            attributes: ['alias', 'father_id', 'name'],
         })
+
+        return res.json({ hierarchy, groups })
     }
 }
 
