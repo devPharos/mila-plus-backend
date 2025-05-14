@@ -114,15 +114,15 @@ class UserGroupController {
                 for (let menu of module.menus) {
                     const { view, edit, create, inactivate, fatherId, menuId } =
                         menu
-                    MenuHierarchyXGroups.findOne({
+                    await MenuHierarchyXGroups.findOne({
                         where: {
                             group_id: group_id,
                             access_id: menuId,
                             canceled_at: null,
                         },
                     })
-                        .then((findMenu) => {
-                            findMenu
+                        .then(async (findMenu) => {
+                            await findMenu
                                 .update(
                                     {
                                         view,
@@ -136,20 +136,20 @@ class UserGroupController {
                                         transaction: t,
                                     }
                                 )
-                                .then((son) => {
+                                .then(async (son) => {
                                     if (view === 'Yes') {
-                                        MenuHierarchyXGroups.findOne({
+                                        await MenuHierarchyXGroups.findOne({
                                             where: {
                                                 group_id: son.group_id,
                                                 access_id: fatherId,
                                                 canceled_at: null,
                                             },
-                                        }).then((father) => {
+                                        }).then(async (father) => {
                                             if (
                                                 father &&
                                                 !father.dataValues.view
                                             ) {
-                                                father.update(
+                                                await father.update(
                                                     {
                                                         view: true,
                                                         updated_at: new Date(),
@@ -164,8 +164,8 @@ class UserGroupController {
                                     }
                                 })
                         })
-                        .catch(() => {
-                            MenuHierarchyXGroups.create(
+                        .catch(async () => {
+                            await MenuHierarchyXGroups.create(
                                 {
                                     group_id,
                                     access_id: menu.menuId,
