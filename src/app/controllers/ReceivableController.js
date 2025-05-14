@@ -576,7 +576,7 @@ export async function sendAutopayRecurrenceJob() {
             new Date(new Date().setHours(0, 0, 0, 0)),
             days_before
         )
-        const searchDate = '20250513'
+        const searchDate = '20250512'
         console.log(
             `[Autopay Invoices] - Verifying Recurrence autopay invoices on due date: ${searchDate}`
         )
