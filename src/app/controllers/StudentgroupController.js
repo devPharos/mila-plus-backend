@@ -314,15 +314,16 @@ class StudentgroupController {
                     {
                         model: Filial,
                         as: 'filial',
-                        required: false,
+                        required: true,
                         where: {
                             canceled_at: null,
                         },
+                        attributes: ['id', 'name'],
                     },
                     {
                         model: Level,
                         as: 'level',
-                        required: false,
+                        required: true,
                         where: {
                             canceled_at: null,
                         },
@@ -333,40 +334,50 @@ class StudentgroupController {
                                 where: {
                                     canceled_at: null,
                                 },
+                                attributes: ['id', 'name'],
                             },
                         ],
+                        attributes: ['id', 'name'],
                     },
                     {
                         model: Languagemode,
                         as: 'languagemode',
-                        required: false,
+                        required: true,
                         where: {
                             canceled_at: null,
                         },
+                        attributes: ['id', 'name'],
                     },
                     {
                         model: Classroom,
                         as: 'classroom',
-                        required: false,
+                        required: true,
                         where: {
                             canceled_at: null,
                         },
+                        attributes: [
+                            'id',
+                            'class_number',
+                            'quantity_of_students',
+                        ],
                     },
                     {
                         model: Workload,
                         as: 'workload',
-                        required: false,
+                        required: true,
                         where: {
                             canceled_at: null,
                         },
+                        attributes: ['id', 'name'],
                     },
                     {
                         model: Staff,
                         as: 'staff',
-                        required: false,
+                        required: true,
                         where: {
                             canceled_at: null,
                         },
+                        attributes: ['id', 'name', 'last_name'],
                     },
                     {
                         model: StudentXGroup,
@@ -375,6 +386,7 @@ class StudentgroupController {
                         where: {
                             canceled_at: null,
                         },
+                        attributes: ['id', 'start_date', 'end_date'],
                         include: [
                             {
                                 model: Student,
@@ -383,6 +395,7 @@ class StudentgroupController {
                                 where: {
                                     canceled_at: null,
                                 },
+                                attributes: ['id', 'name', 'last_name'],
                                 include: [
                                     {
                                         model: Studentinactivation,
@@ -391,6 +404,7 @@ class StudentgroupController {
                                         where: {
                                             canceled_at: null,
                                         },
+                                        attributes: ['id', 'reason', 'date'],
                                     },
                                 ],
                             },
@@ -403,6 +417,12 @@ class StudentgroupController {
                         where: {
                             canceled_at: null,
                         },
+                        attributes: [
+                            'id',
+                            'name',
+                            'last_name',
+                            'registration_number',
+                        ],
                     },
                     {
                         model: Studentgroupclass,
@@ -411,6 +431,7 @@ class StudentgroupController {
                         where: {
                             canceled_at: null,
                         },
+                        attributes: ['id', 'locked_at', 'status'],
                         include: [
                             {
                                 model: Studentgrouppaceguide,
@@ -419,11 +440,43 @@ class StudentgroupController {
                                 where: {
                                     canceled_at: null,
                                 },
+                                attributes: [
+                                    'id',
+                                    'day',
+                                    'type',
+                                    'description',
+                                    'status',
+                                ],
                             },
                         ],
                     },
                 ],
                 where: { canceled_at: null },
+                attributes: [
+                    'id',
+                    'name',
+                    'status',
+                    'private',
+                    'level_id',
+                    'languagemode_id',
+                    'classroom_id',
+                    'workload_id',
+                    'staff_id',
+                    'start_date',
+                    'end_date',
+                    'monday',
+                    'tuesday',
+                    'wednesday',
+                    'thursday',
+                    'friday',
+                    'saturday',
+                    'sunday',
+                    'morning',
+                    'afternoon',
+                    'evening',
+                    'content_percentage',
+                    'class_percentage',
+                ],
             })
 
             if (!studentGroup) {
