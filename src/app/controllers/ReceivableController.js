@@ -618,7 +618,7 @@ export async function sendAutopayRecurrenceJob() {
         })
 
         console.log(
-            `[Autopay Invoices] - Receivables found:`,
+            `❌ [Autopay Invoices] - Receivables found:`,
             receivables.length
         )
 
@@ -630,6 +630,9 @@ export async function sendAutopayRecurrenceJob() {
                 issuerExists.dataValues.student_id
             )
             if (!issuerExists || !student) {
+                console.log(
+                    '❌ [Autopay Invoices] - Issuer or Student not found'
+                )
                 return
             }
             const tuitionFee = await Receivable.findByPk(receivable.id)
@@ -638,6 +641,7 @@ export async function sendAutopayRecurrenceJob() {
                 receivable.dataValues.filial_id
             )
             if (!filial) {
+                console.log('❌ [Autopay Invoices] - Filial not found')
                 return
             }
 
@@ -656,6 +660,17 @@ export async function sendAutopayRecurrenceJob() {
                     status: 'Paid',
                     canceled_at: null,
                 },
+                include: [
+                    {
+                        model: PaymentMethod,
+                        as: 'paymentMethod',
+                        required: true,
+                        where: {
+                            platform: 'Gravity - Online',
+                            canceled_at: null,
+                        },
+                    },
+                ],
                 order: [['due_date', 'DESC']],
             })
 
