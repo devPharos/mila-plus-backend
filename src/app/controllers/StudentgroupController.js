@@ -410,20 +410,20 @@ class StudentgroupController {
                             },
                         ],
                     },
-                    {
-                        model: Student,
-                        as: 'students',
-                        required: false,
-                        where: {
-                            canceled_at: null,
-                        },
-                        attributes: [
-                            'id',
-                            'name',
-                            'last_name',
-                            'registration_number',
-                        ],
-                    },
+                    // {
+                    //     model: Student,
+                    //     as: 'students',
+                    //     required: false,
+                    //     where: {
+                    //         canceled_at: null,
+                    //     },
+                    //     attributes: [
+                    //         'id',
+                    //         'name',
+                    //         'last_name',
+                    //         'registration_number',
+                    //     ],
+                    // },
                     {
                         model: Studentgroupclass,
                         as: 'classes',
