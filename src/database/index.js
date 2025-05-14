@@ -1,6 +1,7 @@
 import Sequelize from 'sequelize'
 
 import databaseConfig from '../config/database.js'
+import Attendance from '../app/models/Attendance'
 import Filial from '../app/models/Filial'
 import File from '../app/models/File'
 import Milauser from '../app/models/Milauser'
@@ -70,11 +71,13 @@ import StudentXGroup from '../app/models/StudentXGroup.js'
 import Studentgroupclass from '../app/models/Studentgroupclass.js'
 import Studentgrouppaceguide from '../app/models/Studentgrouppaceguide.js'
 import Studentprogram from '../app/models/Studentprogram.js'
+import Grade from '../app/models/Grade.js'
 
 const models = [
     Processtype,
     Processsubstatus,
     Agent,
+    Attendance,
     Bank,
     BankAccounts,
     Calendarday,
@@ -100,6 +103,7 @@ const models = [
     FilialPriceList,
     FilialDiscountList,
     Filialdocument,
+    Grade,
     Issuer,
     Language,
     Languagemode,

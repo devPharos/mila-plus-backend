@@ -1,6 +1,6 @@
 import Sequelize, { Model } from 'sequelize'
 
-class Attendance extends Model {
+class Grade extends Model {
     static init(sequelize) {
         super.init(
             {
@@ -11,12 +11,9 @@ class Attendance extends Model {
                 },
                 studentgroupclass_id: Sequelize.UUID,
                 student_id: Sequelize.UUID,
-                shift: Sequelize.STRING,
-                first_check: Sequelize.STRING,
-                second_check: Sequelize.STRING,
-                status: Sequelize.STRING,
-                studentvacation_id: Sequelize.UUID,
-                studentmedicalexcuse_id: Sequelize.UUID,
+                studentgrouppaceguide_id: Sequelize.UUID,
+                score: Sequelize.FLOAT,
+                discarded: Sequelize.BOOLEAN,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -41,7 +38,11 @@ class Attendance extends Model {
             foreignKey: 'studentgroupclass_id',
             as: 'studentgroupclasses',
         })
+        this.belongsTo(models.Studentgrouppaceguide, {
+            foreignKey: 'studentgrouppaceguide_id',
+            as: 'studentgrouppaceguides',
+        })
     }
 }
 
-export default Attendance
+export default Grade

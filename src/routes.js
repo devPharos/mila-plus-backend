@@ -300,6 +300,19 @@ routes.post(
     '/studentgroups/pause/:studentgroup_id',
     StudentgroupController.pauseGroup
 )
+routes.get(
+    '/studentgroups/attendance/:studentgroup_id',
+    StudentgroupController.attendance
+)
+
+routes.post(
+    '/studentgroups/attendance/:studentgroup_id',
+    StudentgroupController.storeAttendance
+)
+routes.post(
+    '/studentgroups/grades/:studentgroup_id',
+    StudentgroupController.storeGrades
+)
 
 routes.get('/agents/:agent_id', AgentController.show)
 routes.post('/agents', AgentController.store)
