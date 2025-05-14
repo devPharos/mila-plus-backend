@@ -99,7 +99,7 @@ class App {
         schedule.scheduleJob('0 0 4 * *', jobPutInClass)
 
         // jobPutInClass()
-        sendAutopayRecurrenceJob()
+        // sendAutopayRecurrenceJob()
 
         console.log('✅ Schedule jobs started!')
     }
