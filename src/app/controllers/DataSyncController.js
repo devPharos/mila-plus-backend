@@ -26,6 +26,12 @@ function capitalizeFirstLetter(val) {
     return vals.join(' ')
 }
 
+function findValue(headers, find) {
+    return headers.findIndex(
+        (header) => header.toLowerCase().trim() === find.toLowerCase().trim()
+    )
+}
+
 class DataSyncController {
     async import(req, res) {
         const connection = new Sequelize(databaseConfig)
@@ -56,7 +62,7 @@ class DataSyncController {
                             where: {
                                 registration_number:
                                     values[
-                                        headers.indexOf('RegistrationNumber')
+                                        findValue(headers, 'RegistrationNumber')
                                     ],
                                 canceled_at: null,
                             },
@@ -65,15 +71,15 @@ class DataSyncController {
                         if (studentExists) {
                             continue
                         }
-                        const processType = values[headers.indexOf('Type')]
+                        const processType = values[findValue(headers, 'Type')]
                             ? await Processtype.findOne({
                                   where: {
-                                      name: values[headers.indexOf('Type')],
+                                      name: values[findValue(headers, 'Type')],
                                   },
                               })
                             : null
                         const processSubStatus = values[
-                            headers.indexOf('Sub Status')
+                            findValue(headers, 'Sub Status')
                         ]
                             ? await Processsubstatus.findOne({
                                   where: {
@@ -81,7 +87,10 @@ class DataSyncController {
                                           [Op.like]:
                                               '%' +
                                               values[
-                                                  headers.indexOf('Sub Status')
+                                                  findValue(
+                                                      headers,
+                                                      'Sub Status'
+                                                  )
                                               ]
                                                   .substring(1, 5)
                                                   .toLowerCase() +
@@ -91,21 +100,24 @@ class DataSyncController {
                               })
                             : null
 
-                        const level = values[headers.indexOf('Level')]
+                        const level = values[findValue(headers, 'Level')]
                             ? await Level.findOne({
                                   where: {
-                                      name: values[headers.indexOf('Level')],
+                                      name: values[findValue(headers, 'Level')],
                                   },
                               })
                             : null
 
                         const filial = values[
-                            headers.indexOf('RegistrationNumber')
+                            findValue(headers, 'RegistrationNumber')
                         ]
                             ? await Filial.findOne({
                                   where: {
                                       alias: values[
-                                          headers.indexOf('RegistrationNumber')
+                                          findValue(
+                                              headers,
+                                              'RegistrationNumber'
+                                          )
                                       ].substring(0, 3),
                                       canceled_at: null,
                                   },
@@ -117,161 +129,183 @@ class DataSyncController {
                         }
 
                         let preferred_contact_form = null
-                        if (values[headers.indexOf('WayContact')] === '1') {
+                        if (values[findValue(headers, 'WayContact')] === '1') {
                             preferred_contact_form = 'Phone'
                         } else if (
-                            values[headers.indexOf('WayContact')] === '2'
+                            values[findValue(headers, 'WayContact')] === '2'
                         ) {
                             preferred_contact_form = 'Email'
                         } else if (
-                            values[headers.indexOf('WayContact')] === '3'
+                            values[findValue(headers, 'WayContact')] === '3'
                         ) {
                             preferred_contact_form = 'Website'
                         } else if (
-                            values[headers.indexOf('WayContact')] === '4'
+                            values[findValue(headers, 'WayContact')] === '4'
                         ) {
                             preferred_contact_form = 'In Person'
                         } else if (
-                            values[headers.indexOf('WayContact')] === '5'
+                            values[findValue(headers, 'WayContact')] === '5'
                         ) {
                             preferred_contact_form = 'Other'
                         } else if (
-                            values[headers.indexOf('WayContact')] === '6'
+                            values[findValue(headers, 'WayContact')] === '6'
                         ) {
                             preferred_contact_form = 'Text Message'
                         } else if (
-                            values[headers.indexOf('WayContact')] === '7'
+                            values[findValue(headers, 'WayContact')] === '7'
                         ) {
                             preferred_contact_form = 'WhatsApp'
                         }
 
+                        console.log(values)
+
                         const data = {
                             company_id: 1,
                             filial_id: filial.id,
-                            registration_number: values[0],
+                            registration_number:
+                                values[
+                                    findValue(headers, 'RegistrationNumber')
+                                ],
                             name: capitalizeFirstLetter(
-                                values[headers.indexOf('First Name')].replace(
-                                    '’',
-                                    ''
-                                )
+                                values[
+                                    findValue(headers, 'First Name')
+                                ].replace('’', '')
                             ),
                             middle_name: capitalizeFirstLetter(
-                                values[headers.indexOf('Middle Name')].replace(
-                                    '’',
-                                    ''
-                                )
+                                values[
+                                    findValue(headers, 'Middle Name')
+                                ].replace('’', '')
                             ),
                             last_name: capitalizeFirstLetter(
-                                values[headers.indexOf('Last Name')].replace(
+                                values[findValue(headers, 'Last Name')].replace(
                                     '’',
                                     ''
                                 )
                             ),
                             status: capitalizeFirstLetter(
-                                values[headers.indexOf('Status')]
+                                values[findValue(headers, 'Status')]
                             ),
                             gender: capitalizeFirstLetter(
-                                values[headers.indexOf('Gender')]
+                                values[findValue(headers, 'Gender')]
                             ),
                             marital_status:
-                                values[headers.indexOf('Marital Status')],
+                                values[findValue(headers, 'Marital Status')],
                             birth_country: capitalizeFirstLetter(
-                                values[headers.indexOf('Origin')].replace(
+                                values[findValue(headers, 'Origin')].replace(
                                     '’',
                                     ''
                                 )
                             ),
                             birth_state: capitalizeFirstLetter(
                                 values[
-                                    headers.indexOf('State/Province of Birth')
+                                    findValue(
+                                        headers,
+                                        'State/Province of Birth'
+                                    )
                                 ].replace('’', '')
                             ),
                             birth_city: capitalizeFirstLetter(
                                 values[
-                                    headers.indexOf('City of Birth')
+                                    findValue(headers, 'City of Birth')
                                 ].replace('’', '')
                             ),
                             citizen_country: capitalizeFirstLetter(
-                                values[headers.indexOf('City')].replace('’', '')
+                                values[findValue(headers, 'City')].replace(
+                                    '’',
+                                    ''
+                                )
                             ),
                             state: capitalizeFirstLetter(
                                 values[
-                                    headers.indexOf('State/Province')
+                                    findValue(headers, 'State/Province')
                                 ].replace('’', '')
                             ),
                             city: capitalizeFirstLetter(
-                                values[headers.indexOf('City')].replace('’', '')
+                                values[findValue(headers, 'City')].replace(
+                                    '’',
+                                    ''
+                                )
                             ),
-                            zip: values[headers.indexOf('Zip Code')],
+                            zip: values[findValue(headers, 'Zip Code')],
                             address: capitalizeFirstLetter(
-                                values[headers.indexOf('Address')].replace(
+                                values[findValue(headers, 'Address')].replace(
                                     '’',
                                     ''
                                 )
                             ),
                             foreign_address: capitalizeFirstLetter(
                                 values[
-                                    headers.indexOf('ForeignAddress')
+                                    findValue(headers, 'ForeignAddress')
                                 ].replace('’', '')
                             ),
-                            phone_ddi: values[headers.indexOf('Cell Phone')],
-                            phone: values[headers.indexOf('Cell Phone')],
+                            phone_ddi: values[findValue(headers, 'Cell Phone')],
+                            phone: values[findValue(headers, 'Cell Phone')],
                             native_language: capitalizeFirstLetter(
-                                values[headers.indexOf('Native Language')] || ''
+                                values[findValue(headers, 'Native Language')] ||
+                                    ''
                             ),
                             // home_country_phone_ddi:
                             //     values[
-                            //         headers.indexOf('HomeCountryPhoneNumber')
+                            //         findValue(headers, 'HomeCountryPhoneNumber')
                             //     ],
                             home_country_phone:
                                 values[
-                                    headers.indexOf('HomeCountryPhoneNumber')
+                                    findValue(headers, 'HomeCountryPhoneNumber')
                                 ],
                             home_country_address: capitalizeFirstLetter(
-                                values[headers.indexOf('Address')].replace(
+                                values[findValue(headers, 'Address')].replace(
                                     '’',
                                     ''
                                 )
                             ),
                             home_country_zip:
-                                values[headers.indexOf('Zip Code')],
+                                values[findValue(headers, 'Zip Code')],
                             home_country_city: capitalizeFirstLetter(
-                                values[headers.indexOf('City')].replace('’', '')
+                                values[findValue(headers, 'City')].replace(
+                                    '’',
+                                    ''
+                                )
                             ),
                             home_country_state: capitalizeFirstLetter(
                                 values[
-                                    headers.indexOf('State/Province')
+                                    findValue(headers, 'State/Province')
                                 ].replace('’', '')
                             ),
                             home_country_country: capitalizeFirstLetter(
-                                values[headers.indexOf('City')].replace('’', '')
+                                values[findValue(headers, 'City')].replace(
+                                    '’',
+                                    ''
+                                )
                             ),
                             // whatsapp_ddi:
-                            //     values[headers.indexOf('WhatsAppPhoneNumber')],
+                            //     values[findValue(headers, 'WhatsAppPhoneNumber')],
                             whatsapp:
-                                values[headers.indexOf('WhatsAppPhoneNumber')],
+                                values[
+                                    findValue(headers, 'WhatsAppPhoneNumber')
+                                ],
                             email: values[
-                                headers.indexOf('Email')
+                                findValue(headers, 'Email')
                             ].toLowerCase(),
                             date_of_birth: values[
-                                headers.indexOf('Date of Birth')
+                                findValue(headers, 'Date of Birth')
                             ]
                                 .replace('/', '-')
                                 .replace('/', '-'),
                             category: capitalizeFirstLetter(
-                                values[headers.indexOf('Category')]
+                                values[findValue(headers, 'Category')]
                             ),
                             preferred_contact_form,
                             passport_number:
-                                values[headers.indexOf('Passport Number')],
+                                values[findValue(headers, 'Passport Number')],
                             passport_expiration_date:
-                                values[headers.indexOf('Visa Expiration')],
+                                values[findValue(headers, 'Visa Expiration')],
                             i94_expiration_date:
-                                values[headers.indexOf('Grace Period Ends')],
-                            visa_number: values[headers.indexOf('Visa Number')],
+                                values[findValue(headers, 'Grace Period Ends')],
+                            visa_number:
+                                values[findValue(headers, 'Visa Number')],
                             visa_expiration:
-                                values[headers.indexOf('Visa Expiration')],
-                            nsevis: values[headers.indexOf('Nsevis')],
+                                values[findValue(headers, 'Visa Expiration')],
+                            nsevis: values[findValue(headers, 'Nsevis')],
                             how_did_you_hear_about_us: capitalizeFirstLetter(
                                 values[
                                     headers.indexOf(
@@ -280,16 +314,18 @@ class DataSyncController {
                                 ]
                             ),
                             preferred_shift: capitalizeFirstLetter(
-                                values[headers.indexOf('PreferedMorning')]
+                                values[findValue(headers, 'PreferedMorning')]
                             ),
                             // expected_level_id: level.id,
                             shift: capitalizeFirstLetter(
-                                values[headers.indexOf('Shift')] || ''
+                                values[findValue(headers, 'Shift')] || ''
                             ),
                             // level_id: level.id,
-                            // class_id: values[headers.indexOf('Class')],
+                            // class_id: values[findValue(headers, 'Class')],
                             expected_start_date:
-                                values[headers.indexOf('Expected Start Date')],
+                                values[
+                                    findValue(headers, 'Expected Start Date')
+                                ],
                             created_by: 2,
                             created_at: new Date(),
                         }
