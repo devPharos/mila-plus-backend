@@ -14,6 +14,7 @@ import {
     verifyFieldInModel,
     verifyFilialSearch,
 } from '../functions'
+import Milauser from '../models/Milauser'
 
 const { Op } = Sequelize
 
@@ -183,6 +184,16 @@ class StaffController {
                     {
                         model: Filial,
                         as: 'filial',
+                        required: false,
+                        attributes: ['id', 'alias', 'name'],
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Milauser,
+                        as: 'user',
+                        required: false,
+                        attributes: ['id', 'name', 'email'],
+                        where: { canceled_at: null },
                     },
                 ],
                 where: {
@@ -191,9 +202,13 @@ class StaffController {
                     ...(await generateSearchByFields(search, searchableFields)),
                     ...(type !== 'null'
                         ? {
-                              employee_type: {
-                                  [Op.in]: type.split(','),
-                              },
+                              [Op.and]: [
+                                  {
+                                      employee_type: {
+                                          [Op.in]: type.split(','),
+                                      },
+                                  },
+                              ],
                           }
                         : {}),
                 },

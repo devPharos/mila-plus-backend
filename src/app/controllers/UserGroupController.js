@@ -5,6 +5,15 @@ import UserGroup from '../models/UserGroup'
 import Filialtype from '../models/Filialtype'
 import MenuHierarchyXGroups from '../models/MenuHierarchyXGroups'
 import MenuHierarchy from '../models/MenuHierarchy'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
+import Filial from '../models/Filial'
+import Milauser from '../models/Milauser'
+import UserGroupXUser from '../models/UserGroupXUser'
 
 const { Op } = Sequelize
 
@@ -13,12 +22,21 @@ class UserGroupController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { filialtype_id, name } = req.body
+            const { filialtype_id, name, filial } = req.body
+
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
             const userGroupExists = await UserGroup.findOne({
                 where: {
                     name,
                     filialtype_id,
                     company_id: 1,
+                    filial_id: filialExists.id,
                     canceled_at: null,
                 },
                 include: [
@@ -37,6 +55,7 @@ class UserGroupController {
             UserGroup.create(
                 {
                     company_id: 1,
+                    filial_id: filialExists.id,
                     filialtype_id,
                     name,
                     created_at: new Date(),
@@ -88,9 +107,25 @@ class UserGroupController {
         const t = await connection.transaction()
         try {
             const { group_id } = req.params
-            const { name, filialtype_id, groupAccess } = req.body
+            const { name, filialtype_id, groupAccess, filial } = req.body
 
-            const userGroupExists = await UserGroup.findByPk(group_id)
+            const filialExists = await Filial.findByPk(filial.id)
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            const userGroupExists = await UserGroup.findByPk(group_id, {
+                include: [
+                    {
+                        model: UserGroupXUser,
+                        as: 'groupxuser',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                ],
+            })
 
             if (!userGroupExists) {
                 return res
@@ -98,8 +133,23 @@ class UserGroupController {
                     .json({ error: 'User Group does not exist.' })
             }
 
+            if (userGroupExists.dataValues.fixed) {
+                return res.status(400).json({
+                    error: 'This is a fixedgroup, you cannot edit it.',
+                })
+            }
+
+            if (userGroupExists.dataValues.groupxuser.length > 0) {
+                if (filialExists.id !== userGroupExists.dataValues.filial_id) {
+                    return res.status(400).json({
+                        error: 'This group has users, you cannot change its filial.',
+                    })
+                }
+            }
+
             await userGroupExists.update(
                 {
+                    filial_id: filialExists.id,
                     name,
                     filialtype_id,
                     updated_by: req.userId,
@@ -200,26 +250,76 @@ class UserGroupController {
 
     async index(req, res) {
         try {
-            const groups = await UserGroup.findAll({
-                where: {
-                    company_id: 1,
-                    [Op.not]: {
-                        filialtype_id:
-                            req.headers.filial !=
-                            '4592e8ca-64b6-4bc2-8375-9fae78abc519'
-                                ? '4592e8ca-64b6-4bc2-8375-9fae78abc519'
-                                : null,
-                    },
+            const defaultOrderBy = { column: 'name', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
+                search = '',
+                limit = 50,
+                type = '',
+            } = req.query
+
+            if (!verifyFieldInModel(orderBy, UserGroup)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(UserGroup, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'name',
+                    type: 'string',
                 },
+            ]
+
+            const { count, rows } = await UserGroup.findAndCountAll({
                 include: [
                     {
+                        model: UserGroupXUser,
+                        as: 'groupxuser',
+                        required: false,
+                        include: [
+                            {
+                                model: Milauser,
+                                as: 'user',
+                                required: false,
+                                where: { canceled_at: null },
+                            },
+                        ],
+                        where: { canceled_at: null },
+                    },
+                    {
                         model: Filialtype,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Filial,
+                        as: 'filial',
+                        required: true,
+                        where: { canceled_at: null },
                     },
                 ],
-                order: [[Filialtype, 'name'], ['name']],
+                where: {
+                    company_id: 1,
+                    canceled_at: null,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
+                    ...(type !== 'null'
+                        ? {
+                              status: {
+                                  [Op.in]: type.split(','),
+                              },
+                          }
+                        : {}),
+                },
+                limit,
+                order: searchOrder,
             })
 
-            return res.json(groups)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'UserGroupController'
             const functionName = 'index'
@@ -238,6 +338,27 @@ class UserGroupController {
                 include: [
                     {
                         model: Filialtype,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Filial,
+                        as: 'filial',
+                        required: true,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: UserGroupXUser,
+                        as: 'groupxuser',
+                        required: false,
+                        include: [
+                            {
+                                model: Milauser,
+                                as: 'user',
+                                required: false,
+                                where: { canceled_at: null },
+                            },
+                        ],
+                        where: { canceled_at: null },
                     },
                 ],
             })
@@ -274,29 +395,42 @@ class UserGroupController {
                 })
             }
 
-            if (userGroup.canceled_at) {
-                await userGroup.update(
-                    {
-                        canceled_at: null,
-                        canceled_by: null,
-                        updated_at: new Date(),
-                        updated_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
-            } else {
-                await userGroup.update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+            if (userGroup.dataValues.fixed) {
+                return res.status(400).json({
+                    error: 'This is a fixed group, you cannot edit it.',
+                })
             }
+
+            // Verify if user group has users
+            const hasUser = await Milauser.findOne({
+                include: [
+                    {
+                        model: UserGroupXUser,
+                        as: 'groups',
+                        required: true,
+                        where: { canceled_at: null, group_id: userGroup.id },
+                    },
+                ],
+                where: {
+                    canceled_at: null,
+                },
+            })
+
+            if (hasUser) {
+                return res.status(400).json({
+                    error: 'This group has users, you cannot delete it.',
+                })
+            }
+
+            await userGroup.update(
+                {
+                    canceled_at: new Date(),
+                    canceled_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
 
             t.commit()
 
