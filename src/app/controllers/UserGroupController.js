@@ -52,7 +52,7 @@ class UserGroupController {
                 })
             }
 
-            UserGroup.create(
+            const group = await UserGroup.create(
                 {
                     company_id: 1,
                     filial_id: filialExists.id,
@@ -64,33 +64,32 @@ class UserGroupController {
                 {
                     transaction: t,
                 }
-            ).then((group) => {
-                t.commit()
-                MenuHierarchy.findAll({
-                    where: {
-                        canceled_at: null,
-                    },
-                }).then((menus) => {
-                    menus.map((menu) => {
-                        MenuHierarchyXGroups.create({
-                            group_id: group.id,
-                            access_id: menu.id,
-                            view:
-                                menu.dataValues.father_id === null
-                                    ? true
-                                    : false,
-                            edit: false,
-                            create: false,
-                            inactivate: false,
-                            created_at: new Date(),
-                            created_by: req.userId,
-                        })
-                    })
-                    setTimeout(() => {
-                        return res.json(group)
-                    }, 1000)
-                })
+            )
+            const menus = await MenuHierarchy.findAll({
+                where: {
+                    canceled_at: null,
+                },
             })
+
+            for (let menu of menus) {
+                await MenuHierarchyXGroups.create(
+                    {
+                        group_id: group.id,
+                        access_id: menu.id,
+                        view: menu.dataValues.father_id === null ? true : false,
+                        edit: false,
+                        create: false,
+                        inactivate: false,
+                        created_at: new Date(),
+                        created_by: req.userId,
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+            }
+            t.commit()
+            return res.json(group)
         } catch (err) {
             await t.rollback()
             const className = 'UserGroupController'

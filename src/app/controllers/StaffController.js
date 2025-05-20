@@ -208,6 +208,9 @@ class StaffController {
                                           [Op.in]: type.split(','),
                                       },
                                   },
+                                  {
+                                      user_id: null,
+                                  },
                               ],
                           }
                         : {}),

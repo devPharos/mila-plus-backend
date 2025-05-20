@@ -25,6 +25,7 @@ import Studentgrouppaceguide from '../models/Studentgrouppaceguide'
 import Studentinactivation from '../models/Studentinactivation'
 import Attendance from '../models/Attendance'
 import Grade from '../models/Grade'
+import File from '../models/File'
 
 const { Op } = Sequelize
 
@@ -204,6 +205,14 @@ class StudentgroupController {
 
             const searchOrder = generateSearchOrder(orderBy, orderASC)
 
+            let teacherSearch = null
+            if (req.groupName === 'Teacher') {
+                console.log('Teacher Search', req.userId)
+                teacherSearch = {
+                    user_id: req.userId,
+                }
+            }
+
             const searchableFields = [
                 {
                     field: 'name',
@@ -259,8 +268,9 @@ class StudentgroupController {
                     {
                         model: Staff,
                         as: 'staff',
-                        required: false,
+                        required: teacherSearch ? true : false,
                         where: {
+                            ...teacherSearch,
                             canceled_at: null,
                         },
                     },
@@ -287,6 +297,7 @@ class StudentgroupController {
                 where: {
                     canceled_at: null,
                     ...filialSearch,
+                    ...(teacherSearch ? { status: 'Ongoing' } : {}),
                     ...(await generateSearchByFields(search, searchableFields)),
                 },
                 limit,
@@ -365,6 +376,11 @@ class StudentgroupController {
                         model: Workload,
                         as: 'workload',
                         required: true,
+                        include: [
+                            {
+                                model: File,
+                            },
+                        ],
                         where: {
                             canceled_at: null,
                         },

@@ -6,9 +6,17 @@ import Filial from '../models/Filial'
 import UserGroupXUser from '../models/UserGroupXUser'
 import UserGroup from '../models/UserGroup'
 import UserXFilial from '../models/UserXFilial'
+import Staff from '../models/Staff'
 import { mailer } from '../../config/mailer'
 import MailLayout from '../../Mails/MailLayout'
-import { FRONTEND_URL, randomPassword } from '../functions'
+import {
+    FRONTEND_URL,
+    generateSearchByFields,
+    generateSearchOrder,
+    randomPassword,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
@@ -231,9 +239,8 @@ class MilaUserController {
                 avatar,
                 filials,
                 group,
+                staff,
             } = req.body
-
-            console.log(group)
 
             const userExists = await Milauser.findByPk(user_id, {
                 include: [
@@ -316,6 +323,44 @@ class MilaUserController {
                 }
             )
 
+            if (staff && staff.id) {
+                const staffExists = await Staff.findByPk(staff.id)
+                if (!staffExists) {
+                    return res.status(400).json({
+                        error: 'Staff does not exist.',
+                    })
+                }
+                await staffExists.update(
+                    {
+                        user_id: userExists.id,
+                        updated_by: req.userId,
+                        updated_at: new Date(),
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+            } else {
+                const hasStaff = await Staff.findOne({
+                    where: {
+                        user_id: userExists.id,
+                        canceled_at: null,
+                    },
+                })
+                if (hasStaff) {
+                    await hasStaff.update(
+                        {
+                            user_id: null,
+                            updated_by: req.userId,
+                            updated_at: new Date(),
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+                }
+            }
+
             if (email && email.trim() !== userExists.email) {
                 const title = `Account created`
                 const content = `<p>Dear ${name},</p>
@@ -376,27 +421,27 @@ class MilaUserController {
                         },
                     },
                 }
-            ).then(async () => {
-                const addedFilials = []
-                for (let { filial } of filials) {
-                    if (addedFilials.includes(filial.id)) {
-                        continue
-                    }
+            )
 
-                    await UserXFilial.create(
-                        {
-                            user_id: userExists.id,
-                            filial_id: filial.id,
-                            created_at: new Date(),
-                            created_by: req.userId,
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
-                    addedFilials.push(filial.id)
+            const addedFilials = []
+            for (let { filial } of filials) {
+                if (addedFilials.includes(filial.id)) {
+                    continue
                 }
-            })
+
+                await UserXFilial.create(
+                    {
+                        user_id: userExists.id,
+                        filial_id: filial.id,
+                        created_at: new Date(),
+                        created_by: req.userId,
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
+                addedFilials.push(filial.id)
+            }
 
             t.commit()
 
@@ -418,96 +463,91 @@ class MilaUserController {
     }
 
     async index(req, res) {
-        const userExists = await Milauser.findAll({
-            attributes: ['id', 'name', 'email', 'avatar_id'],
-            where: {
-                company_id: 1,
-                canceled_at: null,
-            },
-            include: [
+        const defaultOrderBy = { column: 'name', asc: 'ASC' }
+        try {
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
+                search = '',
+                limit = 10,
+            } = req.query
+
+            if (!verifyFieldInModel(orderBy, Milauser)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(UserXFilial, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
                 {
-                    model: UserXFilial,
-                    as: 'filials',
-                    attributes: ['id'],
-                    where: {
-                        canceled_at: null,
-                        [Op.or]: [
+                    field: 'name',
+                    type: 'string',
+                },
+            ]
+            const { count, rows } = await Milauser.findAndCountAll({
+                attributes: ['id', 'name', 'email', 'avatar_id'],
+                include: [
+                    {
+                        model: UserXFilial,
+                        as: 'filials',
+                        required: false,
+                        attributes: ['id'],
+                        include: [
                             {
-                                filial_id: {
-                                    [Op.gte]: req.headers.filial == 1 ? 1 : 999,
+                                model: Filial,
+                                as: 'filial',
+                                attributes: ['alias', 'name'],
+                                where: {
+                                    canceled_at: null,
                                 },
-                            },
-                            {
-                                filial_id:
-                                    req.headers.filial != 1
-                                        ? req.headers.filial
-                                        : 0,
                             },
                         ],
-                    },
-                    include: [
-                        {
-                            model: Filial,
-                            as: 'filial',
-                            attributes: ['alias', 'name'],
-                            where: {
-                                [Op.or]: [
-                                    {
-                                        id: {
-                                            [Op.gte]:
-                                                req.headers.filial == 1
-                                                    ? 1
-                                                    : 999,
-                                        },
-                                    },
-                                    {
-                                        id:
-                                            req.headers.filial != 1
-                                                ? req.headers.filial
-                                                : 0,
-                                    },
-                                ],
-                                canceled_at: null,
-                            },
+                        where: {
+                            ...filialSearch,
+                            canceled_at: null,
                         },
-                    ],
-                },
-                {
-                    model: UserGroupXUser,
-                    as: 'groups',
-                    attributes: ['id'],
-                    where: {
-                        canceled_at: null,
                     },
-                    include: [
-                        {
-                            model: UserGroup,
-                            as: 'group',
-                            attributes: ['id', 'name'],
-                            where: {
-                                [Op.not]: {
-                                    filialtype_id:
-                                        req.headers.filial !=
-                                        '4592e8ca-64b6-4bc2-8375-9fae78abc519'
-                                            ? '4592e8ca-64b6-4bc2-8375-9fae78abc519'
-                                            : null,
+                    {
+                        model: UserGroupXUser,
+                        as: 'groups',
+                        attributes: ['id'],
+                        required: false,
+                        include: [
+                            {
+                                model: UserGroup,
+                                as: 'group',
+                                attributes: ['id', 'name'],
+                                where: {
+                                    canceled_at: null,
                                 },
-                                canceled_at: null,
                             },
+                        ],
+                        where: {
+                            canceled_at: null,
                         },
-                    ],
+                    },
+                ],
+                where: {
+                    company_id: 1,
+                    ...(await generateSearchByFields(search, searchableFields)),
+                    canceled_at: null,
                 },
-            ],
-            order: [['name']],
-        })
+                limit,
+                order: searchOrder,
+            })
 
-        if (!userExists) {
-            return res.status(400).json({
-                error: 'Nenhum usuário está cadastrado.',
+            return res.json({ totalRows: count, rows })
+        } catch (err) {
+            const className = 'MilauserController'
+            const functionName = 'index'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
             })
         }
-
-        return res.json(userExists)
     }
 
     async shortInfo(req, res) {
@@ -541,6 +581,12 @@ class MilaUserController {
         const userExists = await Milauser.findByPk(user_id, {
             where: { canceled_at: null, company_id: 1 },
             include: [
+                {
+                    model: Staff,
+                    as: 'staff',
+                    required: false,
+                    attributes: ['id', 'name', 'last_name', 'email'],
+                },
                 {
                     model: UserXFilial,
                     as: 'filials',
