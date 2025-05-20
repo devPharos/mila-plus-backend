@@ -108,7 +108,7 @@ class StudentController {
         try {
             const { student_id } = req.params
 
-            const { filial, processtype, processsubstatus } = req.body
+            const { filial, processtypes, processsubstatuses } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
             if (!filialExists) {
@@ -117,9 +117,9 @@ class StudentController {
                 })
             }
 
-            if (processtype.id) {
+            if (processtypes.id) {
                 const processtypeExists = await Processtype.findByPk(
-                    processtype.id
+                    processtypes.id
                 )
                 if (!processtypeExists) {
                     return res.status(400).json({
@@ -128,9 +128,9 @@ class StudentController {
                 }
             }
 
-            if (processsubstatus.id) {
+            if (processsubstatuses.id) {
                 const processsubstatusExists = await Processsubstatus.findByPk(
-                    processsubstatus.id
+                    processsubstatuses.id
                 )
                 if (!processsubstatusExists) {
                     return res.status(400).json({
@@ -151,11 +151,11 @@ class StudentController {
                 {
                     ...req.body,
                     filial_id: filialExists.id,
-                    ...(processtype.id
-                        ? { processtype_id: processtype.id }
+                    ...(processtypes.id
+                        ? { processtype_id: processtypes.id }
                         : {}),
-                    ...(processsubstatus.id
-                        ? { processsubstatus_id: processsubstatus.id }
+                    ...(processsubstatuses.id
+                        ? { processsubstatus_id: processsubstatuses.id }
                         : {}),
                     updated_by: req.userId,
                     updated_at: new Date(),
