@@ -230,14 +230,17 @@ class MilaUserController {
                 confirmPassword,
                 avatar,
                 filials,
-                group_id,
+                group,
             } = req.body
+
+            console.log(group)
 
             const userExists = await Milauser.findByPk(user_id, {
                 include: [
                     {
                         model: UserXFilial,
                         as: 'filials',
+                        required: false,
                         attributes: ['id'],
                         where: {
                             canceled_at: null,
@@ -246,6 +249,7 @@ class MilaUserController {
                             {
                                 model: Filial,
                                 as: 'filial',
+                                required: false,
                                 attributes: ['alias', 'name'],
                             },
                         ],
@@ -253,6 +257,7 @@ class MilaUserController {
                     {
                         model: UserGroupXUser,
                         as: 'groups',
+                        required: false,
                         attributes: ['id'],
                         where: {
                             canceled_at: null,
@@ -261,6 +266,7 @@ class MilaUserController {
                             {
                                 model: UserGroup,
                                 as: 'group',
+                                required: false,
                                 attributes: ['id', 'name'],
                                 where: {
                                     canceled_at: null,
@@ -273,6 +279,11 @@ class MilaUserController {
 
             if (!userExists) {
                 return res.status(400).json({ error: 'user-does-not-exist' })
+            }
+
+            const groupExists = await UserGroup.findByPk(group.id)
+            if (!groupExists) {
+                return res.status(400).json({ error: 'Group does not exist.' })
             }
 
             if (
@@ -326,22 +337,31 @@ class MilaUserController {
                 })
             }
 
-            if (group_id !== userExists.groups[0].group.id) {
-                await UserGroupXUser.update(
-                    {
-                        group_id,
-                        updated_at: new Date(),
-                        updated_by: req.userId,
+            await UserGroupXUser.update(
+                {
+                    canceled_at: new Date(),
+                    canceled_by: req.userId,
+                },
+                {
+                    where: {
+                        user_id: userExists.id,
+                        canceled_at: null,
                     },
-                    {
-                        where: {
-                            user_id: userExists.id,
-                            canceled_at: null,
-                        },
-                        transaction: t,
-                    }
-                )
-            }
+                    transaction: t,
+                }
+            )
+
+            await UserGroupXUser.create(
+                {
+                    user_id: userExists.id,
+                    group_id: group.id,
+                    created_at: new Date(),
+                    created_by: req.userId,
+                },
+                {
+                    transaction: t,
+                }
+            )
 
             await UserXFilial.update(
                 {
@@ -355,25 +375,27 @@ class MilaUserController {
                             filial_id: 1,
                         },
                     },
-                    transaction: t,
                 }
-            ).then(() => {
+            ).then(async () => {
                 const addedFilials = []
-                filials.map((filial) => {
-                    if (
-                        filial &&
-                        !addedFilials.includes(filial.filial_id) &&
-                        filial.filial_id > 1
-                    ) {
-                        UserXFilial.create({
+                for (let { filial } of filials) {
+                    if (addedFilials.includes(filial.id)) {
+                        continue
+                    }
+
+                    await UserXFilial.create(
+                        {
                             user_id: userExists.id,
-                            filial_id: filial.filial_id,
+                            filial_id: filial.id,
                             created_at: new Date(),
                             created_by: req.userId,
-                        })
-                        addedFilials.push(filial.filial_id)
-                    }
-                })
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+                    addedFilials.push(filial.id)
+                }
             })
 
             t.commit()
@@ -530,7 +552,7 @@ class MilaUserController {
                         {
                             model: Filial,
                             as: 'filial',
-                            attributes: ['alias', 'name'],
+                            attributes: ['id', 'alias', 'name'],
                         },
                     ],
                 },

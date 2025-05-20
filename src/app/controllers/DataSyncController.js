@@ -13,6 +13,7 @@ import Emergepaytransaction from '../models/Emergepaytransaction'
 import PaymentMethod from '../models/PaymentMethod'
 import { settlement } from './EmergepayController'
 import { format } from 'date-fns/format'
+import { parseISO } from 'date-fns'
 
 const { Op } = Sequelize
 const fs = require('node:fs')
@@ -32,6 +33,20 @@ function findValue(headers, find) {
     )
 }
 
+function transformDate(date = null) {
+    if (date && date.includes('/')) {
+        const dob = date.split('/')
+        return (
+            dob[2] +
+            '-' +
+            dob[0].padStart(2, '0') +
+            '-' +
+            dob[1].padStart(2, '0')
+        )
+    }
+    return null
+}
+
 class DataSyncController {
     async import(req, res) {
         const connection = new Sequelize(databaseConfig)
@@ -39,8 +54,6 @@ class DataSyncController {
         try {
             const { importType } = req.body
             const file = req.file
-
-            const studentsCreationPromise = []
 
             if (importType === 'Students') {
                 fs.readFile(file.path, 'utf8', async (err, data) => {
@@ -156,8 +169,6 @@ class DataSyncController {
                         ) {
                             preferred_contact_form = 'WhatsApp'
                         }
-
-                        console.log(values)
 
                         const data = {
                             company_id: 1,
@@ -286,11 +297,9 @@ class DataSyncController {
                             email: values[
                                 findValue(headers, 'Email')
                             ].toLowerCase(),
-                            date_of_birth: values[
-                                findValue(headers, 'Date of Birth')
-                            ]
-                                .replace('/', '-')
-                                .replace('/', '-'),
+                            date_of_birth: transformDate(
+                                values[findValue(headers, 'Date of Birth')]
+                            ),
                             category: capitalizeFirstLetter(
                                 values[findValue(headers, 'Category')]
                             ),
@@ -299,12 +308,14 @@ class DataSyncController {
                                 values[findValue(headers, 'Passport Number')],
                             passport_expiration_date:
                                 values[findValue(headers, 'Visa Expiration')],
-                            i94_expiration_date:
-                                values[findValue(headers, 'Grace Period Ends')],
+                            i94_expiration_date: transformDate(
+                                values[findValue(headers, 'Grace Period Ends')]
+                            ),
                             visa_number:
                                 values[findValue(headers, 'Visa Number')],
-                            visa_expiration:
-                                values[findValue(headers, 'Visa Expiration')],
+                            visa_expiration: transformDate(
+                                values[findValue(headers, 'Visa Expiration')]
+                            ),
                             nsevis: values[findValue(headers, 'Nsevis')],
                             how_did_you_hear_about_us: capitalizeFirstLetter(
                                 values[
@@ -326,8 +337,19 @@ class DataSyncController {
                                 values[
                                     findValue(headers, 'Expected Start Date')
                                 ],
+                            start_date: transformDate(
+                                values[
+                                    findValue(headers, 'Original Start Date')
+                                ]
+                            ),
                             created_by: 2,
-                            created_at: new Date(),
+                            created_at: parseISO(
+                                transformDate(
+                                    values[
+                                        findValue(headers, 'Registration Date')
+                                    ]
+                                )
+                            ),
                         }
 
                         if (processType) {
