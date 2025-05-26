@@ -59,6 +59,7 @@ import PayeeRecurrenceController from './app/controllers/PayeeRecurrenceControll
 import ClassroomController from './app/controllers/ClassroomController'
 import StudentgroupController from './app/controllers/StudentgroupController'
 import StudentProgramController from './app/controllers/StudentProgramController'
+import MessageController from './app/controllers/MessageController'
 
 const routes = new Router()
 
@@ -287,6 +288,11 @@ routes.delete(
     '/students/transfer/:transfer_id',
     StudentController.deleteTransfer
 )
+
+routes.get('/messages', MessageController.index)
+routes.get('/messages/:message_id', MessageController.show)
+routes.get('/messages-students', MessageController.indexStudents)
+routes.post('/messages', MessageController.sendMessage)
 
 routes.post('/studentprogram', StudentProgramController.store)
 
