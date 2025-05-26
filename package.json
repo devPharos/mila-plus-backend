@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "dev": "set NODE_ENV=development && nodemon src/server.js",
+    "dev": "export NODE_ENV=development set NODE_ENV=development && nodemon src/server.js",
     "prod": "set NODE_ENV=production && nodemon src/server.js",
     "dev:debug": "set NODE_ENV=development && nodemon --inspect src/server.js",
     "queue": "nodemon src/queue.js",

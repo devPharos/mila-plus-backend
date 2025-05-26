@@ -152,6 +152,13 @@ routes.get('/filials/:filial_id', FilialController.show)
 
 routes.get('/pdf/:layout/:id', PDFController.show)
 
+routes.get('/users/reset-password/:token', MilaUserController.getUserByToken)
+routes.post('/users/reset-password/:token', MilaUserController.resetPassword)
+routes.post(
+    '/users/reset-password-mail',
+    MilaUserController.sendResetPasswordEmail
+)
+
 // A partir daqui precisa de autenticação
 routes.use(authMiddleware)
 

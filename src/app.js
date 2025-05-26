@@ -90,16 +90,15 @@ class App {
     }
 
     async schedule() {
-        schedule.scheduleJob(`0 0 4 * * *`, sendAutopayRecurrenceJob)
-        schedule.scheduleJob(`0 15 4 * * *`, sendBeforeDueDateInvoices)
-        schedule.scheduleJob(`0 30 4 * * *`, sendOnDueDateInvoices)
-        schedule.scheduleJob(`0 45 4 * * *`, sendAfterDueDateInvoices)
-        schedule.scheduleJob('0 0 5 * * *', calculateFeesRecurrenceJob)
+        if (process.env.NODE_ENV === 'production') {
+            schedule.scheduleJob(`0 0 4 * * *`, sendAutopayRecurrenceJob)
+            schedule.scheduleJob(`0 15 4 * * *`, sendBeforeDueDateInvoices)
+            schedule.scheduleJob(`0 30 4 * * *`, sendOnDueDateInvoices)
+            schedule.scheduleJob(`0 45 4 * * *`, sendAfterDueDateInvoices)
+            schedule.scheduleJob('0 0 5 * * *', calculateFeesRecurrenceJob)
 
-        schedule.scheduleJob('0 0 4 * *', jobPutInClass)
-
-        // jobPutInClass()
-        // sendAutopayRecurrenceJob()
+            schedule.scheduleJob('0 0 4 * *', jobPutInClass)
+        }
 
         console.log('✅ Schedule jobs started!')
     }
