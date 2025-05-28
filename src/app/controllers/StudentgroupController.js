@@ -747,6 +747,7 @@ class StudentgroupController {
                     workload_id: workloadExists.id,
                     staff_id: staffExists.id,
                     end_date,
+                    status: 'In Formation',
                     created_at: new Date(),
                     created_by: req.userId,
                 },

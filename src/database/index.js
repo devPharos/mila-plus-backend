@@ -72,6 +72,8 @@ import Studentgroupclass from '../app/models/Studentgroupclass.js'
 import Studentgrouppaceguide from '../app/models/Studentgrouppaceguide.js'
 import Studentprogram from '../app/models/Studentprogram.js'
 import Grade from '../app/models/Grade.js'
+import Message from '../app/models/Message.js'
+import MessageXStudent from '../app/models/MessageXStudent.js'
 
 const models = [
     Processtype,
@@ -108,6 +110,8 @@ const models = [
     Language,
     Languagemode,
     Level,
+    Message,
+    MessageXStudent,
     Workload,
     Paceguide,
     Programcategory,
