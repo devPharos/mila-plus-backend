@@ -111,7 +111,7 @@ class MilaUserController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { email, name, filials, group_id } = req.body
+            const { email, name, filials, group } = req.body
 
             if (filials.length === 0) {
                 return res.status(400).json({
@@ -157,7 +157,7 @@ class MilaUserController {
             await UserGroupXUser.create(
                 {
                     user_id: newUser.id,
-                    group_id,
+                    group_id: group.id,
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -166,50 +166,45 @@ class MilaUserController {
                 }
             )
 
-            const promises = []
-            if (req.body.filials.length > 0) {
+            if (filials.length > 0) {
                 const addedFilials = []
-                req.body.filials.map((filial) => {
-                    if (!addedFilials.includes(filial.filial_id)) {
-                        promises.push(
-                            UserXFilial.create(
-                                {
-                                    user_id: newUser.id,
-                                    filial_id: filial.filial_id,
-                                    created_at: new Date(),
-                                    created_by: req.userId,
-                                },
-                                {
-                                    transaction: t,
-                                }
-                            )
+                for (let { filial } of filials) {
+                    if (!addedFilials.includes(filial.id)) {
+                        await UserXFilial.create(
+                            {
+                                user_id: newUser.id,
+                                filial_id: filial.id,
+                                created_at: new Date(),
+                                created_by: req.userId,
+                            },
+                            {
+                                transaction: t,
+                            }
                         )
-                        addedFilials.push(filial.filial_id)
+                        addedFilials.push(filial.id)
                     }
-                })
+                }
             }
 
-            Promise.all(promises).then(async (filials) => {
-                t.commit()
+            t.commit()
 
-                const title = `Account created`
-                const content = `<p>Dear ${name},</p>
+            const title = `Account created`
+            const content = `<p>Dear ${name},</p>
                         <p>Now you have access to MILA Plus system, please use these information on your first access:<br/>
                         E-mail: ${email}</br>
                         Password: ${password}</p>
                         <br/>
                         <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
 
-                // console.log('from: ' + process.env.MAIL_FROM)
-                // console.log('to: ' + email)
-                // console.log('title: ' + title)
+            // console.log('from: ' + process.env.MAIL_FROM)
+            // console.log('to: ' + email)
+            // console.log('title: ' + title)
 
-                mailer.sendMail({
-                    from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
-                    to: email,
-                    subject: `MILA Plus - ${title}`,
-                    html: MailLayout({ title, content, filial: '' }),
-                })
+            mailer.sendMail({
+                from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+                to: email,
+                subject: `MILA Plus - ${title}`,
+                html: MailLayout({ title, content, filial: '' }),
             })
 
             const { id } = newUser
