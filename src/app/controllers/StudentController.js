@@ -34,7 +34,7 @@ class StudentController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { filial, processtype, processsubstatus } = req.body
+            const { filial, processtypes, processsubstatuses } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
             if (!filialExists) {
@@ -43,20 +43,29 @@ class StudentController {
                 })
             }
 
-            if (processtype.id) {
-                const processtypeExists = await Processtype.findByPk(
-                    processtype.id
-                )
-                if (!processtypeExists) {
-                    return res.status(400).json({
-                        error: 'Process Type does not exist.',
-                    })
-                }
+
+            if (processtypes && processtypes.id) {
+              const processtypeExists = await Processtype.findByPk(
+                processtypes.id
+              )
+
+
+              console.log('////////////')
+              console.log(processtypeExists)
+              console.log('////////////')
+
+              if (!processtypeExists) {
+                return res.status(400).json({
+                  error: 'Process Type does not exist.',
+                })
+              }
+              console.log(processtypeExists)
             }
 
-            if (processsubstatus.id) {
+
+            if (processsubstatuses && processsubstatuses.id) {
                 const processsubstatusExists = await Processsubstatus.findByPk(
-                    processsubstatus.id
+                    processsubstatuses.id
                 )
                 if (!processsubstatusExists) {
                     return res.status(400).json({
@@ -69,11 +78,11 @@ class StudentController {
                 {
                     ...req.body,
                     filial_id: filialExists.id,
-                    ...(processtype.id
-                        ? { processtype_id: processtype.id }
+                    ...(processtypes.id
+                        ? { processtype_id: processtypes.id }
                         : {}),
-                    ...(processsubstatus.id
-                        ? { processsubstatus_id: processsubstatus.id }
+                    ...(processsubstatuses.id
+                        ? { processsubstatus_id: processsubstatuses.id }
                         : {}),
                     company_id: 1,
                     created_at: new Date(),
@@ -92,13 +101,14 @@ class StudentController {
 
             return res.json(newStudent)
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+          console.log(err)
+            // await t.rollback()
+            // const className = 'StudentController'
+            // const functionName = 'store'
+            // MailLog({ className, functionName, req, err })
+            // return res.status(500).json({
+            //     error: err,
+            // })
         }
     }
 
