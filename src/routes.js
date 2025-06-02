@@ -61,6 +61,7 @@ import StudentgroupController from './app/controllers/StudentgroupController'
 import StudentProgramController from './app/controllers/StudentProgramController'
 import VacationController from './app/controllers/VacationController'
 import MedicalExcuseController from './app/controllers/MedicalExcuseController'
+import MessageController from './app/controllers/MessageController'
 
 const routes = new Router()
 
@@ -153,6 +154,13 @@ routes.get('/filials', FilialController.index)
 routes.get('/filials/:filial_id', FilialController.show)
 
 routes.get('/pdf/:layout/:id', PDFController.show)
+
+routes.get('/users/reset-password/:token', MilaUserController.getUserByToken)
+routes.post('/users/reset-password/:token', MilaUserController.resetPassword)
+routes.post(
+    '/users/reset-password-mail',
+    MilaUserController.sendResetPasswordEmail
+)
 
 // A partir daqui precisa de autenticação
 routes.use(authMiddleware)
@@ -282,6 +290,11 @@ routes.delete(
     '/students/transfer/:transfer_id',
     StudentController.deleteTransfer
 )
+
+routes.get('/messages', MessageController.index)
+routes.get('/messages/:message_id', MessageController.show)
+routes.get('/messages-students', MessageController.indexStudents)
+routes.post('/messages', MessageController.sendMessage)
 
 routes.post('/studentprogram', StudentProgramController.store)
 

@@ -12,7 +12,7 @@ export default function MailLayout({ title = '', content = '', filial = '' }) {
                                     ? `<h1 style='color: #0b2870; font-weight: bold;'>${title}</h1>`
                                     : ''
                             }
-                            ${content}
+                            ${content.replaceAll('\n', '<br/>')}
                             <br/>
                             <hr style='border-color: #dee0e3;'/>
                             <p>Thank you very much,<br />

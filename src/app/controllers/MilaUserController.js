@@ -1,4 +1,5 @@
 import Sequelize from 'sequelize'
+import { v4 as uuidv4 } from 'uuid'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Milauser from '../models/Milauser'
@@ -110,7 +111,7 @@ class MilaUserController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { email, name, filials, group_id } = req.body
+            const { email, name, filials, group } = req.body
 
             if (filials.length === 0) {
                 return res.status(400).json({
@@ -156,7 +157,7 @@ class MilaUserController {
             await UserGroupXUser.create(
                 {
                     user_id: newUser.id,
-                    group_id,
+                    group_id: group.id,
                     created_at: new Date(),
                     created_by: req.userId,
                 },
@@ -165,50 +166,45 @@ class MilaUserController {
                 }
             )
 
-            const promises = []
-            if (req.body.filials.length > 0) {
+            if (filials.length > 0) {
                 const addedFilials = []
-                req.body.filials.map((filial) => {
-                    if (!addedFilials.includes(filial.filial_id)) {
-                        promises.push(
-                            UserXFilial.create(
-                                {
-                                    user_id: newUser.id,
-                                    filial_id: filial.filial_id,
-                                    created_at: new Date(),
-                                    created_by: req.userId,
-                                },
-                                {
-                                    transaction: t,
-                                }
-                            )
+                for (let { filial } of filials) {
+                    if (!addedFilials.includes(filial.id)) {
+                        await UserXFilial.create(
+                            {
+                                user_id: newUser.id,
+                                filial_id: filial.id,
+                                created_at: new Date(),
+                                created_by: req.userId,
+                            },
+                            {
+                                transaction: t,
+                            }
                         )
-                        addedFilials.push(filial.filial_id)
+                        addedFilials.push(filial.id)
                     }
-                })
+                }
             }
 
-            Promise.all(promises).then(async (filials) => {
-                t.commit()
+            t.commit()
 
-                const title = `Account created`
-                const content = `<p>Dear ${name},</p>
+            const title = `Account created`
+            const content = `<p>Dear ${name},</p>
                         <p>Now you have access to MILA Plus system, please use these information on your first access:<br/>
                         E-mail: ${email}</br>
                         Password: ${password}</p>
                         <br/>
                         <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
 
-                // console.log('from: ' + process.env.MAIL_FROM)
-                // console.log('to: ' + email)
-                // console.log('title: ' + title)
+            // console.log('from: ' + process.env.MAIL_FROM)
+            // console.log('to: ' + email)
+            // console.log('title: ' + title)
 
-                mailer.sendMail({
-                    from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
-                    to: email,
-                    subject: `MILA Plus - ${title}`,
-                    html: MailLayout({ title, content, filial: '' }),
-                })
+            mailer.sendMail({
+                from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+                to: email,
+                subject: `MILA Plus - ${title}`,
+                html: MailLayout({ title, content, filial: '' }),
             })
 
             const { id } = newUser
@@ -670,6 +666,154 @@ class MilaUserController {
         } catch (err) {
             return res.status(402).json({ error: 'general-error' })
         }
+    }
+
+    async sendResetPasswordEmail(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { user_mail } = req.body
+
+            const user = await Milauser.findOne({
+                where: {
+                    email: {
+                        [Op.iLike]: user_mail,
+                    },
+                    canceled_at: null,
+                },
+                attributes: ['id', 'name', 'email'],
+            })
+
+            if (!user) {
+                return res.status(400).json({
+                    error: 'User not found',
+                })
+            }
+
+            const token = uuidv4()
+
+            await user.update(
+                {
+                    password_reset_token: token,
+                    password_reset_expire: new Date(
+                        new Date().getTime() + 1000 * 60 * 60 * 24
+                    ),
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            const title = `Reset Password`
+            const content = `<p>Dear ${user.dataValues.name},</p>
+                        <p>Please use the following link to reset your password:<br/><br/>
+                        <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/reset-password/${token}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Reset my password</a></p>`
+
+            await mailer.sendMail({
+                from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+                to: user.dataValues.email,
+                subject: `MILA Plus - ${title}`,
+                html: MailLayout({ title, content, filial: '' }),
+            })
+
+            t.commit()
+
+            return res.status(200).json({
+                message: 'Password reset email sent',
+                token,
+            })
+        } catch (err) {
+            await t.rollback()
+            const className = 'UserController'
+            const functionName = 'sendResetPasswordEmail'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async resetPassword(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { token } = req.params
+            const { password, confirmPassword } = req.body
+
+            if (!token) {
+                return res.status(400).json({
+                    error: 'Token not found',
+                })
+            }
+
+            if (!password || !confirmPassword) {
+                return res.status(400).json({
+                    error: 'Passwords not found',
+                })
+            }
+
+            if (password !== confirmPassword) {
+                return res.status(400).json({
+                    error: 'Passwords do not match',
+                })
+            }
+
+            await Milauser.update(
+                {
+                    password_reset_token: token,
+                    password,
+                },
+                {
+                    where: {
+                        password_reset_token: token,
+                    },
+                    transaction: t,
+                }
+            )
+
+            t.commit()
+
+            return res.status(200).json({
+                message: 'Password reseted!',
+                token,
+            })
+        } catch (err) {
+            await t.rollback()
+            const className = 'MilauserController'
+            const functionName = 'resetPassword'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
+    async getUserByToken(req, res) {
+        const { token } = req.params
+
+        if (!token) {
+            return res.status(400).json({
+                error: 'Token not found',
+            })
+        }
+
+        const user = await Milauser.findOne({
+            where: {
+                password_reset_token: token,
+                password_reset_expire: {
+                    [Op.gt]: new Date(),
+                },
+                canceled_at: null,
+            },
+        })
+
+        if (!user) {
+            return res.status(400).json({
+                error: 'Token not found',
+            })
+        }
+
+        return res.json(user)
     }
 }
 

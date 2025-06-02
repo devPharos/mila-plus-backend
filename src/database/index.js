@@ -76,6 +76,8 @@ import Vacation from '../app/models/Vacation.js'
 import VacationFiles from '../app/models/VacationFiles.js'
 import MedicalExcuse from '../app/models/MedicalExcuse.js'
 import MedicalExcuseFiles from '../app/models/MedicalExcuseFiles.js'
+import Message from '../app/models/Message.js'
+import MessageXStudent from '../app/models/MessageXStudent.js'
 
 const models = [
     Processtype,
@@ -112,6 +114,8 @@ const models = [
     Language,
     Languagemode,
     Level,
+    Message,
+    MessageXStudent,
     Workload,
     Paceguide,
     Programcategory,
