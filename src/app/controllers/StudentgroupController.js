@@ -1034,6 +1034,7 @@ class StudentgroupController {
 
                 let considerDay = 0
 
+                let lastdayWasHoliday = false
                 while (leftDays > 0) {
                     const verifyDate = addDays(parseISO(start_date), passedDays)
                     const dayOfWeek = getDay(verifyDate)
@@ -1067,16 +1068,18 @@ class StudentgroupController {
                             let dayPaceGuides = []
                             if (!hasAcademicFreeDay) {
                                 considerDay++
-                                dayPaceGuides = paceGuides.filter(
-                                    (pace) => pace.day === considerDay
+                                dayPaceGuides = paceGuides.filter((pace) =>
+                                    lastdayWasHoliday
+                                        ? pace.day >= considerDay &&
+                                          pace.day <= considerDay + 1
+                                        : pace.day === considerDay
                                 )
+                                if (lastdayWasHoliday) {
+                                    considerDay++
+                                }
+                                lastdayWasHoliday = false
                             } else {
-                                console.log(
-                                    'hasAcademicFreeDay',
-                                    hasAcademicFreeDay.dataValues.day,
-                                    hasAcademicFreeDay.dataValues.date_type,
-                                    verifyDate
-                                )
+                                lastdayWasHoliday = true
                             }
                             daysToAddToStudentGroup.push({
                                 verifyDate,
@@ -1087,16 +1090,11 @@ class StudentgroupController {
                                     : null,
                                 paceGuides: dayPaceGuides,
                             })
-                            console.log(considerDay, dayPaceGuides.length)
                             leftDays--
                         }
                     }
                     passedDays++
                 }
-                console.log(
-                    'daysToAddToStudentGroup',
-                    daysToAddToStudentGroup.length
-                )
                 if (passedDays > 0) {
                     end_date = format(
                         addDays(parseISO(start_date), passedDays - 1),
@@ -1152,7 +1150,7 @@ class StudentgroupController {
                             {
                                 studentgroup_id: studentGroup.id,
                                 studentgroupclass_id: studentGroupClass.id,
-                                day: paceGuide.day,
+                                day: paceGuides[0].day,
                                 type: paceGuide.type,
                                 description: paceGuide.description,
                                 created_by: req.userId,
