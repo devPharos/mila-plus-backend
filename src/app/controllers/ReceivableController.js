@@ -2154,7 +2154,7 @@ class ReceivableController {
     }
 
     async renegociation(req, res) {
-        console.log('Executing renegociation')
+        // console.log('Executing renegociation')
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
@@ -2966,7 +2966,7 @@ class ReceivableController {
     }
 
     async sendInvoice(req, res) {
-        console.log('Executing sendInvoice')
+        // console.log('Executing sendInvoice')
         try {
             const { receivable_id } = req.params
             const receivable = await Receivable.findByPk(receivable_id)
