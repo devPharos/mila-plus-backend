@@ -207,7 +207,6 @@ class StudentgroupController {
 
             let teacherSearch = null
             if (req.groupName === 'Teacher') {
-                console.log('Teacher Search', req.userId)
                 teacherSearch = {
                     user_id: req.userId,
                 }
@@ -308,7 +307,6 @@ class StudentgroupController {
         } catch (err) {
             const className = 'StudentgroupController'
             const functionName = 'index'
-            console.log(err)
 
             MailLog({ className, functionName, req, err })
             return res.status(500).json({
@@ -1050,16 +1048,17 @@ class StudentgroupController {
                         const hasAcademicFreeDay = await Calendarday.findOne({
                             where: {
                                 day: {
-                                    [Op.gte]: format(verifyDate, 'yyyy-MM-dd'),
+                                    [Op.lte]: format(verifyDate, 'yyyy-MM-dd'),
                                 },
                                 dayto: {
-                                    [Op.lte]: format(verifyDate, 'yyyy-MM-dd'),
+                                    [Op.gte]: format(verifyDate, 'yyyy-MM-dd'),
                                 },
                                 type: 'Academic',
                                 filial_id: filial.id,
                                 canceled_at: null,
                             },
                         })
+
                         if (
                             !hasAcademicFreeDay ||
                             hasAcademicFreeDay.dataValues.date_type ===
@@ -1498,9 +1497,6 @@ class StudentgroupController {
                 for (let student of shift.students) {
                     let firstCheck = 'Absent'
                     let secondCheck = 'Absent'
-                    console.log(
-                        student[`first_check_${shift.shift}_${student.id}`]
-                    )
                     if (
                         student[`first_check_${shift.shift}_${student.id}`] ===
                         'Present'
