@@ -447,7 +447,15 @@ class StudentgroupController {
                         where: {
                             canceled_at: null,
                         },
-                        attributes: ['id', 'locked_at', 'status'],
+                        attributes: [
+                            'id',
+                            'date',
+                            'weekday',
+                            'locked_at',
+                            'notes',
+                            'shift',
+                            'status',
+                        ],
                         include: [
                             {
                                 model: Studentgrouppaceguide,
@@ -881,7 +889,11 @@ class StudentgroupController {
                         where: {
                             canceled_at: null,
                         },
-                        order: [['day', 'ASC']],
+                        order: [
+                            ['day', 'ASC'],
+                            ['type', 'ASC'],
+                            ['description', 'ASC'],
+                        ],
                     },
                 ],
             })
@@ -967,9 +979,27 @@ class StudentgroupController {
 
                 if (studentGroupClasses) {
                     for (let studentGroupClass of studentGroupClasses) {
+                        await Attendance.destroy({
+                            where: {
+                                studentgroupclass_id: studentGroupClass.id,
+                                canceled_at: null,
+                            },
+                        })
+                        await Grade.destroy({
+                            where: {
+                                studentgroupclass_id: studentGroupClass.id,
+                                canceled_at: null,
+                            },
+                        })
                         await Studentgrouppaceguide.destroy({
                             where: {
                                 studentgroupclass_id: studentGroupClass.id,
+                                canceled_at: null,
+                            },
+                        })
+                        await Studentgroupclass.destroy({
+                            where: {
+                                id: studentGroupClass.id,
                                 canceled_at: null,
                             },
                         })
@@ -1019,10 +1049,10 @@ class StudentgroupController {
                         const hasAcademicFreeDay = await Calendarday.findOne({
                             where: {
                                 day: {
-                                    [Op.lte]: format(verifyDate, 'yyyy-MM-dd'),
+                                    [Op.gte]: format(verifyDate, 'yyyy-MM-dd'),
                                 },
                                 dayto: {
-                                    [Op.gte]: format(verifyDate, 'yyyy-MM-dd'),
+                                    [Op.lte]: format(verifyDate, 'yyyy-MM-dd'),
                                 },
                                 type: 'Academic',
                                 filial_id: filial.id,
@@ -1040,6 +1070,13 @@ class StudentgroupController {
                                 dayPaceGuides = paceGuides.filter(
                                     (pace) => pace.day === considerDay
                                 )
+                            } else {
+                                console.log(
+                                    'hasAcademicFreeDay',
+                                    hasAcademicFreeDay.dataValues.day,
+                                    hasAcademicFreeDay.dataValues.date_type,
+                                    verifyDate
+                                )
                             }
                             daysToAddToStudentGroup.push({
                                 verifyDate,
@@ -1050,11 +1087,16 @@ class StudentgroupController {
                                     : null,
                                 paceGuides: dayPaceGuides,
                             })
+                            console.log(considerDay, dayPaceGuides.length)
                             leftDays--
                         }
                     }
                     passedDays++
                 }
+                console.log(
+                    'daysToAddToStudentGroup',
+                    daysToAddToStudentGroup.length
+                )
                 if (passedDays > 0) {
                     end_date = format(
                         addDays(parseISO(start_date), passedDays - 1),
@@ -1088,59 +1130,28 @@ class StudentgroupController {
                 memo = null,
                 paceGuides = null,
             } of daysToAddToStudentGroup) {
-                let studentGroupClassExists = await Studentgroupclass.findOne({
-                    where: {
+                const studentGroupClass = await Studentgroupclass.create(
+                    {
                         studentgroup_id: studentGroup.id,
                         filial_id: filial.id,
                         date: format(verifyDate, 'yyyy-MM-dd'),
                         weekday: weekDays[dayOfWeek],
                         shift,
-                        canceled_at: null,
+                        notes: memo,
+                        status: 'Pending',
+                        created_by: req.userId,
+                        created_at: new Date(),
                     },
-                })
-                if (!studentGroupClassExists) {
-                    studentGroupClassExists = await Studentgroupclass.create(
-                        {
-                            studentgroup_id: studentGroup.id,
-                            filial_id: filial.id,
-                            date: format(verifyDate, 'yyyy-MM-dd'),
-                            weekday: weekDays[dayOfWeek],
-                            shift,
-                            notes: memo,
-                            status: 'Pending',
-                            created_by: req.userId,
-                            created_at: new Date(),
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
-                }
+                    {
+                        transaction: t,
+                    }
+                )
                 if (paceGuides) {
                     for (let paceGuide of paceGuides) {
-                        const paceGuideExists =
-                            await Studentgrouppaceguide.findOne(
-                                {
-                                    where: {
-                                        studentgroupclass_id:
-                                            studentGroupClassExists.id,
-                                        day: paceGuide.day,
-                                        type: paceGuide.type,
-                                        canceled_at: null,
-                                    },
-                                },
-                                {
-                                    transaction: t,
-                                }
-                            )
-                        if (paceGuideExists) {
-                            continue
-                        }
                         await Studentgrouppaceguide.create(
                             {
                                 studentgroup_id: studentGroup.id,
-                                studentgroupclass_id:
-                                    studentGroupClassExists.id,
+                                studentgroupclass_id: studentGroupClass.id,
                                 day: paceGuide.day,
                                 type: paceGuide.type,
                                 description: paceGuide.description,

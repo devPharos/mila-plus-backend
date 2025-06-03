@@ -59,6 +59,8 @@ import PayeeRecurrenceController from './app/controllers/PayeeRecurrenceControll
 import ClassroomController from './app/controllers/ClassroomController'
 import StudentgroupController from './app/controllers/StudentgroupController'
 import StudentProgramController from './app/controllers/StudentProgramController'
+import VacationController from './app/controllers/VacationController'
+import MedicalExcuseController from './app/controllers/MedicalExcuseController'
 import MessageController from './app/controllers/MessageController'
 
 const routes = new Router()
@@ -540,5 +542,13 @@ routes.delete('/recurrence/:student_id', RecurrenceController.stopRecurrence)
 
 routes.get('/filialdiscounts', FilialDiscountListController.index)
 routes.get('/files', FileController.index)
+
+// vacations
+routes.post('/students/Vacation', VacationController.store)
+routes.get('/students/Vacation/:student_id', VacationController.index)
+
+// medical excuse
+routes.post('/students/Medical_Excuse', MedicalExcuseController.store)
+routes.get('/students/Medical_Excuse/:student_id', MedicalExcuseController.index)
 
 export default routes

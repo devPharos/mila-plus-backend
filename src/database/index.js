@@ -72,6 +72,10 @@ import Studentgroupclass from '../app/models/Studentgroupclass.js'
 import Studentgrouppaceguide from '../app/models/Studentgrouppaceguide.js'
 import Studentprogram from '../app/models/Studentprogram.js'
 import Grade from '../app/models/Grade.js'
+import Vacation from '../app/models/Vacation.js'
+import VacationFiles from '../app/models/VacationFiles.js'
+import MedicalExcuse from '../app/models/MedicalExcuse.js'
+import MedicalExcuseFiles from '../app/models/MedicalExcuseFiles.js'
 import Message from '../app/models/Message.js'
 import MessageXStudent from '../app/models/MessageXStudent.js'
 
@@ -148,6 +152,10 @@ const models = [
     StudentXGroup,
     Staff,
     Staffdocument,
+    Vacation,
+    VacationFiles,
+    MedicalExcuse,
+    MedicalExcuseFiles,
     Textpaymenttransaction,
 ]
 
