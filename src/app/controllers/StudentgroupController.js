@@ -1305,6 +1305,24 @@ class StudentgroupController {
                     studentgroup_id: studentgroup.id,
                     canceled_at: null,
                 },
+                include: [
+                    {
+                        model: Studentgrouppaceguide,
+                        as: 'paceguides',
+                        required: true,
+                        where: {
+                            canceled_at: null,
+                        },
+                        attributes: [
+                            'id',
+                            'day',
+                            'type',
+                            'description',
+                            'status',
+                        ],
+                        order: [['day', 'ASC']],
+                    },
+                ],
                 attributes: [
                     'id',
                     'date',
