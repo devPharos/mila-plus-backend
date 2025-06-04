@@ -29,19 +29,19 @@ class MedicalExcuse extends Model {
         return this
     }
 
-  static associate(models) {
-    this.belongsTo(models.Student, {
-      foreignKey: 'student_id',
-      as: 'student'
-    });
+    static associate(models) {
+      this.belongsTo(models.Student, {
+        foreignKey: 'student_id',
+        as: 'student',
+      })
 
-    this.belongsToMany(models.File, {
-      through: models.MedicalExcuseFiles,
-      foreignKey: 'medical_excuse_id',
-      otherKey: 'file_id',
-      as: 'files'
-    });
+      this.belongsToMany(models.File, {
+        through: models.MedicalExcuseFiles,
+        foreignKey: 'medical_excuse_id',
+        otherKey: 'file_id',
+        as: 'files'
+      });
+    }
   }
-}
 
 export default MedicalExcuse

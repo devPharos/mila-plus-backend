@@ -17,6 +17,10 @@ module.exports = {
       await queryInterface.removeColumn('medical_excuse_files', 'url');
     }
 
+    if (tableDefinition['file_id']) {
+      await queryInterface.removeColumn('medical_excuse_files', 'file_id');
+    }
+
     await queryInterface.addColumn('medical_excuse_files', 'file_id', {
       type: Sequelize.UUID,
       allowNull: false,

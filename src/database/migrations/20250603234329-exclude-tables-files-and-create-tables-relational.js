@@ -17,6 +17,10 @@ module.exports = {
       await queryInterface.removeColumn('vacation_files', 'url');
     }
 
+    if (tableDefinition['file_id']) {
+      await queryInterface.removeColumn('vacation_files', 'file_id');
+    }
+
     await queryInterface.addColumn('vacation_files', 'file_id', {
       type: Sequelize.UUID,
       allowNull: true, // ← permitir NULL temporariamente
