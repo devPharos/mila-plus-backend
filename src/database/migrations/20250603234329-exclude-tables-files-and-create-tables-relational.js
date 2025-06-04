@@ -3,9 +3,19 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
-    await queryInterface.removeColumn('vacation_files', 'name');
-    await queryInterface.removeColumn('vacation_files', 'size');
-    await queryInterface.removeColumn('vacation_files', 'url');
+    const tableDefinition = await queryInterface.describeTable('vacation_files');
+
+    if (tableDefinition['name']) {
+      await queryInterface.removeColumn('vacation_files', 'name');
+    }
+
+    if (tableDefinition['size']) {
+      await queryInterface.removeColumn('vacation_files', 'size');
+    }
+
+    if (tableDefinition['url']) {
+      await queryInterface.removeColumn('vacation_files', 'url');
+    }
 
     await queryInterface.addColumn('vacation_files', 'file_id', {
       type: Sequelize.UUID,
@@ -16,7 +26,12 @@ module.exports = {
   },
 
   async down (queryInterface, Sequelize) {
-    await queryInterface.removeColumn('vacation_files', 'file_id');
+    const tableDefinition = await queryInterface.describeTable('vacation_files');
+
+    if (tableDefinition['file_id']) {
+      await queryInterface.removeColumn('vacation_files', 'file_id');
+    }
+
     await queryInterface.addColumn('vacation_files', 'name', {
       type: Sequelize.STRING,
       allowNull: true, // ← permitir NULL temporariamente
