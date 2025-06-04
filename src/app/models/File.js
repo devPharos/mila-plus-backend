@@ -49,9 +49,6 @@ class File extends Model {
       otherKey: 'vacation_id',
       as: 'vacations'
     });
-
-    this.hasMany(models.VacationFiles, { foreignKey: 'file_id', as: 'vacation_links' });
-    this.hasMany(models.MedicalExcuseFiles, { foreignKey: 'file_id', as: 'medical_excuses_links' });
   }
 }
 
