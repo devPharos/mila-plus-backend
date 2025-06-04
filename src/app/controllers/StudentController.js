@@ -844,6 +844,15 @@ class StudentController {
         files=[],
       } = req.body
 
+      // console.log({
+      //   date_from,
+      //   date_to,
+      //   student_id,
+      //   created_by: req.id || 2,
+      //   note,
+      //   created_at: new Date(),
+      // })
+
       try {
         if (!date_from|| !date_to) {
           return res.status(400).json({
@@ -917,6 +926,9 @@ class StudentController {
               as: 'files'
             }
           ],
+          order: [
+            ["date_from", "ASC"]
+          ]
         });
 
         return res.status(200).json(vacations);
@@ -1061,7 +1073,7 @@ class StudentController {
           })
         }
 
-        // console.log(student.id)
+        console.log(date_from, date_to)
 
         const newMedicalExcuse = await MedicalExcuse.create({
           date_from,
@@ -1107,6 +1119,9 @@ class StudentController {
               as: 'files'
             }
           ],
+          order: [
+            ["date_from", "ASC"]
+          ]
         });
 
         return res.status(200).json(medicalExcuse);

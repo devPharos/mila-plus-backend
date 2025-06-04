@@ -21,16 +21,13 @@ class VacationController {
           })
         }
 
-        const inicio = new Date(date_from);
-        const fim = new Date(date_to);
-
-        if (isNaN(inicio) || isNaN(fim)) {
+        if (!date_from || !date_to) {
           return res.status(400).json({
             error: "One or both dates are invalid."
           })
         }
 
-        if (inicio > fim) {
+        if (date_from > date_to) {
           return res.status(400).json({
             error: "The start date cannot be greater than the end date."
           })
