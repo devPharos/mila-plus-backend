@@ -3,9 +3,19 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
-    await queryInterface.removeColumn('medical_excuse_files', 'name');
-    await queryInterface.removeColumn('medical_excuse_files', 'size');
-    await queryInterface.removeColumn('medical_excuse_files', 'url');
+    const tableDefinition = await queryInterface.describeTable('medical_excuse_files');
+
+    if (tableDefinition['name']) {
+      await queryInterface.removeColumn('medical_excuse_files', 'name');
+    }
+
+    if (tableDefinition['size']) {
+      await queryInterface.removeColumn('medical_excuse_files', 'size');
+    }
+
+    if (tableDefinition['url']) {
+      await queryInterface.removeColumn('medical_excuse_files', 'url');
+    }
 
     await queryInterface.addColumn('medical_excuse_files', 'file_id', {
       type: Sequelize.UUID,
@@ -23,7 +33,11 @@ module.exports = {
     //   after: 'medical_excuse_id'
     // });
 
-    await queryInterface.removeColumn('medical_excuse_files', 'file_id');
+    const tableDefinition = await queryInterface.describeTable('medical_excuse_files');
+
+    if (tableDefinition['file_id']) {
+      await queryInterface.removeColumn('medical_excuse_files', 'file_id');
+    }
 
     await queryInterface.addColumn('medical_excuse_files', 'name', {
       type: Sequelize.STRING,
