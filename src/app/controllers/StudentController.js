@@ -1141,7 +1141,7 @@ class StudentController {
 
         const fileIds = medicalExcusesFiles.map(vf => vf.file_id);
 
-        await MedicalExcuse.update({
+        await medicalexcuse.update({
           canceled_at: new Date(),
           canceled_by: req.userId,
         }, {
