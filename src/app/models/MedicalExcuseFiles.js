@@ -10,9 +10,7 @@ class MedicalExcuseFiles extends Model {
           primaryKey: true
         },
         medical_excuse_id: Sequelize.UUID,
-        name: Sequelize.STRING,
-        size: Sequelize.FLOAT,
-        url: Sequelize.STRING,
+        file_id: Sequelize.UUID,
         created_by: Sequelize.INTEGER,
         created_at: Sequelize.DATE,
         updated_by: Sequelize.INTEGER,
@@ -30,7 +28,15 @@ class MedicalExcuseFiles extends Model {
   }
 
   static associate(models) {
-    this.belongsTo(models.MedicalExcuse, { foreignKey: 'medical_excuse_id', as: 'files' });
+    this.belongsTo(models.MedicalExcuse, {
+      foreignKey: 'medical_excuse_id',
+      as: 'medical_excuse'
+    });
+
+    this.belongsTo(models.File, {
+      foreignKey: 'file_id',
+      as: 'file'
+    });
   }
 }
 
