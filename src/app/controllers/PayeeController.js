@@ -385,6 +385,7 @@ class PayeeController {
                 chartOfAccount = null,
                 paymentMethod = null,
                 filial,
+                invoice_number = null,
             } = req.body
 
             const issuer = await Issuer.findOne({
@@ -583,6 +584,24 @@ class PayeeController {
                     return res
                         .status(400)
                         .json({ error: 'Payee does not exist.' })
+                }
+
+                const verifyInvoiceNumber = await Payee.findOne({
+                    where: {
+                        issuer_id: payeeExists.dataValues.issuer_id,
+                        invoice_number,
+                        id: {
+                            [Op.not]: payeeExists.id,
+                        },
+                        canceled_at: null,
+                    },
+                })
+
+                if (verifyInvoiceNumber) {
+                    console.log(verifyInvoiceNumber)
+                    return res.status(400).json({
+                        error: 'Invoice number already used for this issuer.',
+                    })
                 }
 
                 if (payeeExists.status !== 'Paid') {

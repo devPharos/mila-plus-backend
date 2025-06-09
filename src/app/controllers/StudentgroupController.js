@@ -1309,7 +1309,7 @@ class StudentgroupController {
                     {
                         model: Studentgrouppaceguide,
                         as: 'paceguides',
-                        required: true,
+                        required: false,
                         where: {
                             canceled_at: null,
                         },
