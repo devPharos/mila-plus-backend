@@ -230,6 +230,7 @@ class ChartOfAccountsController {
                                         required: false,
                                         where: {
                                             canceled_at: null,
+                                            allow_use: true,
                                         },
                                         include: [
                                             {
@@ -292,12 +293,14 @@ class ChartOfAccountsController {
                         code: {
                             [Op.like]: '01%',
                         },
+                        allow_use: true,
                     }
                 } else if (type === 'expenses') {
                     typeSearches = {
                         code: {
                             [Op.like]: '02%',
                         },
+                        allow_use: true,
                     }
                 }
             }
@@ -353,7 +356,13 @@ class ChartOfAccountsController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { Father, name, visibility } = req.body
+            const {
+                Father = null,
+                name = '',
+                visibility = false,
+                profit_and_loss = false,
+                allow_use = false,
+            } = req.body
 
             const fatherExists = await Chartofaccount.findByPk(Father.id)
             if (!fatherExists) {
@@ -406,6 +415,8 @@ class ChartOfAccountsController {
                     father_code: fatherExists.dataValues.code,
                     name,
                     visibility,
+                    profit_and_loss,
+                    allow_use,
                     created_by: req.userId,
                     created_at: new Date(),
                 },
@@ -434,7 +445,13 @@ class ChartOfAccountsController {
         const t = await connection.transaction()
         try {
             const { chartofaccount_id } = req.params
-            const { Father, name, visibility } = req.body
+            const {
+                Father = null,
+                name = '',
+                visibility = false,
+                profit_and_loss = false,
+                allow_use = false,
+            } = req.body
 
             const fatherExists = await Chartofaccount.findByPk(Father.id)
             if (!fatherExists) {
@@ -459,6 +476,8 @@ class ChartOfAccountsController {
                     father_code: fatherExists.dataValues.code,
                     name,
                     visibility,
+                    profit_and_loss,
+                    allow_use,
                     updated_by: req.userId,
                     updated_at: new Date(),
                 },

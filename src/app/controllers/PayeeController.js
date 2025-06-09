@@ -277,6 +277,8 @@ class PayeeController {
                 })
             }
 
+            console.log(merchant)
+
             const issuer = await Issuer.findOne({
                 where: {
                     company_id: 1,
@@ -378,15 +380,13 @@ class PayeeController {
             delete req.body.total
             delete req.body.balance
 
-            const { merchant, chartOfAccount, paymentMethod, filial } = req.body
-
-            const filialExists = await Filial.findByPk(filial.id)
-
-            if (!filialExists) {
-                return res.status(400).json({
-                    error: 'Filial does not exist.',
-                })
-            }
+            const {
+                merchant = null,
+                chartOfAccount = null,
+                paymentMethod = null,
+                filial,
+                invoice_number = null,
+            } = req.body
 
             const issuer = await Issuer.findOne({
                 where: {
@@ -437,6 +437,19 @@ class PayeeController {
 
             if (!payeeExists) {
                 return res.status(400).json({ error: 'Payee does not exist.' })
+            }
+
+            let filialExists = null
+            if (filial) {
+                filialExists = await Filial.findByPk(filial.id)?.dataValues?.id
+
+                if (!filialExists) {
+                    return res.status(400).json({
+                        error: 'Filial does not exist.',
+                    })
+                }
+            } else {
+                filialExists = payeeExists.dataValues.filial_id
             }
 
             let { amount, fee, discount } = req.body
@@ -494,6 +507,47 @@ class PayeeController {
         }
     }
 
+    async updateValue(req, res) {
+        const connection = new Sequelize(databaseConfig)
+        const t = await connection.transaction()
+        try {
+            const { payee_id } = req.params
+            const { total_amount, paymentMethod } = req.body
+
+            const payeeExists = await Payee.findByPk(payee_id)
+
+            if (!payeeExists) {
+                return res.status(400).json({ error: 'Payee does not exist.' })
+            }
+
+            await payeeExists.update(
+                {
+                    balance: total_amount,
+                    amount: total_amount,
+                    total: total_amount,
+                    paymentmethod_id: paymentMethod.id,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
+                {
+                    transaction: t,
+                }
+            )
+
+            t.commit()
+
+            return res.json(payeeExists)
+        } catch (err) {
+            await t.rollback()
+            const className = 'PayeeController'
+            const functionName = 'updateValue'
+            MailLog({ className, functionName, req, err })
+            return res.status(500).json({
+                error: err,
+            })
+        }
+    }
+
     async settlement(req, res) {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
@@ -504,6 +558,7 @@ class PayeeController {
                 settlement_memo,
                 invoice_number,
                 paymentMethod,
+                total_amount = 0,
             } = req.body
 
             const paymentMethodExists = await PaymentMethod.findByPk(
@@ -516,6 +571,12 @@ class PayeeController {
                 })
             }
 
+            if (total_amount === 0) {
+                return res.status(400).json({
+                    error: 'Total amount cannot be 0.',
+                })
+            }
+
             for (let payee of payees) {
                 const payeeExists = await Payee.findByPk(payee.id)
 
@@ -525,11 +586,28 @@ class PayeeController {
                         .json({ error: 'Payee does not exist.' })
                 }
 
+                const verifyInvoiceNumber = await Payee.findOne({
+                    where: {
+                        issuer_id: payeeExists.dataValues.issuer_id,
+                        invoice_number,
+                        id: {
+                            [Op.not]: payeeExists.id,
+                        },
+                        canceled_at: null,
+                    },
+                })
+
+                if (verifyInvoiceNumber) {
+                    return res.status(400).json({
+                        error: 'Invoice number already used for this issuer.',
+                    })
+                }
+
                 if (payeeExists.status !== 'Paid') {
                     await Payeesettlement.create(
                         {
                             payee_id: payeeExists.id,
-                            amount: payeeExists.dataValues.balance,
+                            amount: total_amount,
                             paymentmethod_id: paymentMethodExists.id,
                             settlement_date,
                             memo: settlement_memo,
@@ -543,8 +621,14 @@ class PayeeController {
 
                     await payeeExists.update(
                         {
-                            balance: 0,
-                            status: 'Paid',
+                            balance:
+                                payeeExists.dataValues.balance - total_amount,
+                            status:
+                                payeeExists.dataValues.balance -
+                                    total_amount ===
+                                0
+                                    ? 'Paid'
+                                    : 'Partial Paid',
                             invoice_number,
                             updated_at: new Date(),
                             updated_by: req.userId,
