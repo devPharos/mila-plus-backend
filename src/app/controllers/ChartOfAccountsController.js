@@ -231,6 +231,27 @@ class ChartOfAccountsController {
                                         where: {
                                             canceled_at: null,
                                         },
+                                        include: [
+                                            {
+                                                model: Chartofaccount,
+                                                as: 'Father',
+                                                required: false,
+                                                include: [
+                                                    {
+                                                        model: Chartofaccount,
+                                                        as: 'Father',
+                                                        required: false,
+                                                        include: [
+                                                            {
+                                                                model: Chartofaccount,
+                                                                as: 'Father',
+                                                                required: false,
+                                                            },
+                                                        ],
+                                                    },
+                                                ],
+                                            },
+                                        ],
                                     },
                                 ],
                             },
@@ -241,11 +262,7 @@ class ChartOfAccountsController {
                 if (merchantExists) {
                     const merchantxchartofaccounts =
                         merchantExists.merchantxchartofaccounts.map((el) => {
-                            return {
-                                id: el.chartOfAccount.id,
-                                code: el.chartOfAccount.code,
-                                name: el.chartOfAccount.name,
-                            }
+                            return el.chartOfAccount
                         })
 
                     return res.json({
