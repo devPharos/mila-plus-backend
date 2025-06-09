@@ -598,7 +598,6 @@ class PayeeController {
                 })
 
                 if (verifyInvoiceNumber) {
-                    console.log(verifyInvoiceNumber)
                     return res.status(400).json({
                         error: 'Invoice number already used for this issuer.',
                     })
