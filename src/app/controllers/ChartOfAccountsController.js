@@ -353,7 +353,7 @@ class ChartOfAccountsController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { Father, name, visibility } = req.body
+            const { Father, name, visibility, profit_and_loss } = req.body
 
             const fatherExists = await Chartofaccount.findByPk(Father.id)
             if (!fatherExists) {
@@ -406,6 +406,7 @@ class ChartOfAccountsController {
                     father_code: fatherExists.dataValues.code,
                     name,
                     visibility,
+                    profit_and_loss,
                     created_by: req.userId,
                     created_at: new Date(),
                 },
@@ -434,7 +435,7 @@ class ChartOfAccountsController {
         const t = await connection.transaction()
         try {
             const { chartofaccount_id } = req.params
-            const { Father, name, visibility } = req.body
+            const { Father, name, visibility, profit_and_loss } = req.body
 
             const fatherExists = await Chartofaccount.findByPk(Father.id)
             if (!fatherExists) {
@@ -459,6 +460,7 @@ class ChartOfAccountsController {
                     father_code: fatherExists.dataValues.code,
                     name,
                     visibility,
+                    profit_and_loss,
                     updated_by: req.userId,
                     updated_at: new Date(),
                 },

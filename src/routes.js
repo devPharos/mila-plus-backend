@@ -424,6 +424,7 @@ routes.get('/payee', PayeeController.index)
 routes.get('/payee/:payee_id', PayeeController.show)
 routes.post('/payee', PayeeController.store)
 routes.put('/payee/:payee_id', PayeeController.update)
+routes.put('/payee-value/:payee_id', PayeeController.updateValue)
 routes.delete('/payee/:payee_id', PayeeController.delete)
 routes.post('/payee/settlement', PayeeController.settlement)
 routes.post('/payee/excel', PayeeController.excel)
@@ -546,11 +547,20 @@ routes.get('/files', FileController.index)
 // vacations
 routes.post('/students/Vacation', StudentController.storeVacation)
 routes.get('/students/Vacation/:student_id', StudentController.showVacation)
-routes.delete('/students/Vacation/:vacation_id', StudentController.deleteVacation)
+routes.delete(
+    '/students/Vacation/:vacation_id',
+    StudentController.deleteVacation
+)
 
 // medical excuse
 routes.post('/students/Medical_Excuse', StudentController.storeMedicalExcuse)
-routes.get('/students/Medical_Excuse/:student_id', StudentController.showMedicalExcuse)
-routes.delete('/students/Medical_Excuse/:medical_excuse_id', StudentController.deleteMedicalExcuse)
+routes.get(
+    '/students/Medical_Excuse/:student_id',
+    StudentController.showMedicalExcuse
+)
+routes.delete(
+    '/students/Medical_Excuse/:medical_excuse_id',
+    StudentController.deleteMedicalExcuse
+)
 
 export default routes

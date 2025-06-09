@@ -244,8 +244,15 @@ class PayeeSettlementController {
                     await payee
                         .update(
                             {
-                                balance: payee.dataValues.total,
-                                status: 'Pending',
+                                balance:
+                                    payee.dataValues.balance +
+                                    settlement.dataValues.amount,
+                                status:
+                                    payee.dataValues.balance +
+                                        settlement.dataValues.amount ===
+                                    payee.dataValues.total
+                                        ? 'Pending'
+                                        : 'Partial Paid',
                                 updated_at: new Date(),
                                 updated_by: req.userId,
                             },
