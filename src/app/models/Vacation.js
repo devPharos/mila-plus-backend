@@ -29,10 +29,17 @@ class Vacation extends Model {
     }
 
     static associate(models) {
-        this.belongsTo(models.Student, {
-            sourceKey: { name: 'student_id' },
-        })
-        this.hasMany(models.VacationFiles, { foreignKey: 'vacation_id', as: 'files' });
+      this.belongsTo(models.Student, {
+        foreignKey: 'student_id',
+        as: 'student',
+      })
+
+      this.belongsToMany(models.File, {
+        through: models.VacationFiles,
+        foreignKey: 'vacation_id',
+        otherKey: 'file_id',
+        as: 'files'
+      });
     }
 }
 

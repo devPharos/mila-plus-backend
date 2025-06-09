@@ -544,11 +544,13 @@ routes.get('/filialdiscounts', FilialDiscountListController.index)
 routes.get('/files', FileController.index)
 
 // vacations
-routes.post('/students/Vacation', VacationController.store)
-routes.get('/students/Vacation/:student_id', VacationController.index)
+routes.post('/students/Vacation', StudentController.storeVacation)
+routes.get('/students/Vacation/:student_id', StudentController.showVacation)
+routes.delete('/students/Vacation/:vacation_id', StudentController.deleteVacation)
 
 // medical excuse
-routes.post('/students/Medical_Excuse', MedicalExcuseController.store)
-routes.get('/students/Medical_Excuse/:student_id', MedicalExcuseController.index)
+routes.post('/students/Medical_Excuse', StudentController.storeMedicalExcuse)
+routes.get('/students/Medical_Excuse/:student_id', StudentController.showMedicalExcuse)
+routes.delete('/students/Medical_Excuse/:medical_excuse_id', StudentController.deleteMedicalExcuse)
 
 export default routes

@@ -137,6 +137,14 @@ class Student extends Model {
             foreignKey: 'student_id',
             as: 'studentxgroups',
         })
+        this.hasMany(models.Vacation, {
+            foreignKey: 'student_id',
+            as: 'vacations',
+        })
+        this.hasMany(models.MedicalExcuse, {
+            foreignKey: 'student_id',
+            as: 'medical_excuses',
+        })
     }
 }
 

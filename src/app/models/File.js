@@ -35,6 +35,20 @@ class File extends Model {
 
   static associate(models) {
     this.belongsTo(models.Document, { foreignKey: 'document_id', as: 'document' });
+
+    this.belongsToMany(models.MedicalExcuse, {
+      through: models.MedicalExcuseFiles,
+      foreignKey: 'file_id',
+      otherKey: 'medical_excuse_id',
+      as: 'medical_excuses'
+    });
+
+    this.belongsToMany(models.Vacation, {
+      through: models.VacationFiles,
+      foreignKey: 'file_id',
+      otherKey: 'vacation_id',
+      as: 'vacations'
+    });
   }
 }
 

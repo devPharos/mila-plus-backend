@@ -26,6 +26,10 @@ import { addDays, format, parseISO, subDays } from 'date-fns'
 import Studentprogram from '../models/Studentprogram'
 import File from '../models/File'
 import { putInClass } from './StudentgroupController'
+import Vacation from '../models/Vacation'
+import VacationFiles from '../models/VacationFiles'
+import MedicalExcuse from '../models/MedicalExcuse'
+import MedicalExcuseFiles from '../models/MedicalExcuseFiles'
 
 const { Op } = Sequelize
 
@@ -825,6 +829,406 @@ class StudentController {
         }
 
         return res.json(student)
+    }
+
+    // vacations
+    async storeVacation(req, res) {
+      const connection = new Sequelize(databaseConfig)
+      const t = await connection.transaction();
+
+      const {
+        student_id=null,
+        date_from=null,
+        date_to=null,
+        note=null,
+        files=[],
+      } = req.body
+
+      // console.log({
+      //   date_from,
+      //   date_to,
+      //   student_id,
+      //   created_by: req.id || 2,
+      //   note,
+      //   created_at: new Date(),
+      // })
+
+      try {
+        if (!date_from|| !date_to) {
+          return res.status(400).json({
+            error: "One or both dates are invalid."
+          })
+        }
+
+        if (date_from > date_to) {
+          return res.status(400).json({
+            error: "The start date cannot be greater than the end date."
+          })
+        }
+
+        const student = await Student.findByPk(student_id)
+
+        if (!student) {
+          return res.status(400).json({
+            error: 'Student not found.',
+          })
+        }
+
+        const newVacation = await Vacation.create({
+          date_from,
+          date_to,
+          student_id,
+          created_by: req.id || 2,
+          note,
+          created_at: new Date(),
+        }, {
+          transaction: t,
+        });
+
+        if(!newVacation) {
+          return res.status(400).json({
+            error: 'Vacation not found.',
+          })
+        }
+
+        for (let file of files) {
+          const document = await File.create({
+            company_id: 1,
+            name: file.name,
+            size: file.size,
+            url: file.url,
+            key: file.key,
+            registry_type: 'Student Vacation',
+            created_by: req.userId || 2,
+            created_at: new Date(),
+            updated_by: req.userId || 2,
+            updated_at: new Date(),
+          },
+          { transaction: t })
+
+          await VacationFiles.create({
+            vacation_id: newVacation.id,
+            file_id: document.id,
+            created_by: req.userId || 2,
+            created_at: new Date,
+          }, {
+            transaction: t,
+          })
+        }
+
+        await t.commit();
+
+        const vacations = await Vacation.findAll({
+          where: { canceled_at: null  },
+          include: [
+            {
+              model: File,
+              as: 'files'
+            }
+          ],
+          order: [
+            ["date_from", "ASC"]
+          ]
+        });
+
+        return res.status(200).json(vacations);
+      } catch(err) {
+        await t.rollback();
+        const className = 'MerchantController'
+        const functionName = 'update'
+        MailLog({ className, functionName, req, err })
+        return res.status(500).json({
+            error: err,
+        })
+      }
+    }
+
+    async deleteVacation(req, res){
+      const connection = new Sequelize(databaseConfig)
+      const t = await connection.transaction();
+
+      const { vacation_id } = req.params
+
+      try {
+        const vacation = await Vacation.findByPk(vacation_id);
+
+        if (!vacation) {
+          return res.status(400).json({ error: 'Vacation does not exist.' })
+        }
+
+        const vacationFiles = await VacationFiles.findAll({
+          where: { vacation_id },
+          attributes: ['file_id']
+        });
+
+        const fileIds = vacationFiles.map(vf => vf.file_id);
+
+        await vacation.update({
+          canceled_at: new Date(),
+          canceled_by: req.userId,
+        }, {
+          transaction: t,
+        });
+
+        await File.update(
+          {
+            canceled_at: new Date(),
+            canceled_by: req.userId
+          },
+          {
+            where: {
+              id: fileIds
+            }
+          },
+          {
+            transaction: t,
+          }
+        );
+
+        t.commit();
+
+        return res.status(200).json(vacation);
+      } catch(err) {
+        await t.rollback()
+        const className = 'StudentController'
+        const functionName = 'deleteVacation'
+        MailLog({ className, functionName, req, err })
+        return res.status(500).json({
+          error: err,
+        })
+      }
+    }
+
+    async showVacation(req, res) {
+      const { student_id } = req.params;
+
+      try {
+
+          const vacationList = await Vacation.findAll({
+            where: {
+              student_id,
+              canceled_at: null,
+            },
+            include: [
+              {
+                model: File,
+                as: 'files'
+              }
+            ],
+            order: [
+              ["date_from", "ASC"]
+            ]
+          });
+
+          return res.status(200).json(vacationList);
+      } catch (err) {
+        const className = 'MerchantController'
+        const functionName = 'update'
+        MailLog({ className, functionName, req, err })
+        return res.status(500).json({
+            error: err,
+        })
+      }
+    }
+
+    // medical excuse
+    async storeMedicalExcuse(req, res) {
+      const connection = new Sequelize(databaseConfig)
+      const t = await connection.transaction();
+
+      const {
+        student_id=null,
+        date_from=null,
+        date_to=null,
+        note=null,
+        files=[],
+      } = req.body
+
+      // console.log({
+      //   student_id,
+      //   date_from,
+      //   date_to,
+      //   note,
+      //   files,
+      // })
+
+      try {
+        if (!date_from|| !date_to) {
+          return res.status(400).json({
+            error: "One or both dates are invalid."
+          })
+        }
+
+        if (date_from > date_to) {
+          return res.status(400).json({
+            error: "The start date cannot be greater than the end date."
+          })
+        }
+
+        const student = await Student.findByPk(student_id)
+
+        if (!student) {
+          return res.status(400).json({
+            error: 'Student not found.',
+          })
+        }
+
+        console.log(date_from, date_to)
+
+        const newMedicalExcuse = await MedicalExcuse.create({
+          date_from,
+          date_to,
+          student_id,
+          created_by: req.id || 2,
+          note,
+          created_at: new Date(),
+        }, {
+          transaction: t,
+        });
+
+        for (let file of files) {
+          const document = await File.create({
+            company_id: 1,
+            name: file.name,
+            size: file.size,
+            url: file.url,
+            key: file.key,
+            registry_type: 'Student Medical Excuse',
+            created_by: req.userId || 2,
+            created_at: new Date(),
+          },
+          { transaction: t });
+
+          await MedicalExcuseFiles.create({
+            medical_excuse_id: newMedicalExcuse.id,
+            file_id: document.id,
+            created_by: req.userId || 2,
+            created_at: new Date,
+          }, {
+            transaction: t,
+          });
+        }
+
+        await t.commit();
+
+        const medicalExcuse = await MedicalExcuse.findAll({
+          where: { canceled_at: null  },
+          include: [
+            {
+              model: File,
+              as: 'files'
+            }
+          ],
+          order: [
+            ["date_from", "ASC"]
+          ]
+        });
+
+        return res.status(200).json(medicalExcuse);
+      } catch(err) {
+        await t.rollback();
+        const className = 'StudentController'
+        const functionName = 'storeMedicalExcuse'
+        MailLog({ className, functionName, req, err })
+        return res.status(500).json({
+            error: err,
+        })
+      }
+    }
+
+    async deleteMedicalExcuse(req, res){
+      const connection = new Sequelize(databaseConfig)
+      const t = await connection.transaction();
+
+      const { medical_excuse_id } = req.params
+
+      try {
+        const medicalexcuse = await MedicalExcuse.findByPk(medical_excuse_id);
+
+        if (!medicalexcuse) {
+          return res.status(400).json({ error: 'Vacation does not exist.' })
+        }
+
+        const medicalExcusesFiles = await MedicalExcuseFiles.findAll({
+          where: { medical_excuse_id },
+          attributes: ['file_id']
+        });
+
+        const fileIds = medicalExcusesFiles.map(vf => vf.file_id);
+
+        await medicalexcuse.update({
+          canceled_at: new Date(),
+          canceled_by: req.userId,
+        }, {
+          transaction: t,
+        });
+
+        await File.update(
+          {
+            canceled_at: new Date(),
+            canceled_by: req.userId
+          },
+          {
+            where: {
+              id: fileIds
+            }
+          },
+          {
+            transaction: t,
+          }
+        );
+
+        t.commit();
+
+        return res.status(200).json(medicalExcusesFiles);
+      } catch(err) {
+        await t.rollback()
+        const className = 'StudentController'
+        const functionName = 'deleteVacation'
+        MailLog({ className, functionName, req, err })
+        return res.status(500).json({
+          error: err,
+        })
+      }
+    }
+
+    async showMedicalExcuse(req, res) {
+      const { student_id } = req.params;
+
+      const student = await Student.findByPk(student_id)
+
+      if (!student) {
+        return res.status(400).json({
+          error: 'Student not found.',
+        })
+      }
+
+      try {
+          const meList = await MedicalExcuse.findAll({
+            where: {
+              student_id,
+              canceled_at: null,
+            },
+            include: [
+              {
+                model: File,
+                as: 'files'
+              }
+            ],
+            order: [
+              ["date_from", "ASC"]
+            ]
+          });
+
+          return res.status(200).json(meList);
+      } catch (err) {
+        const className = 'StudentController'
+        const functionName = 'showMedicalExcuse'
+        MailLog({ className, functionName, req, err })
+        return res.status(500).json({
+            error: err,
+        })
+      }
     }
 }
 

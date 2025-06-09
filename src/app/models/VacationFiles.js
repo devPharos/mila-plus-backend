@@ -10,9 +10,7 @@ class VacationFiles extends Model {
           primaryKey: true
         },
         vacation_id: Sequelize.UUID,
-        name: Sequelize.STRING,
-        size: Sequelize.FLOAT,
-        url: Sequelize.STRING,
+        file_id: Sequelize.UUID,
         created_by: Sequelize.INTEGER,
         created_at: Sequelize.DATE,
         updated_by: Sequelize.INTEGER,
@@ -30,7 +28,15 @@ class VacationFiles extends Model {
   }
 
   static associate(models) {
-    this.belongsTo(models.Vacation, { foreignKey: 'vacation_id', as: 'files' });
+    this.belongsTo(models.Vacation, {
+      foreignKey: 'vacation_id',
+      as: 'vacation'
+    });
+
+    this.belongsTo(models.File, {
+      foreignKey: 'file_id',
+      as: 'file'
+    });
   }
 }
 

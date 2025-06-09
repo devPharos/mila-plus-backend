@@ -91,6 +91,14 @@ class MedicalExcuseController {
         })
       }
     }
+
+    async show(req, res){
+
+    }
+
+    async delete(req, res) {
+
+    }
 }
 
 export default new MedicalExcuseController()
