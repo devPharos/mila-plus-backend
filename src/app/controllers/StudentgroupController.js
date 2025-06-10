@@ -1292,6 +1292,41 @@ class StudentgroupController {
                 })
             }
 
+            const classes = await Studentgroupclass.findAll({
+                where: {
+                    studentgroup_id: studentgroup.id,
+                    canceled_at: null,
+                },
+                attributes: ['id', 'shift', 'date'],
+                order: [['date', 'ASC']],
+            })
+
+            const students = await Student.findAll({
+                where: {
+                    studentgroup_id: studentgroup.id,
+                    canceled_at: null,
+                },
+                attributes: ['id'],
+            })
+
+            for (let class_ of classes) {
+                for (let student of students) {
+                    await Attendance.destroy(
+                        {
+                            where: {
+                                studentgroupclass_id: class_.id,
+                                student_id: student.id,
+                                shift: class_.shift,
+                                canceled_at: null,
+                            },
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+                }
+            }
+
             await studentgroup.update(
                 {
                     status: 'In Formation',
@@ -1302,6 +1337,7 @@ class StudentgroupController {
                     transaction: t,
                 }
             )
+
             t.commit()
 
             return res.status(200).json(studentgroup)
