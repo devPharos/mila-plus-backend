@@ -1206,6 +1206,43 @@ class StudentgroupController {
                     transaction: t,
                 }
             )
+
+            // Create default attendances
+            const classes = await Studentgroupclass.findAll({
+                where: {
+                    studentgroup_id: studentgroup.id,
+                    canceled_at: null,
+                },
+                attributes: ['id', 'shift', 'date'],
+                order: [['date', 'ASC']],
+            })
+
+            const students = await Student.findAll({
+                where: {
+                    studentgroup_id: studentgroup.id,
+                    canceled_at: null,
+                },
+                attributes: ['id'],
+            })
+
+            for (let class_ of classes) {
+                for (let student of students) {
+                    await Attendance.create(
+                        {
+                            studentgroupclass_id: class_.id,
+                            student_id: student.id,
+                            shift: class_.shift,
+                            first_check: 'Absent',
+                            second_check: 'Absent',
+                            created_by: req.userId,
+                            created_at: new Date(),
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
+                }
+            }
             t.commit()
 
             return res.status(200).json(studentgroup)
