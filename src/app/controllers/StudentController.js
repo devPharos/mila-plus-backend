@@ -30,6 +30,9 @@ import Vacation from '../models/Vacation'
 import VacationFiles from '../models/VacationFiles'
 import MedicalExcuse from '../models/MedicalExcuse'
 import MedicalExcuseFiles from '../models/MedicalExcuseFiles'
+import { resolve } from 'path'
+const xl = require('excel4node')
+const fs = require('fs')
 
 const { Op } = Sequelize
 
@@ -919,7 +922,7 @@ class StudentController {
         await t.commit();
 
         const vacations = await Vacation.findAll({
-          where: { canceled_at: null  },
+          where: { student_id, canceled_at: null  },
           include: [
             {
               model: File,
@@ -1044,14 +1047,6 @@ class StudentController {
         files=[],
       } = req.body
 
-      // console.log({
-      //   student_id,
-      //   date_from,
-      //   date_to,
-      //   note,
-      //   files,
-      // })
-
       try {
         if (!date_from|| !date_to) {
           return res.status(400).json({
@@ -1072,8 +1067,6 @@ class StudentController {
             error: 'Student not found.',
           })
         }
-
-        console.log(date_from, date_to)
 
         const newMedicalExcuse = await MedicalExcuse.create({
           date_from,
@@ -1112,7 +1105,7 @@ class StudentController {
         await t.commit();
 
         const medicalExcuse = await MedicalExcuse.findAll({
-          where: { canceled_at: null  },
+          where: { student_id, canceled_at: null  },
           include: [
             {
               model: File,
@@ -1229,6 +1222,251 @@ class StudentController {
             error: err,
         })
       }
+    }
+
+    async excelVacation(req, res) {
+        try {
+            const {
+                start_date_from,
+                start_date_to,
+                end_date_from,
+                end_date_to,
+            } = req.body;
+
+            const isFilteringByStart = start_date_from && start_date_to;
+            const isFilteringByEnd = end_date_from && end_date_to;
+
+            if (!isFilteringByStart && !isFilteringByEnd) {
+                return res.status(400).json({
+                    error: 'Please provide a range of vacation start or end dates.',
+                });
+            }
+
+            const name = `vacations_report_${Date.now()}.xlsx`;
+            const path = `${resolve(
+                __dirname,
+                '..',
+                '..',
+                '..',
+                'public',
+                'uploads'
+            )}/${name}`;
+
+            const wb = new xl.Workbook();
+            const ws = wb.addWorksheet('Vacation Report');
+
+            const styleBold = wb.createStyle({
+                font: { color: '#222222', size: 12, bold: true },
+            });
+            const styleHeading = wb.createStyle({
+                font: { color: '#222222', size: 14, bold: true },
+                alignment: { horizontal: 'center' },
+            });
+
+            const whereClause = {};
+            let reportTypeColumn = '';
+
+            if (isFilteringByStart) {
+                reportTypeColumn = 'date_from';
+                whereClause[reportTypeColumn] = {
+                    [Op.between]: [start_date_from, start_date_to],
+                };
+            } else if (isFilteringByEnd) {
+                reportTypeColumn = 'date_to';
+                whereClause[reportTypeColumn] = {
+                    [Op.between]: [end_date_from, end_date_to],
+                };
+            }
+
+            whereClause.canceled_by = { [Op.is]: null };
+
+            const vacations = await Vacation.findAll({
+                where: whereClause,
+                include: [
+                    {
+                        model: Student,
+                        as: 'student',
+                        required: true,
+                        attributes: ['registration_number', 'name', 'email'],
+                    },
+                ],
+                order: [[reportTypeColumn, 'ASC']],
+            });
+
+            const title = isFilteringByStart
+                ? 'Report of Students with START of Vacation'
+                : 'Report of Students RETURNING from Vacation';
+
+            const dateColumnTitle = isFilteringByStart ? 'Start Date' : 'End Date';
+
+            ws.cell(1, 1, 1, 4, true).string(title).style(styleHeading);
+
+            let col = 1;
+            ws.cell(3, col).string('Registration Number').style(styleBold);
+            ws.column(col).width = 20;
+            col++;
+
+            ws.cell(3, col).string('Name').style(styleBold);
+            ws.column(col).width = 40;
+            col++;
+
+            ws.cell(3, col).string('Email').style(styleBold);
+            ws.column(col).width = 40;
+            col++;
+
+            ws.cell(3, col).string(dateColumnTitle).style(styleBold);
+            ws.column(col).width = 15;
+
+            ws.row(3).freeze();
+
+            vacations.forEach((vacation, index) => {
+                const student = vacation.student;
+                const row = index + 4;
+
+                let dataCol = 1;
+                ws.cell(row, dataCol++).string(student.registration_number || '');
+                ws.cell(row, dataCol++).string(student.name || '');
+                ws.cell(row, dataCol++).string(student.email || '');
+
+                const dateValue = vacation[reportTypeColumn];
+
+                if (dateValue) {
+                    ws.cell(row, dataCol++).date(parseISO(dateValue)).style({ numberFormat: 'mm/dd/yyyy' });
+                } else {
+                    ws.cell(row, dataCol++).string('');
+                }
+            });
+
+
+            wb.write(path, (err) => {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).json({ error: 'Error generating Excel file.' });
+                }
+                setTimeout(() => fs.unlink(path, (err) => { if (err) console.error('Error deleting temporary file:', err); }), 15000);
+                return res.json({ path, name });
+            });
+
+        } catch (err) {
+            MailLog({ className: 'VacationController', functionName: 'excel', req, err });
+            console.error(err);
+            return res.status(500).json({ error: 'An internal server error has occurred.' });
+        }
+    }
+
+    async excelMedicalExcuse(req, res) {
+        try {
+            const { date_from, date_to } = req.body;
+
+            if (!date_from || !date_to) {
+                return res.status(400).json({
+                    error: 'Please provide a start and end date for the report.',
+                });
+            }
+
+            const name = `medical_excuse_report_${Date.now()}.xlsx`;
+            const path = `${resolve(
+                __dirname,
+                '..',
+                '..',
+                '..',
+                'public',
+                'uploads'
+            )}/${name}`;
+
+            const wb = new xl.Workbook();
+            const ws = wb.addWorksheet('Medical Excuse Report');
+
+            const styleBold = wb.createStyle({
+                font: { color: '#222222', size: 12, bold: true },
+            });
+            const styleHeading = wb.createStyle({
+                font: { color: '#222222', size: 14, bold: true },
+                alignment: { horizontal: 'center' },
+            });
+
+            const whereClause = {
+                date_from: {
+                    [Op.between]: [date_from, date_to],
+                },
+                canceled_by: { [Op.is]: null },
+            };
+
+            const medicalExcuses = await MedicalExcuse.findAll({
+                where: whereClause,
+                include: [
+                    {
+                        model: Student,
+                        as: 'student',
+                        required: true,
+                        attributes: ['registration_number', 'name', 'email'],
+                    },
+                ],
+                order: [['date_from', 'ASC']],
+            });
+
+            const title = 'Medical Excuse Report';
+            ws.cell(1, 1, 1, 5, true).string(title).style(styleHeading);
+
+            let col = 1;
+            ws.cell(3, col).string('Registration Number').style(styleBold);
+            ws.column(col).width = 20;
+            col++;
+
+            ws.cell(3, col).string('Name').style(styleBold);
+            ws.column(col).width = 40;
+            col++;
+
+            ws.cell(3, col).string('Email').style(styleBold);
+            ws.column(col).width = 40;
+            col++;
+
+            ws.cell(3, col).string('Date From').style(styleBold);
+            ws.column(col).width = 15;
+            col++;
+
+            ws.cell(3, col).string('Date To').style(styleBold);
+            ws.column(col).width = 15;
+            col++;
+
+            ws.row(3).freeze();
+
+            medicalExcuses.forEach((excuse, index) => {
+                const student = excuse.student;
+                const row = index + 4;
+
+                let dataCol = 1;
+                ws.cell(row, dataCol++).string(student.registration_number || '');
+                ws.cell(row, dataCol++).string(student.name || '');
+                ws.cell(row, dataCol++).string(student.email || '');
+
+                if (excuse.date_from) {
+                    ws.cell(row, dataCol++).date(parseISO(excuse.date_from)).style({ numberFormat: 'mm/dd/yyyy' });
+                } else {
+                    ws.cell(row, dataCol++).string('');
+                }
+
+                if (excuse.date_to) {
+                    ws.cell(row, dataCol++).date(parseISO(excuse.date_to)).style({ numberFormat: 'mm/dd/yyyy' });
+                } else {
+                    ws.cell(row, dataCol++).string('');
+                }
+            });
+
+            wb.write(path, (err) => {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).json({ error: 'Error generating Excel file.' });
+                }
+                setTimeout(() => fs.unlink(path, (errUnlink) => { if (errUnlink) console.error('Error deleting temporary file:', errUnlink); }), 15000);
+                return res.json({ path, name });
+            });
+
+        } catch (err) {
+            MailLog({ className: 'MedicalExcuseController', functionName: 'excelMedicalExcuse', req, err });
+            console.error(err);
+            return res.status(500).json({ error: 'An internal server error has occurred.' });
+        }
     }
 }
 
