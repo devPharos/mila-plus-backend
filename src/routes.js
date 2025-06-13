@@ -59,8 +59,6 @@ import PayeeRecurrenceController from './app/controllers/PayeeRecurrenceControll
 import ClassroomController from './app/controllers/ClassroomController'
 import StudentgroupController from './app/controllers/StudentgroupController'
 import StudentProgramController from './app/controllers/StudentProgramController'
-import VacationController from './app/controllers/VacationController'
-import MedicalExcuseController from './app/controllers/MedicalExcuseController'
 import MessageController from './app/controllers/MessageController'
 
 const routes = new Router()
