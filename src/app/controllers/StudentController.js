@@ -32,6 +32,9 @@ import MedicalExcuse from '../models/MedicalExcuse'
 import MedicalExcuseFiles from '../models/MedicalExcuseFiles'
 import Attendance from '../models/Attendance'
 import Studentgroupclass from '../models/Studentgroupclass'
+import { resolve } from 'path'
+const xl = require('excel4node')
+const fs = require('fs')
 
 const { Op } = Sequelize
 
