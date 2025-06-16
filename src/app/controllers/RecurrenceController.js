@@ -68,7 +68,7 @@ export async function generateRecurrenceReceivables({
             ],
         })
 
-        if (!student) {
+        if (!student || student.dataValues.status === 'Inactive') {
             return null
         }
 
