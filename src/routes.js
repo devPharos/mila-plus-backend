@@ -549,8 +549,8 @@ routes.delete(
     '/students/Vacation/:vacation_id',
     StudentController.deleteVacation
 )
-// routes.post('/vacation/excel', StudentController.excelVacation)
-// routes.post('/Medical_Excuse/excel', StudentController.excelMedicalExcuse)
+routes.post('/vacation/excel', StudentController.excelVacation)
+routes.post('/Medical_Excuse/excel', StudentController.excelMedicalExcuse)
 
 // medical excuse
 routes.post('/students/Medical_Excuse', StudentController.storeMedicalExcuse)
