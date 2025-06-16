@@ -254,8 +254,9 @@ class UserGroupController {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 50,
+                limit = 10,
                 type = '',
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, UserGroup)) {
@@ -314,7 +315,9 @@ class UserGroupController {
                           }
                         : {}),
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 

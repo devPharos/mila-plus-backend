@@ -3,7 +3,6 @@ import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Student from '../models/Student'
 import Filial from '../models/Filial'
-import { searchPromise } from '../functions/searchPromise'
 import Studentinactivation from '../models/Studentinactivation'
 import {
     generateSearchByFields,
@@ -22,10 +21,14 @@ import Processsubstatus from '../models/Processsubstatus'
 import Staff from '../models/Staff'
 import Studentgroup from '../models/Studentgroup'
 import StudentXGroup from '../models/StudentXGroup'
-import { addDays, format, parseISO, subDays } from 'date-fns'
+import { format, parseISO, subDays } from 'date-fns'
 import Studentprogram from '../models/Studentprogram'
 import File from '../models/File'
-import { putInClass } from './StudentgroupController'
+import {
+    createStudentAttendances,
+    putInClass,
+    removeStudentAttendances,
+} from './StudentgroupController'
 import Vacation from '../models/Vacation'
 import VacationFiles from '../models/VacationFiles'
 import MedicalExcuse from '../models/MedicalExcuse'
@@ -202,8 +205,9 @@ class StudentController {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 12,
+                limit = 10,
                 type = '',
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Student)) {
@@ -274,7 +278,9 @@ class StudentController {
                         : {}),
                     canceled_at: null,
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
@@ -536,6 +542,15 @@ class StudentController {
                     transaction: t,
                 }
             )
+            await removeStudentAttendances({
+                student_id: student.id,
+                studentgroup_id: student.dataValues.group_id,
+                from_date: date.includes('-')
+                    ? date
+                    : format(parseISO(date), 'yyyy-MM-dd'),
+                req,
+                t,
+            })
 
             t.commit()
 
@@ -600,7 +615,7 @@ class StudentController {
                     error: 'Student not found.',
                 })
             }
-            const studentXGroup = await StudentXGroup.create(
+            await StudentXGroup.create(
                 {
                     company_id: 1,
                     filial_id: studentgroupExists.filial_id,
@@ -761,6 +776,20 @@ class StudentController {
                         transaction: t,
                     }
                 )
+                await removeStudentAttendances({
+                    student_id: studentExists.id,
+                    studentgroup_id: activeStudentGroup.dataValues.group_id,
+                    from_date: date,
+                    req,
+                    t,
+                })
+                await createStudentAttendances({
+                    student_id: studentExists.id,
+                    studentgroup_id: studentgroupExists.id,
+                    from_date: date,
+                    req,
+                    t,
+                })
             }
 
             t.commit()
@@ -1415,18 +1444,18 @@ class StudentController {
                 start_date_to,
                 end_date_from,
                 end_date_to,
-            } = req.body;
+            } = req.body
 
-            const isFilteringByStart = start_date_from && start_date_to;
-            const isFilteringByEnd = end_date_from && end_date_to;
+            const isFilteringByStart = start_date_from && start_date_to
+            const isFilteringByEnd = end_date_from && end_date_to
 
             if (!isFilteringByStart && !isFilteringByEnd) {
                 return res.status(400).json({
                     error: 'Please provide a range of vacation start or end dates.',
-                });
+                })
             }
 
-            const name = `vacations_report_${Date.now()}.xlsx`;
+            const name = `vacations_report_${Date.now()}.xlsx`
             const path = `${resolve(
                 __dirname,
                 '..',
@@ -1434,35 +1463,35 @@ class StudentController {
                 '..',
                 'public',
                 'uploads'
-            )}/${name}`;
+            )}/${name}`
 
-            const wb = new xl.Workbook();
-            const ws = wb.addWorksheet('Vacation Report');
+            const wb = new xl.Workbook()
+            const ws = wb.addWorksheet('Vacation Report')
 
             const styleBold = wb.createStyle({
                 font: { color: '#222222', size: 12, bold: true },
-            });
+            })
             const styleHeading = wb.createStyle({
                 font: { color: '#222222', size: 14, bold: true },
                 alignment: { horizontal: 'center' },
-            });
+            })
 
-            const whereClause = {};
-            let reportTypeColumn = '';
+            const whereClause = {}
+            let reportTypeColumn = ''
 
             if (isFilteringByStart) {
-                reportTypeColumn = 'date_from';
+                reportTypeColumn = 'date_from'
                 whereClause[reportTypeColumn] = {
                     [Op.between]: [start_date_from, start_date_to],
-                };
+                }
             } else if (isFilteringByEnd) {
-                reportTypeColumn = 'date_to';
+                reportTypeColumn = 'date_to'
                 whereClause[reportTypeColumn] = {
                     [Op.between]: [end_date_from, end_date_to],
-                };
+                }
             }
 
-            whereClause.canceled_by = { [Op.is]: null };
+            whereClause.canceled_by = { [Op.is]: null }
 
             const vacations = await Vacation.findAll({
                 where: whereClause,
@@ -1475,80 +1504,103 @@ class StudentController {
                     },
                 ],
                 order: [[reportTypeColumn, 'ASC']],
-            });
+            })
 
             const title = isFilteringByStart
                 ? 'Report of Students with START of Vacation'
-                : 'Report of Students RETURNING from Vacation';
+                : 'Report of Students RETURNING from Vacation'
 
-            const dateColumnTitle = isFilteringByStart ? 'Start Date' : 'End Date';
+            const dateColumnTitle = isFilteringByStart
+                ? 'Start Date'
+                : 'End Date'
 
-            ws.cell(1, 1, 1, 4, true).string(title).style(styleHeading);
+            ws.cell(1, 1, 1, 4, true).string(title).style(styleHeading)
 
-            let col = 1;
-            ws.cell(3, col).string('Registration Number').style(styleBold);
-            ws.column(col).width = 20;
-            col++;
+            let col = 1
+            ws.cell(3, col).string('Registration Number').style(styleBold)
+            ws.column(col).width = 20
+            col++
 
-            ws.cell(3, col).string('Name').style(styleBold);
-            ws.column(col).width = 40;
-            col++;
+            ws.cell(3, col).string('Name').style(styleBold)
+            ws.column(col).width = 40
+            col++
 
-            ws.cell(3, col).string('Email').style(styleBold);
-            ws.column(col).width = 40;
-            col++;
+            ws.cell(3, col).string('Email').style(styleBold)
+            ws.column(col).width = 40
+            col++
 
-            ws.cell(3, col).string(dateColumnTitle).style(styleBold);
-            ws.column(col).width = 15;
+            ws.cell(3, col).string(dateColumnTitle).style(styleBold)
+            ws.column(col).width = 15
 
-            ws.row(3).freeze();
+            ws.row(3).freeze()
 
             vacations.forEach((vacation, index) => {
-                const student = vacation.student;
-                const row = index + 4;
+                const student = vacation.student
+                const row = index + 4
 
-                let dataCol = 1;
-                ws.cell(row, dataCol++).string(student.registration_number || '');
-                ws.cell(row, dataCol++).string(student.name || '');
-                ws.cell(row, dataCol++).string(student.email || '');
+                let dataCol = 1
+                ws.cell(row, dataCol++).string(
+                    student.registration_number || ''
+                )
+                ws.cell(row, dataCol++).string(student.name || '')
+                ws.cell(row, dataCol++).string(student.email || '')
 
-                const dateValue = vacation[reportTypeColumn];
+                const dateValue = vacation[reportTypeColumn]
 
                 if (dateValue) {
-                    ws.cell(row, dataCol++).date(parseISO(dateValue)).style({ numberFormat: 'mm/dd/yyyy' });
+                    ws.cell(row, dataCol++)
+                        .date(parseISO(dateValue))
+                        .style({ numberFormat: 'mm/dd/yyyy' })
                 } else {
-                    ws.cell(row, dataCol++).string('');
+                    ws.cell(row, dataCol++).string('')
                 }
-            });
-
+            })
 
             wb.write(path, (err) => {
                 if (err) {
-                    console.error(err);
-                    return res.status(500).json({ error: 'Error generating Excel file.' });
+                    console.error(err)
+                    return res
+                        .status(500)
+                        .json({ error: 'Error generating Excel file.' })
                 }
-                setTimeout(() => fs.unlink(path, (err) => { if (err) console.error('Error deleting temporary file:', err); }), 15000);
-                return res.json({ path, name });
-            });
-
+                setTimeout(
+                    () =>
+                        fs.unlink(path, (err) => {
+                            if (err)
+                                console.error(
+                                    'Error deleting temporary file:',
+                                    err
+                                )
+                        }),
+                    15000
+                )
+                return res.json({ path, name })
+            })
         } catch (err) {
-            MailLog({ className: 'VacationController', functionName: 'excel', req, err });
-            console.error(err);
-            return res.status(500).json({ error: 'An internal server error has occurred.' });
+            MailLog({
+                className: 'VacationController',
+                functionName: 'excel',
+                req,
+                err,
+            })
+            console.error(err)
+            return res
+                .status(500)
+                .json({ error: 'An internal server error has occurred.' })
         }
     }
 
     async excelMedicalExcuse(req, res) {
         try {
-            const { date_from, date_to } = req.body;
+            const { date_from, date_to } = req.body
 
             if (!date_from || !date_to) {
                 return res.status(400).json({
                     error: 'Please provide a start and end date for the report.',
-                });
+                })
             }
 
-            const name = `medical_excuse_report_${Date.now()}.xlsx`;
+            const name = `medical_excuse_report_${Date.now()}.xlsx`
             const path = `${resolve(
                 __dirname,
                 '..',
@@ -1556,25 +1608,25 @@ class StudentController {
                 '..',
                 'public',
                 'uploads'
-            )}/${name}`;
+            )}/${name}`
 
-            const wb = new xl.Workbook();
-            const ws = wb.addWorksheet('Medical Excuse Report');
+            const wb = new xl.Workbook()
+            const ws = wb.addWorksheet('Medical Excuse Report')
 
             const styleBold = wb.createStyle({
                 font: { color: '#222222', size: 12, bold: true },
-            });
+            })
             const styleHeading = wb.createStyle({
                 font: { color: '#222222', size: 14, bold: true },
                 alignment: { horizontal: 'center' },
-            });
+            })
 
             const whereClause = {
                 date_from: {
                     [Op.between]: [date_from, date_to],
                 },
                 canceled_by: { [Op.is]: null },
-            };
+            }
 
             const medicalExcuses = await MedicalExcuse.findAll({
                 where: whereClause,
@@ -1587,69 +1639,93 @@ class StudentController {
                     },
                 ],
                 order: [['date_from', 'ASC']],
-            });
+            })
 
-            const title = 'Medical Excuse Report';
-            ws.cell(1, 1, 1, 5, true).string(title).style(styleHeading);
+            const title = 'Medical Excuse Report'
+            ws.cell(1, 1, 1, 5, true).string(title).style(styleHeading)
 
-            let col = 1;
-            ws.cell(3, col).string('Registration Number').style(styleBold);
-            ws.column(col).width = 20;
-            col++;
+            let col = 1
+            ws.cell(3, col).string('Registration Number').style(styleBold)
+            ws.column(col).width = 20
+            col++
 
-            ws.cell(3, col).string('Name').style(styleBold);
-            ws.column(col).width = 40;
-            col++;
+            ws.cell(3, col).string('Name').style(styleBold)
+            ws.column(col).width = 40
+            col++
 
-            ws.cell(3, col).string('Email').style(styleBold);
-            ws.column(col).width = 40;
-            col++;
+            ws.cell(3, col).string('Email').style(styleBold)
+            ws.column(col).width = 40
+            col++
 
-            ws.cell(3, col).string('Date From').style(styleBold);
-            ws.column(col).width = 15;
-            col++;
+            ws.cell(3, col).string('Date From').style(styleBold)
+            ws.column(col).width = 15
+            col++
 
-            ws.cell(3, col).string('Date To').style(styleBold);
-            ws.column(col).width = 15;
-            col++;
+            ws.cell(3, col).string('Date To').style(styleBold)
+            ws.column(col).width = 15
+            col++
 
-            ws.row(3).freeze();
+            ws.row(3).freeze()
 
             medicalExcuses.forEach((excuse, index) => {
-                const student = excuse.student;
-                const row = index + 4;
+                const student = excuse.student
+                const row = index + 4
 
-                let dataCol = 1;
-                ws.cell(row, dataCol++).string(student.registration_number || '');
-                ws.cell(row, dataCol++).string(student.name || '');
-                ws.cell(row, dataCol++).string(student.email || '');
+                let dataCol = 1
+                ws.cell(row, dataCol++).string(
+                    student.registration_number || ''
+                )
+                ws.cell(row, dataCol++).string(student.name || '')
+                ws.cell(row, dataCol++).string(student.email || '')
 
                 if (excuse.date_from) {
-                    ws.cell(row, dataCol++).date(parseISO(excuse.date_from)).style({ numberFormat: 'mm/dd/yyyy' });
+                    ws.cell(row, dataCol++)
+                        .date(parseISO(excuse.date_from))
+                        .style({ numberFormat: 'mm/dd/yyyy' })
                 } else {
-                    ws.cell(row, dataCol++).string('');
+                    ws.cell(row, dataCol++).string('')
                 }
 
                 if (excuse.date_to) {
-                    ws.cell(row, dataCol++).date(parseISO(excuse.date_to)).style({ numberFormat: 'mm/dd/yyyy' });
+                    ws.cell(row, dataCol++)
+                        .date(parseISO(excuse.date_to))
+                        .style({ numberFormat: 'mm/dd/yyyy' })
                 } else {
-                    ws.cell(row, dataCol++).string('');
+                    ws.cell(row, dataCol++).string('')
                 }
-            });
+            })
 
             wb.write(path, (err) => {
                 if (err) {
-                    console.error(err);
-                    return res.status(500).json({ error: 'Error generating Excel file.' });
+                    console.error(err)
+                    return res
+                        .status(500)
+                        .json({ error: 'Error generating Excel file.' })
                 }
-                setTimeout(() => fs.unlink(path, (errUnlink) => { if (errUnlink) console.error('Error deleting temporary file:', errUnlink); }), 15000);
-                return res.json({ path, name });
-            });
-
+                setTimeout(
+                    () =>
+                        fs.unlink(path, (errUnlink) => {
+                            if (errUnlink)
+                                console.error(
+                                    'Error deleting temporary file:',
+                                    errUnlink
+                                )
+                        }),
+                    15000
+                )
+                return res.json({ path, name })
+            })
         } catch (err) {
-            MailLog({ className: 'MedicalExcuseController', functionName: 'excelMedicalExcuse', req, err });
-            console.error(err);
-            return res.status(500).json({ error: 'An internal server error has occurred.' });
+            MailLog({
+                className: 'MedicalExcuseController',
+                functionName: 'excelMedicalExcuse',
+                req,
+                err,
+            })
+            console.error(err)
+            return res
+                .status(500)
+                .json({ error: 'An internal server error has occurred.' })
         }
     }
 }

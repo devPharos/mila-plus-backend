@@ -84,6 +84,22 @@ export async function putInClass(student_id, studentgroup_id, t) {
         return false
     }
 
+    const date = format(new Date(), 'yyyy-MM-dd')
+    await removeStudentAttendances({
+        student_id: student.id,
+        studentgroup_id: student.dataValues.group_id,
+        from_date: date,
+        req,
+        t,
+    })
+    await createStudentAttendances({
+        student_id: student.id,
+        studentgroup_id: studentGroup.id,
+        from_date: date,
+        req,
+        t,
+    })
+
     await student.update(
         {
             studentgroup_id: studentGroup.id,
@@ -110,7 +126,7 @@ export async function putInClass(student_id, studentgroup_id, t) {
                 group_id: studentgroup_id,
                 status: 'Pending',
                 start_date: {
-                    [Op.lte]: format(new Date(), 'yyyy-MM-dd'),
+                    [Op.lte]: date,
                 },
                 canceled_at: null,
             },
@@ -119,6 +135,96 @@ export async function putInClass(student_id, studentgroup_id, t) {
     )
 
     return true
+}
+
+export async function createStudentAttendances({
+    student_id = null,
+    studentgroup_id = null,
+    from_date = null,
+    req = { userId: 2 },
+    t = null,
+}) {
+    const student = await Student.findByPk(student_id)
+    if (!student) {
+        return false
+    }
+    const studentgroup = await Studentgroup.findByPk(studentgroup_id)
+    if (!studentgroup) {
+        return false
+    }
+    const classes = await Studentgroupclass.findAll({
+        where: {
+            studentgroup_id: studentgroup.id,
+            canceled_at: null,
+            date: {
+                [Op.gte]: from_date,
+            },
+        },
+        attributes: ['id', 'shift', 'date'],
+        order: [['date', 'ASC']],
+    })
+
+    for (let class_ of classes) {
+        for (const shift of class_.shift.split('/')) {
+            await Attendance.create(
+                {
+                    studentgroupclass_id: class_.id,
+                    student_id: student_id,
+                    shift,
+                    first_check: 'Absent',
+                    second_check: 'Absent',
+                    created_by: req.userId,
+                    created_at: new Date(),
+                },
+                {
+                    transaction: t,
+                }
+            )
+        }
+    }
+}
+
+export async function removeStudentAttendances({
+    student_id = null,
+    studentgroup_id = null,
+    from_date = null,
+    req = { userId: 2 },
+    t = null,
+}) {
+    const student = await Student.findByPk(student_id)
+    if (!student) {
+        return false
+    }
+    const studentgroup = await Studentgroup.findByPk(studentgroup_id)
+    if (!studentgroup) {
+        return false
+    }
+    const classes = await Studentgroupclass.findAll({
+        where: {
+            studentgroup_id: studentgroup.id,
+            canceled_at: null,
+            date: {
+                [Op.gte]: from_date,
+            },
+        },
+    })
+
+    for (let class_ of classes) {
+        await Attendance.update(
+            {
+                canceled_by: req.userId,
+                canceled_at: new Date(),
+            },
+            {
+                where: {
+                    studentgroupclass_id: class_.id,
+                    student_id: student_id,
+                    canceled_at: null,
+                },
+                transaction: t,
+            }
+        )
+    }
 }
 
 async function StudentGroupProgress(studentgroup_id = null) {
@@ -194,6 +300,7 @@ class StudentgroupController {
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 10,
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Studentgroup)) {
@@ -299,7 +406,9 @@ class StudentgroupController {
                     ...(teacherSearch ? { status: 'Ongoing' } : {}),
                     ...(await generateSearchByFields(search, searchableFields)),
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
@@ -1208,14 +1317,6 @@ class StudentgroupController {
             )
 
             // Create default attendances
-            const classes = await Studentgroupclass.findAll({
-                where: {
-                    studentgroup_id: studentgroup.id,
-                    canceled_at: null,
-                },
-                attributes: ['id', 'shift', 'date'],
-                order: [['date', 'ASC']],
-            })
 
             const students = await Student.findAll({
                 where: {
@@ -1225,24 +1326,19 @@ class StudentgroupController {
                 attributes: ['id'],
             })
 
-            for (let class_ of classes) {
-                for (let student of students) {
-                    await Attendance.create(
-                        {
-                            studentgroupclass_id: class_.id,
-                            student_id: student.id,
-                            shift: class_.shift,
-                            first_check: 'Absent',
-                            second_check: 'Absent',
-                            created_by: req.userId,
-                            created_at: new Date(),
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
-                }
+            for (let student of students) {
+                await createStudentAttendances({
+                    student_id: student.id,
+                    studentgroup_id: studentgroup.id,
+                    from_date: format(
+                        parseISO(studentgroup.dataValues.start_date),
+                        'yyyy-MM-dd'
+                    ),
+                    req,
+                    t,
+                })
             }
+
             t.commit()
 
             return res.status(200).json(studentgroup)

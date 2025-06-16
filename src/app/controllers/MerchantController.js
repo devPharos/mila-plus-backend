@@ -25,6 +25,7 @@ class MerchantController {
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 10,
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Merchant)) {
@@ -104,7 +105,9 @@ class MerchantController {
                     ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 

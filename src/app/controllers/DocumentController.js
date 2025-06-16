@@ -2,6 +2,12 @@ import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Document from '../models/Document'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
@@ -70,15 +76,48 @@ class DocumentController {
     }
 
     async index(req, res) {
+        const defaultOrderBy = {
+            column: 'origin;type;subtype;title',
+            asc: 'ASC',
+        }
         try {
-            const documents = await Document.findAll({
-                where: {
-                    company_id: 1,
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
+                search = '',
+                limit = 10,
+                page = 1,
+            } = req.query
+
+            if (!verifyFieldInModel(orderBy, Document)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Document, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'name',
+                    type: 'string',
                 },
-                order: [['origin'], ['type'], ['subtype'], ['title']],
+            ]
+            const { count, rows } = await Document.findAndCountAll({
+                where: {
+                    canceled_at: null,
+                    company_id: 1,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
+                },
+                distinct: true,
+                limit,
+                offset: page ? (page - 1) * limit : 0,
+                order: searchOrder,
             })
 
-            return res.json(documents)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'DocumentController'
             const functionName = 'index'

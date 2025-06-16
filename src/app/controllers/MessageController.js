@@ -27,7 +27,8 @@ class MessageController {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 50,
+                limit = 10,
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Message)) {
@@ -65,7 +66,9 @@ class MessageController {
                     ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 

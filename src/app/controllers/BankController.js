@@ -21,6 +21,7 @@ class BankController {
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 10,
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Bank)) {
@@ -48,7 +49,9 @@ class BankController {
                     ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 

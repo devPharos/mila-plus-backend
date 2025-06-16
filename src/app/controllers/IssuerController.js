@@ -92,6 +92,7 @@ class IssuerController {
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 10,
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Issuer)) {
@@ -147,7 +148,9 @@ class IssuerController {
                     ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 

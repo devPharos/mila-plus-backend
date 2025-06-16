@@ -12,7 +12,14 @@ import UserGroupXUser from '../models/UserGroupXUser'
 import UserXFilial from '../models/UserXFilial'
 import Processsubstatus from '../models/Processsubstatus'
 import { mailer } from '../../config/mailer'
-import { FRONTEND_URL, randomPassword } from '../functions'
+import {
+    FRONTEND_URL,
+    generateSearchByFields,
+    generateSearchOrder,
+    randomPassword,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 import MailLayout from '../../Mails/MailLayout'
 import Filialdocument from '../models/Filialdocument'
 import { resolve } from 'path'
@@ -123,36 +130,68 @@ class FilialController {
     }
 
     async index(req, res) {
+        const defaultOrderBy = { column: 'name', asc: 'ASC' }
         try {
-            const filials = await Filial.findAll({
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
+                search = '',
+                limit = 10,
+                page = 1,
+            } = req.query
+
+            if (!verifyFieldInModel(orderBy, Filial)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Filial, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+                {
+                    field: 'alias',
+                    type: 'string',
+                },
+                {
+                    field: 'city',
+                    type: 'string',
+                },
+                {
+                    field: 'state',
+                    type: 'string',
+                },
+            ]
+            const { count, rows } = await Filial.findAndCountAll({
                 where: {
+                    company_id: 1,
+                    alias: { [Op.not]: 'AAA' },
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                     canceled_at: null,
-                    // company_id: 1,
-                    [Op.not]: { alias: 'AAA' },
-                    [Op.or]: [
-                        {
-                            id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            id:
-                                req.headers.filial != 1 &&
-                                req.headers.filial !== undefined
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
                 },
                 include: [
                     {
                         model: Filialtype,
+                        attributes: ['id', 'name'],
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
                     },
                 ],
-                order: [['name']],
+                distinct: true,
+                limit,
+                offset: page ? (page - 1) * limit : 0,
+                order: searchOrder,
             })
 
-            return res.json(filials)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'FilialController'
             const functionName = 'index'

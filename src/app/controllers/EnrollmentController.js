@@ -19,7 +19,13 @@ import { mailer } from '../../config/mailer'
 import Filial from '../models/Filial'
 import Enrollmenttransfer from '../models/Enrollmenttransfer'
 import MailLayout from '../../Mails/MailLayout'
-import { FRONTEND_URL } from '../functions'
+import {
+    FRONTEND_URL,
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 import mailEnrollmentToStudent from '../../Mails/Processes/Enrollment Process/toStudent'
 import mailTransferToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent'
 import mailPlacementTestToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent'
@@ -666,28 +672,42 @@ class EnrollmentController {
 
     async index(req, res) {
         try {
-            const {
-                orderBy = 'created_at',
-                orderASC = 'DESC',
+            const defaultOrderBy = { column: 'code', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
+                limit = 10,
+                type = '',
+                page = 1,
             } = req.query
-            const enrollments = await Enrollment.findAll({
-                where: {
-                    [Op.or]: [
-                        {
-                            filial_id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            filial_id:
-                                req.headers.filial != 1
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
-                    canceled_at: null,
+
+            if (!verifyFieldInModel(orderBy, Enrollment)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'form_step',
+                    type: 'string',
                 },
+                {
+                    field: 'application',
+                    type: 'string',
+                },
+                {
+                    model: Student,
+                    field: 'name',
+                    type: 'string',
+                    return: 'student_id',
+                },
+            ]
+
+            const filialSearch = verifyFilialSearch(Enrollment, req)
+            const { count, rows } = await Enrollment.findAndCountAll({
                 include: [
                     {
                         model: Student,
@@ -745,19 +765,18 @@ class EnrollmentController {
                         order: [[orderBy, orderASC]],
                     },
                 ],
+                where: {
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
+                    canceled_at: null,
+                },
+                distinct: true,
+                limit,
+                offset: page ? (page - 1) * limit : 0,
+                order: searchOrder,
             })
 
-            const fields = [
-                'application',
-                ['students', 'name'],
-                ['students', ['processtypes', 'name']],
-                ['students', ['processsubstatuses', 'name']],
-            ]
-            Promise.all([searchPromise(search, enrollments, fields)]).then(
-                (enrollments) => {
-                    return res.json(enrollments[0])
-                }
-            )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'EnrollmentController'
             const functionName = 'index'

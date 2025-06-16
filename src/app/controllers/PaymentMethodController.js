@@ -25,6 +25,7 @@ class PaymentMethodController {
                 search = '',
                 limit = 10,
                 type = '',
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, PaymentMethod)) {
@@ -94,7 +95,9 @@ class PaymentMethodController {
                     ...(await generateSearchByFields(search, searchableFields)),
                     ...typeSearches,
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 

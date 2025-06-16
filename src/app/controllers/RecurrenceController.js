@@ -254,7 +254,7 @@ export async function generateRecurrenceReceivables({
                 type_detail: 'Tuition fee',
                 status: 'Pending',
                 status_date: format(new Date(), 'yyyyMMdd'),
-                memo: `Registration fee - ${name} - ${i + 1}`,
+                memo: `Tuition fee - ${name} - ${i + 1}`,
                 fee: 0,
                 authorization_code: null,
                 chartofaccount_id: recurrence.dataValues.chartofaccount_id,
@@ -320,6 +320,7 @@ class RecurrenceController {
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 10,
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Student)) {
@@ -382,7 +383,9 @@ class RecurrenceController {
                         ],
                     },
                 ],
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
@@ -789,7 +792,9 @@ class RecurrenceController {
                         where: { canceled_at: null },
                     },
                 ],
-                order: [['due_date', 'ASC']],
+                distinct: true,
+                limit,
+                order: searchOrder,
             })
 
             return res.json({ totalRows: count, rows })

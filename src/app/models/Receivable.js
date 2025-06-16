@@ -221,6 +221,10 @@ class Receivable extends Model {
             foreignKey: 'receivable_id',
             as: 'maillogs',
         })
+        this.hasMany(models.Textpaymenttransaction, {
+            foreignKey: 'receivable_id',
+            as: 'textpaymenttransactions',
+        })
     }
 }
 

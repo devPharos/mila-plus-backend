@@ -120,6 +120,26 @@ export async function createRegistrationFeeReceivable({
         const discount =
             filialPriceList.dataValues.registration_fee - totalAmount
 
+        const chartOfAccount = await ChartOfAccount.findOne({
+            where: {
+                company_id: company_id,
+                code: '01.001.001.001',
+                canceled_at: null,
+            },
+        })
+
+        if (!chartOfAccount) {
+            const className = 'ReceivableController'
+            const functionName = 'createRegistrationFeeReceivable'
+            MailLog({
+                className,
+                functionName,
+                req: null,
+                err: 'Chart of account not found',
+            })
+            return null
+        }
+
         const receivable = await Receivable.create({
             company_id,
             filial_id,
@@ -134,7 +154,7 @@ export async function createRegistrationFeeReceivable({
             memo: `Registration fee - ${name}`,
             fee: 0,
             authorization_code: null,
-            chartofaccount_id: 8,
+            chartofaccount_id: chartOfAccount.id,
             is_recurrence: false,
             contract_number: '',
             discount: discount.toFixed(2),
@@ -223,6 +243,26 @@ export async function createTuitionFeeReceivable({
 
         const discount = filialPriceList.dataValues.tuition - totalAmount
 
+        const chartOfAccount = await ChartOfAccount.findOne({
+            where: {
+                company_id: company_id,
+                code: in_advance ? '01.001.002.002' : '01.001.002.001',
+                canceled_at: null,
+            },
+        })
+
+        if (!chartOfAccount) {
+            const className = 'ReceivableController'
+            const functionName = 'createTuitionFeeReceivable'
+            MailLog({
+                className,
+                functionName,
+                req: null,
+                err: 'Chart of account not found',
+            })
+            return null
+        }
+
         const receivable = await Receivable.create({
             company_id,
             filial_id,
@@ -238,7 +278,7 @@ export async function createTuitionFeeReceivable({
             fee: 0,
             discount: discount.toFixed(2),
             authorization_code: null,
-            chartofaccount_id: 8,
+            chartofaccount_id: chartOfAccount.id,
             is_recurrence: false,
             contract_number: '',
             amount: filialPriceList.dataValues.tuition.toFixed(2),
@@ -1309,7 +1349,8 @@ class ReceivableController {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 50,
+                limit = 10,
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Receivable)) {
@@ -1441,24 +1482,12 @@ class ReceivableController {
                     'entry_date',
                     'is_recurrence',
                 ],
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
-            // const fields = [
-            //     'status',
-            //     ['filial', 'name'],
-            //     ['issuer', 'id'],
-            //     ['issuer', 'name'],
-            //     'invoice_number',
-            //     'issuer_id',
-            //     'amount',
-            // ]
-            // Promise.all([searchPromise(search, receivables, fields)]).then(
-            //     (data) => {
-            // return res.json({ totalRows, rows: data[0] })
-            //     }
-            // )
             return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'ReceivableController'
@@ -1548,6 +1577,12 @@ class ReceivableController {
                         required: false,
                         where: { canceled_at: null },
                         order: [['created_at', 'DESC']],
+                    },
+                    {
+                        model: Textpaymenttransaction,
+                        as: 'textpaymenttransactions',
+                        required: false,
+                        where: { canceled_at: null },
                     },
                 ],
             })

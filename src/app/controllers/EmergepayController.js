@@ -537,30 +537,39 @@ class EmergepayController {
                     created_at: new Date(),
                     created_by: 2,
                 })
-                const receivable = await Receivable.findByPk(
-                    externalTransactionId
-                )
-                if (
-                    receivable &&
-                    resultMessage === 'Approved' &&
-                    parseFloat(amountProcessed) <= receivable.dataValues.balance
-                ) {
-                    const amountPaidBalance = parseFloat(amountProcessed)
+                const findRec = await Receivable.findByPk(externalTransactionId)
+                if (findRec && resultMessage === 'Approved') {
                     const paymentMethod = await PaymentMethod.findOne({
                         where: {
                             platform: 'Gravity - Online',
                             canceled_at: null,
                         },
                     })
-                    await settlement(
+
+                    const receivablesByInvoiceNumber = await Receivable.findAll(
                         {
-                            receivable_id: receivable.id,
-                            amountPaidBalance,
-                            settlement_date: format(new Date(), 'yyyyMMdd'),
-                            paymentmethod_id: paymentMethod.id,
-                        },
-                        req
+                            where: {
+                                invoice_number:
+                                    findRec.dataValues.invoice_number,
+                                balance: {
+                                    [Op.gte]: 0,
+                                },
+                                canceled_at: null,
+                            },
+                        }
                     )
+                    for (let receivable of receivablesByInvoiceNumber) {
+                        await settlement(
+                            {
+                                receivable_id: receivable.id,
+                                amountPaidBalance:
+                                    receivable.dataValues.balance,
+                                settlement_date: format(new Date(), 'yyyyMMdd'),
+                                paymentmethod_id: paymentMethod.id,
+                            },
+                            req
+                        )
+                    }
                 }
                 res.sendStatus(200)
                 return

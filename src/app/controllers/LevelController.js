@@ -4,6 +4,12 @@ import databaseConfig from '../../config/database'
 import Level from '../models/Level'
 import Programcategory from '../models/Programcategory'
 import Workload from '../models/Workload'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
@@ -38,11 +44,41 @@ class LevelController {
     }
 
     async index(req, res) {
+        const defaultOrderBy = { column: 'name', asc: 'ASC' }
         try {
-            const levels = await Level.findAll({
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
+                search = '',
+                limit = 10,
+                page = 1,
+            } = req.query
+
+            if (!verifyFieldInModel(orderBy, Level)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Level, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+                {
+                    field: 'description',
+                    type: 'string',
+                },
+            ]
+            const { count, rows } = await Level.findAndCountAll({
                 where: {
                     canceled_at: null,
                     company_id: 1,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                 },
                 include: [
                     {
@@ -53,10 +89,13 @@ class LevelController {
                         },
                     },
                 ],
-                order: [[Programcategory, 'name'], ['name']],
+                distinct: true,
+                limit,
+                offset: page ? (page - 1) * limit : 0,
+                order: searchOrder,
             })
 
-            return res.json(levels)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'LevelController'
             const functionName = 'index'

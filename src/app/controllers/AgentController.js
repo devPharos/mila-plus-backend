@@ -83,8 +83,9 @@ class AgentController {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 12,
+                limit = 10,
                 type = '',
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Agent)) {
@@ -122,7 +123,9 @@ class AgentController {
                     ...(await generateSearchByFields(search, searchableFields)),
                     canceled_at: null,
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 

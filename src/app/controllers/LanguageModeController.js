@@ -2,6 +2,12 @@ import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Languagemode from '../models/Languagemode'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
@@ -30,16 +36,45 @@ class LanguagemodeController {
     }
 
     async index(req, res) {
+        const defaultOrderBy = { column: 'name', asc: 'ASC' }
         try {
-            const languagemodes = await Languagemode.findAll({
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
+                search = '',
+                limit = 10,
+                page = 1,
+            } = req.query
+
+            if (!verifyFieldInModel(orderBy, Languagemode)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Languagemode, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+            ]
+            const { count, rows } = await Languagemode.findAndCountAll({
                 where: {
                     canceled_at: null,
                     company_id: 1,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                 },
-                order: [['name']],
+                distinct: true,
+                limit,
+                offset: page ? (page - 1) * limit : 0,
+                order: searchOrder,
             })
 
-            return res.json(languagemodes)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'LanguagemodeController'
             const functionName = 'index'

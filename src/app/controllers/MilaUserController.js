@@ -466,6 +466,7 @@ class MilaUserController {
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 10,
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Milauser)) {
@@ -529,9 +530,12 @@ class MilaUserController {
                 where: {
                     company_id: 1,
                     ...(await generateSearchByFields(search, searchableFields)),
+                    ...filialSearch,
                     canceled_at: null,
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
