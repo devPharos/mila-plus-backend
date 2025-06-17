@@ -792,9 +792,7 @@ class RecurrenceController {
                         where: { canceled_at: null },
                     },
                 ],
-                distinct: true,
-                limit,
-                order: searchOrder,
+                order: [['due_date', 'ASC']],
             })
 
             return res.json({ totalRows: count, rows })
