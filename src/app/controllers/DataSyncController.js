@@ -472,7 +472,13 @@ class DataSyncController {
 
                         console.log(create)
 
-                        await Emergepaytransaction.create(create)
+                        const transaction = await Emergepaytransaction.create(
+                            create
+                        )
+
+                        console.log(7, transaction)
+                        console.log(8, resultMessage)
+
                         if (receivable && resultMessage === 'Approved') {
                             const amountPaidBalance =
                                 parseFloat(amountProcessed)
