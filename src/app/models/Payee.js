@@ -1,3 +1,4 @@
+import { format, lastDayOfMonth, parseISO } from 'date-fns'
 import Sequelize, { Model } from 'sequelize'
 
 class Payee extends Model {
@@ -134,6 +135,10 @@ class Payee extends Model {
                     type: Sequelize.BOOLEAN,
                     defaultValue: false,
                 },
+                accrual_date: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
                 created_at: {
                     allowNull: false,
                     type: Sequelize.DATE,
@@ -162,6 +167,15 @@ class Payee extends Model {
             {
                 sequelize,
                 tableName: 'payees', // Nome da tabela
+                hooks: {
+                    beforeCreate: (payee, options) => {
+                        if (payee.due_date) {
+                            const dueDate = parseISO(payee.due_date)
+                            const lastDay = lastDayOfMonth(dueDate)
+                            payee.accrual_date = format(lastDay, 'yyyyMMdd')
+                        }
+                    },
+                },
             }
         )
 

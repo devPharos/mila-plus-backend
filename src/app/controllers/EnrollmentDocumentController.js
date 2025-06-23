@@ -33,9 +33,8 @@ class EnrollmentdocumentController {
                         registry_uuidkey: enrollment_id,
                         document_id: files.document_id,
                         created_by: req.userId || 2,
-                        created_at: new Date(),
+
                         updated_by: req.userId || 2,
-                        updated_at: new Date(),
                     },
                     { transaction: t }
                 )
@@ -46,7 +45,6 @@ class EnrollmentdocumentController {
                             file_id: fileCreated.dataValues.id,
                             document_id: files.document_id,
                             created_by: req.userId || 2,
-                            created_at: new Date(),
                         },
                         { transaction: t }
                     )
@@ -95,9 +93,8 @@ class EnrollmentdocumentController {
                         registry_uuidkey: enrollment_id,
                         document_id: files.document_id,
                         created_by: req.userId || 2,
-                        created_at: new Date(),
+
                         updated_by: req.userId || 2,
-                        updated_at: new Date(),
                     },
                     { transaction: t }
                 )
@@ -109,7 +106,6 @@ class EnrollmentdocumentController {
                             dependent_id,
                             document_id: files.document_id,
                             created_by: req.userId || 2,
-                            created_at: new Date(),
                         },
                         { transaction: t }
                     )

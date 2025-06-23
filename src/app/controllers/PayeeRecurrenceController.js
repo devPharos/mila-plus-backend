@@ -164,7 +164,7 @@ export async function generateRecurrencePayees({
                 balance: recurrence.dataValues.amount,
                 paymentmethod_id: recurrence.dataValues.paymentmethod_id,
                 paymentcriteria_id: recurrence.dataValues.paymentcriteria_id,
-                created_at: new Date(),
+
                 created_by: 2,
             }
 
@@ -186,6 +186,7 @@ class PayeeRecurrenceController {
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 10,
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Payeerecurrence)) {
@@ -261,9 +262,14 @@ class PayeeRecurrenceController {
                 ],
 
                 where: {
+                    company_id: 1,
+                    ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
                     canceled_at: null,
                 },
+                distinct: true,
+                limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
@@ -440,7 +446,7 @@ class PayeeRecurrenceController {
                     chartofaccount_id: chartOfAccountExists.id,
                     paymentcriteria_id: paymentCriteriaExists.id,
                     memo: memo,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -552,7 +558,6 @@ class PayeeRecurrenceController {
                     paymentcriteria_id: paymentCriteriaExists.id,
                     memo: memo,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,

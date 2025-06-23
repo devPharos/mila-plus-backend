@@ -17,6 +17,7 @@ class Attendance extends Model {
                 status: Sequelize.STRING,
                 vacation_id: Sequelize.UUID,
                 medical_excuse_id: Sequelize.UUID,
+                dso_note: Sequelize.TEXT,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,

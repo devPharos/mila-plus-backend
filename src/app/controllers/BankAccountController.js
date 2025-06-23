@@ -23,6 +23,7 @@ class BankAccountController {
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 10,
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Bankaccounts)) {
@@ -69,7 +70,9 @@ class BankAccountController {
                     ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
@@ -151,7 +154,7 @@ class BankAccountController {
                     account,
                     routing_number,
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -209,7 +212,6 @@ class BankAccountController {
                     account,
                     routing_number,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -242,17 +244,9 @@ class BankAccountController {
                 })
             }
 
-            await bankAccount.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                    updated_at: new Date(),
-                    updated_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await bankAccount.destroy({
+                transaction: t,
+            })
 
             t.commit()
 

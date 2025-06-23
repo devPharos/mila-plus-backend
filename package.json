@@ -4,8 +4,11 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "dev": "export NODE_ENV=development set NODE_ENV=development && nodemon src/server.js",
-    "prod": "set NODE_ENV=production && nodemon src/server.js",
+    "start:dev": "export NODE_ENV=development set NODE_ENV=development && nodemon src/server.js",
+    "start:worker": "node worker.js",
+    "dev": "concurrently \"npm run start:dev\" \"npm run start:worker\"",
+    "start:prod": "set NODE_ENV=production && nodemon src/server.js",
+    "prod": "concurrently \"npm run start:prod\" \"npm run start:worker\"",
     "dev:debug": "set NODE_ENV=development && nodemon --inspect src/server.js",
     "queue": "nodemon src/queue.js",
     "format:check": "prettier --check .",
@@ -20,6 +23,8 @@
   "dependencies": {
     "axios": "^1.9.0",
     "bcryptjs": "^3.0.2",
+    "bullmq": "^5.56.0",
+    "cls-hooked": "^4.2.2",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
@@ -28,7 +33,9 @@
     "express": "^5.1.0",
     "firebase": "^11.6.1",
     "https": "^1.0.0",
+    "ioredis": "^5.6.1",
     "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.16.0",
     "multer": "^1.4.5-lts.2",
     "node-schedule": "^2.1.1",
     "nodemailer": "^6.10.1",
@@ -43,6 +50,7 @@
     "yup": "^1.6.1"
   },
   "devDependencies": {
+    "concurrently": "^9.2.0",
     "eslint": "^9.25.1",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.31.0",

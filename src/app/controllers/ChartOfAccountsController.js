@@ -2,11 +2,7 @@ import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Chartofaccount from '../models/Chartofaccount'
-import Issuer from '../models/Issuer'
 import Merchant from '../models/Merchants'
-import MerchantsXChartOfAccount from '../models/MerchantXChartOfAccounts'
-import { searchPromise } from '../functions/searchPromise'
-import { canBeFloat } from './ReceivableController'
 import {
     generateSearchByFields,
     generateSearchOrder,
@@ -16,78 +12,6 @@ import {
 } from '../functions'
 import MerchantXChartOfAccount from '../models/MerchantXChartOfAccounts'
 const { Op } = Sequelize
-
-async function getAllChartOfAccountsByIssuer(issuer_id) {
-    try {
-        if (issuer_id === 'null') {
-            return []
-        }
-
-        const issurer = await Issuer.findByPk(issuer_id)
-
-        if (!issurer) {
-            return []
-        }
-
-        if (issurer && issurer.merchant_id) {
-            const merchant = await Merchant.findByPk(issurer.merchant_id, {
-                include: [
-                    {
-                        model: MerchantsXChartOfAccount,
-                        as: 'merchantxchartofaccounts',
-                        required: false,
-                    },
-                ],
-            })
-
-            if (!merchant) {
-                return []
-            }
-
-            const chartofaccountsid = merchant.merchantxchartofaccounts.map(
-                (merchantXChartOfAccount) => {
-                    return merchantXChartOfAccount.chartofaccount_id
-                }
-            )
-
-            const chartofaccounts = await Chartofaccount.findAll({
-                where: {
-                    id: {
-                        [Op.in]: chartofaccountsid,
-                    },
-                },
-                include: [
-                    {
-                        model: Chartofaccount,
-                        as: 'Father',
-                        required: false,
-                        include: [
-                            {
-                                model: Chartofaccount,
-                                as: 'Father',
-                                required: false,
-                                include: [
-                                    {
-                                        model: Chartofaccount,
-                                        as: 'Father',
-                                        required: false,
-                                    },
-                                ],
-                            },
-                        ],
-                    },
-                ],
-            })
-            return chartofaccounts
-        }
-
-        const chartofaccounts = []
-
-        return chartofaccounts
-    } catch (err) {
-        throw new Error(err)
-    }
-}
 
 class ChartOfAccountsController {
     async show(req, res) {
@@ -200,6 +124,7 @@ class ChartOfAccountsController {
                 search = '',
                 limit = 10,
                 type = '',
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Chartofaccount)) {
@@ -291,7 +216,14 @@ class ChartOfAccountsController {
                 if (type === 'receipts') {
                     typeSearches = {
                         code: {
-                            [Op.like]: '01%',
+                            [Op.and]: [
+                                {
+                                    [Op.like]: '01%',
+                                },
+                                {
+                                    [Op.notIn]: ['01', '02'],
+                                },
+                            ],
                         },
                         allow_use: true,
                     }
@@ -312,9 +244,6 @@ class ChartOfAccountsController {
                     ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
                     ...typeSearches,
-                    code: {
-                        [Op.notIn]: ['01', '02'],
-                    },
                 },
                 include: [
                     {
@@ -337,7 +266,9 @@ class ChartOfAccountsController {
                         ],
                     },
                 ],
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
@@ -418,7 +349,6 @@ class ChartOfAccountsController {
                     profit_and_loss,
                     allow_use,
                     created_by: req.userId,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -479,7 +409,6 @@ class ChartOfAccountsController {
                     profit_and_loss,
                     allow_use,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,

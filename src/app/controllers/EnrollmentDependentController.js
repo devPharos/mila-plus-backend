@@ -33,7 +33,6 @@ class EnrollmentDependentontroller {
                     enrollment_id,
                     ...req.body,
                     created_by: req.userId || 2,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,

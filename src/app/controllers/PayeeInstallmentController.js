@@ -188,7 +188,7 @@ class PayeeInstallmentController {
                     status: 'Pending',
                     status_date: new Date().toString(),
                     due_date: new Date(newStatusDate).toString(),
-                    created_at: new Date(),
+
                     created_by: resources.created_by,
                 }
 
@@ -427,7 +427,7 @@ class PayeeInstallmentController {
             await installment.update({
                 canceled_at: new Date(),
                 canceled_by: updatedBy,
-                updated_at: new Date(),
+
                 updated_by: updatedBy,
             })
         }

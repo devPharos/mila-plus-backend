@@ -44,9 +44,8 @@ class StudentProgramController {
                     registry_uuidkey: student_id,
                     document_id: file_id.document_id,
                     created_by: req.userId || 2,
-                    created_at: new Date(),
+
                     updated_by: req.userId || 2,
-                    updated_at: new Date(),
                 },
                 { transaction: t }
             )
@@ -59,7 +58,6 @@ class StudentProgramController {
                     start_date,
                     end_date,
                     created_by: req.userId || 2,
-                    created_at: new Date(),
                 },
                 { transaction: t }
             )
@@ -69,7 +67,6 @@ class StudentProgramController {
                     {
                         start_date: start_date,
                         updated_by: req.userId || 2,
-                        updated_at: new Date(),
                     },
                     { transaction: t }
                 )

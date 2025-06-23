@@ -25,6 +25,7 @@ class PaymentMethodController {
                 search = '',
                 limit = 10,
                 type = '',
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, PaymentMethod)) {
@@ -94,7 +95,9 @@ class PaymentMethodController {
                     ...(await generateSearchByFields(search, searchableFields)),
                     ...typeSearches,
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
@@ -195,7 +198,7 @@ class PaymentMethodController {
                     type_of_payment,
                     payment_details,
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -267,7 +270,6 @@ class PaymentMethodController {
                     payment_details,
                     company_id: 1,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -305,7 +307,7 @@ class PaymentMethodController {
                 {
                     canceled_at: new Date(),
                     canceled_by: req.userId,
-                    updated_at: new Date(),
+
                     updated_by: req.userId,
                 },
                 {

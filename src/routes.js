@@ -59,9 +59,8 @@ import PayeeRecurrenceController from './app/controllers/PayeeRecurrenceControll
 import ClassroomController from './app/controllers/ClassroomController'
 import StudentgroupController from './app/controllers/StudentgroupController'
 import StudentProgramController from './app/controllers/StudentProgramController'
-import VacationController from './app/controllers/VacationController'
-import MedicalExcuseController from './app/controllers/MedicalExcuseController'
 import MessageController from './app/controllers/MessageController'
+import AttendanceController from './app/controllers/AttendanceController'
 
 const routes = new Router()
 
@@ -333,6 +332,9 @@ routes.get('/agents/:agent_id', AgentController.show)
 routes.post('/agents', AgentController.store)
 routes.put('/agents/:agent_id', AgentController.update)
 routes.delete('/agents/:agent_id', AgentController.inactivate)
+
+routes.get('/attendances/:student_id', AttendanceController.list)
+routes.put('/attendances/:student_id', AttendanceController.update)
 
 routes.get('/staffs', StaffController.index)
 routes.get('/staffs/:staff_id', StaffController.show)

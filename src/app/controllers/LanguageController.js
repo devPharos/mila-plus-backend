@@ -2,6 +2,12 @@ import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Language from '../models/Language'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
@@ -30,16 +36,45 @@ class LanguageController {
     }
 
     async index(req, res) {
+        const defaultOrderBy = { column: 'name', asc: 'ASC' }
         try {
-            const languages = await Language.findAll({
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
+                search = '',
+                limit = 10,
+                page = 1,
+            } = req.query
+
+            if (!verifyFieldInModel(orderBy, Language)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Language, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+            ]
+            const { count, rows } = await Language.findAndCountAll({
                 where: {
                     canceled_at: null,
                     company_id: 1,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                 },
-                order: [['name']],
+                distinct: true,
+                limit,
+                offset: page ? (page - 1) * limit : 0,
+                order: searchOrder,
             })
 
-            return res.json(languages)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'LanguageController'
             const functionName = 'index'
@@ -73,7 +108,6 @@ class LanguageController {
                     company_id: 1,
                     ...req.body,
                     created_by: req.userId,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -123,7 +157,6 @@ class LanguageController {
                 {
                     ...req.body,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,

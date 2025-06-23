@@ -281,7 +281,6 @@ export async function OnDueDateMail({ receivable_id = null, manual = false }) {
             date: format(new Date(), 'yyyyMMdd'),
             time: format(new Date(), 'HH:mm:ss'),
             created_by: 2,
-            created_at: new Date(),
         })
         return true
     } catch (err) {

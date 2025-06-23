@@ -19,7 +19,13 @@ import { mailer } from '../../config/mailer'
 import Filial from '../models/Filial'
 import Enrollmenttransfer from '../models/Enrollmenttransfer'
 import MailLayout from '../../Mails/MailLayout'
-import { FRONTEND_URL } from '../functions'
+import {
+    FRONTEND_URL,
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 import mailEnrollmentToStudent from '../../Mails/Processes/Enrollment Process/toStudent'
 import mailTransferToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent'
 import mailPlacementTestToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent'
@@ -109,7 +115,7 @@ class EnrollmentController {
                                 ? 'transfer-request'
                                 : 'student-information',
                         agent_id: newProspect.agent_id,
-                        created_at: new Date(),
+
                         created_by: req.userId,
                     },
                     {
@@ -127,7 +133,7 @@ class EnrollmentController {
                             phase_step: 'Admission Information',
                             step_status: `Waiting for prospect's response. `,
                             expected_date: null,
-                            created_at: new Date(),
+
                             created_by: req.userId,
                         },
                         {
@@ -140,7 +146,7 @@ class EnrollmentController {
                                     {
                                         enrollment_id: enrollment.id,
                                         company_id: 1,
-                                        created_at: new Date(),
+
                                         created_by: req.userId,
                                     },
                                     {
@@ -157,7 +163,7 @@ class EnrollmentController {
                 {
                     ...req.body,
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -259,7 +265,7 @@ class EnrollmentController {
                     phase_step: 'Transfer form link has Sent to the DSO',
                     step_status: `Form filling has not been started yet.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: 2,
                 }
             } else if (
@@ -272,7 +278,7 @@ class EnrollmentController {
                     phase_step: 'finished',
                     step_status: `Form filling has been finished by the DSO`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: 2,
                 }
             } else if (
@@ -310,7 +316,7 @@ class EnrollmentController {
                     phase_step: 'Form link has been sent to the student',
                     step_status: `Pending documents to be uploaded`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: 2,
                 }
             } else if (
@@ -323,7 +329,7 @@ class EnrollmentController {
                     phase_step: 'Student Signature',
                     step_status: `Pending signature by the student`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: 2,
                 }
             } else if (
@@ -340,7 +346,7 @@ class EnrollmentController {
                             addDays(new Date(), 3),
                             'yyyyMMdd'
                         ),
-                        created_at: new Date(),
+
                         created_by: 2,
                     }
                 } else {
@@ -353,7 +359,7 @@ class EnrollmentController {
                             addDays(new Date(), 3),
                             'yyyyMMdd'
                         ),
-                        created_at: new Date(),
+
                         created_by: 2,
                     }
                 }
@@ -378,7 +384,7 @@ class EnrollmentController {
                                 relationship_type: emergency.relationship_type,
                                 email: emergency.email,
                                 phone: emergency.phone,
-                                created_at: new Date(),
+
                                 created_by: 2,
                             },
                             {
@@ -395,7 +401,7 @@ class EnrollmentController {
                                 relationship_type: emergency.relationship_type,
                                 email: emergency.email,
                                 phone: emergency.phone,
-                                updated_at: new Date(),
+
                                 updated_by: 2,
                             },
                             {
@@ -442,7 +448,7 @@ class EnrollmentController {
                                 dept1_type: dependent.dept1_type,
                                 email: dependent.email,
                                 phone: dependent.phone,
-                                updated_at: new Date(),
+
                                 updated_by: req.userId || 2,
                             },
                             {
@@ -462,7 +468,7 @@ class EnrollmentController {
                         //     dept1_type: dependent.dept1_type,
                         //     email: dependent.email,
                         //     phone: dependent.phone,
-                        //     created_at: new Date(),
+                        //
                         //     created_by: 2,
                         //   },
                         //   {
@@ -499,7 +505,7 @@ class EnrollmentController {
                                 relationship_type: sponsor.relationship_type,
                                 email: sponsor.email,
                                 phone: sponsor.phone,
-                                created_at: new Date(),
+
                                 created_by: 2,
                             },
                             {
@@ -529,7 +535,7 @@ class EnrollmentController {
                         existingTransfers.update(
                             {
                                 ...req.body.enrollmenttransfers,
-                                updated_at: new Date(),
+
                                 updated_by: 2,
                             },
                             {
@@ -543,7 +549,7 @@ class EnrollmentController {
                             {
                                 ...req.body.enrollmenttransfers,
                                 enrollment_id: enrollmentExists.id,
-                                created_at: new Date(),
+
                                 created_by: 2,
                             },
                             {
@@ -569,7 +575,6 @@ class EnrollmentController {
                         {
                             ...req.body.students,
                             updated_by: req.userId,
-                            updated_at: new Date(),
                         },
                         {
                             transaction: t,
@@ -603,7 +608,6 @@ class EnrollmentController {
                         ...req.body,
                         form_step: nextStep,
                         updated_by: req.userId,
-                        updated_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -666,28 +670,42 @@ class EnrollmentController {
 
     async index(req, res) {
         try {
-            const {
-                orderBy = 'created_at',
-                orderASC = 'DESC',
+            const defaultOrderBy = { column: 'code', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
                 search = '',
+                limit = 10,
+                type = '',
+                page = 1,
             } = req.query
-            const enrollments = await Enrollment.findAll({
-                where: {
-                    [Op.or]: [
-                        {
-                            filial_id: {
-                                [Op.gte]: req.headers.filial == 1 ? 1 : 999,
-                            },
-                        },
-                        {
-                            filial_id:
-                                req.headers.filial != 1
-                                    ? req.headers.filial
-                                    : 0,
-                        },
-                    ],
-                    canceled_at: null,
+
+            if (!verifyFieldInModel(orderBy, Enrollment)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'form_step',
+                    type: 'string',
                 },
+                {
+                    field: 'application',
+                    type: 'string',
+                },
+                {
+                    model: Student,
+                    field: 'name',
+                    type: 'string',
+                    return: 'student_id',
+                },
+            ]
+
+            const filialSearch = verifyFilialSearch(Enrollment, req)
+            const { count, rows } = await Enrollment.findAndCountAll({
                 include: [
                     {
                         model: Student,
@@ -745,19 +763,18 @@ class EnrollmentController {
                         order: [[orderBy, orderASC]],
                     },
                 ],
+                where: {
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
+                    canceled_at: null,
+                },
+                distinct: true,
+                limit,
+                offset: page ? (page - 1) * limit : 0,
+                order: searchOrder,
             })
 
-            const fields = [
-                'application',
-                ['students', 'name'],
-                ['students', ['processtypes', 'name']],
-                ['students', ['processsubstatuses', 'name']],
-            ]
-            Promise.all([searchPromise(search, enrollments, fields)]).then(
-                (enrollments) => {
-                    return res.json(enrollments[0])
-                }
-            )
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'EnrollmentController'
             const functionName = 'index'
@@ -941,7 +958,7 @@ class EnrollmentController {
                     phase_step,
                     step_status: `Form filling has been started.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: 2, // Not Authentiticated User
                 })
             }
@@ -1074,7 +1091,7 @@ class EnrollmentController {
                     {
                         canceled_at: null,
                         canceled_by: null,
-                        updated_at: new Date(),
+
                         updated_by: req.userId,
                     },
                     {
@@ -1133,9 +1150,8 @@ class EnrollmentController {
                     registry_uuidkey: enrollment_id,
                     document_id: req.body.files.document_id,
                     created_by: req.userId || 2,
-                    created_at: new Date(),
+
                     updated_by: req.userId || 2,
-                    updated_at: new Date(),
                 },
                 { transaction: t }
             )
@@ -1145,7 +1161,6 @@ class EnrollmentController {
                     {
                         student_signature: signatureFile.id,
                         updated_by: req.userId,
-                        updated_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -1210,7 +1225,6 @@ class EnrollmentController {
                 {
                     form_step: 'finished',
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -1228,9 +1242,8 @@ class EnrollmentController {
                     registry_uuidkey: sponsor_id,
                     document_id: req.body.files.document_id,
                     created_by: req.userId || 2,
-                    created_at: new Date(),
+
                     updated_by: req.userId || 2,
-                    updated_at: new Date(),
                 },
                 { transaction: t }
             )
@@ -1240,7 +1253,6 @@ class EnrollmentController {
                     {
                         signature: signatureFile.id,
                         updated_by: req.userId,
-                        updated_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -1317,9 +1329,8 @@ class EnrollmentController {
                     registry_uuidkey: enrollment_id,
                     document_id: req.body.files.document_id,
                     created_by: req.userId || 2,
-                    created_at: new Date(),
+
                     updated_by: req.userId || 2,
-                    updated_at: new Date(),
                 },
                 { transaction: t }
             )
@@ -1335,7 +1346,6 @@ class EnrollmentController {
                     {
                         dso_signature: signatureFile.id,
                         updated_by: req.userId || 2,
-                        updated_at: new Date(),
                     },
                     {
                         where: {
@@ -1417,7 +1427,7 @@ class EnrollmentController {
                             application: 'Transfer Eligibility',
                             form_step: 'transfer-request',
                             agent_id: student.agent_id,
-                            created_at: new Date(),
+
                             created_by: req.userId,
                         },
                         {
@@ -1439,7 +1449,7 @@ class EnrollmentController {
                                     addDays(new Date(), 3),
                                     'yyyyMMdd'
                                 ),
-                                created_at: new Date(),
+
                                 created_by: req.userId,
                             },
                             {
@@ -1450,7 +1460,7 @@ class EnrollmentController {
                                 {
                                     enrollment_id: enrollment.id,
                                     company_id: 1,
-                                    created_at: new Date(),
+
                                     created_by: req.userId,
                                 },
                                 {
@@ -1522,7 +1532,7 @@ class EnrollmentController {
                             application: 'Enrollment Process',
                             form_step: 'student-information',
                             agent_id: student.agent_id,
-                            created_at: new Date(),
+
                             created_by: req.userId,
                         },
                         {
@@ -1544,7 +1554,7 @@ class EnrollmentController {
                                     addDays(new Date(), 3),
                                     'yyyyMMdd'
                                 ),
-                                created_at: new Date(),
+
                                 created_by: req.userId,
                             },
                             {
@@ -1592,7 +1602,7 @@ class EnrollmentController {
                             application: 'Placement Test',
                             form_step: 'student-information',
                             agent_id: student.agent_id,
-                            created_at: new Date(),
+
                             created_by: req.userId,
                         },
                         {
@@ -1614,7 +1624,7 @@ class EnrollmentController {
                                     addDays(new Date(), 3),
                                     'yyyyMMdd'
                                 ),
-                                created_at: new Date(),
+
                                 created_by: req.userId,
                             },
                             {

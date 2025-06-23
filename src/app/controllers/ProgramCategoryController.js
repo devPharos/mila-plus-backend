@@ -3,6 +3,12 @@ import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Programcategory from '../models/Programcategory'
 import Language from '../models/Language'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
@@ -41,11 +47,41 @@ class ProgramcategoryController {
     }
 
     async index(req, res) {
+        const defaultOrderBy = { column: 'name', asc: 'ASC' }
         try {
-            const programCategories = await Programcategory.findAll({
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
+                search = '',
+                limit = 10,
+                page = 1,
+            } = req.query
+
+            if (!verifyFieldInModel(orderBy, Programcategory)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Programcategory, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = [
+                {
+                    field: 'name',
+                    type: 'string',
+                },
+                {
+                    field: 'description',
+                    type: 'string',
+                },
+            ]
+            const { count, rows } = await Programcategory.findAndCountAll({
                 where: {
                     canceled_at: null,
                     company_id: 1,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                 },
                 include: [
                     {
@@ -53,10 +89,13 @@ class ProgramcategoryController {
                         attributes: ['id', 'name'],
                     },
                 ],
-                order: [['name']],
+                distinct: true,
+                limit,
+                offset: page ? (page - 1) * limit : 0,
+                order: searchOrder,
             })
 
-            return res.json(programCategories)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'ProgramcategoryController'
             const functionName = 'index'
@@ -91,7 +130,6 @@ class ProgramcategoryController {
                     company_id: 1,
                     ...req.body,
                     created_by: req.userId,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -131,7 +169,6 @@ class ProgramcategoryController {
                 {
                     ...req.body,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,

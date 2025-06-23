@@ -68,7 +68,7 @@ export async function generateRecurrenceReceivables({
             ],
         })
 
-        if (!student) {
+        if (!student || student.dataValues.status === 'Inactive') {
             return null
         }
 
@@ -254,7 +254,7 @@ export async function generateRecurrenceReceivables({
                 type_detail: 'Tuition fee',
                 status: 'Pending',
                 status_date: format(new Date(), 'yyyyMMdd'),
-                memo: `Registration fee - ${name} - ${i + 1}`,
+                memo: `Tuition fee - ${name} - ${i + 1}`,
                 fee: 0,
                 authorization_code: null,
                 chartofaccount_id: recurrence.dataValues.chartofaccount_id,
@@ -266,7 +266,7 @@ export async function generateRecurrenceReceivables({
                 balance: totalAmount,
                 paymentmethod_id: recurrence.dataValues.paymentmethod_id,
                 paymentcriteria_id: recurrence.dataValues.paymentcriteria_id,
-                created_at: new Date(),
+
                 created_by: 2,
             }
 
@@ -296,7 +296,6 @@ export async function generateRecurrenceReceivables({
                             value: discount.value,
                             percent: discount.percent,
                             created_by: 2,
-                            created_at: new Date(),
                         })
                     })
                 })
@@ -320,6 +319,7 @@ class RecurrenceController {
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 10,
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Student)) {
@@ -382,7 +382,9 @@ class RecurrenceController {
                         ],
                     },
                 ],
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
@@ -555,7 +557,7 @@ class RecurrenceController {
                         ...req.body,
                         amount: req.body.prices.total_tuition,
                         issuer_id: issuer.id,
-                        created_at: new Date(),
+
                         created_by: req.userId,
                     },
                     {
@@ -574,7 +576,6 @@ class RecurrenceController {
                         amount: req.body.prices.total_tuition,
                         issuer_id: issuer.id,
                         updated_by: req.userId,
-                        updated_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -645,7 +646,6 @@ class RecurrenceController {
                     card_type: cardType,
                     card_holder_name: billingName,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,

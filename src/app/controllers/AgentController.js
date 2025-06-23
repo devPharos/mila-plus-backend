@@ -23,7 +23,7 @@ class AgentController {
                     filial_id: req.headers.filial,
                     ...req.body,
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -83,8 +83,9 @@ class AgentController {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 12,
+                limit = 10,
                 type = '',
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Agent)) {
@@ -122,7 +123,9 @@ class AgentController {
                     ...(await generateSearchByFields(search, searchableFields)),
                     canceled_at: null,
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
@@ -181,7 +184,7 @@ class AgentController {
                     {
                         canceled_at: null,
                         canceled_by: null,
-                        updated_at: new Date(),
+
                         updated_by: req.userId,
                     },
                     {
@@ -189,15 +192,9 @@ class AgentController {
                     }
                 )
             } else {
-                await agent.update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                await agent.destroy({
+                    transaction: t,
+                })
             }
 
             t.commit()

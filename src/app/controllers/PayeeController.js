@@ -33,6 +33,7 @@ class PayeeController {
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 10,
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Payee)) {
@@ -167,7 +168,9 @@ class PayeeController {
                     'entry_date',
                     'is_recurrence',
                 ],
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
@@ -277,8 +280,6 @@ class PayeeController {
                 })
             }
 
-            console.log(merchant)
-
             const issuer = await Issuer.findOne({
                 where: {
                     company_id: 1,
@@ -348,7 +349,7 @@ class PayeeController {
                     is_recurrence: false,
                     status: 'Pending',
                     status_date: format(new Date(), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -486,7 +487,6 @@ class PayeeController {
                         ).toFixed(2)
                     ),
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -527,7 +527,6 @@ class PayeeController {
                     total: total_amount,
                     paymentmethod_id: paymentMethod.id,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -611,7 +610,7 @@ class PayeeController {
                             paymentmethod_id: paymentMethodExists.id,
                             settlement_date,
                             memo: settlement_memo,
-                            created_at: new Date(),
+
                             created_by: req.userId,
                         },
                         {
@@ -630,7 +629,7 @@ class PayeeController {
                                     ? 'Paid'
                                     : 'Partial Paid',
                             invoice_number,
-                            updated_at: new Date(),
+
                             updated_by: req.userId,
                         },
                         {
@@ -659,19 +658,29 @@ class PayeeController {
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            const { id } = req.params
+            const { payee_id } = req.params
 
-            const payeeExists = await Payee.findByPk(id)
+            const payeeExists = await Payee.findByPk(payee_id)
 
             if (!payeeExists) {
                 return res.status(400).json({ error: 'Payee does not exist.' })
+            }
+
+            if (payeeExists.dataValues.status !== 'Pending') {
+                return res.status(400).json({ error: 'Payee is not pending.' })
+            }
+
+            if (payeeExists.dataValues.payeerecurrence_id) {
+                return res
+                    .status(400)
+                    .json({ error: 'This payee has a recurrence.' })
             }
 
             await payeeExists.update(
                 {
                     canceled_at: new Date(),
                     canceled_by: req.userId,
-                    updated_at: new Date(),
+
                     updated_by: req.userId,
                 },
                 {
@@ -869,7 +878,6 @@ class PayeeController {
                 filter.filial_id = req.headers.filial
             }
 
-            // console.log('aqui', filterSettlement.settlement_date)
             const payees = await Payee.findAll({
                 where: {
                     company_id: req.companyId,

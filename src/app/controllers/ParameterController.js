@@ -2,6 +2,12 @@ import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog'
 import databaseConfig from '../../config/database'
 import Parameter from '../models/Parameter'
+import {
+    generateSearchByFields,
+    generateSearchOrder,
+    verifyFieldInModel,
+    verifyFilialSearch,
+} from '../functions'
 
 const { Op } = Sequelize
 
@@ -31,15 +37,36 @@ class ParameterController {
 
     async index(req, res) {
         try {
-            const parameters = await Parameter.findAll({
+            const defaultOrderBy = { column: 'name', asc: 'ASC' }
+            let {
+                orderBy = defaultOrderBy.column,
+                orderASC = defaultOrderBy.asc,
+                search = '',
+                limit = 10,
+                page = 1,
+            } = req.query
+
+            if (!verifyFieldInModel(orderBy, Parameter)) {
+                orderBy = defaultOrderBy.column
+                orderASC = defaultOrderBy.asc
+            }
+
+            const filialSearch = verifyFilialSearch(Parameter, req)
+
+            const searchOrder = generateSearchOrder(orderBy, orderASC)
+
+            const searchableFields = []
+            const { count, rows } = await Parameter.findAndCountAll({
                 where: {
                     canceled_at: null,
                     company_id: 1,
+                    ...filialSearch,
+                    ...(await generateSearchByFields(search, searchableFields)),
                 },
-                order: [['name']],
+                order: searchOrder,
             })
 
-            return res.json(parameters)
+            return res.json({ totalRows: count, rows })
         } catch (err) {
             const className = 'ParameterController'
             const functionName = 'index'
@@ -75,7 +102,6 @@ class ParameterController {
                     company_id: 1,
                     ...req.body,
                     created_by: req.userId,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -113,7 +139,6 @@ class ParameterController {
                 {
                     ...req.body,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,

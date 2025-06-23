@@ -84,7 +84,7 @@ class ProspectController {
                         ? { processsubstatus_id: processsubstatuses.id }
                         : {}),
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -189,7 +189,7 @@ class ProspectController {
                         ? { processsubstatus_id: processsubstatuses.id }
                         : {}),
                     ...(agent.id ? { agent_id: agent.id } : {}),
-                    updated_at: new Date(),
+
                     updated_by: req.userId,
                 },
                 {
@@ -202,7 +202,7 @@ class ProspectController {
                     agent_id: agent.id,
                     type: processtypes.id,
                     substatus: processsubstatuses.id,
-                    updated_at: new Date(),
+
                     updated_by: req.userId,
                 },
                 {
@@ -372,8 +372,9 @@ class ProspectController {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 12,
+                limit = 10,
                 type = '',
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Student)) {
@@ -455,7 +456,9 @@ class ProspectController {
                           }
                         : {}),
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
@@ -522,7 +525,7 @@ class ProspectController {
                     phase_step: 'Form link has been sent to student',
                     step_status: `Form filling has not been started yet.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: req.userId || 2,
                 }
             } else if (student.processsubstatus_id === 2) {
@@ -534,7 +537,7 @@ class ProspectController {
                     phase_step: 'Form link has been sent to student',
                     step_status: `Form filling has not been started yet.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: req.userId || 2,
                 }
             } else if (student.processsubstatus_id === 3) {
@@ -546,7 +549,7 @@ class ProspectController {
                     phase_step: 'Form link has been sent to student',
                     step_status: `Form filling has not been started yet.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: req.userId || 2,
                 }
             } else if (student.processsubstatus_id === 4) {
@@ -561,7 +564,7 @@ class ProspectController {
                             : 'Transfer form link has been sent to Student',
                     step_status: `Form filling has not been started yet.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: req.userId || 2,
                 }
                 if (phase_step === 'DSO Signature') {
@@ -578,7 +581,7 @@ class ProspectController {
                             addDays(new Date(), 3),
                             'yyyyMMdd'
                         ),
-                        created_at: new Date(),
+
                         created_by: req.userId || 2,
                     }
                 }
@@ -591,7 +594,7 @@ class ProspectController {
                     phase_step: 'Form link has been sent to student',
                     step_status: `Form filling has not been started yet.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: req.userId || 2,
                 }
             } else if (student.processsubstatus_id === 6) {
@@ -603,7 +606,7 @@ class ProspectController {
                     phase_step: 'Form link has been sent to student',
                     step_status: `Form filling has not been started yet.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: req.userId || 2,
                 }
             }

@@ -58,7 +58,7 @@ class UserGroupController {
                     filial_id: filialExists.id,
                     filialtype_id,
                     name,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -80,7 +80,7 @@ class UserGroupController {
                         edit: false,
                         create: false,
                         inactivate: false,
-                        created_at: new Date(),
+
                         created_by: req.userId,
                     },
                     {
@@ -152,7 +152,6 @@ class UserGroupController {
                     name,
                     filialtype_id,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -178,7 +177,7 @@ class UserGroupController {
                                         edit,
                                         create,
                                         inactivate,
-                                        updated_at: new Date(),
+
                                         updated_by: req.userId,
                                     },
                                     {
@@ -201,7 +200,7 @@ class UserGroupController {
                                                 await father.update(
                                                     {
                                                         view: true,
-                                                        updated_at: new Date(),
+
                                                         updated_by: req.userId,
                                                     },
                                                     {
@@ -222,7 +221,7 @@ class UserGroupController {
                                     edit,
                                     create,
                                     inactivate,
-                                    created_at: new Date(),
+
                                     created_by: req.userId,
                                 },
                                 {
@@ -254,8 +253,9 @@ class UserGroupController {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 50,
+                limit = 10,
                 type = '',
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, UserGroup)) {
@@ -314,7 +314,9 @@ class UserGroupController {
                           }
                         : {}),
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 

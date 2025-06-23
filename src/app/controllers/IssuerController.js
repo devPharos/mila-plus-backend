@@ -70,7 +70,7 @@ export async function createIssuerFromStudent({
             state,
             zip,
             country,
-            created_at: new Date(),
+
             created_by: created_by || 2,
         })
 
@@ -92,6 +92,7 @@ class IssuerController {
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 10,
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Issuer)) {
@@ -147,7 +148,9 @@ class IssuerController {
                     ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
@@ -251,7 +254,7 @@ class IssuerController {
                     ...(merchant.id ? { merchant_id: merchant.id } : {}),
                     ...(student.id ? { student_id: student.id } : {}),
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -324,7 +327,6 @@ class IssuerController {
                     ...(student.id ? { student_id: student.id } : {}),
                     company_id: 1,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -360,7 +362,7 @@ class IssuerController {
                 {
                     canceled_at: new Date(),
                     canceled_by: req.userId,
-                    updated_at: new Date(),
+
                     updated_by: req.userId,
                 },
                 {

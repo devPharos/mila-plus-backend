@@ -23,6 +23,7 @@ class ClassroomController {
                 search = '',
                 limit = 10,
                 type = '',
+                page = 1,
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Classroom)) {
@@ -79,7 +80,9 @@ class ClassroomController {
                           }
                         : {}),
                 },
+                distinct: true,
                 limit,
+                offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
 
@@ -172,7 +175,7 @@ class ClassroomController {
                     ...req.body,
                     company_id: req.companyId,
                     filial_id: filialExists.id,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -238,7 +241,6 @@ class ClassroomController {
                     ...req.body,
                     filial_id: filialExists.id,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,

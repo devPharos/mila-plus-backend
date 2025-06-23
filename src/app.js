@@ -14,6 +14,7 @@ import {
 } from './app/controllers/ReceivableController.js'
 import { mailer } from './config/mailer.js'
 import { jobPutInClass } from './app/controllers/StudentgroupController.js'
+import { connectToMongo } from './config/mongodb.js'
 
 class App {
     constructor() {
@@ -24,6 +25,8 @@ class App {
         this.exceptionHandler()
         this.tests()
         this.schedule()
+
+        connectToMongo()
     }
 
     middlewares() {

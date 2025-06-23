@@ -72,7 +72,7 @@ export async function createPaidTimeline(receivable_id = null) {
             phase_step,
             step_status: `Paid by the student.`,
             expected_date: null,
-            created_at: new Date(),
+
             created_by: 2,
         })
     }
@@ -127,7 +127,7 @@ export async function settlement(
                 paymentmethod_id,
                 settlement_date,
                 memo: settlement_memo,
-                created_at: new Date(),
+
                 created_by: 2,
             },
             {
@@ -145,7 +145,6 @@ export async function settlement(
                 ).toFixed(2),
                 status_date: settlement_date,
                 paymentmethod_id,
-                updated_at: new Date(),
                 updated_by: 2,
             },
             {
@@ -217,7 +216,6 @@ export async function verifyAndCreateTextToPayTransaction(
             payment_page_url: paymentPageUrl,
             payment_page_id: paymentPageId,
             created_by: 2,
-            created_at: new Date(),
         })
         await receivable.update({
             notification_sent: false,
@@ -534,33 +532,42 @@ class EmergepayController {
                     transaction_reference: transactionReference,
                     transaction_type: transactionType,
                     unique_trans_id: uniqueTransId,
-                    created_at: new Date(),
+
                     created_by: 2,
                 })
-                const receivable = await Receivable.findByPk(
-                    externalTransactionId
-                )
-                if (
-                    receivable &&
-                    resultMessage === 'Approved' &&
-                    parseFloat(amountProcessed) <= receivable.dataValues.balance
-                ) {
-                    const amountPaidBalance = parseFloat(amountProcessed)
+                const findRec = await Receivable.findByPk(externalTransactionId)
+                if (findRec && resultMessage === 'Approved') {
                     const paymentMethod = await PaymentMethod.findOne({
                         where: {
                             platform: 'Gravity - Online',
                             canceled_at: null,
                         },
                     })
-                    await settlement(
+
+                    const receivablesByInvoiceNumber = await Receivable.findAll(
                         {
-                            receivable_id: receivable.id,
-                            amountPaidBalance,
-                            settlement_date: format(new Date(), 'yyyyMMdd'),
-                            paymentmethod_id: paymentMethod.id,
-                        },
-                        req
+                            where: {
+                                invoice_number:
+                                    findRec.dataValues.invoice_number,
+                                balance: {
+                                    [Op.gte]: 0,
+                                },
+                                canceled_at: null,
+                            },
+                        }
                     )
+                    for (let receivable of receivablesByInvoiceNumber) {
+                        await settlement(
+                            {
+                                receivable_id: receivable.id,
+                                amountPaidBalance:
+                                    receivable.dataValues.balance,
+                                settlement_date: format(new Date(), 'yyyyMMdd'),
+                                paymentmethod_id: paymentMethod.id,
+                            },
+                            req
+                        )
+                    }
                 }
                 res.sendStatus(200)
                 return
@@ -638,7 +645,7 @@ class EmergepayController {
                         transaction_reference: transactionReference,
                         transaction_type: transactionType,
                         unique_trans_id: uniqueTransId,
-                        created_at: new Date(),
+
                         created_by: 2,
                     })
                 })
