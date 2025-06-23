@@ -675,17 +675,9 @@ class PayeeController {
                     .json({ error: 'This payee has a recurrence.' })
             }
 
-            await payeeExists.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-
-                    updated_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await payeeExists.destroy({
+                transaction: t,
+            })
             await t.commit()
 
             return res.status(200).json({ message: 'Payee has been deleted.' })

@@ -71,9 +71,8 @@ export async function generateRecurrencePayees({
         if (clearAll) {
             for (const payee of payees) {
                 if (payee.dataValues.status === 'Pending') {
-                    await payee.update({
-                        canceled_at: new Date(),
-                        canceled_by: recurrence.dataValues.created_by,
+                    await payee.destroy({
+                        transaction: t,
                     })
                 }
             }

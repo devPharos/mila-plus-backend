@@ -182,17 +182,9 @@ class MerchantXChartOfAccountController {
                 })
             }
 
-            await merchantXChartOfAccountExists.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-
-                    updated_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await merchantXChartOfAccountExists.destroy({
+                transaction: t,
+            })
             await t.commit()
 
             return res.status(200).json({

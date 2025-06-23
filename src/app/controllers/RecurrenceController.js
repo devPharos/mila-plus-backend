@@ -131,9 +131,8 @@ export async function generateRecurrenceReceivables({
                     })
                     await verifyAndCancelTextToPayTransaction(receivable.id)
                     await verifyAndCancelParcelowPaymentLink(receivable.id)
-                    await receivable.update({
-                        canceled_at: new Date(),
-                        canceled_by: 2,
+                    await receivable.destroy({
+                        transaction: t,
                     })
                 }
             }
@@ -718,29 +717,16 @@ class RecurrenceController {
                 },
             })
 
-            await recurrence.update(
-                {
-                    active: false,
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await recurrence.destroy({
+                transaction: t,
+            })
 
             for (let receivable of receivables) {
                 await verifyAndCancelParcelowPaymentLink(receivable.id)
                 await verifyAndCancelTextToPayTransaction(receivable.id)
-                await receivable.update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                await receivable.destroy({
+                    transaction: t,
+                })
             }
             t.commit()
             return res.json(recurrence)

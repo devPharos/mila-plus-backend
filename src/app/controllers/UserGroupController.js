@@ -423,15 +423,9 @@ class UserGroupController {
                 })
             }
 
-            await userGroup.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await userGroup.destroy({
+                transaction: t,
+            })
 
             t.commit()
 

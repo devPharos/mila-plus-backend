@@ -1836,15 +1836,9 @@ class ReceivableController {
                 }
             )
             const settlement = await Settlement.findByPk(settlements[0].id)
-            await settlement.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await settlement.destroy({
+                transaction: t,
+            })
             t.commit()
             return res.json(receivableExists)
         } catch (err) {

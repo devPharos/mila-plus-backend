@@ -251,23 +251,14 @@ class EnrollmentdocumentController {
                 })
             }
 
-            await document.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await document.destroy({
+                transaction: t,
+            })
 
-            await File.update(
-                { canceled_at: new Date(), canceled_by: req.userId },
-                {
-                    where: { id: document.file_id },
-                    transaction: t,
-                }
-            )
+            const file = await File.findByPk(document.file_id)
+            await file.destroy({
+                transaction: t,
+            })
 
             t.commit()
 
@@ -301,23 +292,14 @@ class EnrollmentdocumentController {
                 })
             }
 
-            await document.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await document.destroy({
+                transaction: t,
+            })
 
-            await File.update(
-                { canceled_at: new Date(), canceled_by: req.userId },
-                {
-                    where: { id: document.file_id },
-                    transaction: t,
-                }
-            )
+            const file = await File.findByPk(document.file_id)
+            await file.destroy({
+                transaction: t,
+            })
 
             t.commit()
 

@@ -303,17 +303,9 @@ class PaymentMethodController {
                     .json({ error: 'Payment method does not exist.' })
             }
 
-            await paymentMethodExists.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-
-                    updated_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await paymentMethodExists.destroy({
+                transaction: t,
+            })
             await t.commit()
 
             return res

@@ -327,28 +327,17 @@ class WorkloadController {
                 hours_per_day ||
                 (paceGuides && paceGuides.length > 0)
             ) {
-                Paceguide.findAll({
+                const paces = await Paceguide.findAll({
                     where: {
                         workload_id,
                         canceled_at: null,
                     },
-                }).then((paces) => {
-                    // Criar versão nova
-                    paces.forEach((pace) => {
-                        Paceguide.update(
-                            {
-                                canceled_at: new Date(),
-                                canceled_by: req.userId,
-                            },
-                            {
-                                where: {
-                                    company_id: 1,
-                                    id: pace.dataValues.id,
-                                },
-                            }
-                        )
-                    })
                 })
+                for (let pace of paces) {
+                    await pace.destroy({
+                        transaction: t,
+                    })
+                }
             }
 
             if (!days_per_week && !hours_per_day && paceGuides.length > 0) {

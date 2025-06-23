@@ -487,6 +487,14 @@ class StudentController {
                     console.log('removing...')
                     // await verifyAndCancelParcelowPaymentLink(receivable.id)
                     await verifyAndCancelTextToPayTransaction(receivable.id)
+                    await receivable.update(
+                        {
+                            canceled_by: req.userId,
+                        },
+                        {
+                            transaction: t,
+                        }
+                    )
                     await receivable.destroy({
                         transaction: t,
                     })
@@ -706,15 +714,9 @@ class StudentController {
 
             if (activeStudentGroup) {
                 if (activeStudentGroup.dataValues.start_date === date) {
-                    await activeStudentGroup.update(
-                        {
-                            canceled_at: new Date(),
-                            canceled_by: req.userId,
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
+                    await activeStudentGroup.destroy({
+                        transaction: t,
+                    })
                 } else {
                     await activeStudentGroup.update(
                         {
@@ -809,9 +811,8 @@ class StudentController {
 
             const transfer = await StudentXGroup.findByPk(transfer_id)
 
-            await transfer.update({
-                canceled_at: new Date(),
-                canceled_by: req.userId,
+            await transfer.destroy({
+                transaction: t,
             })
 
             return res.status(200).json(transfer)
@@ -1031,30 +1032,22 @@ class StudentController {
 
             const fileIds = vacationFiles.map((vf) => vf.file_id)
 
-            await vacation.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await vacation.destroy({
+                transaction: t,
+            })
 
-            await File.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    where: {
-                        id: fileIds,
+            const files = await File.findAll({
+                where: {
+                    id: {
+                        [Op.in]: fileIds,
                     },
                 },
-                {
+            })
+            for (let file of files) {
+                await file.destroy({
                     transaction: t,
-                }
-            )
+                })
+            }
 
             const attendances = await Attendance.findAll({
                 include: [
@@ -1307,30 +1300,22 @@ class StudentController {
 
             const fileIds = medicalExcusesFiles.map((vf) => vf.file_id)
 
-            await medicalexcuse.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await medicalexcuse.destroy({
+                transaction: t,
+            })
 
-            await File.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    where: {
-                        id: fileIds,
+            const files = await File.findAll({
+                where: {
+                    id: {
+                        [Op.in]: fileIds,
                     },
                 },
-                {
+            })
+            for (let file of files) {
+                await file.destroy({
                     transaction: t,
-                }
-            )
+                })
+            }
 
             const attendances = await Attendance.findAll({
                 include: [

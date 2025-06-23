@@ -434,17 +434,9 @@ class MerchantController {
                     .json({ error: 'Merchant does not exist.' })
             }
 
-            await merchantExists.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-
-                    updated_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await merchantExists.destroy({
+                transaction: t,
+            })
             await t.commit()
 
             return res

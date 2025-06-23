@@ -244,17 +244,9 @@ class PaymentCriteriaController {
                     .json({ error: 'Payment criteria does not exist.' })
             }
 
-            await criteriaExists.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-
-                    updated_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await criteriaExists.destroy({
+                transaction: t,
+            })
             await t.commit()
 
             return res

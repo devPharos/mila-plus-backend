@@ -376,19 +376,16 @@ class MilaUserController {
                 })
             }
 
-            await UserGroupXUser.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
+            const userGroupXUser = await UserGroupXUser.findOne({
+                where: {
+                    user_id: userExists.id,
+                    canceled_at: null,
                 },
-                {
-                    where: {
-                        user_id: userExists.id,
-                        canceled_at: null,
-                    },
-                    transaction: t,
-                }
-            )
+            })
+
+            await userGroupXUser.destroy({
+                transaction: t,
+            })
 
             await UserGroupXUser.create(
                 {
@@ -402,20 +399,16 @@ class MilaUserController {
                 }
             )
 
-            await UserXFilial.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
+            const userXFilial = await UserXFilial.findOne({
+                where: {
+                    user_id: userExists.id,
+                    canceled_at: null,
                 },
-                {
-                    where: {
-                        user_id: userExists.id,
-                        [Op.not]: {
-                            filial_id: 1,
-                        },
-                    },
-                }
-            )
+            })
+
+            await userXFilial.destroy({
+                transaction: t,
+            })
 
             const addedFilials = []
             for (let { filial } of filials) {

@@ -213,15 +213,9 @@ class DocumentController {
                     }
                 )
             } else {
-                await document.update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                await document.destroy({
+                    transaction: t,
+                })
             }
 
             t.commit()

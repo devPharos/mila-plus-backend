@@ -418,24 +418,6 @@ class EnrollmentController {
                 req.body.enrollmentdependents.length > 0
             ) {
                 const { enrollmentdependents } = req.body
-                // const existingDependents = await Enrollmentdependent.findAll({
-                //   where: {
-                //     enrollment_id: enrollment_id,
-                //     canceled_at: null,
-                //   },
-                // });
-                // if (existingDependents) {
-                //   existingDependents.map((dependent) => {
-                //     promises.push(
-                //       dependent.update(
-                //         { canceled_at: new Date(), canceled_by: 2 },
-                //         {
-                //           transaction: t,
-                //         }
-                //       )
-                //     );
-                //   });
-                // }
                 enrollmentdependents.map((dependent) => {
                     promises.push(
                         Enrollmentdependent.update(
@@ -485,12 +467,9 @@ class EnrollmentController {
                 if (existingSponsors) {
                     existingSponsors.map((sponsor) => {
                         promises.push(
-                            sponsor.update(
-                                { canceled_at: new Date(), canceled_by: 2 },
-                                {
-                                    transaction: t,
-                                }
-                            )
+                            sponsor.destroy({
+                                transaction: t,
+                            })
                         )
                     })
                 }
@@ -1097,15 +1076,9 @@ class EnrollmentController {
                     }
                 )
             } else {
-                await enrollment.update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                await enrollment.destroy({
+                    transaction: t,
+                })
             }
 
             t.commit()

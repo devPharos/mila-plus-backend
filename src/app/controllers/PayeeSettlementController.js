@@ -233,15 +233,9 @@ class PayeeSettlementController {
             }
 
             await settlement
-                .update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                .destroy({
+                    transaction: t,
+                })
                 .then(async () => {
                     await payee
                         .update(

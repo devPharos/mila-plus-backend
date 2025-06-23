@@ -207,20 +207,18 @@ export async function removeStudentAttendances({
     })
 
     for (let class_ of classes) {
-        await Attendance.update(
-            {
-                canceled_by: req.userId,
-                canceled_at: new Date(),
+        const attendance = await Attendance.findAll({
+            where: {
+                studentgroupclass_id: class_.id,
+                student_id: student_id,
+                canceled_at: null,
             },
-            {
-                where: {
-                    studentgroupclass_id: class_.id,
-                    student_id: student_id,
-                    canceled_at: null,
-                },
+        })
+        for (let attendance of attendance) {
+            await attendance.destroy({
                 transaction: t,
-            }
-        )
+            })
+        }
     }
 }
 

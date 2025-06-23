@@ -255,15 +255,9 @@ class SettlementController {
             }
 
             await settlement
-                .update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                .destroy({
+                    transaction: t,
+                })
                 .then(async () => {
                     const discounts = await Receivablediscounts.findAll({
                         where: {
@@ -283,9 +277,8 @@ class SettlementController {
                         } else {
                             total_discount += discount.dataValues.value
                         }
-                        await discount.update({
-                            canceled_at: new Date(),
-                            canceled_by: req.userId,
+                        await discount.destroy({
+                            transaction: t,
                         })
                     }
                     if (settlement.dataValues.amount === 0) {

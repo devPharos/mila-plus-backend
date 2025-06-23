@@ -305,15 +305,9 @@ class StaffController {
                     }
                 )
             } else {
-                await staff.update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                await staff.destroy({
+                    transaction: t,
+                })
             }
 
             t.commit()

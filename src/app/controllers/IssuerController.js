@@ -358,17 +358,9 @@ class IssuerController {
                 return res.status(400).json({ error: 'Issuer does not exist.' })
             }
 
-            await issuerExists.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-
-                    updated_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await issuerExists.destroy({
+                transaction: t,
+            })
             await t.commit()
 
             return res

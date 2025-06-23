@@ -426,11 +426,8 @@ class ReceivableInstallmentController {
         )
 
         for (const installment of canceledInstallments) {
-            await installment.update({
-                canceled_at: new Date(),
-                canceled_by: updatedBy,
-
-                updated_by: updatedBy,
+            await installment.destroy({
+                transaction: t,
             })
         }
     }
