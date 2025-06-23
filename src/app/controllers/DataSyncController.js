@@ -438,6 +438,7 @@ class DataSyncController {
                             })
 
                         if (transactionExists) {
+                            console.log(6, transactionExists.dataValues)
                             continue
                         }
 
