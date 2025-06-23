@@ -1782,18 +1782,21 @@ class StudentgroupController {
             const { grades, studentgroupclass_id } = req.body
 
             const studentgroup = await Studentgroup.findByPk(studentgroup_id)
+            console.log(1)
 
             if (!studentgroup) {
                 return res.status(400).json({
                     error: 'Student Group does not exist.',
                 })
             }
+            console.log(2)
 
             if (studentgroup.dataValues.status !== 'Ongoing') {
                 return res.status(400).json({
                     error: 'Student Group is not ongoing.',
                 })
             }
+            console.log(3)
 
             for (let student of grades.students) {
                 const gradeExists = await Grade.findOne({
@@ -1831,10 +1834,12 @@ class StudentgroupController {
                     }
                 )
             }
+            console.log(4)
 
             t.commit()
+            console.log(5)
 
-            return res.status(200)
+            return res.status(200).json(studentgroup)
         } catch (err) {
             await t.rollback()
             const className = 'StudentgroupController'

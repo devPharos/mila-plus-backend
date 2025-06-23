@@ -14,6 +14,7 @@ class Grade extends Model {
                 studentgrouppaceguide_id: Sequelize.UUID,
                 score: Sequelize.FLOAT,
                 discarded: Sequelize.BOOLEAN,
+                dso_note: Sequelize.TEXT,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
