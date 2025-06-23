@@ -1558,6 +1558,14 @@ class ReceivableController {
                         as: 'settlements',
                         required: false,
                         where: { canceled_at: null },
+                        include: [
+                            {
+                                model: PaymentMethod,
+                                as: 'paymentMethod',
+                                required: false,
+                                where: { canceled_at: null },
+                            },
+                        ],
                     },
                     {
                         model: Refund,
