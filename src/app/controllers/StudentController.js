@@ -487,15 +487,9 @@ class StudentController {
                     console.log('removing...')
                     // await verifyAndCancelParcelowPaymentLink(receivable.id)
                     await verifyAndCancelTextToPayTransaction(receivable.id)
-                    await receivable.update(
-                        {
-                            canceled_at: new Date(),
-                            canceled_by: req.userId,
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
+                    await receivable.destroy({
+                        transaction: t,
+                    })
                     console.log('receivable removed', receivable.id)
                 }
 
