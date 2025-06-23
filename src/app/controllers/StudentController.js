@@ -484,7 +484,7 @@ class StudentController {
                 })
 
                 for (let receivable of receivables) {
-                    await verifyAndCancelParcelowPaymentLink(receivable.id)
+                    // await verifyAndCancelParcelowPaymentLink(receivable.id)
                     await verifyAndCancelTextToPayTransaction(receivable.id)
                     await receivable.update(
                         {
