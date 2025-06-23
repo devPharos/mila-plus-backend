@@ -48,12 +48,14 @@ function transformDate(date = null) {
 
 class DataSyncController {
     async import(req, res) {
+        console.log(1)
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            console.log(2)
             const { importType } = req.body
             const file = req.file
-
+            console.log(3, importType)
             if (importType === 'Students') {
                 fs.readFile(file.path, 'utf8', async (err, data) => {
                     if (err) {
@@ -383,7 +385,7 @@ class DataSyncController {
                         const values = line.split(',')
 
                         const invoice_number = values[head.indexOf('Reference')]
-
+                        console.log(4)
                         const receivable = await Receivable.findOne({
                             where: {
                                 invoice_number: parseInt(
@@ -425,11 +427,12 @@ class DataSyncController {
                         const transactionType = 'CreditSale'
                         const uniqueTransId =
                             values[head.indexOf('Transaction ID')]
-
+                        console.log(5)
                         const transactionExists =
                             await Emergepaytransaction.findOne({
                                 where: {
                                     unique_trans_id: uniqueTransId,
+                                    result_message: 'Approved',
                                     canceled_at: null,
                                 },
                             })
@@ -468,9 +471,7 @@ class DataSyncController {
 
                         console.log(create)
 
-                        await Emergepaytransaction.create(create, {
-                            transaction: t,
-                        })
+                        await Emergepaytransaction.create(create)
                         if (receivable && resultMessage === 'Approved') {
                             const amountPaidBalance =
                                 parseFloat(amountProcessed)
@@ -485,12 +486,16 @@ class DataSyncController {
                                 amountPaidBalance,
                                 settlement_date: format(new Date(), 'yyyyMMdd'),
                                 paymentmethod_id: paymentMethod.id,
-                                t,
                             })
                         }
-
-                        t.commit()
                     }
+                })
+                return res.status(200).json({
+                    message: 'Data imported successfully.',
+                })
+            } else {
+                return res.status(400).json({
+                    error: 'Import type not found.',
                 })
             }
         } catch (err) {
