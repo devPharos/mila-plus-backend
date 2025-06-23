@@ -484,6 +484,7 @@ class StudentController {
                 })
 
                 for (let receivable of receivables) {
+                    console.log('removing...')
                     // await verifyAndCancelParcelowPaymentLink(receivable.id)
                     await verifyAndCancelTextToPayTransaction(receivable.id)
                     await receivable.update(
@@ -495,6 +496,7 @@ class StudentController {
                             transaction: t,
                         }
                     )
+                    console.log('receivable removed', receivable.id)
                 }
 
                 await Recurrence.update(
