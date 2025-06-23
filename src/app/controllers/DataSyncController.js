@@ -391,6 +391,7 @@ class DataSyncController {
                                 invoice_number: parseInt(
                                     invoice_number.substring(1)
                                 ),
+                                status: 'Pending',
                                 canceled_at: null,
                             },
                         })
