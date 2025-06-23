@@ -1,5 +1,3 @@
-import { header_logo } from './header_logo'
-
 export default function MailLayout({ title = '', content = '', filial = '' }) {
     return `<body style='background-color: #f3f4f6'>
                   <div style='width: 600;padding: 20px; margin: 12px auto;'>

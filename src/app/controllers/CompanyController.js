@@ -1,6 +1,6 @@
 import Sequelize from 'sequelize'
-import Company from '../models/Company'
-import Filial from '../models/Filial'
+import Company from '../models/Company.js'
+import Filial from '../models/Filial.js'
 const { Op } = Sequelize
 
 class CompanyController {

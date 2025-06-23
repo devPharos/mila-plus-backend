@@ -1,11 +1,11 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Level from '../models/Level'
-import Languagemode from '../models/Languagemode'
-import Programcategory from '../models/Programcategory'
-import Paceguide from '../models/Paceguide'
-import Workload from '../models/Workload'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Level from '../models/Level.js'
+import Languagemode from '../models/Languagemode.js'
+import Programcategory from '../models/Programcategory.js'
+import Paceguide from '../models/Paceguide.js'
+import Workload from '../models/Workload.js'
 
 const { Op } = Sequelize
 

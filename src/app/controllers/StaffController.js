@@ -1,20 +1,20 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Staff from '../models/Staff'
-import Filial from '../models/Filial'
-import { mailer } from '../../config/mailer'
-import File from '../models/File'
-import Staffdocument from '../models/Staffdocument'
-import MailLayout from '../../Mails/MailLayout'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Staff from '../models/Staff.js'
+import Filial from '../models/Filial.js'
+import { mailer } from '../../config/mailer.js'
+import File from '../models/File.js'
+import Staffdocument from '../models/Staffdocument.js'
+import MailLayout from '../../Mails/MailLayout.js'
 import {
     FRONTEND_URL,
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
-import Milauser from '../models/Milauser'
+} from '../functions/index.js'
+import Milauser from '../models/Milauser.js'
 
 const { Op } = Sequelize
 

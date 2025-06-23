@@ -1,13 +1,13 @@
 import { format, parseISO } from 'date-fns'
-import Filial from '../../models/Filial'
-import Issuer from '../../models/Issuer'
-import PaymentCriteria from '../../models/PaymentCriteria'
-import PaymentMethod from '../../models/PaymentMethod'
-import Receivable from '../../models/Receivable'
-import { mailer } from '../../../config/mailer'
-import Maillog from '../../models/Maillog'
-import MailLog from '../../../Mails/MailLog'
-import Settlement from '../../models/Settlement'
+import Filial from '../../models/Filial.js'
+import Issuer from '../../models/Issuer.js'
+import PaymentCriteria from '../../models/PaymentCriteria.js'
+import PaymentMethod from '../../models/PaymentMethod.js'
+import Receivable from '../../models/Receivable.js'
+import { mailer } from '../../../config/mailer.js'
+import Maillog from '../../models/Maillog.js'
+import MailLog from '../../../Mails/MailLog.js'
+import Settlement from '../../models/Settlement.js'
 
 export async function SettlementMail({
     receivable_id = null,

@@ -1,13 +1,19 @@
 import { resolve } from 'path'
-import Enrollment from '../../models/Enrollment'
-import File from '../../models/File'
-import Student from '../../models/Student'
-import Enrollmenttransfer from '../../models/Enrollmenttransfer'
-import { header, inputLine, footer, signatureLine, headerLine } from './default'
-import Filial from '../../models/Filial'
+import Enrollment from '../../models/Enrollment.js'
+import File from '../../models/File.js'
+import Student from '../../models/Student.js'
+import Enrollmenttransfer from '../../models/Enrollmenttransfer.js'
+import {
+    header,
+    inputLine,
+    footer,
+    signatureLine,
+    headerLine,
+} from './default.js'
+import Filial from '../../models/Filial.js'
 import { format } from 'date-fns'
-const client = require('https')
-const fs = require('fs')
+import client from 'https'
+import fs from 'fs'
 
 export default async function transferEligibility(doc = null, id = '') {
     const enrollment = await Enrollment.findByPk(id)

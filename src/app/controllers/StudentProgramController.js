@@ -1,9 +1,9 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import File from '../models/File'
-import Student from '../models/Student'
-import Studentprogram from '../models/Studentprogram'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import File from '../models/File.js'
+import Student from '../models/Student.js'
+import Studentprogram from '../models/Studentprogram.js'
 
 const { Op } = Sequelize
 

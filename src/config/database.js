@@ -1,6 +1,6 @@
-require('dotenv').config()
+import 'dotenv/config'
 
-module.exports = {
+export default {
     dialect: 'postgres',
     host: process.env.DB_HOSTNAME,
     port: process.env.DB_PORT,

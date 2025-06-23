@@ -1,10 +1,10 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import MerchantXChartOfAccount from '../models/MerchantXChartOfAccounts'
-import Merchant from '../models/Merchants'
-import ChartOfAccount from '../models/Chartofaccount'
-import Filial from '../models/Filial'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import MerchantXChartOfAccount from '../models/MerchantXChartOfAccounts.js'
+import Merchant from '../models/Merchants.js'
+import ChartOfAccount from '../models/Chartofaccount.js'
+import Filial from '../models/Filial.js'
 
 const { Op } = Sequelize
 

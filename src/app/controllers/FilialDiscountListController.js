@@ -1,7 +1,7 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import FilialDiscountList from '../models/FilialDiscountList'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import FilialDiscountList from '../models/FilialDiscountList.js'
 
 const { Op } = Sequelize
 

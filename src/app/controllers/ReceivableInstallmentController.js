@@ -1,11 +1,11 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import ReceivableInstallment from '../models/ReceivableInstallment'
-import Receivable from '../models/Receivable'
-import PaymentMethod from '../models/PaymentMethod'
-import ChartOfAccount from '../models/Chartofaccount'
-import PaymentCriteria from '../models/PaymentCriteria'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import ReceivableInstallment from '../models/ReceivableInstallment.js'
+import Receivable from '../models/Receivable.js'
+import PaymentMethod from '../models/PaymentMethod.js'
+import ChartOfAccount from '../models/Chartofaccount.js'
+import PaymentCriteria from '../models/PaymentCriteria.js'
 
 function calculateTotalInstallments(
     startDate,

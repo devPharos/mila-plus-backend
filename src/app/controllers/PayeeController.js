@@ -1,28 +1,27 @@
 import Sequelize, { Op } from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
 import { resolve } from 'path'
-import Payee from '../models/Payee'
-import PaymentMethod from '../models/PaymentMethod'
-import ChartOfAccount from '../models/Chartofaccount'
-import PaymentCriteria from '../models/PaymentCriteria'
-import Filial from '../models/Filial'
-import Issuer from '../models/Issuer'
-import Payeerecurrence from '../models/Payeerecurrence'
-import Payeesettlement from '../models/Payeesettlement'
+import Payee from '../models/Payee.js'
+import PaymentMethod from '../models/PaymentMethod.js'
+import ChartOfAccount from '../models/Chartofaccount.js'
+import PaymentCriteria from '../models/PaymentCriteria.js'
+import Filial from '../models/Filial.js'
+import Issuer from '../models/Issuer.js'
+import Payeesettlement from '../models/Payeesettlement.js'
 import { format, parseISO } from 'date-fns'
-import Merchants from '../models/Merchants'
+import Merchants from '../models/Merchants.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
-import Milauser from '../models/Milauser'
-import BankAccounts from '../models/BankAccount'
+} from '../functions/index.js'
+import Milauser from '../models/Milauser.js'
+import BankAccounts from '../models/BankAccount.js'
 
-const xl = require('excel4node')
-const fs = require('fs')
+import xl from 'excel4node'
+import fs from 'fs'
 
 class PayeeController {
     async index(req, res) {

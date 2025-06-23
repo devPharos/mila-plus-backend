@@ -1,17 +1,17 @@
 import Sequelize, { literal } from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import PaymentMethod from '../models/PaymentMethod'
-import Company from '../models/Company'
-import Filial from '../models/Filial'
-import Bank from '../models/Bank'
-import BankAccounts from '../models/BankAccount'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import PaymentMethod from '../models/PaymentMethod.js'
+import Company from '../models/Company.js'
+import Filial from '../models/Filial.js'
+import Bank from '../models/Bank.js'
+import BankAccounts from '../models/BankAccount.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
+} from '../functions/index.js'
 
 const { Op } = Sequelize
 

@@ -1,17 +1,17 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Issuer from '../models/Issuer'
-import Company from '../models/Company'
-import Filial from '../models/Filial'
-import Student from '../models/Student'
-import Merchants from '../models/Merchants'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Issuer from '../models/Issuer.js'
+import Company from '../models/Company.js'
+import Filial from '../models/Filial.js'
+import Student from '../models/Student.js'
+import Merchants from '../models/Merchants.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
+} from '../functions/index.js'
 
 const { Op } = Sequelize
 

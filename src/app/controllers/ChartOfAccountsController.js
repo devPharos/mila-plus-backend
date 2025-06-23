@@ -1,16 +1,16 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Chartofaccount from '../models/Chartofaccount'
-import Merchant from '../models/Merchants'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Chartofaccount from '../models/Chartofaccount.js'
+import Merchant from '../models/Merchants.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
     verifyMerchantSearch,
-} from '../functions'
-import MerchantXChartOfAccount from '../models/MerchantXChartOfAccounts'
+} from '../functions/index.js'
+import MerchantXChartOfAccount from '../models/MerchantXChartOfAccounts.js'
 const { Op } = Sequelize
 
 class ChartOfAccountsController {

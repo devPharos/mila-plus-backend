@@ -1,21 +1,21 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
+import MailLog from '../../Mails/MailLog.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
-import Message from '../models/Message'
-import MessageXStudent from '../models/MessageXStudent'
-import Level from '../models/Level'
-import Studentgroup from '../models/Studentgroup'
-import Student from '../models/Student'
-import Staff from '../models/Staff'
-import Filial from '../models/Filial'
-import { mailer } from '../../config/mailer'
-import MailLayout from '../../Mails/MailLayout'
-import databaseConfig from '../../config/database'
+} from '../functions/index.js'
+import Message from '../models/Message.js'
+import MessageXStudent from '../models/MessageXStudent.js'
+import Level from '../models/Level.js'
+import Studentgroup from '../models/Studentgroup.js'
+import Student from '../models/Student.js'
+import Staff from '../models/Staff.js'
+import Filial from '../models/Filial.js'
+import { mailer } from '../../config/mailer.js'
+import MailLayout from '../../Mails/MailLayout.js'
+import databaseConfig from '../../config/database.js'
 
 const { Op } = Sequelize
 

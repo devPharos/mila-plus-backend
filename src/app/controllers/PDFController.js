@@ -1,13 +1,13 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
 import { resolve } from 'path'
 
 import PDFDocument from 'pdfkit'
-import affidavitSupport from '../views/pdf-layouts/affidavit-support'
-import transferEligibility from '../views/pdf-layouts/transfer-eligibility'
-import enrollment from '../views/pdf-layouts/enrollment'
-const fs = require('fs')
+import affidavitSupport from '../views/pdf-layouts/affidavit-support.js'
+import transferEligibility from '../views/pdf-layouts/transfer-eligibility.js'
+import enrollment from '../views/pdf-layouts/enrollment.js'
+import fs from 'fs'
 
 const { Op } = Sequelize
 

@@ -1,19 +1,14 @@
 import Sequelize, { Op } from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Receivable from '../models/Receivable'
-import PaymentMethod from '../models/PaymentMethod'
-import ChartOfAccount from '../models/Chartofaccount'
-import PaymentCriteria from '../models/PaymentCriteria'
-import Filial from '../models/Filial'
-import Issuer from '../models/Issuer'
-import Student from '../models/Student'
-import Receivable from '../models/Receivable'
-import Settlement from '../models/Settlement'
-import Receivablediscounts from '../models/Receivablediscounts'
-import Payeesettlement from '../models/Payeesettlement'
-import Payee from '../models/Payee'
-import Payeerecurrence from '../models/Payeerecurrence'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Receivable from '../models/Receivable.js'
+import PaymentMethod from '../models/PaymentMethod.js'
+import ChartOfAccount from '../models/Chartofaccount.js'
+import PaymentCriteria from '../models/PaymentCriteria.js'
+import Filial from '../models/Filial.js'
+import Issuer from '../models/Issuer.js'
+import Payee from '../models/Payee.js'
+import Payeerecurrence from '../models/Payeerecurrence.js'
 import {
     addDays,
     addMonths,
@@ -23,14 +18,14 @@ import {
     parseISO,
     subDays,
 } from 'date-fns'
-import Merchants from '../models/Merchants'
-import Chartofaccount from '../models/Chartofaccount'
+import Merchants from '../models/Merchants.js'
+import Chartofaccount from '../models/Chartofaccount.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
+} from '../functions/index.js'
 
 export async function generateRecurrencePayees({
     recurrence = null,

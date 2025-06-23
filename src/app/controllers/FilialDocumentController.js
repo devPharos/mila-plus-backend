@@ -1,9 +1,9 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Filialdocument from '../models/Filialdocument'
-import File from '../models/File'
-import Filial from '../models/Filial'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Filialdocument from '../models/Filialdocument.js'
+import File from '../models/File.js'
+import Filial from '../models/Filial.js'
 
 const { Op } = Sequelize
 

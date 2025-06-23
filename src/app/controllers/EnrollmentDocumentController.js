@@ -1,10 +1,10 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Enrollmentdocument from '../models/Enrollmentdocument'
-import File from '../models/File'
-import Enrollment from '../models/Enrollment'
-import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Enrollmentdocument from '../models/Enrollmentdocument.js'
+import File from '../models/File.js'
+import Enrollment from '../models/Enrollment.js'
+import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument.js'
 
 const { Op } = Sequelize
 

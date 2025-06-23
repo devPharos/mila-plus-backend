@@ -1,9 +1,9 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Enrollment from '../models/Enrollment'
-import Enrollmentdependent from '../models/Enrollmentdependent'
-import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Enrollment from '../models/Enrollment.js'
+import Enrollmentdependent from '../models/Enrollmentdependent.js'
+import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument.js'
 
 const { Op } = Sequelize
 

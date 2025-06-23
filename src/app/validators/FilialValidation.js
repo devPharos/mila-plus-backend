@@ -1,4 +1,4 @@
-import Filial from '../models/Filial'
+import Filial from '../models/Filial.js'
 
 export default async (req, res, next) => {
     try {

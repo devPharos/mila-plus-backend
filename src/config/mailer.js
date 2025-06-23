@@ -1,5 +1,5 @@
-require('dotenv').config()
-const nodemailer = require('nodemailer')
+import 'dotenv/config'
+import nodemailer from 'nodemailer'
 
 export const mailer = nodemailer.createTransport({
     host: process.env.MAIL_HOST,

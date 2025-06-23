@@ -1,6 +1,6 @@
-require('dotenv').config()
-import { mailer } from '../config/mailer'
-import MailLayout from './MailLayout'
+import 'dotenv/config'
+import { mailer } from '../config/mailer.js'
+import MailLayout from './MailLayout.js'
 
 export default async function MailLog({
     className = null,

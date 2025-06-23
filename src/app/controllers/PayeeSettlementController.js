@@ -1,25 +1,24 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Receivable from '../models/Receivable'
-import PaymentMethod from '../models/PaymentMethod'
-import ChartOfAccount from '../models/Chartofaccount'
-import PaymentCriteria from '../models/PaymentCriteria'
-import Filial from '../models/Filial'
-import Issuer from '../models/Issuer'
-import Student from '../models/Student'
-import Receivable from '../models/Receivable'
-import Settlement from '../models/Settlement'
-import Receivablediscounts from '../models/Receivablediscounts'
-import Payeesettlement from '../models/Payeesettlement'
-import Payee from '../models/Payee'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Receivable from '../models/Receivable.js'
+import PaymentMethod from '../models/PaymentMethod.js'
+import ChartOfAccount from '../models/Chartofaccount.js'
+import PaymentCriteria from '../models/PaymentCriteria.js'
+import Filial from '../models/Filial.js'
+import Issuer from '../models/Issuer.js'
+import Student from '../models/Student.js'
+import Settlement from '../models/Settlement.js'
+import Receivablediscounts from '../models/Receivablediscounts.js'
+import Payeesettlement from '../models/Payeesettlement.js'
+import Payee from '../models/Payee.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     getIssuerByName,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
+} from '../functions/index.js'
 
 class PayeeSettlementController {
     async index(req, res) {

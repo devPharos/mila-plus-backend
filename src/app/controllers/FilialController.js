@@ -1,17 +1,17 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import File from '../models/File'
-import Filial from '../models/Filial'
-import FilialPriceList from '../models/FilialPriceList'
-import FilialDiscountList from '../models/FilialDiscountList'
-import Filialtype from '../models/Filialtype'
-import Document from '../models/Document'
-import Milauser from '../models/Milauser'
-import UserGroupXUser from '../models/UserGroupXUser'
-import UserXFilial from '../models/UserXFilial'
-import Processsubstatus from '../models/Processsubstatus'
-import { mailer } from '../../config/mailer'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import File from '../models/File.js'
+import Filial from '../models/Filial.js'
+import FilialPriceList from '../models/FilialPriceList.js'
+import FilialDiscountList from '../models/FilialDiscountList.js'
+import Filialtype from '../models/Filialtype.js'
+import Document from '../models/Document.js'
+import Milauser from '../models/Milauser.js'
+import UserGroupXUser from '../models/UserGroupXUser.js'
+import UserXFilial from '../models/UserXFilial.js'
+import Processsubstatus from '../models/Processsubstatus.js'
+import { mailer } from '../../config/mailer.js'
 import {
     FRONTEND_URL,
     generateSearchByFields,
@@ -19,13 +19,13 @@ import {
     randomPassword,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
-import MailLayout from '../../Mails/MailLayout'
-import Filialdocument from '../models/Filialdocument'
+} from '../functions/index.js'
+import MailLayout from '../../Mails/MailLayout.js'
+import Filialdocument from '../models/Filialdocument.js'
 import { resolve } from 'path'
 const { Op } = Sequelize
-const client = require('https')
-const fs = require('fs')
+import client from 'https'
+import fs from 'fs'
 
 class FilialController {
     async show(req, res) {

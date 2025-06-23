@@ -1,16 +1,22 @@
 import { resolve } from 'path'
-import Enrollment from '../../models/Enrollment'
-import File from '../../models/File'
-import Student from '../../models/Student'
-import Enrollmentemergency from '../../models/Enrollmentemergency'
-import Enrollmentsponsor from '../../models/Enrollmentsponsor'
-import { header, inputLine, footer, signatureLine, headerLine } from './default'
-import Filial from '../../models/Filial'
-import FilialPriceList from '../../models/FilialPriceList'
+import Enrollment from '../../models/Enrollment.js'
+import File from '../../models/File.js'
+import Student from '../../models/Student.js'
+import Enrollmentemergency from '../../models/Enrollmentemergency.js'
+import Enrollmentsponsor from '../../models/Enrollmentsponsor.js'
+import {
+    header,
+    inputLine,
+    footer,
+    signatureLine,
+    headerLine,
+} from './default.js'
+import Filial from '../../models/Filial.js'
+import FilialPriceList from '../../models/FilialPriceList.js'
 import { format, parseISO } from 'date-fns'
-import Enrollmentdependent from '../../models/Enrollmentdependent'
-const client = require('https')
-const fs = require('fs')
+import Enrollmentdependent from '../../models/Enrollmentdependent.js'
+import client from 'https'
+import fs from 'fs'
 
 export const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
