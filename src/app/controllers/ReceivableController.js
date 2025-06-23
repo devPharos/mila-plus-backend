@@ -1351,6 +1351,7 @@ class ReceivableController {
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 10,
+                type = '',
                 page = 1,
             } = req.query
 
@@ -1414,6 +1415,26 @@ class ReceivableController {
                 },
             ]
 
+            const typeSearches = null
+
+            if (type) {
+                if (type === 'pending') {
+                    typeSearches = {
+                        status: {
+                            [Op.in]: ['Pending', 'Parcial Paid'],
+                        },
+                    }
+                } else if (type === 'paid') {
+                    typeSearches = {
+                        status: {
+                            [Op.in]: ['Paid', 'Parcial Paid'],
+                        },
+                    }
+                }
+            }
+
+            console.log(typeSearches)
+
             const { count, rows } = await Receivable.findAndCountAll({
                 include: [
                     {
@@ -1469,6 +1490,7 @@ class ReceivableController {
                     canceled_at: null,
                     ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
+                    ...typeSearches,
                 },
                 attributes: [
                     'id',

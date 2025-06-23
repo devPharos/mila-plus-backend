@@ -8,7 +8,7 @@ const MailService = {
     },
 }
 
-export default {
+module.exports = {
     key: 'RegistrationMail',
     async handle({ data }) {
         const { user } = data
