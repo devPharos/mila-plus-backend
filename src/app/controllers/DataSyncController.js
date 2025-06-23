@@ -48,14 +48,11 @@ function transformDate(date = null) {
 
 class DataSyncController {
     async import(req, res) {
-        console.log(1)
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
-            console.log(2)
             const { importType } = req.body
             const file = req.file
-            console.log(3, importType)
             if (importType === 'Students') {
                 fs.readFile(file.path, 'utf8', async (err, data) => {
                     if (err) {
@@ -374,18 +371,13 @@ class DataSyncController {
                 })
             } else if (importType === 'EmergepayTransactions') {
                 fs.readFile(file.path, 'utf8', async (err, data) => {
-                    // console.log(data.replaceAll('"', ''))
                     const lines = data.replaceAll('"', '').split('\n')
                     const head = lines[0].split(',')
-
-                    // console.log(head)
-                    // console.log(lines)
 
                     for (let line of lines.filter((_, index) => index !== 0)) {
                         const values = line.split(',')
 
                         const invoice_number = values[head.indexOf('Reference')]
-                        console.log(4)
                         const receivable = await Receivable.findOne({
                             where: {
                                 invoice_number: parseInt(
@@ -428,7 +420,6 @@ class DataSyncController {
                         const transactionType = 'CreditSale'
                         const uniqueTransId =
                             values[head.indexOf('Transaction ID')]
-                        console.log(5)
                         const transactionExists =
                             await Emergepaytransaction.findOne({
                                 where: {
