@@ -5,8 +5,10 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "pm2 start ecosystem.config.cjs --env development",
-    "start": "pm2 start ecosystem.config.cjs --env production",
+    "dev": "export NODE_ENV=development set NODE_ENV=development && nodemon src/server.js",
+    "prod": "set NODE_ENV=production && nodemon src/server.js",
+    "start:dev": "pm2 start ecosystem.config.cjs --env development",
+    "start:prod": "pm2 start ecosystem.config.cjs --env production",
     "stop": "pm2 stop ecosystem.config.cjs",
     "restart": "pm2 restart ecosystem.config.cjs --env production",
     "logs": "pm2 logs",
