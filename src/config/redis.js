@@ -1,4 +1,4 @@
-import IORedis from 'ioredis'
+const IORedis = require('ioredis')
 
 if (!process.env.REDIS_URL) {
     throw new Error('Nenhuma URL de Redis configurada.')
@@ -17,4 +17,4 @@ redisConnection.on('error', (err) => {
     process.exit(1)
 })
 
-export default redisConnection
+module.exports = redisConnection
