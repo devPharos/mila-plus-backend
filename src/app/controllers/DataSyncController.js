@@ -438,7 +438,7 @@ class DataSyncController {
                             continue
                         }
 
-                        await Emergepaytransaction.create({
+                        const create = {
                             account_card_type: accountCardType,
                             account_entry_method: accountEntryMethod,
                             account_expiry_date: accountExpiryDate,
@@ -463,8 +463,13 @@ class DataSyncController {
                             transaction_reference: transactionReference,
                             transaction_type: transactionType,
                             unique_trans_id: uniqueTransId,
-
                             created_by: 2,
+                        }
+
+                        console.log(create)
+
+                        await Emergepaytransaction.create(create, {
+                            transaction: t,
                         })
                         if (receivable && resultMessage === 'Approved') {
                             const amountPaidBalance =
@@ -480,8 +485,11 @@ class DataSyncController {
                                 amountPaidBalance,
                                 settlement_date: format(new Date(), 'yyyyMMdd'),
                                 paymentmethod_id: paymentMethod.id,
+                                t,
                             })
                         }
+
+                        t.commit()
                     }
                 })
             }

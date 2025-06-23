@@ -1417,7 +1417,7 @@ class ReceivableController {
 
             let typeSearches = null
 
-            if (type) {
+            if (!search) {
                 if (type === 'pending') {
                     typeSearches = {
                         status: {
