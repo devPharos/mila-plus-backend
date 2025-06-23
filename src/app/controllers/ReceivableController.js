@@ -1,15 +1,15 @@
 import Sequelize, { Op } from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Receivable from '../models/Receivable'
-import PaymentMethod from '../models/PaymentMethod'
-import ChartOfAccount from '../models/Chartofaccount'
-import PaymentCriteria from '../models/PaymentCriteria'
-import Filial from '../models/Filial'
-import Issuer from '../models/Issuer'
-import FilialPriceList from '../models/FilialPriceList'
-import FilialDiscountList from '../models/FilialDiscountList'
-import Student from '../models/Student'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Receivable from '../models/Receivable.js'
+import PaymentMethod from '../models/PaymentMethod.js'
+import ChartOfAccount from '../models/Chartofaccount.js'
+import PaymentCriteria from '../models/PaymentCriteria.js'
+import Filial from '../models/Filial.js'
+import Issuer from '../models/Issuer.js'
+import FilialPriceList from '../models/FilialPriceList.js'
+import FilialDiscountList from '../models/FilialDiscountList.js'
+import Student from '../models/Student.js'
 import {
     addDays,
     addMonths,
@@ -21,42 +21,42 @@ import {
     parseISO,
     subDays,
 } from 'date-fns'
-import { mailer } from '../../config/mailer'
-import { emergepay } from '../../config/emergepay'
-import Recurrence from '../models/Recurrence'
-import Emergepaytransaction from '../models/Emergepaytransaction'
-import Receivablediscounts from '../models/Receivablediscounts'
-import Studentdiscount from '../models/Studentdiscount'
-import Settlement from '../models/Settlement'
+import { mailer } from '../../config/mailer.js'
+import { emergepay } from '../../config/emergepay.js'
+import Recurrence from '../models/Recurrence.js'
+import Emergepaytransaction from '../models/Emergepaytransaction.js'
+import Receivablediscounts from '../models/Receivablediscounts.js'
+import Studentdiscount from '../models/Studentdiscount.js'
+import Settlement from '../models/Settlement.js'
 import {
     settlement,
     verifyAndCancelTextToPayTransaction,
     verifyAndCreateTextToPayTransaction,
-} from './EmergepayController'
-import Refund from '../models/Refund'
-import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
-import Feeadjustment from '../models/Feeadjustment'
+} from './EmergepayController.js'
+import Refund from '../models/Refund.js'
+import { verifyAndCancelParcelowPaymentLink } from './ParcelowController.js'
+import Feeadjustment from '../models/Feeadjustment.js'
 import { resolve } from 'path'
-import Milauser from '../models/Milauser'
-import Textpaymenttransaction from '../models/Textpaymenttransaction'
-import Renegociation from '../models/Renegociation'
-import Maillog from '../models/Maillog'
-import { BeforeDueDateMail } from '../views/mails/BeforeDueDateMail'
-import { OnDueDateMail } from '../views/mails/OnDueDateMail'
-import { AfterDueDateMail } from '../views/mails/AfterDueDateMail'
-import { FeeChargedMail } from '../views/mails/FeeChargedMail'
-import { generateRecurrenceReceivables } from './RecurrenceController'
+import Milauser from '../models/Milauser.js'
+import Textpaymenttransaction from '../models/Textpaymenttransaction.js'
+import Renegociation from '../models/Renegociation.js'
+import Maillog from '../models/Maillog.js'
+import { BeforeDueDateMail } from '../views/mails/BeforeDueDateMail.js'
+import { OnDueDateMail } from '../views/mails/OnDueDateMail.js'
+import { AfterDueDateMail } from '../views/mails/AfterDueDateMail.js'
+import { FeeChargedMail } from '../views/mails/FeeChargedMail.js'
+import { generateRecurrenceReceivables } from './RecurrenceController.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
-import Chartofaccount from '../models/Chartofaccount'
-import { getDb } from '../../config/mongodb'
+} from '../functions/index.js'
+import Chartofaccount from '../models/Chartofaccount.js'
+import { getDb } from '../../config/mongodb.js'
 
-const xl = require('excel4node')
-const fs = require('fs')
+import xl from 'excel4node'
+import fs from 'fs'
 
 export async function createRegistrationFeeReceivable({
     issuer_id,
@@ -1351,6 +1351,7 @@ class ReceivableController {
                 orderASC = defaultOrderBy.asc,
                 search = '',
                 limit = 10,
+                type = '',
                 page = 1,
             } = req.query
 
@@ -1414,6 +1415,24 @@ class ReceivableController {
                 },
             ]
 
+            let typeSearches = null
+
+            if (type) {
+                if (type === 'pending') {
+                    typeSearches = {
+                        status: {
+                            [Op.in]: ['Pending', 'Parcial Paid'],
+                        },
+                    }
+                } else if (type === 'paid') {
+                    typeSearches = {
+                        status: {
+                            [Op.in]: ['Paid', 'Parcial Paid'],
+                        },
+                    }
+                }
+            }
+
             const { count, rows } = await Receivable.findAndCountAll({
                 include: [
                     {
@@ -1469,6 +1488,7 @@ class ReceivableController {
                     canceled_at: null,
                     ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
+                    ...typeSearches,
                 },
                 attributes: [
                     'id',
@@ -1816,15 +1836,9 @@ class ReceivableController {
                 }
             )
             const settlement = await Settlement.findByPk(settlements[0].id)
-            await settlement.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await settlement.destroy({
+                transaction: t,
+            })
             t.commit()
             return res.json(receivableExists)
         } catch (err) {

@@ -1,1 +1,3 @@
-export { default as InvoiceMail } from './Mails/Invoice.js'
+module.exports = {
+    InvoiceMail: require('./Mails/Invoice.js'),
+}

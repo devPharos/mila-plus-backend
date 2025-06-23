@@ -1,10 +1,10 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Student from '../models/Student'
-import Attendance from '../models/Attendance'
-import Studentgroupclass from '../models/Studentgroupclass'
-import Studentgroup from '../models/Studentgroup'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Student from '../models/Student.js'
+import Attendance from '../models/Attendance.js'
+import Studentgroupclass from '../models/Studentgroupclass.js'
+import Studentgroup from '../models/Studentgroup.js'
 
 const { Op } = Sequelize
 

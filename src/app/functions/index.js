@@ -1,9 +1,9 @@
 import { Op } from 'sequelize'
-import Student from '../models/Student'
-import Studentdiscount from '../models/Studentdiscount'
-import { isUUIDv4 } from '../controllers/ReceivableController'
-import Issuer from '../models/Issuer'
-import Merchants from '../models/Merchants'
+import Student from '../models/Student.js'
+import Studentdiscount from '../models/Studentdiscount.js'
+import { isUUIDv4 } from '../controllers/ReceivableController.js'
+import Issuer from '../models/Issuer.js'
+import Merchants from '../models/Merchants.js'
 
 export function randomPassword() {
     const length = 10

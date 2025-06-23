@@ -1,12 +1,18 @@
 import { resolve } from 'path'
-import Enrollment from '../../models/Enrollment'
-import Enrollmentsponsor from '../../models/Enrollmentsponsor'
-import Enrollmentdependent from '../../models/Enrollmentdependent'
-import File from '../../models/File'
-import Student from '../../models/Student'
+import Enrollment from '../../models/Enrollment.js'
+import Enrollmentsponsor from '../../models/Enrollmentsponsor.js'
+import Enrollmentdependent from '../../models/Enrollmentdependent.js'
+import File from '../../models/File.js'
+import Student from '../../models/Student.js'
 import { format, parseISO } from 'date-fns'
-import { header, inputLine, footer, signatureLine, headerLine } from './default'
-const fs = require('fs')
+import {
+    header,
+    inputLine,
+    footer,
+    signatureLine,
+    headerLine,
+} from './default.js'
+import fs from 'fs'
 
 export default async function affidavitSupport(doc = null, id = '') {
     const sponsor = await Enrollmentsponsor.findByPk(id)

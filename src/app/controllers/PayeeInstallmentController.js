@@ -1,12 +1,12 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import PaymentMethod from '../models/PaymentMethod'
-import ChartOfAccount from '../models/Chartofaccount'
-import PaymentCriteria from '../models/PaymentCriteria'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import PaymentMethod from '../models/PaymentMethod.js'
+import ChartOfAccount from '../models/Chartofaccount.js'
+import PaymentCriteria from '../models/PaymentCriteria.js'
 
-import PayeeInstallment from '../models/PayeeInstallment'
-import Payee from '../models/Payee'
+import PayeeInstallment from '../models/PayeeInstallment.js'
+import Payee from '../models/Payee.js'
 
 function calculateTotalInstallments(
     startDate,
@@ -424,11 +424,8 @@ class PayeeInstallmentController {
         )
 
         for (const installment of canceledInstallments) {
-            await installment.update({
-                canceled_at: new Date(),
-                canceled_by: updatedBy,
-
-                updated_by: updatedBy,
+            await installment.destroy({
+                transaction: t,
             })
         }
     }

@@ -1,13 +1,13 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Languagemode from '../models/Languagemode'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Languagemode from '../models/Languagemode.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
+} from '../functions/index.js'
 
 const { Op } = Sequelize
 

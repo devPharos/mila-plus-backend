@@ -1,39 +1,37 @@
 import { resolve } from 'path'
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Enrollment from '../models/Enrollment'
-import Enrollmentdocument from '../models/Enrollmentdocument'
-import Enrollmentdependent from '../models/Enrollmentdependent'
-import Enrollmenttimeline from '../models/Enrollmenttimeline'
-import Enrollmentemergency from '../models/Enrollmentemergency'
-import Enrollmentsponsor from '../models/Enrollmentsponsor'
-import Enrollmenttransfers from '../models/Enrollmenttransfer'
-import Student from '../models/Student'
-import Agent from '../models/Agent'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Enrollment from '../models/Enrollment.js'
+import Enrollmentdocument from '../models/Enrollmentdocument.js'
+import Enrollmentdependent from '../models/Enrollmentdependent.js'
+import Enrollmenttimeline from '../models/Enrollmenttimeline.js'
+import Enrollmentemergency from '../models/Enrollmentemergency.js'
+import Enrollmentsponsor from '../models/Enrollmentsponsor.js'
+import Enrollmenttransfers from '../models/Enrollmenttransfer.js'
+import Student from '../models/Student.js'
+import Agent from '../models/Agent.js'
 import { addDays, format } from 'date-fns'
-import Processtype from '../models/Processtype'
-import Processsubstatus from '../models/Processsubstatus'
-import File from '../models/File'
-import { mailer } from '../../config/mailer'
-import Filial from '../models/Filial'
-import Enrollmenttransfer from '../models/Enrollmenttransfer'
-import MailLayout from '../../Mails/MailLayout'
+import Processtype from '../models/Processtype.js'
+import Processsubstatus from '../models/Processsubstatus.js'
+import File from '../models/File.js'
+import { mailer } from '../../config/mailer.js'
+import Filial from '../models/Filial.js'
+import MailLayout from '../../Mails/MailLayout.js'
 import {
     FRONTEND_URL,
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
-import mailEnrollmentToStudent from '../../Mails/Processes/Enrollment Process/toStudent'
-import mailTransferToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent'
-import mailPlacementTestToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent'
-import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument'
-import Enrollmentsponsordocument from '../models/Enrollmentsponsordocument'
-import { searchPromise } from '../functions/searchPromise'
-const client = require('https')
-const fs = require('fs')
+} from '../functions/index.js'
+import mailEnrollmentToStudent from '../../Mails/Processes/Enrollment Process/toStudent.js'
+import mailTransferToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent.js'
+import mailPlacementTestToStudent from '../../Mails/Processes/Transfer Eligibility/toStudent.js'
+import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument.js'
+import Enrollmentsponsordocument from '../models/Enrollmentsponsordocument.js'
+import client from 'https'
+import fs from 'fs'
 
 const { Op } = Sequelize
 
@@ -420,24 +418,6 @@ class EnrollmentController {
                 req.body.enrollmentdependents.length > 0
             ) {
                 const { enrollmentdependents } = req.body
-                // const existingDependents = await Enrollmentdependent.findAll({
-                //   where: {
-                //     enrollment_id: enrollment_id,
-                //     canceled_at: null,
-                //   },
-                // });
-                // if (existingDependents) {
-                //   existingDependents.map((dependent) => {
-                //     promises.push(
-                //       dependent.update(
-                //         { canceled_at: new Date(), canceled_by: 2 },
-                //         {
-                //           transaction: t,
-                //         }
-                //       )
-                //     );
-                //   });
-                // }
                 enrollmentdependents.map((dependent) => {
                     promises.push(
                         Enrollmentdependent.update(
@@ -487,12 +467,9 @@ class EnrollmentController {
                 if (existingSponsors) {
                     existingSponsors.map((sponsor) => {
                         promises.push(
-                            sponsor.update(
-                                { canceled_at: new Date(), canceled_by: 2 },
-                                {
-                                    transaction: t,
-                                }
-                            )
+                            sponsor.destroy({
+                                transaction: t,
+                            })
                         )
                     })
                 }
@@ -1099,15 +1076,9 @@ class EnrollmentController {
                     }
                 )
             } else {
-                await enrollment.update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                await enrollment.destroy({
+                    transaction: t,
+                })
             }
 
             t.commit()

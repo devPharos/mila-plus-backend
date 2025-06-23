@@ -1,12 +1,10 @@
 /* eslint-disable no-unused-expressions */
 /* eslint-disable array-callback-return */
 import { Op } from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import MenuHierarchy from '../models/MenuHierarchy'
-import UserGroupXUser from '../models/UserGroupXUser'
-import UserGroup from '../models/UserGroup'
-import MenuHierarchyXGroups from '../models/MenuHierarchyXGroups'
+import MenuHierarchy from '../models/MenuHierarchy.js'
+import UserGroupXUser from '../models/UserGroupXUser.js'
+import UserGroup from '../models/UserGroup.js'
+import MenuHierarchyXGroups from '../models/MenuHierarchyXGroups.js'
 
 class MenuHierarchyController {
     async index(req, res) {

@@ -1,8 +1,8 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Filial from '../models/Filial'
-import Calendarday from '../models/Calendarday'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Filial from '../models/Filial.js'
+import Calendarday from '../models/Calendarday.js'
 
 const { Op } = Sequelize
 

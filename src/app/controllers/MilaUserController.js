@@ -1,15 +1,15 @@
 import Sequelize from 'sequelize'
 import { v4 as uuidv4 } from 'uuid'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Milauser from '../models/Milauser'
-import Filial from '../models/Filial'
-import UserGroupXUser from '../models/UserGroupXUser'
-import UserGroup from '../models/UserGroup'
-import UserXFilial from '../models/UserXFilial'
-import Staff from '../models/Staff'
-import { mailer } from '../../config/mailer'
-import MailLayout from '../../Mails/MailLayout'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Milauser from '../models/Milauser.js'
+import Filial from '../models/Filial.js'
+import UserGroupXUser from '../models/UserGroupXUser.js'
+import UserGroup from '../models/UserGroup.js'
+import UserXFilial from '../models/UserXFilial.js'
+import Staff from '../models/Staff.js'
+import { mailer } from '../../config/mailer.js'
+import MailLayout from '../../Mails/MailLayout.js'
 import {
     FRONTEND_URL,
     generateSearchByFields,
@@ -17,7 +17,7 @@ import {
     randomPassword,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
+} from '../functions/index.js'
 
 const { Op } = Sequelize
 
@@ -376,19 +376,16 @@ class MilaUserController {
                 })
             }
 
-            await UserGroupXUser.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
+            const userGroupXUser = await UserGroupXUser.findOne({
+                where: {
+                    user_id: userExists.id,
+                    canceled_at: null,
                 },
-                {
-                    where: {
-                        user_id: userExists.id,
-                        canceled_at: null,
-                    },
-                    transaction: t,
-                }
-            )
+            })
+
+            await userGroupXUser.destroy({
+                transaction: t,
+            })
 
             await UserGroupXUser.create(
                 {
@@ -402,20 +399,16 @@ class MilaUserController {
                 }
             )
 
-            await UserXFilial.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
+            const userXFilial = await UserXFilial.findOne({
+                where: {
+                    user_id: userExists.id,
+                    canceled_at: null,
                 },
-                {
-                    where: {
-                        user_id: userExists.id,
-                        [Op.not]: {
-                            filial_id: 1,
-                        },
-                    },
-                }
-            )
+            })
+
+            await userXFilial.destroy({
+                transaction: t,
+            })
 
             const addedFilials = []
             for (let { filial } of filials) {

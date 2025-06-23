@@ -1,10 +1,10 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Enrollmentdocument from '../models/Enrollmentdocument'
-import File from '../models/File'
-import Enrollment from '../models/Enrollment'
-import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Enrollmentdocument from '../models/Enrollmentdocument.js'
+import File from '../models/File.js'
+import Enrollment from '../models/Enrollment.js'
+import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument.js'
 
 const { Op } = Sequelize
 
@@ -251,23 +251,14 @@ class EnrollmentdocumentController {
                 })
             }
 
-            await document.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await document.destroy({
+                transaction: t,
+            })
 
-            await File.update(
-                { canceled_at: new Date(), canceled_by: req.userId },
-                {
-                    where: { id: document.file_id },
-                    transaction: t,
-                }
-            )
+            const file = await File.findByPk(document.file_id)
+            await file.destroy({
+                transaction: t,
+            })
 
             t.commit()
 
@@ -301,23 +292,14 @@ class EnrollmentdocumentController {
                 })
             }
 
-            await document.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await document.destroy({
+                transaction: t,
+            })
 
-            await File.update(
-                { canceled_at: new Date(), canceled_by: req.userId },
-                {
-                    where: { id: document.file_id },
-                    transaction: t,
-                }
-            )
+            const file = await File.findByPk(document.file_id)
+            await file.destroy({
+                transaction: t,
+            })
 
             t.commit()
 

@@ -1,26 +1,26 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Issuer from '../models/Issuer'
-import Student from '../models/Student'
-import Filial from '../models/Filial'
-import Enrollment from '../models/Enrollment'
-import Enrollmenttimeline from '../models/Enrollmenttimeline'
-import Textpaymenttransaction from '../models/Textpaymenttransaction'
-import { mailer } from '../../config/mailer'
-import Receivable from '../models/Receivable'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Issuer from '../models/Issuer.js'
+import Student from '../models/Student.js'
+import Filial from '../models/Filial.js'
+import Enrollment from '../models/Enrollment.js'
+import Enrollmenttimeline from '../models/Enrollmenttimeline.js'
+import Textpaymenttransaction from '../models/Textpaymenttransaction.js'
+import { mailer } from '../../config/mailer.js'
+import Receivable from '../models/Receivable.js'
 import { addDays, format, parseISO } from 'date-fns'
-import { emergepay } from '../../config/emergepay'
-import { createIssuerFromStudent } from './IssuerController'
+import { emergepay } from '../../config/emergepay.js'
+import { createIssuerFromStudent } from './IssuerController.js'
 import {
     cancelInvoice,
     createRegistrationFeeReceivable,
     createTuitionFeeReceivable,
-} from './ReceivableController'
-import PaymentMethod from '../models/PaymentMethod'
+} from './ReceivableController.js'
+import PaymentMethod from '../models/PaymentMethod.js'
 import axios from 'axios'
-import Parcelowpaymentlink from '../models/Parcelowpaymentlink'
-import { parcelowAPI } from '../../config/parcelowAPI'
+import Parcelowpaymentlink from '../models/Parcelowpaymentlink.js'
+import { parcelowAPI } from '../../config/parcelowAPI.js'
 
 const { Op } = Sequelize
 

@@ -1,19 +1,19 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import UserGroup from '../models/UserGroup'
-import Filialtype from '../models/Filialtype'
-import MenuHierarchyXGroups from '../models/MenuHierarchyXGroups'
-import MenuHierarchy from '../models/MenuHierarchy'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import UserGroup from '../models/UserGroup.js'
+import Filialtype from '../models/Filialtype.js'
+import MenuHierarchyXGroups from '../models/MenuHierarchyXGroups.js'
+import MenuHierarchy from '../models/MenuHierarchy.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
-import Filial from '../models/Filial'
-import Milauser from '../models/Milauser'
-import UserGroupXUser from '../models/UserGroupXUser'
+} from '../functions/index.js'
+import Filial from '../models/Filial.js'
+import Milauser from '../models/Milauser.js'
+import UserGroupXUser from '../models/UserGroupXUser.js'
 
 const { Op } = Sequelize
 
@@ -423,15 +423,9 @@ class UserGroupController {
                 })
             }
 
-            await userGroup.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await userGroup.destroy({
+                transaction: t,
+            })
 
             t.commit()
 

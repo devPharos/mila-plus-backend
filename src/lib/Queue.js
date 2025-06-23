@@ -1,6 +1,6 @@
-import { Queue } from 'bullmq'
-import redisConnection from '../config/redis'
-import * as jobs from '../jobs'
+const { Queue } = require('bullmq')
+const redisConnection = require('../config/redis.js')
+const jobs = require('../jobs/index.js')
 
 const queues = Object.values(jobs).map((job) => ({
     bull: new Queue(job.key, { connection: redisConnection }),
@@ -9,7 +9,7 @@ const queues = Object.values(jobs).map((job) => ({
     options: job.options,
 }))
 
-export default {
+module.exports = {
     queues,
     add(name, data) {
         const queue = this.queues.find((q) => q.name === name)

@@ -1,9 +1,9 @@
-import { FRONTEND_URL } from '../../../app/functions'
-import Enrollment from '../../../app/models/Enrollment'
-import Filial from '../../../app/models/Filial'
-import Student from '../../../app/models/Student'
-import { mailer } from '../../../config/mailer'
-import MailLayout from '../../MailLayout'
+import { FRONTEND_URL } from '../../../app/functions/index.js'
+import Enrollment from '../../../app/models/Enrollment.js'
+import Filial from '../../../app/models/Filial.js'
+import Student from '../../../app/models/Student.js'
+import { mailer } from '../../../config/mailer.js'
+import MailLayout from '../../MailLayout.js'
 
 export default async function mailTransferToStudent({
     enrollment_id = null,

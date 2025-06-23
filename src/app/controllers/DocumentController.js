@@ -1,13 +1,13 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Document from '../models/Document'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Document from '../models/Document.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
+} from '../functions/index.js'
 
 const { Op } = Sequelize
 
@@ -213,15 +213,9 @@ class DocumentController {
                     }
                 )
             } else {
-                await document.update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                await document.destroy({
+                    transaction: t,
+                })
             }
 
             t.commit()

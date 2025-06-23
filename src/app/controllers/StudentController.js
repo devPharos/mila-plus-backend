@@ -1,43 +1,43 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Student from '../models/Student'
-import Filial from '../models/Filial'
-import Studentinactivation from '../models/Studentinactivation'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Student from '../models/Student.js'
+import Filial from '../models/Filial.js'
+import Studentinactivation from '../models/Studentinactivation.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     handleStudentDiscounts,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
-import Receivable from '../models/Receivable'
-import Issuer from '../models/Issuer'
-import Recurrence from '../models/Recurrence'
-import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
-import { verifyAndCancelTextToPayTransaction } from './EmergepayController'
-import Processtype from '../models/Processtype'
-import Processsubstatus from '../models/Processsubstatus'
-import Staff from '../models/Staff'
-import Studentgroup from '../models/Studentgroup'
-import StudentXGroup from '../models/StudentXGroup'
+} from '../functions/index.js'
+import Receivable from '../models/Receivable.js'
+import Issuer from '../models/Issuer.js'
+import Recurrence from '../models/Recurrence.js'
+import { verifyAndCancelParcelowPaymentLink } from './ParcelowController.js'
+import { verifyAndCancelTextToPayTransaction } from './EmergepayController.js'
+import Processtype from '../models/Processtype.js'
+import Processsubstatus from '../models/Processsubstatus.js'
+import Staff from '../models/Staff.js'
+import Studentgroup from '../models/Studentgroup.js'
+import StudentXGroup from '../models/StudentXGroup.js'
 import { format, parseISO, subDays } from 'date-fns'
-import Studentprogram from '../models/Studentprogram'
-import File from '../models/File'
+import Studentprogram from '../models/Studentprogram.js'
+import File from '../models/File.js'
 import {
     createStudentAttendances,
     putInClass,
     removeStudentAttendances,
-} from './StudentgroupController'
-import Vacation from '../models/Vacation'
-import VacationFiles from '../models/VacationFiles'
-import MedicalExcuse from '../models/MedicalExcuse'
-import MedicalExcuseFiles from '../models/MedicalExcuseFiles'
-import Attendance from '../models/Attendance'
-import Studentgroupclass from '../models/Studentgroupclass'
+} from './StudentgroupController.js'
+import Vacation from '../models/Vacation.js'
+import VacationFiles from '../models/VacationFiles.js'
+import MedicalExcuse from '../models/MedicalExcuse.js'
+import MedicalExcuseFiles from '../models/MedicalExcuseFiles.js'
+import Attendance from '../models/Attendance.js'
+import Studentgroupclass from '../models/Studentgroupclass.js'
 import { resolve } from 'path'
-const xl = require('excel4node')
-const fs = require('fs')
+import xl from 'excel4node'
+import fs from 'fs'
 
 const { Op } = Sequelize
 
@@ -470,7 +470,9 @@ class StudentController {
                 },
             })
 
+            console.log('inactivate', date, student.id)
             if (issuer) {
+                console.log('issuer', issuer.id)
                 const receivables = await Receivable.findAll({
                     where: {
                         issuer_id: issuer.id,
@@ -482,17 +484,21 @@ class StudentController {
                 })
 
                 for (let receivable of receivables) {
-                    await verifyAndCancelParcelowPaymentLink(receivable.id)
+                    console.log('removing...')
+                    // await verifyAndCancelParcelowPaymentLink(receivable.id)
                     await verifyAndCancelTextToPayTransaction(receivable.id)
                     await receivable.update(
                         {
-                            canceled_at: new Date(),
                             canceled_by: req.userId,
                         },
                         {
                             transaction: t,
                         }
                     )
+                    await receivable.destroy({
+                        transaction: t,
+                    })
+                    console.log('receivable removed', receivable.id)
                 }
 
                 await Recurrence.update(
@@ -708,15 +714,9 @@ class StudentController {
 
             if (activeStudentGroup) {
                 if (activeStudentGroup.dataValues.start_date === date) {
-                    await activeStudentGroup.update(
-                        {
-                            canceled_at: new Date(),
-                            canceled_by: req.userId,
-                        },
-                        {
-                            transaction: t,
-                        }
-                    )
+                    await activeStudentGroup.destroy({
+                        transaction: t,
+                    })
                 } else {
                     await activeStudentGroup.update(
                         {
@@ -811,9 +811,8 @@ class StudentController {
 
             const transfer = await StudentXGroup.findByPk(transfer_id)
 
-            await transfer.update({
-                canceled_at: new Date(),
-                canceled_by: req.userId,
+            await transfer.destroy({
+                transaction: t,
             })
 
             return res.status(200).json(transfer)
@@ -1033,30 +1032,22 @@ class StudentController {
 
             const fileIds = vacationFiles.map((vf) => vf.file_id)
 
-            await vacation.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await vacation.destroy({
+                transaction: t,
+            })
 
-            await File.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    where: {
-                        id: fileIds,
+            const files = await File.findAll({
+                where: {
+                    id: {
+                        [Op.in]: fileIds,
                     },
                 },
-                {
+            })
+            for (let file of files) {
+                await file.destroy({
                     transaction: t,
-                }
-            )
+                })
+            }
 
             const attendances = await Attendance.findAll({
                 include: [
@@ -1309,30 +1300,22 @@ class StudentController {
 
             const fileIds = medicalExcusesFiles.map((vf) => vf.file_id)
 
-            await medicalexcuse.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await medicalexcuse.destroy({
+                transaction: t,
+            })
 
-            await File.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    where: {
-                        id: fileIds,
+            const files = await File.findAll({
+                where: {
+                    id: {
+                        [Op.in]: fileIds,
                     },
                 },
-                {
+            })
+            for (let file of files) {
+                await file.destroy({
                     transaction: t,
-                }
-            )
+                })
+            }
 
             const attendances = await Attendance.findAll({
                 include: [

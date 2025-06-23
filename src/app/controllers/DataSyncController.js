@@ -1,22 +1,21 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Document from '../models/Document'
-import Student from '../models/Student'
-import Processtype from '../models/Processtype'
-import Processsubstatus from '../models/Processsubstatus'
-import Level from '../models/Level'
-import Filial from '../models/Filial'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Student from '../models/Student.js'
+import Processtype from '../models/Processtype.js'
+import Processsubstatus from '../models/Processsubstatus.js'
+import Level from '../models/Level.js'
+import Filial from '../models/Filial.js'
 import { unescape } from 'node:querystring'
-import Receivable from '../models/Receivable'
-import Emergepaytransaction from '../models/Emergepaytransaction'
-import PaymentMethod from '../models/PaymentMethod'
-import { settlement } from './EmergepayController'
+import Receivable from '../models/Receivable.js'
+import Emergepaytransaction from '../models/Emergepaytransaction.js'
+import PaymentMethod from '../models/PaymentMethod.js'
+import { settlement } from './EmergepayController.js'
 import { format } from 'date-fns/format'
 import { parseISO } from 'date-fns'
 
 const { Op } = Sequelize
-const fs = require('node:fs')
+import fs from 'fs'
 
 function capitalizeFirstLetter(val) {
     let vals = String(val).split(' ')

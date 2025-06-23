@@ -1,15 +1,15 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Classroom from '../models/Classroom'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Classroom from '../models/Classroom.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
-import Filial from '../models/Filial'
-import Studentgroup from '../models/Studentgroup'
+} from '../functions/index.js'
+import Filial from '../models/Filial.js'
+import Studentgroup from '../models/Studentgroup.js'
 
 const { Op } = Sequelize
 

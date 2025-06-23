@@ -1,16 +1,15 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Bankaccounts from '../models/BankAccount'
-import { searchPromise } from '../functions/searchPromise'
-import Bank from '../models/Bank'
-import Filial from '../models/Filial'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Bankaccounts from '../models/BankAccount.js'
+import Bank from '../models/Bank.js'
+import Filial from '../models/Filial.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
+} from '../functions/index.js'
 
 const { Op } = Sequelize
 

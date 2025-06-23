@@ -1,14 +1,14 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Bank from '../models/Bank'
-import { searchPromise } from '../functions/searchPromise'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Bank from '../models/Bank.js'
+import { searchPromise } from '../functions/searchPromise.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
+} from '../functions/index.js'
 
 const { Op } = Sequelize
 

@@ -1,20 +1,20 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Workload from '../models/Workload'
-import Level from '../models/Level'
-import Languagemode from '../models/Languagemode'
-import Programcategory from '../models/Programcategory'
-import Paceguide from '../models/Paceguide'
-import File from '../models/File'
-import { app } from '../../config/firebase'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Workload from '../models/Workload.js'
+import Level from '../models/Level.js'
+import Languagemode from '../models/Languagemode.js'
+import Programcategory from '../models/Programcategory.js'
+import Paceguide from '../models/Paceguide.js'
+import File from '../models/File.js'
+import { app } from '../../config/firebase.js'
 import { deleteObject, getStorage, ref } from 'firebase/storage'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
+} from '../functions/index.js'
 
 const { Op } = Sequelize
 
@@ -327,28 +327,17 @@ class WorkloadController {
                 hours_per_day ||
                 (paceGuides && paceGuides.length > 0)
             ) {
-                Paceguide.findAll({
+                const paces = await Paceguide.findAll({
                     where: {
                         workload_id,
                         canceled_at: null,
                     },
-                }).then((paces) => {
-                    // Criar versão nova
-                    paces.forEach((pace) => {
-                        Paceguide.update(
-                            {
-                                canceled_at: new Date(),
-                                canceled_by: req.userId,
-                            },
-                            {
-                                where: {
-                                    company_id: 1,
-                                    id: pace.dataValues.id,
-                                },
-                            }
-                        )
-                    })
                 })
+                for (let pace of paces) {
+                    await pace.destroy({
+                        transaction: t,
+                    })
+                }
             }
 
             if (!days_per_week && !hours_per_day && paceGuides.length > 0) {

@@ -1,9 +1,9 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Staffdocument from '../models/Staffdocument'
-import File from '../models/File'
-import Staff from '../models/Staff'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Staffdocument from '../models/Staffdocument.js'
+import File from '../models/File.js'
+import Staff from '../models/Staff.js'
 
 const { Op } = Sequelize
 
@@ -83,23 +83,14 @@ class StaffDocumentController {
                 })
             }
 
-            await document.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await document.destroy({
+                transaction: t,
+            })
 
-            await File.update(
-                { canceled_at: new Date(), canceled_by: req.userId },
-                {
-                    where: { id: document.file_id },
-                    transaction: t,
-                }
-            )
+            const file = await File.findByPk(document.file_id)
+            await file.destroy({
+                transaction: t,
+            })
 
             t.commit()
 

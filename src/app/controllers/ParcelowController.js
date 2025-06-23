@@ -1,9 +1,9 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Receivable from '../models/Receivable'
-import { parcelowAPI } from '../../config/parcelowAPI'
-import Parcelowpaymentlink from '../models/Parcelowpaymentlink'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Receivable from '../models/Receivable.js'
+import { parcelowAPI } from '../../config/parcelowAPI.js'
+import Parcelowpaymentlink from '../models/Parcelowpaymentlink.js'
 
 const { Op } = Sequelize
 

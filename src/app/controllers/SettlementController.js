@@ -1,26 +1,24 @@
 import Sequelize, { Op } from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Receivable from '../models/Receivable'
-import PaymentMethod from '../models/PaymentMethod'
-import ChartOfAccount from '../models/Chartofaccount'
-import PaymentCriteria from '../models/PaymentCriteria'
-import Filial from '../models/Filial'
-import Issuer from '../models/Issuer'
-import { searchPromise } from '../functions/searchPromise'
-import Receivable from '../models/Receivable'
-import Settlement from '../models/Settlement'
-import Receivablediscounts from '../models/Receivablediscounts'
-import Payee from '../models/Payee'
-import Merchants from '../models/Merchants'
-import Payeesettlement from '../models/Payeesettlement'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Receivable from '../models/Receivable.js'
+import PaymentMethod from '../models/PaymentMethod.js'
+import ChartOfAccount from '../models/Chartofaccount.js'
+import PaymentCriteria from '../models/PaymentCriteria.js'
+import Filial from '../models/Filial.js'
+import Issuer from '../models/Issuer.js'
+import Settlement from '../models/Settlement.js'
+import Receivablediscounts from '../models/Receivablediscounts.js'
+import Payee from '../models/Payee.js'
+import Merchants from '../models/Merchants.js'
+import Payeesettlement from '../models/Payeesettlement.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     getIssuerByName,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
+} from '../functions/index.js'
 
 class SettlementController {
     async index(req, res) {
@@ -257,15 +255,9 @@ class SettlementController {
             }
 
             await settlement
-                .update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                .destroy({
+                    transaction: t,
+                })
                 .then(async () => {
                     const discounts = await Receivablediscounts.findAll({
                         where: {
@@ -285,9 +277,8 @@ class SettlementController {
                         } else {
                             total_discount += discount.dataValues.value
                         }
-                        await discount.update({
-                            canceled_at: new Date(),
-                            canceled_by: req.userId,
+                        await discount.destroy({
+                            transaction: t,
                         })
                     }
                     if (settlement.dataValues.amount === 0) {

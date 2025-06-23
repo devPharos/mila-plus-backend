@@ -1,6 +1,6 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import File from '../models/File'
+import MailLog from '../../Mails/MailLog.js'
+import File from '../models/File.js'
 
 const { Op } = Sequelize
 

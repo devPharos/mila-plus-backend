@@ -1,9 +1,8 @@
-// Carrega variáveis de ambiente
-import 'dotenv/config'
+require('dotenv').config() // Note a sintaxe diferente aqui!
 
-import { Worker } from 'bullmq'
-import redisConnection from './src/config/redis.js'
-import * as jobs from './src/jobs/index.js'
+const { Worker } = require('bullmq')
+const redisConnection = require('./src/config/redis.js')
+const jobs = require('./src/jobs/index.js')
 
 const jobList = Object.values(jobs)
 

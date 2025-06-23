@@ -1,17 +1,17 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Student from '../models/Student'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Student from '../models/Student.js'
 import * as Yup from 'yup'
-import Enrollment from '../models/Enrollment'
-import Enrollmenttimeline from '../models/Enrollmenttimeline'
-import Processtype from '../models/Processtype'
-import Processsubstatus from '../models/Processsubstatus'
-import Agent from '../models/Agent'
-import { mailer } from '../../config/mailer'
+import Enrollment from '../models/Enrollment.js'
+import Enrollmenttimeline from '../models/Enrollmenttimeline.js'
+import Processtype from '../models/Processtype.js'
+import Processsubstatus from '../models/Processsubstatus.js'
+import Agent from '../models/Agent.js'
+import { mailer } from '../../config/mailer.js'
 import { addDays, format } from 'date-fns'
-import MailLayout from '../../Mails/MailLayout'
-import Filial from '../models/Filial'
+import MailLayout from '../../Mails/MailLayout.js'
+import Filial from '../models/Filial.js'
 import {
     FRONTEND_URL,
     generateSearchByFields,
@@ -19,11 +19,11 @@ import {
     handleStudentDiscounts,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
-import { searchPromise } from '../functions/searchPromise'
-import Enrollmentsponsor from '../models/Enrollmentsponsor'
-import Receivable from '../models/Receivable'
-import Issuer from '../models/Issuer'
+} from '../functions/index.js'
+import { searchPromise } from '../functions/searchPromise.js'
+import Enrollmentsponsor from '../models/Enrollmentsponsor.js'
+import Receivable from '../models/Receivable.js'
+import Issuer from '../models/Issuer.js'
 
 const { Op } = Sequelize
 

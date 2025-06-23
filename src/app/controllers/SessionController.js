@@ -1,12 +1,12 @@
 import Sequelize from 'sequelize'
 import jwt from 'jsonwebtoken'
 import * as Yup from 'yup'
-import authConfig from '../../config/auth'
-import Milauser from '../models/Milauser'
-import Filial from '../models/Filial'
-import UserGroup from '../models/UserGroup'
-import UserGroupXUser from '../models/UserGroupXUser'
-import UserXFilial from '../models/UserXFilial'
+import authConfig from '../../config/auth.js'
+import Milauser from '../models/Milauser.js'
+import Filial from '../models/Filial.js'
+import UserGroup from '../models/UserGroup.js'
+import UserGroupXUser from '../models/UserGroupXUser.js'
+import UserXFilial from '../models/UserXFilial.js'
 
 const { Op } = Sequelize
 

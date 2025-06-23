@@ -1,12 +1,12 @@
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Recurrence from '../models/Recurrence'
-import Student from '../models/Student'
-import Issuer from '../models/Issuer'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Recurrence from '../models/Recurrence.js'
+import Student from '../models/Student.js'
+import Issuer from '../models/Issuer.js'
 import { Op, Sequelize } from 'sequelize'
-import { createIssuerFromStudent } from './IssuerController'
-import FilialPriceList from '../models/FilialPriceList'
-import Receivable from '../models/Receivable'
+import { createIssuerFromStudent } from './IssuerController.js'
+import FilialPriceList from '../models/FilialPriceList.js'
+import Receivable from '../models/Receivable.js'
 import {
     addDays,
     addMonths,
@@ -16,23 +16,23 @@ import {
     parseISO,
     subDays,
 } from 'date-fns'
-import PaymentCriteria from '../models/PaymentCriteria'
+import PaymentCriteria from '../models/PaymentCriteria.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     handleStudentDiscounts,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
-import Studentdiscount from '../models/Studentdiscount'
-import FilialDiscountList from '../models/FilialDiscountList'
-import Receivablediscounts from '../models/Receivablediscounts'
-import { applyDiscounts } from './ReceivableController'
-import { verifyAndCancelParcelowPaymentLink } from './ParcelowController'
-import { verifyAndCancelTextToPayTransaction } from './EmergepayController'
-import Filial from '../models/Filial'
-import PaymentMethod from '../models/PaymentMethod'
-import Chartofaccount from '../models/Chartofaccount'
+} from '../functions/index.js'
+import Studentdiscount from '../models/Studentdiscount.js'
+import FilialDiscountList from '../models/FilialDiscountList.js'
+import Receivablediscounts from '../models/Receivablediscounts.js'
+import { applyDiscounts } from './ReceivableController.js'
+import { verifyAndCancelParcelowPaymentLink } from './ParcelowController.js'
+import { verifyAndCancelTextToPayTransaction } from './EmergepayController.js'
+import Filial from '../models/Filial.js'
+import PaymentMethod from '../models/PaymentMethod.js'
+import Chartofaccount from '../models/Chartofaccount.js'
 
 export async function generateRecurrenceReceivables({
     recurrence = null,
@@ -131,9 +131,8 @@ export async function generateRecurrenceReceivables({
                     })
                     await verifyAndCancelTextToPayTransaction(receivable.id)
                     await verifyAndCancelParcelowPaymentLink(receivable.id)
-                    await receivable.update({
-                        canceled_at: new Date(),
-                        canceled_by: 2,
+                    await receivable.destroy({
+                        transaction: t,
                     })
                 }
             }
@@ -718,29 +717,16 @@ class RecurrenceController {
                 },
             })
 
-            await recurrence.update(
-                {
-                    active: false,
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await recurrence.destroy({
+                transaction: t,
+            })
 
             for (let receivable of receivables) {
                 await verifyAndCancelParcelowPaymentLink(receivable.id)
                 await verifyAndCancelTextToPayTransaction(receivable.id)
-                await receivable.update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                await receivable.destroy({
+                    transaction: t,
+                })
             }
             t.commit()
             return res.json(recurrence)

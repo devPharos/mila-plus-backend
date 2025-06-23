@@ -101,9 +101,10 @@ class App {
             schedule.scheduleJob('0 0 5 * * *', calculateFeesRecurrenceJob)
 
             schedule.scheduleJob('0 0 4 * *', jobPutInClass)
+            console.log('✅ Schedule jobs started!')
+        } else {
+            console.log('❌ Schedule jobs not started in development!')
         }
-
-        console.log('✅ Schedule jobs started!')
     }
 }
 

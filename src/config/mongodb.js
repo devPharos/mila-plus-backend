@@ -1,5 +1,5 @@
 // mongoClient.js
-const { MongoClient } = require('mongodb')
+import { MongoClient } from 'mongodb'
 
 const uri = process.env.MONGODB_URI
 const client = new MongoClient(uri)
@@ -25,4 +25,4 @@ function getDb() {
     return db
 }
 
-module.exports = { connectToMongo, getDb }
+export { connectToMongo, getDb }

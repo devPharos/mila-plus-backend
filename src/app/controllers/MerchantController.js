@@ -1,18 +1,17 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog'
-import databaseConfig from '../../config/database'
-import Merchant from '../models/Merchants'
-import Filial from '../models/Filial'
-import MerchantXChartOfAccounts from '../models/MerchantXChartOfAccounts'
-import ChartOfAccounts from '../models/Chartofaccount'
-import Issuer from '../models/Issuer'
-import { canBeFloat, isUUIDv4 } from './ReceivableController'
+import MailLog from '../../Mails/MailLog.js'
+import databaseConfig from '../../config/database.js'
+import Merchant from '../models/Merchants.js'
+import Filial from '../models/Filial.js'
+import MerchantXChartOfAccounts from '../models/MerchantXChartOfAccounts.js'
+import ChartOfAccounts from '../models/Chartofaccount.js'
+import Issuer from '../models/Issuer.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
     verifyFieldInModel,
     verifyFilialSearch,
-} from '../functions'
+} from '../functions/index.js'
 
 const { Op } = Sequelize
 
@@ -435,17 +434,9 @@ class MerchantController {
                     .json({ error: 'Merchant does not exist.' })
             }
 
-            await merchantExists.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-
-                    updated_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await merchantExists.destroy({
+                transaction: t,
+            })
             await t.commit()
 
             return res
