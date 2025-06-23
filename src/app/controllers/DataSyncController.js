@@ -48,12 +48,14 @@ function transformDate(date = null) {
 
 class DataSyncController {
     async import(req, res) {
+        console.log(1)
         const connection = new Sequelize(databaseConfig)
         const t = await connection.transaction()
         try {
+            console.log(2)
             const { importType } = req.body
             const file = req.file
-
+            console.log(3, importType)
             if (importType === 'Students') {
                 fs.readFile(file.path, 'utf8', async (err, data) => {
                     if (err) {
@@ -383,12 +385,13 @@ class DataSyncController {
                         const values = line.split(',')
 
                         const invoice_number = values[head.indexOf('Reference')]
-
+                        console.log(4)
                         const receivable = await Receivable.findOne({
                             where: {
                                 invoice_number: parseInt(
                                     invoice_number.substring(1)
                                 ),
+                                status: 'Pending',
                                 canceled_at: null,
                             },
                         })
@@ -425,52 +428,48 @@ class DataSyncController {
                         const transactionType = 'CreditSale'
                         const uniqueTransId =
                             values[head.indexOf('Transaction ID')]
-
+                        console.log(5)
                         const transactionExists =
                             await Emergepaytransaction.findOne({
                                 where: {
                                     unique_trans_id: uniqueTransId,
+                                    result_message: 'Approved',
                                     canceled_at: null,
                                 },
                             })
 
-                        if (transactionExists) {
-                            continue
+                        if (!transactionExists) {
+                            await Emergepaytransaction.create({
+                                account_card_type: accountCardType,
+                                account_entry_method: accountEntryMethod,
+                                account_expiry_date: accountExpiryDate,
+                                amount: parseFloat(amount),
+                                amount_balance: parseFloat(amountBalance || 0),
+                                amount_processed: parseFloat(
+                                    amountProcessed || 0
+                                ),
+                                amount_taxed: parseFloat(amountTaxed || 0),
+                                amount_tipped: parseFloat(amountTipped || 0),
+                                approval_number_result: approvalNumberResult,
+                                avs_response_code: avsResponseCode,
+                                avs_response_text: avsResponseText,
+                                batch_number: batchNumber,
+                                billing_name: billingName,
+                                cashier: cashier,
+                                cvv_response_code: cvvResponseCode,
+                                cvv_response_text: cvvResponseText,
+                                external_transaction_id: externalTransactionId,
+                                is_partial_approval: isPartialApproval,
+                                masked_account: maskedAccount,
+                                result_message: resultMessage,
+                                result_status: resultStatus,
+                                transaction_reference: transactionReference,
+                                transaction_type: transactionType,
+                                unique_trans_id: uniqueTransId,
+                                created_by: 2,
+                            })
                         }
 
-                        const create = {
-                            account_card_type: accountCardType,
-                            account_entry_method: accountEntryMethod,
-                            account_expiry_date: accountExpiryDate,
-                            amount: parseFloat(amount),
-                            amount_balance: parseFloat(amountBalance || 0),
-                            amount_processed: parseFloat(amountProcessed || 0),
-                            amount_taxed: parseFloat(amountTaxed || 0),
-                            amount_tipped: parseFloat(amountTipped || 0),
-                            approval_number_result: approvalNumberResult,
-                            avs_response_code: avsResponseCode,
-                            avs_response_text: avsResponseText,
-                            batch_number: batchNumber,
-                            billing_name: billingName,
-                            cashier: cashier,
-                            cvv_response_code: cvvResponseCode,
-                            cvv_response_text: cvvResponseText,
-                            external_transaction_id: externalTransactionId,
-                            is_partial_approval: isPartialApproval,
-                            masked_account: maskedAccount,
-                            result_message: resultMessage,
-                            result_status: resultStatus,
-                            transaction_reference: transactionReference,
-                            transaction_type: transactionType,
-                            unique_trans_id: uniqueTransId,
-                            created_by: 2,
-                        }
-
-                        console.log(create)
-
-                        await Emergepaytransaction.create(create, {
-                            transaction: t,
-                        })
                         if (receivable && resultMessage === 'Approved') {
                             const amountPaidBalance =
                                 parseFloat(amountProcessed)
@@ -485,12 +484,16 @@ class DataSyncController {
                                 amountPaidBalance,
                                 settlement_date: format(new Date(), 'yyyyMMdd'),
                                 paymentmethod_id: paymentMethod.id,
-                                t,
                             })
                         }
-
-                        t.commit()
                     }
+                })
+                return res.status(200).json({
+                    message: 'Data imported successfully.',
+                })
+            } else {
+                return res.status(400).json({
+                    error: 'Import type not found.',
                 })
             }
         } catch (err) {
