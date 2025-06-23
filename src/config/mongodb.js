@@ -9,16 +9,18 @@ async function connectToMongo() {
     try {
         await client.connect()
         db = client.db('MilaPlus') // Coloque o nome do seu banco
-        console.log('Conectado ao MongoDB.')
+        console.log('✅ MongoDB connected.')
     } catch (e) {
-        console.error('Não foi possível conectar ao MongoDB', e)
-        process.exit(1) // Encerra a aplicação se não conseguir conectar
+        console.log("❌ It wasn't possible to connect to MongoDB.")
+        // console.error('Não foi possível conectar ao MongoDB', e)
+        // process.exit(1) // Encerra a aplicação se não conseguir conectar
     }
 }
 
 function getDb() {
     if (!db) {
-        throw new Error('Conexão com MongoDB não estabelecida.')
+        console.log("❌ MongoDB couldn't be connected.")
+        // throw new Error('Conexão com MongoDB não estabelecida.')
     }
     return db
 }
