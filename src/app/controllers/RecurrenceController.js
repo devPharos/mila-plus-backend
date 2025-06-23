@@ -266,7 +266,7 @@ export async function generateRecurrenceReceivables({
                 balance: totalAmount,
                 paymentmethod_id: recurrence.dataValues.paymentmethod_id,
                 paymentcriteria_id: recurrence.dataValues.paymentcriteria_id,
-                created_at: new Date(),
+
                 created_by: 2,
             }
 
@@ -296,7 +296,6 @@ export async function generateRecurrenceReceivables({
                             value: discount.value,
                             percent: discount.percent,
                             created_by: 2,
-                            created_at: new Date(),
                         })
                     })
                 })
@@ -558,7 +557,7 @@ class RecurrenceController {
                         ...req.body,
                         amount: req.body.prices.total_tuition,
                         issuer_id: issuer.id,
-                        created_at: new Date(),
+
                         created_by: req.userId,
                     },
                     {
@@ -577,7 +576,6 @@ class RecurrenceController {
                         amount: req.body.prices.total_tuition,
                         issuer_id: issuer.id,
                         updated_by: req.userId,
-                        updated_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -648,7 +646,6 @@ class RecurrenceController {
                     card_type: cardType,
                     card_holder_name: billingName,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,

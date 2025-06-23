@@ -286,7 +286,6 @@ export async function FeeChargedMail({ receivable_id = null }) {
             date: format(new Date(), 'yyyyMMdd'),
             time: format(new Date(), 'HH:mm:ss'),
             created_by: 2,
-            created_at: new Date(),
         })
         return true
     } catch (err) {

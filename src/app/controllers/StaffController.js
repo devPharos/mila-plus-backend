@@ -35,7 +35,7 @@ class StaffController {
                     filial_id: filialExists.id,
                     ...req.body,
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -89,9 +89,8 @@ class StaffController {
                             registry_uuidkey: staff_id,
                             document_id: files.document_id,
                             created_by: req.userId,
-                            created_at: new Date(),
+
                             updated_by: req.userId,
-                            updated_at: new Date(),
                         },
                         { transaction: t }
                     )
@@ -104,7 +103,6 @@ class StaffController {
                                 file_id: fileCreated.id,
                                 document_id: files.document_id,
                                 created_by: req.userId,
-                                created_at: new Date(),
                             },
                             { transaction: t }
                         )
@@ -120,7 +118,6 @@ class StaffController {
                     filial_id: filialExists.id,
                     ...req.body,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -300,7 +297,7 @@ class StaffController {
                     {
                         canceled_at: null,
                         canceled_by: null,
-                        updated_at: new Date(),
+
                         updated_by: req.userId,
                     },
                     {

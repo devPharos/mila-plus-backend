@@ -115,7 +115,7 @@ class EnrollmentController {
                                 ? 'transfer-request'
                                 : 'student-information',
                         agent_id: newProspect.agent_id,
-                        created_at: new Date(),
+
                         created_by: req.userId,
                     },
                     {
@@ -133,7 +133,7 @@ class EnrollmentController {
                             phase_step: 'Admission Information',
                             step_status: `Waiting for prospect's response. `,
                             expected_date: null,
-                            created_at: new Date(),
+
                             created_by: req.userId,
                         },
                         {
@@ -146,7 +146,7 @@ class EnrollmentController {
                                     {
                                         enrollment_id: enrollment.id,
                                         company_id: 1,
-                                        created_at: new Date(),
+
                                         created_by: req.userId,
                                     },
                                     {
@@ -163,7 +163,7 @@ class EnrollmentController {
                 {
                     ...req.body,
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -265,7 +265,7 @@ class EnrollmentController {
                     phase_step: 'Transfer form link has Sent to the DSO',
                     step_status: `Form filling has not been started yet.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: 2,
                 }
             } else if (
@@ -278,7 +278,7 @@ class EnrollmentController {
                     phase_step: 'finished',
                     step_status: `Form filling has been finished by the DSO`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: 2,
                 }
             } else if (
@@ -316,7 +316,7 @@ class EnrollmentController {
                     phase_step: 'Form link has been sent to the student',
                     step_status: `Pending documents to be uploaded`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: 2,
                 }
             } else if (
@@ -329,7 +329,7 @@ class EnrollmentController {
                     phase_step: 'Student Signature',
                     step_status: `Pending signature by the student`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: 2,
                 }
             } else if (
@@ -346,7 +346,7 @@ class EnrollmentController {
                             addDays(new Date(), 3),
                             'yyyyMMdd'
                         ),
-                        created_at: new Date(),
+
                         created_by: 2,
                     }
                 } else {
@@ -359,7 +359,7 @@ class EnrollmentController {
                             addDays(new Date(), 3),
                             'yyyyMMdd'
                         ),
-                        created_at: new Date(),
+
                         created_by: 2,
                     }
                 }
@@ -384,7 +384,7 @@ class EnrollmentController {
                                 relationship_type: emergency.relationship_type,
                                 email: emergency.email,
                                 phone: emergency.phone,
-                                created_at: new Date(),
+
                                 created_by: 2,
                             },
                             {
@@ -401,7 +401,7 @@ class EnrollmentController {
                                 relationship_type: emergency.relationship_type,
                                 email: emergency.email,
                                 phone: emergency.phone,
-                                updated_at: new Date(),
+
                                 updated_by: 2,
                             },
                             {
@@ -448,7 +448,7 @@ class EnrollmentController {
                                 dept1_type: dependent.dept1_type,
                                 email: dependent.email,
                                 phone: dependent.phone,
-                                updated_at: new Date(),
+
                                 updated_by: req.userId || 2,
                             },
                             {
@@ -468,7 +468,7 @@ class EnrollmentController {
                         //     dept1_type: dependent.dept1_type,
                         //     email: dependent.email,
                         //     phone: dependent.phone,
-                        //     created_at: new Date(),
+                        //
                         //     created_by: 2,
                         //   },
                         //   {
@@ -505,7 +505,7 @@ class EnrollmentController {
                                 relationship_type: sponsor.relationship_type,
                                 email: sponsor.email,
                                 phone: sponsor.phone,
-                                created_at: new Date(),
+
                                 created_by: 2,
                             },
                             {
@@ -535,7 +535,7 @@ class EnrollmentController {
                         existingTransfers.update(
                             {
                                 ...req.body.enrollmenttransfers,
-                                updated_at: new Date(),
+
                                 updated_by: 2,
                             },
                             {
@@ -549,7 +549,7 @@ class EnrollmentController {
                             {
                                 ...req.body.enrollmenttransfers,
                                 enrollment_id: enrollmentExists.id,
-                                created_at: new Date(),
+
                                 created_by: 2,
                             },
                             {
@@ -575,7 +575,6 @@ class EnrollmentController {
                         {
                             ...req.body.students,
                             updated_by: req.userId,
-                            updated_at: new Date(),
                         },
                         {
                             transaction: t,
@@ -609,7 +608,6 @@ class EnrollmentController {
                         ...req.body,
                         form_step: nextStep,
                         updated_by: req.userId,
-                        updated_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -960,7 +958,7 @@ class EnrollmentController {
                     phase_step,
                     step_status: `Form filling has been started.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: 2, // Not Authentiticated User
                 })
             }
@@ -1093,7 +1091,7 @@ class EnrollmentController {
                     {
                         canceled_at: null,
                         canceled_by: null,
-                        updated_at: new Date(),
+
                         updated_by: req.userId,
                     },
                     {
@@ -1152,9 +1150,8 @@ class EnrollmentController {
                     registry_uuidkey: enrollment_id,
                     document_id: req.body.files.document_id,
                     created_by: req.userId || 2,
-                    created_at: new Date(),
+
                     updated_by: req.userId || 2,
-                    updated_at: new Date(),
                 },
                 { transaction: t }
             )
@@ -1164,7 +1161,6 @@ class EnrollmentController {
                     {
                         student_signature: signatureFile.id,
                         updated_by: req.userId,
-                        updated_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -1229,7 +1225,6 @@ class EnrollmentController {
                 {
                     form_step: 'finished',
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -1247,9 +1242,8 @@ class EnrollmentController {
                     registry_uuidkey: sponsor_id,
                     document_id: req.body.files.document_id,
                     created_by: req.userId || 2,
-                    created_at: new Date(),
+
                     updated_by: req.userId || 2,
-                    updated_at: new Date(),
                 },
                 { transaction: t }
             )
@@ -1259,7 +1253,6 @@ class EnrollmentController {
                     {
                         signature: signatureFile.id,
                         updated_by: req.userId,
-                        updated_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -1336,9 +1329,8 @@ class EnrollmentController {
                     registry_uuidkey: enrollment_id,
                     document_id: req.body.files.document_id,
                     created_by: req.userId || 2,
-                    created_at: new Date(),
+
                     updated_by: req.userId || 2,
-                    updated_at: new Date(),
                 },
                 { transaction: t }
             )
@@ -1354,7 +1346,6 @@ class EnrollmentController {
                     {
                         dso_signature: signatureFile.id,
                         updated_by: req.userId || 2,
-                        updated_at: new Date(),
                     },
                     {
                         where: {
@@ -1436,7 +1427,7 @@ class EnrollmentController {
                             application: 'Transfer Eligibility',
                             form_step: 'transfer-request',
                             agent_id: student.agent_id,
-                            created_at: new Date(),
+
                             created_by: req.userId,
                         },
                         {
@@ -1458,7 +1449,7 @@ class EnrollmentController {
                                     addDays(new Date(), 3),
                                     'yyyyMMdd'
                                 ),
-                                created_at: new Date(),
+
                                 created_by: req.userId,
                             },
                             {
@@ -1469,7 +1460,7 @@ class EnrollmentController {
                                 {
                                     enrollment_id: enrollment.id,
                                     company_id: 1,
-                                    created_at: new Date(),
+
                                     created_by: req.userId,
                                 },
                                 {
@@ -1541,7 +1532,7 @@ class EnrollmentController {
                             application: 'Enrollment Process',
                             form_step: 'student-information',
                             agent_id: student.agent_id,
-                            created_at: new Date(),
+
                             created_by: req.userId,
                         },
                         {
@@ -1563,7 +1554,7 @@ class EnrollmentController {
                                     addDays(new Date(), 3),
                                     'yyyyMMdd'
                                 ),
-                                created_at: new Date(),
+
                                 created_by: req.userId,
                             },
                             {
@@ -1611,7 +1602,7 @@ class EnrollmentController {
                             application: 'Placement Test',
                             form_step: 'student-information',
                             agent_id: student.agent_id,
-                            created_at: new Date(),
+
                             created_by: req.userId,
                         },
                         {
@@ -1633,7 +1624,7 @@ class EnrollmentController {
                                     addDays(new Date(), 3),
                                     'yyyyMMdd'
                                 ),
-                                created_at: new Date(),
+
                                 created_by: req.userId,
                             },
                             {

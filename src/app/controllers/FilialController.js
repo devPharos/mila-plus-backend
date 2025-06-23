@@ -225,7 +225,6 @@ class FilialController {
                     company_id: 1,
                     ...req.body,
                     created_by: req.userId,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -257,21 +256,20 @@ class FilialController {
                         email,
                         password,
                         force_password_change: true,
-                        created_at: new Date(),
+
                         created_by: req.userId,
                     })
                         .then(async (newUser) => {
                             newFilial.update({
                                 administrator_id: newUser.id,
                                 updated_by: req.userId,
-                                updated_at: new Date(),
                             })
 
                             await UserXFilial.create(
                                 {
                                     user_id: newUser.id,
                                     filial_id: newFilial.id,
-                                    created_at: new Date(),
+
                                     created_by: req.userId,
                                 },
                                 {
@@ -283,7 +281,7 @@ class FilialController {
                                     user_id: newUser.id,
                                     group_id:
                                         'ae0453fd-b493-41ff-803b-9aea989a8567',
-                                    created_at: new Date(),
+
                                     created_by: req.userId,
                                 },
                                 {
@@ -367,9 +365,8 @@ class FilialController {
                         registry_idkey: filial_id,
                         document_id: req.body.parking_spot_image.document_id,
                         created_by: req.userId || 2,
-                        created_at: new Date(),
+
                         updated_by: req.userId || 2,
-                        updated_at: new Date(),
                     },
                     { transaction: t }
                 )
@@ -379,7 +376,6 @@ class FilialController {
                         {
                             parking_spot_image: fileCreated.id,
                             updated_by: req.userId,
-                            updated_at: new Date(),
                         },
                         {
                             transaction: t,
@@ -417,7 +413,6 @@ class FilialController {
                 {
                     ...req.body,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -442,7 +437,6 @@ class FilialController {
                                 filial_id: filial.id,
                                 ...newPrice,
                                 created_by: req.userId,
-                                created_at: new Date(),
                             },
                             {
                                 transaction: t,
@@ -458,7 +452,6 @@ class FilialController {
                                 filial_id: filial.id,
                                 ...updPrice,
                                 updated_by: req.userId,
-                                updated_at: new Date(),
                             },
                             {
                                 where: {
@@ -487,7 +480,6 @@ class FilialController {
                                 filial_id: filial.id,
                                 ...newDiscount,
                                 created_by: req.userId,
-                                created_at: new Date(),
                             },
                             {
                                 transaction: t,
@@ -503,7 +495,6 @@ class FilialController {
                                 filial_id: filial.id,
                                 ...updDiscount,
                                 updated_by: req.userId,
-                                updated_at: new Date(),
                             },
                             {
                                 where: {
@@ -543,7 +534,7 @@ class FilialController {
                                 email,
                                 password,
                                 force_password_change: true,
-                                created_at: new Date(),
+
                                 created_by: req.userId,
                             },
                             {
@@ -555,7 +546,6 @@ class FilialController {
                                     {
                                         administrator_id: newUser.id,
                                         updated_by: req.userId,
-                                        updated_at: new Date(),
                                     },
                                     {
                                         transaction: t,
@@ -566,7 +556,7 @@ class FilialController {
                                     {
                                         user_id: newUser.id,
                                         filial_id,
-                                        created_at: new Date(),
+
                                         created_by: req.userId,
                                     },
                                     {
@@ -578,7 +568,7 @@ class FilialController {
                                         user_id: newUser.id,
                                         group_id:
                                             'ae0453fd-b493-41ff-803b-9aea989a8567',
-                                        created_at: new Date(),
+
                                         created_by: req.userId,
                                     },
                                     {
@@ -638,7 +628,7 @@ class FilialController {
                                 email,
                                 password,
                                 force_password_change: true,
-                                updated_at: new Date(),
+
                                 updated_by: req.userId,
                             },
                             {

@@ -47,7 +47,6 @@ class EnrollmentsponsorController {
                     enrollment_id,
                     ...req.body,
                     created_by: req.userId || 2,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -222,7 +221,7 @@ class EnrollmentsponsorController {
                                 addDays(new Date(), 3),
                                 'yyyyMMdd'
                             ),
-                            created_at: new Date(),
+
                             created_by: 2,
                         }
                     }
@@ -236,7 +235,7 @@ class EnrollmentsponsorController {
                             addDays(new Date(), 3),
                             'yyyyMMdd'
                         ),
-                        created_at: new Date(),
+
                         created_by: 2,
                     }
                     notifyAgent = true
@@ -407,7 +406,7 @@ class EnrollmentsponsorController {
                     phase_step,
                     step_status: `Form filling has been started by the Student.`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: 2, // Not Authentiticated User
                 })
             }

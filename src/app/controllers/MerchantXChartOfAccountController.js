@@ -103,7 +103,7 @@ class MerchantXChartOfAccountController {
                         filial_id: req.body.filial_id
                             ? req.body.filial_id
                             : req.headers.filial,
-                        created_at: new Date(),
+
                         created_by: req.userId,
                     },
                     {
@@ -146,7 +146,6 @@ class MerchantXChartOfAccountController {
                     ...req.body,
                     company_id: 1,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -187,7 +186,7 @@ class MerchantXChartOfAccountController {
                 {
                     canceled_at: new Date(),
                     canceled_by: req.userId,
-                    updated_at: new Date(),
+
                     updated_by: req.userId,
                 },
                 {

@@ -140,7 +140,7 @@ class PaymentCriteriaController {
                     fee_value,
                     late_fee_description,
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -209,7 +209,6 @@ class PaymentCriteriaController {
                     late_fee_description,
                     company_id: 1,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -249,7 +248,7 @@ class PaymentCriteriaController {
                 {
                     canceled_at: new Date(),
                     canceled_by: req.userId,
-                    updated_at: new Date(),
+
                     updated_by: req.userId,
                 },
                 {

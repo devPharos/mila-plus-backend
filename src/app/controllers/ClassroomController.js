@@ -175,7 +175,7 @@ class ClassroomController {
                     ...req.body,
                     company_id: req.companyId,
                     filial_id: filialExists.id,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -241,7 +241,6 @@ class ClassroomController {
                     ...req.body,
                     filial_id: filialExists.id,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,

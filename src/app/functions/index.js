@@ -292,7 +292,6 @@ export async function handleStudentDiscounts({
                     end_date: end_date ? end_date.replaceAll('-', '') : null,
                     applied_at,
                     created_by: 2,
-                    created_at: new Date(),
                 })
             } else {
                 await Studentdiscount.update(
@@ -306,7 +305,6 @@ export async function handleStudentDiscounts({
                             : null,
                         applied_at,
                         updated_by: 2,
-                        updated_at: new Date(),
                     },
                     {
                         where: {

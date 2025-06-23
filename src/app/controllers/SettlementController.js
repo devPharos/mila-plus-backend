@@ -328,7 +328,7 @@ class SettlementController {
                                     receivable.dataValues.total +
                                     total_discount,
                                 manual_discount: 0,
-                                updated_at: new Date(),
+
                                 updated_by: req.userId,
                             },
                             {

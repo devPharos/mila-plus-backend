@@ -17,7 +17,7 @@ class EnrollmenttransferController {
                 {
                     ...req.body,
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -66,9 +66,8 @@ class EnrollmenttransferController {
                     registry_uuidkey: sponsor_id,
                     document_id: req.body.files.document_id,
                     created_by: req.userId || 2,
-                    created_at: new Date(),
+
                     updated_by: req.userId || 2,
-                    updated_at: new Date(),
                 },
                 { transaction: t }
             )
@@ -79,7 +78,6 @@ class EnrollmenttransferController {
                         {
                             dso_signature: signatureFile.id,
                             updated_by: req.userId,
-                            updated_at: new Date(),
                         },
                         {
                             transaction: t,
@@ -101,7 +99,7 @@ class EnrollmenttransferController {
                     phase_step: 'Transfer form link has been sent to the DSO',
                     step_status: `Form filling has been done by the DSO`,
                     expected_date: format(addDays(new Date(), 3), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: 2,
                 }
 
@@ -110,7 +108,6 @@ class EnrollmenttransferController {
                         {
                             form_step: nextStep,
                             updated_by: req.userId,
-                            updated_at: new Date(),
                         },
                         {
                             where: {

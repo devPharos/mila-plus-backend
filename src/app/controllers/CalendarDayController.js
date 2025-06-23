@@ -27,7 +27,7 @@ class CalendarDayController {
                     filial_id: filial.id,
                     ...req.body,
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -78,7 +78,6 @@ class CalendarDayController {
                     ...req.body,
                     filial_id: filial.id,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -191,7 +190,7 @@ class CalendarDayController {
                     {
                         canceled_at: null,
                         canceled_by: null,
-                        updated_at: new Date(),
+
                         updated_by: req.userId,
                     },
                     {
@@ -199,15 +198,9 @@ class CalendarDayController {
                     }
                 )
             } else {
-                await calendarDay.update(
-                    {
-                        canceled_at: new Date(),
-                        canceled_by: req.userId,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                await calendarDay.destroy({
+                    transaction: t,
+                })
             }
 
             t.commit()

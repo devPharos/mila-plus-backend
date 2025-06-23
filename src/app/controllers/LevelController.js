@@ -129,7 +129,6 @@ class LevelController {
                     company_id: 1,
                     ...req.body,
                     created_by: req.userId,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -181,7 +180,6 @@ class LevelController {
                 {
                     ...req.body,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,

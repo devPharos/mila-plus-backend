@@ -349,7 +349,7 @@ class PayeeController {
                     is_recurrence: false,
                     status: 'Pending',
                     status_date: format(new Date(), 'yyyyMMdd'),
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -487,7 +487,6 @@ class PayeeController {
                         ).toFixed(2)
                     ),
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -528,7 +527,6 @@ class PayeeController {
                     total: total_amount,
                     paymentmethod_id: paymentMethod.id,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -612,7 +610,7 @@ class PayeeController {
                             paymentmethod_id: paymentMethodExists.id,
                             settlement_date,
                             memo: settlement_memo,
-                            created_at: new Date(),
+
                             created_by: req.userId,
                         },
                         {
@@ -631,7 +629,7 @@ class PayeeController {
                                     ? 'Paid'
                                     : 'Partial Paid',
                             invoice_number,
-                            updated_at: new Date(),
+
                             updated_by: req.userId,
                         },
                         {
@@ -682,7 +680,7 @@ class PayeeController {
                 {
                     canceled_at: new Date(),
                     canceled_by: req.userId,
-                    updated_at: new Date(),
+
                     updated_by: req.userId,
                 },
                 {

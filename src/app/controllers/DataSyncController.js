@@ -464,7 +464,7 @@ class DataSyncController {
                             transaction_reference: transactionReference,
                             transaction_type: transactionType,
                             unique_trans_id: uniqueTransId,
-                            created_at: new Date(),
+
                             created_by: 2,
                         })
                         if (receivable && resultMessage === 'Approved') {

@@ -206,7 +206,6 @@ class WorkloadController {
                     url: file_id.url,
                     registry_type: 'Workload',
                     created_by: req.userId,
-                    created_at: new Date(),
                 })),
                     {
                         transaction: t,
@@ -225,7 +224,6 @@ class WorkloadController {
                     languagemode_id,
                     level_id,
                     created_by: req.userId,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -305,7 +303,6 @@ class WorkloadController {
                     registry_type: 'Workload',
                     registry_uuidkey: workloadExist.id,
                     created_by: req.userId,
-                    created_at: new Date(),
                 })),
                     {
                         transaction: t,
@@ -319,7 +316,6 @@ class WorkloadController {
                     ...req.body,
                     file_id: myFile ? myFile.id : workloadExist.file_id,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -366,7 +362,6 @@ class WorkloadController {
                                     day: paces.day,
                                     ...pace,
                                     created_by: req.userId,
-                                    created_at: new Date(),
                                 })
                             }
                         })

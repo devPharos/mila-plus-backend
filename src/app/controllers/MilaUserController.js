@@ -46,7 +46,7 @@ class MilaUserController {
             const newUser = await Milauser.create(
                 {
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                     name,
                     email,
@@ -62,7 +62,7 @@ class MilaUserController {
                     {
                         user_id: newUser.id,
                         filial_id: req.body.filial_id,
-                        created_at: new Date(),
+
                         created_by: req.userId,
                     },
                     {
@@ -144,7 +144,7 @@ class MilaUserController {
             const newUser = await Milauser.create(
                 {
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                     ...req.body,
                     password,
@@ -158,7 +158,7 @@ class MilaUserController {
                 {
                     user_id: newUser.id,
                     group_id: group.id,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -174,7 +174,7 @@ class MilaUserController {
                             {
                                 user_id: newUser.id,
                                 filial_id: filial.id,
-                                created_at: new Date(),
+
                                 created_by: req.userId,
                             },
                             {
@@ -330,7 +330,6 @@ class MilaUserController {
                     {
                         user_id: userExists.id,
                         updated_by: req.userId,
-                        updated_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -348,7 +347,6 @@ class MilaUserController {
                         {
                             user_id: null,
                             updated_by: req.userId,
-                            updated_at: new Date(),
                         },
                         {
                             transaction: t,
@@ -396,7 +394,7 @@ class MilaUserController {
                 {
                     user_id: userExists.id,
                     group_id: group.id,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -429,7 +427,7 @@ class MilaUserController {
                     {
                         user_id: userExists.id,
                         filial_id: filial.id,
-                        created_at: new Date(),
+
                         created_by: req.userId,
                     },
                     {
@@ -530,7 +528,6 @@ class MilaUserController {
                 where: {
                     company_id: 1,
                     ...(await generateSearchByFields(search, searchableFields)),
-                    ...filialSearch,
                     canceled_at: null,
                 },
                 distinct: true,
@@ -662,7 +659,7 @@ class MilaUserController {
             await UserXFilial.create({
                 user_id,
                 filial_id,
-                created_at: new Date(),
+
                 created_by: req.userId,
             })
 
@@ -762,15 +759,26 @@ class MilaUserController {
                 })
             }
 
-            await Milauser.update(
-                {
+            const milaUser = await Milauser.findOne({
+                where: {
                     password_reset_token: token,
+                    canceled_at: null,
+                },
+            })
+
+            if (!milaUser) {
+                return res.status(400).json({
+                    error: 'Password reset token not found',
+                })
+            }
+
+            await milaUser.update(
+                {
                     password,
+                    password_reset_token: null,
+                    password_reset_expire: null,
                 },
                 {
-                    where: {
-                        password_reset_token: token,
-                    },
                     transaction: t,
                 }
             )

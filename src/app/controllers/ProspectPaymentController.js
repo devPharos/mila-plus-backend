@@ -232,7 +232,6 @@ class ProspectPaymentController {
                             payment_page_url: paymentPageUrl,
                             payment_page_id: paymentPageId,
                             created_by: req.userId,
-                            created_at: new Date(),
                         }).then(async () => {
                             generateEmail({
                                 filial,
@@ -317,7 +316,6 @@ class ProspectPaymentController {
                                     ),
                                     order_id,
                                     created_by: req.userId,
-                                    created_at: new Date(),
                                 }).then(async () => {
                                     generateEmail({
                                         filial,
@@ -578,7 +576,7 @@ class ProspectPaymentController {
                     await enrollment.update(
                         {
                             payment_link_sent_to_student: true,
-                            updated_at: new Date(),
+
                             updated_by: req.userId,
                         },
                         {
@@ -601,7 +599,7 @@ class ProspectPaymentController {
                                 addDays(new Date(), 3),
                                 'yyyyMMdd'
                             ),
-                            created_at: new Date(),
+
                             created_by: req.userId,
                         },
                         {

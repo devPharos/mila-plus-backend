@@ -89,7 +89,7 @@ class StudentController {
                         ? { processsubstatus_id: processsubstatuses.id }
                         : {}),
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -172,7 +172,6 @@ class StudentController {
                         ? { processsubstatus_id: processsubstatuses.id }
                         : {}),
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -456,7 +455,7 @@ class StudentController {
                     student_id: student.id,
                     reason,
                     date,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -499,7 +498,7 @@ class StudentController {
                 await Recurrence.update(
                     {
                         active: false,
-                        updated_at: new Date(),
+
                         updated_by: req.userId,
                     },
                     {
@@ -518,7 +517,7 @@ class StudentController {
                     status: 'Inactive',
                     category: 'Ex-student',
                     inactive_reason: reason,
-                    updated_at: new Date(),
+
                     updated_by: req.userId,
                 },
                 {
@@ -529,7 +528,7 @@ class StudentController {
             await StudentXGroup.update(
                 {
                     end_date: format(subDays(parseISO(date), 1), 'yyyy-MM-dd'),
-                    updated_at: new Date(),
+
                     updated_by: req.userId,
                 },
                 {
@@ -624,7 +623,7 @@ class StudentController {
                     start_date: date,
                     end_date: null,
                     status: 'Not started',
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -725,7 +724,7 @@ class StudentController {
                                 subDays(parseISO(date), 1),
                                 'yyyy-MM-dd'
                             ),
-                            updated_at: new Date(),
+
                             updated_by: req.userId,
                         },
                         {
@@ -744,7 +743,7 @@ class StudentController {
                     start_date: date,
                     end_date: null,
                     status: 'Transferred',
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -759,7 +758,7 @@ class StudentController {
                         classroom_id:
                             studentgroupExists.dataValues.classroom_id,
                         teacher_id: studentgroupExists.dataValues.staff_id,
-                        updated_at: new Date(),
+
                         updated_by: req.userId,
                     },
                     {
@@ -770,7 +769,6 @@ class StudentController {
                     {
                         status: 'Active',
                         updated_by: req.userId,
-                        updated_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -844,7 +842,7 @@ class StudentController {
             category: 'Student',
             status: 'Waiting List',
             sub_status: 'Initial',
-            updated_at: new Date(),
+
             updated_by: req.userId,
         })
 
@@ -898,7 +896,6 @@ class StudentController {
                     student_id,
                     created_by: req.id || 2,
                     note,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -922,9 +919,8 @@ class StudentController {
                         key: file.key,
                         registry_type: 'Student Vacation',
                         created_by: req.userId || 2,
-                        created_at: new Date(),
+
                         updated_by: req.userId || 2,
-                        updated_at: new Date(),
                     },
                     { transaction: t }
                 )
@@ -934,7 +930,6 @@ class StudentController {
                         vacation_id: newVacation.id,
                         file_id: document.id,
                         created_by: req.userId || 2,
-                        created_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -982,7 +977,7 @@ class StudentController {
                 await attendance.update(
                     {
                         vacation_id: newVacation.id,
-                        updated_at: new Date(),
+
                         updated_by: req.userId,
                     },
                     {
@@ -1097,7 +1092,7 @@ class StudentController {
                 await attendance.update(
                     {
                         vacation_id: null,
-                        updated_at: new Date(),
+
                         updated_by: req.userId,
                     },
                     {
@@ -1190,7 +1185,6 @@ class StudentController {
                     student_id,
                     created_by: req.id || 2,
                     note,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -1207,7 +1201,6 @@ class StudentController {
                         key: file.key,
                         registry_type: 'Student Medical Excuse',
                         created_by: req.userId || 2,
-                        created_at: new Date(),
                     },
                     { transaction: t }
                 )
@@ -1217,7 +1210,6 @@ class StudentController {
                         medical_excuse_id: newMedicalExcuse.id,
                         file_id: document.id,
                         created_by: req.userId || 2,
-                        created_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -1259,7 +1251,7 @@ class StudentController {
                 await attendance.update(
                     {
                         medical_excuse_id: newMedicalExcuse.id,
-                        updated_at: new Date(),
+
                         updated_by: req.userId,
                     },
                     {
@@ -1377,7 +1369,7 @@ class StudentController {
                 await attendance.update(
                     {
                         medical_excuse_id: null,
-                        updated_at: new Date(),
+
                         updated_by: req.userId,
                     },
                     {

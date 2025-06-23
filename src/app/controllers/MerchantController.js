@@ -212,7 +212,7 @@ class MerchantController {
                     bank_account,
                     bank_routing_number,
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -243,7 +243,7 @@ class MerchantController {
                         state: new_merchant.dataValues.state,
                         zip: new_merchant.dataValues.zip,
                         country: new_merchant.dataValues.country,
-                        created_at: new Date(),
+
                         created_by: req.userId,
                     },
                     {
@@ -262,7 +262,6 @@ class MerchantController {
                         zip: new_merchant.dataValues.zip,
                         country: new_merchant.dataValues.country,
                         updated_by: req.userId,
-                        updated_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -369,7 +368,6 @@ class MerchantController {
                     bank_routing_number,
                     company_id: 1,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -397,7 +395,7 @@ class MerchantController {
                                     merchant_id: merchantExists.id,
                                     chartofaccount_id: item.id,
                                     company_id: merchantExists.company_id,
-                                    created_at: new Date(),
+
                                     created_by: req.userId,
                                 },
                                 {
@@ -441,7 +439,7 @@ class MerchantController {
                 {
                     canceled_at: new Date(),
                     canceled_by: req.userId,
-                    updated_at: new Date(),
+
                     updated_by: req.userId,
                 },
                 {

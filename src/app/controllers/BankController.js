@@ -109,7 +109,7 @@ class BankController {
                     bank_alias: data.bank_alias,
                     bank_name: data.bank_name,
                     company_id: 1,
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -163,31 +163,19 @@ class BankController {
     }
 
     async delete(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+        // const connection = new Sequelize(databaseConfig)
+        // const t = await connection.transaction()
         try {
             const { bank_id } = req.params
             const bank = await Bank.findByPk(bank_id)
 
-            await bank.update(
-                {
-                    canceled_at: new Date(),
-                    canceled_by: req.userId,
-                    updated_at: new Date(),
-                    updated_by: req.userId,
-                },
-                {
-                    transaction: t,
-                }
-            )
-
-            t.commit()
+            await bank.destroy()
 
             return res
                 .status(200)
                 .json({ message: 'Bank deleted successfully.' })
         } catch (err) {
-            await t.rollback()
+            // await t.rollback()
             const className = 'BankController'
             const functionName = 'delete'
             MailLog({ className, functionName, req, err })

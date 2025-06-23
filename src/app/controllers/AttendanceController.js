@@ -119,7 +119,6 @@ class AttendanceController {
                         second_check: secondCheck,
                         dso_note: dso_note ? dso_note : null,
                         updated_by: req.userId,
-                        updated_at: new Date(),
                     },
                     {
                         transaction: t,

@@ -349,7 +349,6 @@ class ChartOfAccountsController {
                     profit_and_loss,
                     allow_use,
                     created_by: req.userId,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -410,7 +409,6 @@ class ChartOfAccountsController {
                     profit_and_loss,
                     allow_use,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,

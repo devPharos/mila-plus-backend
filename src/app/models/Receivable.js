@@ -1,3 +1,4 @@
+import { format, lastDayOfMonth, parseISO } from 'date-fns'
 import Sequelize, { Model } from 'sequelize'
 
 class Receivable extends Model {
@@ -130,13 +131,17 @@ class Receivable extends Model {
                     },
                     allowNull: true,
                 },
+                accrual_date: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
                 created_at: {
                     type: Sequelize.DATE,
                     allowNull: false,
                 },
                 created_by: {
                     type: Sequelize.INTEGER,
-                    allowNull: false,
+                    allowNull: true,
                 },
                 updated_at: {
                     type: Sequelize.DATE,
@@ -158,6 +163,18 @@ class Receivable extends Model {
             {
                 sequelize,
                 tableName: 'receivables', // Nome da tabela
+                hooks: {
+                    beforeCreate: (receivable, options) => {
+                        if (receivable.due_date) {
+                            const dueDate = parseISO(receivable.due_date)
+                            const lastDay = lastDayOfMonth(dueDate)
+                            receivable.accrual_date = format(
+                                lastDay,
+                                'yyyyMMdd'
+                            )
+                        }
+                    },
+                },
             }
         )
 

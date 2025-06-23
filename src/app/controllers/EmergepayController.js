@@ -72,7 +72,7 @@ export async function createPaidTimeline(receivable_id = null) {
             phase_step,
             step_status: `Paid by the student.`,
             expected_date: null,
-            created_at: new Date(),
+
             created_by: 2,
         })
     }
@@ -127,7 +127,7 @@ export async function settlement(
                 paymentmethod_id,
                 settlement_date,
                 memo: settlement_memo,
-                created_at: new Date(),
+
                 created_by: 2,
             },
             {
@@ -145,7 +145,6 @@ export async function settlement(
                 ).toFixed(2),
                 status_date: settlement_date,
                 paymentmethod_id,
-                updated_at: new Date(),
                 updated_by: 2,
             },
             {
@@ -217,7 +216,6 @@ export async function verifyAndCreateTextToPayTransaction(
             payment_page_url: paymentPageUrl,
             payment_page_id: paymentPageId,
             created_by: 2,
-            created_at: new Date(),
         })
         await receivable.update({
             notification_sent: false,
@@ -534,7 +532,7 @@ class EmergepayController {
                     transaction_reference: transactionReference,
                     transaction_type: transactionType,
                     unique_trans_id: uniqueTransId,
-                    created_at: new Date(),
+
                     created_by: 2,
                 })
                 const findRec = await Receivable.findByPk(externalTransactionId)
@@ -647,7 +645,7 @@ class EmergepayController {
                         transaction_reference: transactionReference,
                         transaction_type: transactionType,
                         unique_trans_id: uniqueTransId,
-                        created_at: new Date(),
+
                         created_by: 2,
                     })
                 })

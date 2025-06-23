@@ -256,7 +256,7 @@ class PayeeSettlementController {
                                     payee.dataValues.total
                                         ? 'Pending'
                                         : 'Partial Paid',
-                                updated_at: new Date(),
+
                                 updated_by: req.userId,
                             },
                             {

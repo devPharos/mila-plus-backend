@@ -108,7 +108,6 @@ class LanguagemodeController {
                     company_id: 1,
                     name: req.body.name,
                     created_by: req.userId,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -160,7 +159,6 @@ class LanguagemodeController {
                 {
                     name: req.body.name.trim(),
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,

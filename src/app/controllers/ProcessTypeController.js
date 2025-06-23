@@ -130,7 +130,6 @@ class ProcessTypeController {
                 {
                     ...req.body,
                     created_by: req.userId,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -168,7 +167,6 @@ class ProcessTypeController {
                 {
                     ...req.body,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,

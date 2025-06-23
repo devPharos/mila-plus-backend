@@ -107,7 +107,6 @@ export async function putInClass(student_id, studentgroup_id, t) {
             teacher_id: studentGroup.dataValues.staff_id,
             status: 'In Class',
             updated_by: 2,
-            updated_at: new Date(),
         },
         {
             transaction: t || null,
@@ -118,7 +117,6 @@ export async function putInClass(student_id, studentgroup_id, t) {
         {
             status: 'Active',
             updated_by: 2,
-            updated_at: new Date(),
         },
         {
             where: {
@@ -174,7 +172,6 @@ export async function createStudentAttendances({
                     first_check: 'Absent',
                     second_check: 'Absent',
                     created_by: req.userId,
-                    created_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -863,7 +860,7 @@ class StudentgroupController {
                     staff_id: staffExists.id,
                     end_date,
                     status: 'In Formation',
-                    created_at: new Date(),
+
                     created_by: req.userId,
                 },
                 {
@@ -887,7 +884,6 @@ class StudentgroupController {
                             notes: memo,
                             status: 'Pending',
                             created_by: req.userId,
-                            created_at: new Date(),
                         },
                         {
                             transaction: t,
@@ -903,7 +899,6 @@ class StudentgroupController {
                                         type: paceGuide.type,
                                         description: paceGuide.description,
                                         created_by: req.userId,
-                                        created_at: new Date(),
                                     },
                                     {
                                         transaction: t,
@@ -1222,7 +1217,6 @@ class StudentgroupController {
                     staff_id: staffExists.id,
                     end_date,
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -1246,7 +1240,6 @@ class StudentgroupController {
                         notes: memo,
                         status: 'Pending',
                         created_by: req.userId,
-                        created_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -1262,7 +1255,6 @@ class StudentgroupController {
                                 type: paceGuide.type,
                                 description: paceGuide.description,
                                 created_by: req.userId,
-                                created_at: new Date(),
                             },
                             {
                                 transaction: t,
@@ -1309,7 +1301,6 @@ class StudentgroupController {
                 {
                     status: 'Ongoing',
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -1427,7 +1418,6 @@ class StudentgroupController {
                 {
                     status: 'In Formation',
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -1673,7 +1663,6 @@ class StudentgroupController {
                     locked_by: lock ? req.userId : null,
                     status: lock ? 'Locked' : 'Started',
                     updated_by: req.userId,
-                    updated_at: new Date(),
                 },
                 {
                     transaction: t,
@@ -1721,7 +1710,6 @@ class StudentgroupController {
                                 first_check: firstCheck,
                                 second_check: secondCheck,
                                 updated_by: req.userId,
-                                updated_at: new Date(),
                             },
                             {
                                 transaction: t,
@@ -1736,7 +1724,6 @@ class StudentgroupController {
                                 first_check: firstCheck,
                                 second_check: secondCheck,
                                 created_by: req.userId,
-                                created_at: new Date(),
                             },
                             {
                                 transaction: t,
@@ -1768,7 +1755,6 @@ class StudentgroupController {
                         status:
                             paceguide.checked === 'true' ? 'Done' : 'Pending',
                         updated_by: req.userId,
-                        updated_at: new Date(),
                     },
                     {
                         transaction: t,
@@ -1826,7 +1812,6 @@ class StudentgroupController {
                             score: student.score,
                             discarded: student.discarded === 'true',
                             updated_by: req.userId,
-                            updated_at: new Date(),
                         },
                         {
                             transaction: t,
@@ -1842,7 +1827,6 @@ class StudentgroupController {
                         score: student.score,
                         discarded: student.discarded === 'true',
                         created_by: req.userId,
-                        created_at: new Date(),
                     },
                     {
                         transaction: t,
