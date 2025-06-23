@@ -470,9 +470,7 @@ class StudentController {
                 },
             })
 
-            console.log('inactivate', date, student.id)
             if (issuer) {
-                console.log('issuer', issuer.id)
                 const receivables = await Receivable.findAll({
                     where: {
                         issuer_id: issuer.id,
@@ -484,7 +482,6 @@ class StudentController {
                 })
 
                 for (let receivable of receivables) {
-                    console.log('removing...')
                     // await verifyAndCancelParcelowPaymentLink(receivable.id)
                     await verifyAndCancelTextToPayTransaction(receivable.id)
                     await receivable.update(
@@ -498,7 +495,6 @@ class StudentController {
                     await receivable.destroy({
                         transaction: t,
                     })
-                    console.log('receivable removed', receivable.id)
                 }
 
                 await Recurrence.update(
