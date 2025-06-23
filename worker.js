@@ -1,4 +1,4 @@
-import 'dotenv/config'
+require('dotenv').config()
 import { Worker } from 'bullmq'
 import redisConnection from './src/config/redis.js'
 import * as jobs from './src/jobs/index.js'
