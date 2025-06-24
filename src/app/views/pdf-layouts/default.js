@@ -1,5 +1,8 @@
 import { format } from 'date-fns'
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
+import { fileURLToPath } from 'url'
+const filename = fileURLToPath(import.meta.url)
+const directory = dirname(filename)
 export function header({
     title1 = '',
     title2 = '',
@@ -54,7 +57,7 @@ export function header({
 
 export function headerLogo(doc = null) {
     if (!doc) return
-    doc.image(resolve(__dirname, '..', 'assets', 'mila-white.png'), 20, 20, {
+    doc.image(resolve(directory, '..', 'assets', 'mila-white.png'), 20, 20, {
         width: 70,
     })
 }

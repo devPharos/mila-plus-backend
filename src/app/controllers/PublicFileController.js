@@ -1,12 +1,17 @@
 import Sequelize from 'sequelize'
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
+import { fileURLToPath } from 'url'
 
 const { Op } = Sequelize
+
+const filename = fileURLToPath(import.meta.url)
+const directory = dirname(filename)
+
 class PublicFileController {
     async show(req, res) {
         const { name } = req.params
         const path = `${resolve(
-            __dirname,
+            directory,
             '..',
             '..',
             '..',

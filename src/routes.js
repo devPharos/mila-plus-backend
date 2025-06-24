@@ -65,7 +65,19 @@ import ChartsController from './app/controllers/ChartsController.js'
 
 const routes = new Router()
 
-const upload = multer({ dest: 'public/uploads/' })
+// Configuração do Multer para armazenamento em disco
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        // Certifique-se de que este diretório exista e tenha permissões de escrita
+        cb(null, 'public/uploads/')
+    },
+    filename: (req, file, cb) => {
+        // Renomeia o arquivo para evitar colisões e mantém a extensão original
+        cb(null, `${file.originalname}`)
+    },
+})
+
+const upload = multer({ storage: storage })
 
 // Public File
 routes.get('/get-file/:name', PublicFileController.show)

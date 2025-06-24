@@ -1,7 +1,8 @@
 import Sequelize, { Op } from 'sequelize'
 import MailLog from '../../Mails/MailLog.js'
 import databaseConfig from '../../config/database.js'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import Payee from '../models/Payee.js'
 import PaymentMethod from '../models/PaymentMethod.js'
 import ChartOfAccount from '../models/Chartofaccount.js'
@@ -693,10 +694,12 @@ class PayeeController {
     }
 
     async excel(req, res) {
+        const filename = fileURLToPath(import.meta.url)
+        const directory = dirname(filename)
         try {
             const name = `payees_${Date.now()}`
             const path = `${resolve(
-                __dirname,
+                directory,
                 '..',
                 '..',
                 '..',

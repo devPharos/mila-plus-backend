@@ -36,7 +36,7 @@ import {
 import Refund from '../models/Refund.js'
 import { verifyAndCancelParcelowPaymentLink } from './ParcelowController.js'
 import Feeadjustment from '../models/Feeadjustment.js'
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
 import Milauser from '../models/Milauser.js'
 import Textpaymenttransaction from '../models/Textpaymenttransaction.js'
 import Renegociation from '../models/Renegociation.js'
@@ -57,6 +57,9 @@ import { getDb } from '../../config/mongodb.js'
 
 import xl from 'excel4node'
 import fs from 'fs'
+import { fileURLToPath } from 'url'
+const filename = fileURLToPath(import.meta.url)
+const directory = dirname(filename)
 
 export async function createRegistrationFeeReceivable({
     issuer_id,
@@ -2448,7 +2451,7 @@ class ReceivableController {
         try {
             const name = `receivables_${Date.now()}`
             const path = `${resolve(
-                __dirname,
+                directory,
                 '..',
                 '..',
                 '..',

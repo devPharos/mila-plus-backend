@@ -7,10 +7,10 @@ export default {
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
-    idleTimeoutMillis: 1,
+    idleTimeoutMillis: 30000,
     logging: false,
-    max: 300,
-    connectionTimeoutMillis: 2000,
+    max: 20,
+    connectionTimeoutMillis: 10000,
     define: {
         timestamps: true,
         createdAt: 'created_at', // Personaliza o nome da coluna
