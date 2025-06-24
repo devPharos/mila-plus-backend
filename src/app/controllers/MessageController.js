@@ -281,9 +281,19 @@ class MessageController {
                     emailsToSend.push(studentExists.dataValues.email)
                 }
 
+                let mailContent = content
+
                 for (let mailToSend of emailsToSend) {
-                    mailToSend =
-                        'admin@pharosit.com.br;it.admin@milaorlandousa.com'
+                    if (process.env.NODE_ENV === 'development') {
+                        mailContent =
+                            content +
+                            '\n\n' +
+                            'This e-mail is going to: ' +
+                            mailToSend
+                        mailToSend =
+                            'admin@pharosit.com.br;it.admin@milaorlandousa.com'
+                    }
+
                     mailer
                         .sendMail({
                             from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
