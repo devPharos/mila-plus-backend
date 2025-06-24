@@ -60,6 +60,8 @@ import StudentgroupController from './app/controllers/StudentgroupController.js'
 import StudentProgramController from './app/controllers/StudentProgramController.js'
 import MessageController from './app/controllers/MessageController.js'
 import AttendanceController from './app/controllers/AttendanceController.js'
+import GradeController from './app/controllers/GradeController.js'
+import ChartsController from './app/controllers/ChartsController.js'
 
 const routes = new Router()
 
@@ -162,6 +164,8 @@ routes.post(
 
 // A partir daqui precisa de autenticação
 routes.use(authMiddleware)
+
+routes.get('/charts/frequencyControl', ChartsController.frequencyControl)
 
 routes.post(
     '/data-sync/import',
@@ -334,6 +338,9 @@ routes.delete('/agents/:agent_id', AgentController.inactivate)
 
 routes.get('/attendances/:student_id', AttendanceController.list)
 routes.put('/attendances/:student_id', AttendanceController.update)
+
+routes.get('/grades/:student_id', GradeController.list)
+routes.put('/grades/:student_id', GradeController.update)
 
 routes.get('/staffs', StaffController.index)
 routes.get('/staffs/:staff_id', StaffController.show)

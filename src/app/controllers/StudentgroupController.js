@@ -60,6 +60,7 @@ export async function jobPutInClass() {
             await putInClass(
                 pendingStudent.student_id,
                 pendingStudent.group_id,
+                null,
                 t
             )
         }
@@ -76,7 +77,12 @@ export async function jobPutInClass() {
     }
 }
 
-export async function putInClass(student_id, studentgroup_id, t) {
+export async function putInClass(
+    student_id = null,
+    studentgroup_id = null,
+    req = null,
+    t = null
+) {
     const student = await Student.findByPk(student_id)
     const studentGroup = await Studentgroup.findByPk(studentgroup_id)
 
@@ -1834,7 +1840,7 @@ class StudentgroupController {
 
             t.commit()
 
-            return res.status(200)
+            return res.status(200).json(studentgroup)
         } catch (err) {
             await t.rollback()
             const className = 'StudentgroupController'
