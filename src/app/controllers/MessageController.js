@@ -284,16 +284,23 @@ class MessageController {
                 for (let mailToSend of emailsToSend) {
                     mailToSend =
                         'admin@pharosit.com.br;it.admin@milaorlandousa.com'
-                    mailer.sendMail({
-                        from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
-                        to: mailToSend,
-                        subject: `MILA Plus - ${type}: ${subject}`,
-                        html: MailLayout({
-                            title: type + ': ' + subject,
-                            content,
-                            filial: filialExists.name,
-                        }),
-                    })
+                    mailer
+                        .sendMail({
+                            from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+                            to: mailToSend,
+                            subject: `MILA Plus - ${type}: ${subject}`,
+                            html: MailLayout({
+                                title: type + ': ' + subject,
+                                content,
+                                filial: filialExists.name,
+                            }),
+                        })
+                        .catch((err) => {
+                            console.log(err)
+                            return res.status(400).json({
+                                error: 'An error has ocourred.',
+                            })
+                        })
                 }
             }
 
