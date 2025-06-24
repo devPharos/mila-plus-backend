@@ -634,7 +634,12 @@ class StudentController {
             )
 
             if (date <= format(new Date(), 'yyyy-MM-dd')) {
-                await putInClass(studentExists.id, studentgroupExists.id, t)
+                await putInClass(
+                    studentExists.id,
+                    studentgroupExists.id,
+                    req,
+                    t
+                )
             }
 
             t.commit()

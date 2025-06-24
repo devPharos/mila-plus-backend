@@ -60,6 +60,7 @@ export async function jobPutInClass() {
             await putInClass(
                 pendingStudent.student_id,
                 pendingStudent.group_id,
+                null,
                 t
             )
         }
@@ -76,7 +77,12 @@ export async function jobPutInClass() {
     }
 }
 
-export async function putInClass(student_id, studentgroup_id, t) {
+export async function putInClass(
+    student_id = null,
+    studentgroup_id = null,
+    req = null,
+    t = null
+) {
     const student = await Student.findByPk(student_id)
     const studentGroup = await Studentgroup.findByPk(studentgroup_id)
 
@@ -1782,21 +1788,18 @@ class StudentgroupController {
             const { grades, studentgroupclass_id } = req.body
 
             const studentgroup = await Studentgroup.findByPk(studentgroup_id)
-            console.log(1)
 
             if (!studentgroup) {
                 return res.status(400).json({
                     error: 'Student Group does not exist.',
                 })
             }
-            console.log(2)
 
             if (studentgroup.dataValues.status !== 'Ongoing') {
                 return res.status(400).json({
                     error: 'Student Group is not ongoing.',
                 })
             }
-            console.log(3)
 
             for (let student of grades.students) {
                 const gradeExists = await Grade.findOne({
@@ -1834,10 +1837,8 @@ class StudentgroupController {
                     }
                 )
             }
-            console.log(4)
 
             t.commit()
-            console.log(5)
 
             return res.status(200).json(studentgroup)
         } catch (err) {

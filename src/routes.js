@@ -61,6 +61,7 @@ import StudentProgramController from './app/controllers/StudentProgramController
 import MessageController from './app/controllers/MessageController.js'
 import AttendanceController from './app/controllers/AttendanceController.js'
 import GradeController from './app/controllers/GradeController.js'
+import ChartsController from './app/controllers/ChartsController.js'
 
 const routes = new Router()
 
@@ -163,6 +164,8 @@ routes.post(
 
 // A partir daqui precisa de autenticação
 routes.use(authMiddleware)
+
+routes.get('/charts/frequencyControl', ChartsController.frequencyControl)
 
 routes.post(
     '/data-sync/import',
