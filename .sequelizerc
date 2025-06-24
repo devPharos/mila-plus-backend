@@ -1,9 +1,13 @@
-const { resolve } = require('path');
+import { fileURLToPath } from 'url'
 
+const { resolve, dirname } = require('path')
+
+const __filename = fileURLToPath(import.meta.url)
+const directory = dirname(__filename)
 
 module.exports = {
-  config: resolve(__dirname,'src','config','database.js'),
-  'models-path': resolve(__dirname,'src','app','models'),
-  'migrations-path': resolve(__dirname,'src','database','migrations'),
-  'seeders-path': resolve(__dirname,'src','database','seeders'),
-};
+    config: resolve(directory, 'src', 'config', 'database.js'),
+    'models-path': resolve(directory, 'src', 'app', 'models'),
+    'migrations-path': resolve(directory, 'src', 'database', 'migrations'),
+    'seeders-path': resolve(directory, 'src', 'database', 'seeders'),
+}

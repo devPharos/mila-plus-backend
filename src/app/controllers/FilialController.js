@@ -22,10 +22,14 @@ import {
 } from '../functions/index.js'
 import MailLayout from '../../Mails/MailLayout.js'
 import Filialdocument from '../models/Filialdocument.js'
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
 const { Op } = Sequelize
 import client from 'https'
 import fs from 'fs'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const directory = dirname(__filename)
 
 class FilialController {
     async show(req, res) {
@@ -383,7 +387,7 @@ class FilialController {
                     )
 
                     const parkingSpotImagePath = resolve(
-                        __dirname,
+                        directory,
                         '..',
                         '..',
                         '..',

@@ -20,10 +20,6 @@ process.on('unhandledRejection', (error) => {
 process.on('SIGINT', gracefulShutdown('SIGINT'))
 process.on('SIGTERM', gracefulShutdown('SIGTERM'))
 
-process.on('exit', (code) => {
-    console.log('Process exit with code:', code)
-})
-
 function gracefulShutdown(event) {
     return (code) => {
         console.log(

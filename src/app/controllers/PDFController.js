@@ -1,15 +1,18 @@
 import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog.js'
 import databaseConfig from '../../config/database.js'
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
 
 import PDFDocument from 'pdfkit'
 import affidavitSupport from '../views/pdf-layouts/affidavit-support.js'
 import transferEligibility from '../views/pdf-layouts/transfer-eligibility.js'
 import enrollment from '../views/pdf-layouts/enrollment.js'
 import fs from 'fs'
+import { fileURLToPath } from 'url'
 
 const { Op } = Sequelize
+const __filename = fileURLToPath(import.meta.url)
+const directory = dirname(__filename)
 
 class PDFController {
     async show(req, res) {
@@ -30,7 +33,7 @@ class PDFController {
 
             const name = `${layout}_${id}.pdf`
             const path = `${resolve(
-                __dirname,
+                directory,
                 '..',
                 '..',
                 '..',
@@ -62,7 +65,7 @@ class PDFController {
                 // res.contentType('application/pdf')
                 return res.download(
                     `${resolve(
-                        __dirname,
+                        directory,
                         '..',
                         '..',
                         '..',

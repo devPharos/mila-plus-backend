@@ -1,4 +1,4 @@
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
 import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog.js'
 import databaseConfig from '../../config/database.js'
@@ -33,8 +33,11 @@ import Enrollmentsponsordocument from '../models/Enrollmentsponsordocument.js'
 import client from 'https'
 import fs from 'fs'
 import Enrollmenttransfer from '../models/Enrollmenttransfer.js'
+import { fileURLToPath } from 'url'
 
 const { Op } = Sequelize
+const __filename = fileURLToPath(import.meta.url)
+const directory = dirname(__filename)
 
 export async function mailSponsor({ enrollment_id, student_id }) {
     const sponsor = await Enrollmentsponsor.findOne({
@@ -1140,7 +1143,7 @@ class EnrollmentController {
                 )
 
                 const signatureFilePath = resolve(
-                    __dirname,
+                    directory,
                     '..',
                     '..',
                     '..',
@@ -1232,7 +1235,7 @@ class EnrollmentController {
                 )
 
                 const signatureFilePath = resolve(
-                    __dirname,
+                    directory,
                     '..',
                     '..',
                     '..',
@@ -1329,7 +1332,7 @@ class EnrollmentController {
                 )
 
                 const signatureFilePath = resolve(
-                    __dirname,
+                    directory,
                     '..',
                     '..',
                     '..',

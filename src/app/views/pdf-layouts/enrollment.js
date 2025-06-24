@@ -1,4 +1,4 @@
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
 import Enrollment from '../../models/Enrollment.js'
 import File from '../../models/File.js'
 import Student from '../../models/Student.js'
@@ -15,8 +15,11 @@ import Filial from '../../models/Filial.js'
 import FilialPriceList from '../../models/FilialPriceList.js'
 import { format, parseISO } from 'date-fns'
 import Enrollmentdependent from '../../models/Enrollmentdependent.js'
-import client from 'https'
 import fs from 'fs'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const directory = dirname(__filename)
 
 export const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -93,7 +96,7 @@ export default async function enrollment(doc = null, id = '') {
     if (!signature) return false
 
     const studentSignatureFile = resolve(
-        __dirname,
+        directory,
         '..',
         '..',
         '..',
@@ -2453,7 +2456,7 @@ export default async function enrollment(doc = null, id = '') {
         })
 
         const sponsorSignaturePath = resolve(
-            __dirname,
+            directory,
             '..',
             '..',
             '..',
@@ -2758,7 +2761,7 @@ export default async function enrollment(doc = null, id = '') {
             enrollmentSponsor.length > 0
         ) {
             const sponsorSignaturePath = resolve(
-                __dirname,
+                directory,
                 '..',
                 '..',
                 '..',
@@ -2950,7 +2953,7 @@ export default async function enrollment(doc = null, id = '') {
 
     if (parking_spot) {
         const parkingSpotImagePath = resolve(
-            __dirname,
+            directory,
             '..',
             '..',
             '..',

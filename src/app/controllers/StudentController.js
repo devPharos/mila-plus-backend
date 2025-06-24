@@ -35,11 +35,14 @@ import MedicalExcuse from '../models/MedicalExcuse.js'
 import MedicalExcuseFiles from '../models/MedicalExcuseFiles.js'
 import Attendance from '../models/Attendance.js'
 import Studentgroupclass from '../models/Studentgroupclass.js'
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
 import xl from 'excel4node'
 import fs from 'fs'
+import { fileURLToPath } from 'url'
 
 const { Op } = Sequelize
+const __filename = fileURLToPath(import.meta.url)
+const directory = dirname(__filename)
 
 class StudentController {
     async store(req, res) {
@@ -1433,7 +1436,7 @@ class StudentController {
 
             const name = `vacations_report_${Date.now()}.xlsx`
             const path = `${resolve(
-                __dirname,
+                directory,
                 '..',
                 '..',
                 '..',
@@ -1578,7 +1581,7 @@ class StudentController {
 
             const name = `medical_excuse_report_${Date.now()}.xlsx`
             const path = `${resolve(
-                __dirname,
+                directory,
                 '..',
                 '..',
                 '..',

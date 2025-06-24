@@ -1,4 +1,4 @@
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
 import Enrollment from '../../models/Enrollment.js'
 import File from '../../models/File.js'
 import Student from '../../models/Student.js'
@@ -12,8 +12,11 @@ import {
 } from './default.js'
 import Filial from '../../models/Filial.js'
 import { format } from 'date-fns'
-import client from 'https'
 import fs from 'fs'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const directory = dirname(__filename)
 
 export default async function transferEligibility(doc = null, id = '') {
     const enrollment = await Enrollment.findByPk(id)
@@ -50,7 +53,7 @@ export default async function transferEligibility(doc = null, id = '') {
     if (!dsoSignature) return false
 
     const studentSignatureFile = resolve(
-        __dirname,
+        directory,
         '..',
         '..',
         '..',
@@ -61,7 +64,7 @@ export default async function transferEligibility(doc = null, id = '') {
     )
 
     const dsoSignatureFile = resolve(
-        __dirname,
+        directory,
         '..',
         '..',
         '..',

@@ -1,4 +1,4 @@
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
 import Enrollment from '../../models/Enrollment.js'
 import Enrollmentsponsor from '../../models/Enrollmentsponsor.js'
 import Enrollmentdependent from '../../models/Enrollmentdependent.js'
@@ -13,6 +13,10 @@ import {
     headerLine,
 } from './default.js'
 import fs from 'fs'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const directory = dirname(__filename)
 
 export default async function affidavitSupport(doc = null, id = '') {
     const sponsor = await Enrollmentsponsor.findByPk(id)
@@ -43,7 +47,7 @@ export default async function affidavitSupport(doc = null, id = '') {
     const maxWidth = doc.options.layout === 'landscape' ? 770 : 612
 
     const signatureFile = resolve(
-        __dirname,
+        directory,
         '..',
         '..',
         '..',

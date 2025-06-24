@@ -30,13 +30,10 @@ class App {
     }
 
     middlewares() {
-        // Configuração do CORS para permitir requisições de origens específicas
-        this.server.use(cors())
         this.server.use(express.urlencoded({ extended: true }))
         this.server.use(express.static('public'))
 
         // Adiciona o middleware CORS antes de todas as rotas
-        this.server.use(cors())
         this.server.use(express.json())
         this.server.use(
             cors({
