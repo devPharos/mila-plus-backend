@@ -28,8 +28,8 @@ import client from 'https'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 
-const __filename = fileURLToPath(import.meta.url)
-const directory = dirname(__filename)
+const filename = fileURLToPath(import.meta.url)
+const directory = dirname(filename)
 
 class FilialController {
     async show(req, res) {

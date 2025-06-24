@@ -1,8 +1,8 @@
 import { format } from 'date-fns'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
-const __filename = fileURLToPath(import.meta.url)
-const directory = dirname(__filename)
+const filename = fileURLToPath(import.meta.url)
+const directory = dirname(filename)
 export function header({
     title1 = '',
     title2 = '',

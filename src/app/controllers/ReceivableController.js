@@ -58,8 +58,8 @@ import { getDb } from '../../config/mongodb.js'
 import xl from 'excel4node'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
-const __filename = fileURLToPath(import.meta.url)
-const directory = dirname(__filename)
+const filename = fileURLToPath(import.meta.url)
+const directory = dirname(filename)
 
 export async function createRegistrationFeeReceivable({
     issuer_id,

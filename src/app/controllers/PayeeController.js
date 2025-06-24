@@ -694,8 +694,8 @@ class PayeeController {
     }
 
     async excel(req, res) {
-        const __filename = fileURLToPath(import.meta.url)
-        const directory = dirname(__filename)
+        const filename = fileURLToPath(import.meta.url)
+        const directory = dirname(filename)
         try {
             const name = `payees_${Date.now()}`
             const path = `${resolve(

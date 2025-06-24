@@ -41,8 +41,8 @@ import fs from 'fs'
 import { fileURLToPath } from 'url'
 
 const { Op } = Sequelize
-const __filename = fileURLToPath(import.meta.url)
-const directory = dirname(__filename)
+const filename = fileURLToPath(import.meta.url)
+const directory = dirname(filename)
 
 class StudentController {
     async store(req, res) {

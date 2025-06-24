@@ -15,8 +15,8 @@ import {
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 
-const __filename = fileURLToPath(import.meta.url)
-const directory = dirname(__filename)
+const filename = fileURLToPath(import.meta.url)
+const directory = dirname(filename)
 
 export default async function affidavitSupport(doc = null, id = '') {
     const sponsor = await Enrollmentsponsor.findByPk(id)

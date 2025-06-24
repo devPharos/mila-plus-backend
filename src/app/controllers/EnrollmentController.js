@@ -36,8 +36,8 @@ import Enrollmenttransfer from '../models/Enrollmenttransfer.js'
 import { fileURLToPath } from 'url'
 
 const { Op } = Sequelize
-const __filename = fileURLToPath(import.meta.url)
-const directory = dirname(__filename)
+const filename = fileURLToPath(import.meta.url)
+const directory = dirname(filename)
 
 export async function mailSponsor({ enrollment_id, student_id }) {
     const sponsor = await Enrollmentsponsor.findOne({
