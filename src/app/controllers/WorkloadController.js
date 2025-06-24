@@ -19,7 +19,7 @@ import {
 const { Op } = Sequelize
 
 class WorkloadController {
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { workload_id } = req.params
 
@@ -50,16 +50,12 @@ class WorkloadController {
 
             return res.json(workloads)
         } catch (err) {
-            const className = 'WorkloadController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = {
                 column: 'Level,Programcategory,name;Level,name;name',
@@ -160,18 +156,12 @@ class WorkloadController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'WorkloadController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const workloadExist = await Workload.findOne({
                 where: {
@@ -208,13 +198,13 @@ class WorkloadController {
                     created_by: req.userId,
                 })),
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
 
                 delete req.body.file_id
             }
 
-            const newWorkload = await Workload.create(
+            const workload = await Workload.create(
                 {
                     company_id: 1,
                     name: `${days_per_week.toString()} day(s) per week, ${hours_per_day.toString()} hour(s) per day.`,
@@ -226,42 +216,29 @@ class WorkloadController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
-            ).then((workload) => {
-                if (myFile) {
-                    myFile
-                        .update(
-                            {
-                                registry_uuidkey: workload.id,
-                            },
-                            {
-                                transaction: t,
-                            }
-                        )
-                        .then(() => {
-                            t.commit()
-                        })
-                } else {
-                    t.commit()
-                }
-            })
+            )
+            if (myFile) {
+                await myFile.update(
+                    {
+                        registry_uuidkey: workload.id,
+                    },
+                    {
+                        transaction: req.transaction,
+                    }
+                )
+            }
+            await req.transaction.commit()
 
-            return res.json(newWorkload)
+            return res.json(workload)
         } catch (err) {
-            await t.rollback()
-            const className = 'WorkloadController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { workload_id } = req.params
             const workloadExist = await Workload.findByPk(workload_id)
@@ -305,7 +282,7 @@ class WorkloadController {
                     created_by: req.userId,
                 })),
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
 
                 delete req.body.file_id
@@ -318,7 +295,7 @@ class WorkloadController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -335,17 +312,17 @@ class WorkloadController {
                 })
                 for (let pace of paces) {
                     await pace.destroy({
-                        transaction: t,
+                        transaction: req.transaction,
                     })
                 }
             }
 
             if (!days_per_week && !hours_per_day && paceGuides.length > 0) {
-                paceGuides.map((paces) => {
+                for (let paces of paceGuides) {
                     if (paces.data && paces.data.length > 0) {
-                        paces.data.map((pace) => {
+                        for (let pace of paces.data) {
                             if (pace.type && pace.description && paces.day) {
-                                Paceguide.create({
+                                await Paceguide.create({
                                     company_id: 1,
                                     workload_id,
                                     day: paces.day,
@@ -353,22 +330,17 @@ class WorkloadController {
                                     created_by: req.userId,
                                 })
                             }
-                        })
+                        }
                     }
-                })
+                }
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(workload)
         } catch (err) {
-            await t.rollback()
-            const className = 'WorkloadController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

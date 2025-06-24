@@ -9,9 +9,7 @@ import Enrollment from '../models/Enrollment.js'
 const { Op } = Sequelize
 
 class EnrollmenttransferController {
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const new_enrollment = await Enrollmenttransfer.create(
                 {
@@ -21,26 +19,19 @@ class EnrollmenttransferController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(new_enrollment)
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async dsosignature(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async dsosignature(req, res, next) {
         try {
             const { enrollment_id } = req.body
             const transfer = await Enrollmenttransfer.findOne({
@@ -69,7 +60,7 @@ class EnrollmenttransferController {
 
                     updated_by: req.userId || 2,
                 },
-                { transaction: t }
+                { transaction: req.transaction }
             )
 
             if (signatureFile) {
@@ -80,7 +71,7 @@ class EnrollmenttransferController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
                 )
@@ -114,7 +105,7 @@ class EnrollmenttransferController {
                                 id: enrollment_id,
                                 canceled_at: null,
                             },
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
                 )
@@ -130,24 +121,19 @@ class EnrollmenttransferController {
                             ...nextTimeline,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
                 )
             }
 
-            Promise.all(promises).then(() => {
-                t.commit()
+            Promise.all(promises).then(async () => {
+                await req.transaction.commit()
                 return res.status(200).json(transfer)
             })
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentController'
-            const functionName = 'sponsorsignature'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

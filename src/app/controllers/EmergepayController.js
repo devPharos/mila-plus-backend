@@ -131,7 +131,7 @@ export async function settlement(
                 created_by: 2,
             },
             {
-                transaction: t,
+                transaction: req.transaction,
             }
         )
         await receivable.update(
@@ -148,7 +148,7 @@ export async function settlement(
                 updated_by: 2,
             },
             {
-                transaction: t,
+                transaction: req.transaction,
             }
         )
         await createPaidTimeline()
@@ -255,7 +255,6 @@ export async function verifyAndCancelTextToPayTransaction(
         if (!textPaymentTransaction) {
             return true
         }
-        console.log(textPaymentTransaction.dataValues)
         await emergepay.cancelTextToPayTransaction({
             paymentPageId: textPaymentTransaction.dataValues.payment_page_id,
         })
@@ -315,7 +314,6 @@ export async function adjustPaidTransactions() {
                 },
             })
             if (!paid) {
-                console.log('Not paid')
                 continue
             }
             const amountPaidBalance = receivable.balance
@@ -338,7 +336,7 @@ export async function adjustPaidTransactions() {
 }
 
 class EmergepayController {
-    async simpleForm(req, res) {
+    async simpleForm(req, res, next) {
         const { receivable_id, amount } = req.body
         const receivable = await Receivable.findByPk(receivable_id)
         const issuer = await Issuer.findByPk(receivable.dataValues.issuer_id)
@@ -387,13 +385,12 @@ class EmergepayController {
                     })
                 })
         } catch (err) {
-            console.log({ err })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async textToPay(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async textToPay(req, res, next) {
         try {
             const { receivable_id, amount, pageDescription = '' } = req.body
 
@@ -419,7 +416,7 @@ class EmergepayController {
                     pageDescription,
                     transactionReference: receivable_id,
                 })
-                .then((response) => {
+                .then(async (response) => {
                     const { paymentPageId, paymentPageUrl } = response.data
                     mailer.sendMail({
                         from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
@@ -427,29 +424,19 @@ class EmergepayController {
                         subject: `MILA Plus - Payment Link`,
                         html: `<p>Payment ID: ${paymentPageId}<br/>Payment Link: ${paymentPageUrl}<br/>External Transaction ID: ${fileUuid}</p>`,
                     })
-                    t.commit()
+                    await req.transaction.commit()
                 })
                 .catch((err) => {
-                    t.rollback()
-                    const className = 'EmergepayController'
-                    const functionName = 'textToPay'
-                    MailLog({ className, functionName, req, err })
-                    return res.status(500).json({
-                        error: err,
-                    })
+                    err.transaction = req.transaction
+                    next(err)
                 })
         } catch (err) {
-            await t.rollback()
-            const className = 'EmergepayController'
-            const functionName = 'textToPay'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async postBackListener(req, res) {
+    async postBackListener(req, res, next) {
         function verifyHmacSignature(hmacSignature, data) {
             //this is the secret pass phrase you supplied to Gravity Payments
             var secretKey = process.env.EMERGEPAY_SIGNATURE_KEY
@@ -457,14 +444,9 @@ class EmergepayController {
             var hmac = crypto.createHmac('sha512', secretKey)
 
             hmac.update(data)
-            // console.log(hmac.digest('base64'))
             return hmac.digest('base64') === hmacSignature
         }
         try {
-            // const connection = new Sequelize(databaseConfig)
-            // const t = await connection.transaction()
-
-            // console.log('--- POSTBACK LISTENER ---')
             var hmacSignature = req.header('hmac-signature')
             var rawData = req.body
             var jsonData = JSON.stringify(rawData)
@@ -476,7 +458,6 @@ class EmergepayController {
             }
 
             const emergeData = JSON.parse(jsonData)
-            // if the hmac signature matched, the response body data is valid
             if (signatureMatched) {
                 const {
                     accountCardType,
@@ -505,8 +486,6 @@ class EmergepayController {
                     uniqueTransId,
                     justTransaction = false,
                 } = emergeData
-
-                // console.log('externalTransactionId', externalTransactionId)
 
                 await Emergepaytransaction.create({
                     account_card_type: accountCardType,
@@ -572,19 +551,16 @@ class EmergepayController {
                 }
                 res.sendStatus(200)
                 return
-            } else {
-                // console.log('Hmac não corresponde')
             }
         } catch (err) {
-            console.log({ err })
+            err.transaction = req.transaction
+            next(err)
         }
         res.sendStatus(200)
         return
     }
 
-    async refund(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async refund(req, res, next) {
         try {
             emergepay
                 .tokenizedRefundTransaction({
@@ -651,13 +627,8 @@ class EmergepayController {
                     })
                 })
         } catch (err) {
-            await t.rollback()
-            const className = 'EmergepayController'
-            const functionName = 'refund'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

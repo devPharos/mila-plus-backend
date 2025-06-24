@@ -25,7 +25,7 @@ import xl from 'excel4node'
 import fs from 'fs'
 
 class PayeeController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'due_date', asc: 'ASC' }
             let {
@@ -176,16 +176,12 @@ class PayeeController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'PayeeController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { payee_id } = req.params
 
@@ -235,18 +231,12 @@ class PayeeController {
 
             return res.json(payee)
         } catch (err) {
-            const className = 'PayeeController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             let {
                 amount = '0',
@@ -353,28 +343,20 @@ class PayeeController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            await t.commit()
+            await req.transaction.commit()
 
             return res.json(newPayee)
         } catch (err) {
-            await t.rollback()
-            const className = 'PayeeController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
-
+    async update(req, res, next) {
         try {
             const { payee_id } = req.params
 
@@ -489,27 +471,20 @@ class PayeeController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            await t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(payeeExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'PayeeController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async updateValue(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async updateValue(req, res, next) {
         try {
             const { payee_id } = req.params
             const { total_amount, paymentMethod } = req.body
@@ -529,27 +504,20 @@ class PayeeController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(payeeExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'PayeeController'
-            const functionName = 'updateValue'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async settlement(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async settlement(req, res, next) {
         try {
             const {
                 payees,
@@ -614,7 +582,7 @@ class PayeeController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
 
@@ -633,30 +601,23 @@ class PayeeController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
                 }
             }
 
-            await t.commit()
+            await req.transaction.commit()
             return res
                 .status(200)
                 .json({ message: 'Payee settlement successful.' })
         } catch (err) {
-            await t.rollback()
-            const className = 'PayeeController'
-            const functionName = 'settlement'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async delete(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async delete(req, res, next) {
         try {
             const { payee_id } = req.params
 
@@ -677,23 +638,18 @@ class PayeeController {
             }
 
             await payeeExists.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
-            await t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json({ message: 'Payee has been deleted.' })
         } catch (err) {
-            await t.rollback()
-            const className = 'PayeeController'
-            const functionName = 'delete'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async excel(req, res) {
+    async excel(req, res, next) {
         const filename = fileURLToPath(import.meta.url)
         const directory = dirname(filename)
         try {
@@ -1041,7 +997,7 @@ class PayeeController {
             ws2.row(row).filter()
             ws2.row(row).freeze()
 
-            payees.map(async (payee, index) => {
+            for (let payee of payees) {
                 let chartOfAccount = ''
                 if (payee.chartOfAccount) {
                     if (payee.chartOfAccount.Father) {
@@ -1181,7 +1137,7 @@ class PayeeController {
                 nCol++
                 ws2.cell(index + 3, nCol).string(payee.id)
                 nCol++
-            })
+            }
 
             row += payees.length + 1
 
@@ -1238,12 +1194,8 @@ class PayeeController {
             })
             return ret
         } catch (err) {
-            const className = 'PayeeController'
-            const functionName = 'excel'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

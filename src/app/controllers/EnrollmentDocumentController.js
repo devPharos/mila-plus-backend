@@ -9,9 +9,7 @@ import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument.j
 const { Op } = Sequelize
 
 class EnrollmentdocumentController {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { files, enrollment_id } = req.body
 
@@ -36,7 +34,7 @@ class EnrollmentdocumentController {
 
                         updated_by: req.userId || 2,
                     },
-                    { transaction: t }
+                    { transaction: req.transaction }
                 )
                 if (fileCreated) {
                     await Enrollmentdocument.create(
@@ -46,32 +44,23 @@ class EnrollmentdocumentController {
                             document_id: files.document_id,
                             created_by: req.userId || 2,
                         },
-                        { transaction: t }
+                        { transaction: req.transaction }
                     )
                 }
-                t.commit()
+                await req.transaction.commit()
                 return res.status(201).json(enrollmentExists)
             }
-            t.rollback()
 
             return res.status(400).json({
                 error: 'No files were provided.',
             })
         } catch (err) {
-            console.log(err)
-            const className = 'EnrollmentdocumentController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            await t.rollback()
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async dependents(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async dependents(req, res, next) {
         try {
             const { files, enrollment_id, dependent_id } = req.body
 
@@ -96,7 +85,7 @@ class EnrollmentdocumentController {
 
                         updated_by: req.userId || 2,
                     },
-                    { transaction: t }
+                    { transaction: req.transaction }
                 )
                 if (fileCreated) {
                     await Enrollmentdependentdocument.create(
@@ -107,32 +96,24 @@ class EnrollmentdocumentController {
                             document_id: files.document_id,
                             created_by: req.userId || 2,
                         },
-                        { transaction: t }
+                        { transaction: req.transaction }
                     )
                 }
-                t.commit()
+                await req.transaction.commit()
                 return res.status(201).json(enrollmentExists)
             }
-            t.rollback()
+            req.transaction.rollback()
 
             return res.status(400).json({
                 error: 'No files were provided.',
             })
         } catch (err) {
-            console.log(err)
-            const className = 'EnrollmentDependentDocumentController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            await t.rollback()
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { enrollmentDocument_id } = req.params
 
@@ -149,24 +130,19 @@ class EnrollmentdocumentController {
             await enrollmentDocumentExists.update(
                 { ...req.body, updated_by: req.userId, updated_at: new Date() },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(enrollmentDocumentExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentdocumentController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const enrollmentDocuments = await Enrollmentdocument.findAll({
                 where: {
@@ -176,16 +152,12 @@ class EnrollmentdocumentController {
 
             return res.json(enrollmentDocuments)
         } catch (err) {
-            const className = 'EnrollmentdocumentController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { enrollmentDocument_id } = req.params
             const enrollmentDocuments = await Enrollmentdocument.findByPk(
@@ -200,16 +172,12 @@ class EnrollmentdocumentController {
 
             return res.json(enrollmentDocuments)
         } catch (err) {
-            const className = 'EnrollmentdocumentController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async showByOriginTypeSubtype(req, res) {
+    async showByOriginTypeSubtype(req, res, next) {
         try {
             const { origin, type, subtype } = req.params
             const enrollmentDocuments = await Enrollmentdocument.findAll({
@@ -224,18 +192,12 @@ class EnrollmentdocumentController {
 
             return res.json(enrollmentDocuments)
         } catch (err) {
-            const className = 'EnrollmentdocumentController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async dependentsDelete(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async dependentsDelete(req, res, next) {
         try {
             const { dependentDocument_id } = req.params
             const document = await Enrollmentdependentdocument.findByPk(
@@ -252,31 +214,24 @@ class EnrollmentdocumentController {
             }
 
             await document.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
             const file = await File.findByPk(document.file_id)
             await file.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(document)
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentDependentDocumentController'
-            const functionName = 'inactivate'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async inactivate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async inactivate(req, res, next) {
         try {
             const { enrollmentDocument_id } = req.params
             const document = await Enrollmentdocument.findByPk(
@@ -293,25 +248,20 @@ class EnrollmentdocumentController {
             }
 
             await document.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
             const file = await File.findByPk(document.file_id)
             await file.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(document)
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentdocumentController'
-            const functionName = 'inactivate'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

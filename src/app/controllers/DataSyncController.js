@@ -47,9 +47,7 @@ function transformDate(date = null) {
 }
 
 class DataSyncController {
-    async import(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async import(req, res, next) {
         try {
             const { importType } = req.body
             const file = req.file
@@ -361,10 +359,10 @@ class DataSyncController {
                         }
 
                         await Student.create(data, {
-                            transaction: t,
+                            transaction: req.transaction,
                         })
                     }
-                    t.commit()
+                    await req.transaction.commit()
                     res.status(200).json({
                         message: 'Students imported successfully!',
                     })
@@ -488,13 +486,8 @@ class DataSyncController {
                 })
             }
         } catch (err) {
-            await t.rollback()
-            const className = 'DataSyncController'
-            const functionName = 'import'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

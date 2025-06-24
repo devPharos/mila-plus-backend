@@ -10,7 +10,7 @@ import Workload from '../models/Workload.js'
 const { Op } = Sequelize
 
 class PaceGuideontroller {
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { paceguide_id } = req.params
 
@@ -43,16 +43,12 @@ class PaceGuideontroller {
 
             return res.json(paceguides)
         } catch (err) {
-            const className = 'PaceGuiderController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const paceguides = await Paceguide.findAll({
                 where: {
@@ -82,16 +78,12 @@ class PaceGuideontroller {
 
             return res.json(paceguides)
         } catch (err) {
-            const className = 'PaceGuiderController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async listByWorkload(req, res) {
+    async listByWorkload(req, res, next) {
         try {
             const { workload_id } = req.params
             const paceguides = await Paceguide.findAll({
@@ -105,18 +97,12 @@ class PaceGuideontroller {
 
             return res.json(paceguides)
         } catch (err) {
-            const className = 'PaceGuiderController'
-            const functionName = 'listByWorkload'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const paceGuideExist = await Paceguide.findOne({
                 where: {
@@ -139,26 +125,19 @@ class PaceGuideontroller {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(newPaceGuide)
         } catch (err) {
-            await t.rollback()
-            const className = 'PaceGuiderController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { paceguide_id } = req.params
             const paceGuideExist = await Paceguide.findByPk(paceguide_id)
@@ -175,20 +154,15 @@ class PaceGuideontroller {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(paceguide)
         } catch (err) {
-            await t.rollback()
-            const className = 'PaceGuiderController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

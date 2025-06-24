@@ -8,9 +8,7 @@ import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument.j
 const { Op } = Sequelize
 
 class EnrollmentDependentontroller {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { enrollment_id } = req.body
 
@@ -35,40 +33,35 @@ class EnrollmentDependentontroller {
                     created_by: req.userId || 2,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit().then(async () => {
-                const retDependent = await Enrollmentdependent.findByPk(
-                    dependent.dataValues.id,
-                    {
-                        include: [
-                            {
-                                model: Enrollmentdependentdocument,
-                                as: 'documents',
-                                required: false,
-                            },
-                        ],
-                    }
-                )
+            await req.transaction
+                .commit()()
+                .then(async () => {
+                    const retDependent = await Enrollmentdependent.findByPk(
+                        dependent.dataValues.id,
+                        {
+                            include: [
+                                {
+                                    model: Enrollmentdependentdocument,
+                                    as: 'documents',
+                                    required: false,
+                                },
+                            ],
+                        }
+                    )
 
-                return res.json(retDependent)
-            })
+                    return res.json(retDependent)
+                })
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentDependentController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async inactivate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async inactivate(req, res, next) {
         try {
             const { enrollmentdependent_id } = req.params
             const enrollmentdependent = await Enrollmentdependent.findByPk(
@@ -92,20 +85,15 @@ class EnrollmentDependentontroller {
             // }
 
             await enrollmentdependent.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(enrollmentdependent)
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentDependentController'
-            const functionName = 'inactivate'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

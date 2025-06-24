@@ -14,7 +14,7 @@ import {
 const { Op } = Sequelize
 
 class LevelController {
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { level_id } = req.params
 
@@ -34,16 +34,12 @@ class LevelController {
 
             return res.json(levels)
         } catch (err) {
-            const className = 'LevelController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         const defaultOrderBy = { column: 'name', asc: 'ASC' }
         try {
             let {
@@ -97,18 +93,12 @@ class LevelController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'LevelController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const levelExist = await Level.findOne({
                 where: {
@@ -131,27 +121,19 @@ class LevelController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(newlevel)
         } catch (err) {
-            await t.rollback()
-            const className = 'LevelController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        // console.log(...req.body)
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { level_id } = req.params
             const levelExist = await Level.findByPk(level_id)
@@ -182,20 +164,15 @@ class LevelController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(level)
         } catch (err) {
-            await t.rollback()
-            const className = 'LevelController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

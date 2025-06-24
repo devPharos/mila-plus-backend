@@ -270,7 +270,7 @@ export async function handleStudentDiscounts({
     const student = await Student.findByPk(student_id)
 
     if (prices && prices.discounts) {
-        prices.discounts.map(async (discount) => {
+        for (let discount of prices.discounts) {
             const hasDiscount = studentDiscounts.find(
                 (d) =>
                     d.dataValues.filial_discount_list_id ===
@@ -316,9 +316,9 @@ export async function handleStudentDiscounts({
                     }
                 )
             }
-        })
+        }
 
-        studentDiscounts.map(async (discount) => {
+        for (let discount of studentDiscounts) {
             const hasDiscount = prices.discounts.find(
                 (d) =>
                     d.filial_discount_list_id ===
@@ -327,10 +327,10 @@ export async function handleStudentDiscounts({
             if (!hasDiscount) {
                 await discount.destroy()
             }
-        })
+        }
     } else {
-        studentDiscounts.map(async (discount) => {
+        for (let discount of studentDiscounts) {
             await discount.destroy()
-        })
+        }
     }
 }

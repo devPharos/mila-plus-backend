@@ -14,7 +14,7 @@ import MerchantXChartOfAccount from '../models/MerchantXChartOfAccounts.js'
 const { Op } = Sequelize
 
 class ChartOfAccountsController {
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { chartofaccount_id } = req.params
 
@@ -53,16 +53,12 @@ class ChartOfAccountsController {
 
             return res.json(chartofaccounts)
         } catch (err) {
-            const className = 'ChartsOfAccountController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async list(req, res) {
+    async list(req, res, next) {
         try {
             const { type = '' } = req.query
 
@@ -106,16 +102,12 @@ class ChartOfAccountsController {
 
             return res.json(chartofaccounts)
         } catch (err) {
-            const className = 'ChartsOfAccountController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'code', asc: 'ASC' }
             let {
@@ -274,18 +266,12 @@ class ChartOfAccountsController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'ChartsOfAccountController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const {
                 Father = null,
@@ -351,28 +337,20 @@ class ChartOfAccountsController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(newChartofaccount)
         } catch (err) {
-            await t.rollback()
-            const className = 'ChartsOfAccountController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { chartofaccount_id } = req.params
             const {
@@ -411,21 +389,16 @@ class ChartOfAccountsController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(chartofaccount)
         } catch (err) {
-            await t.rollback()
-            const className = 'ChartsOfAccountController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

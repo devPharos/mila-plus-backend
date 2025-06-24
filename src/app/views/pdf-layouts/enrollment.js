@@ -796,7 +796,7 @@ export default async function enrollment(doc = null, id = '') {
             text: `DEPENDENT INFORMATION (F-2 VISA - SPOUSE AND CHILDREN)`,
         })
 
-        enrollmentDependents.map((dependent, index) => {
+        for (let dependent of enrollmentDependents) {
             // console.log(dependent.dataValues)
             if (dependent) {
                 helperHeight += 36
@@ -870,7 +870,7 @@ export default async function enrollment(doc = null, id = '') {
                     answer: dependent.dataValues.phone,
                 })
             }
-        })
+        }
 
         footer({
             doc,
@@ -2016,7 +2016,7 @@ export default async function enrollment(doc = null, id = '') {
 
     footer({ doc, maxWidth, id, page: 4, pages: 6 + enrollmentSponsor.length })
 
-    enrollmentSponsor.map(async (sponsor) => {
+    for (let sponsor of enrollmentSponsor) {
         doc.addPage()
 
         header({
@@ -2383,7 +2383,7 @@ export default async function enrollment(doc = null, id = '') {
                 text: `DEPENDENT INFORMATION (F-2 VISA - SPOUSE AND CHILDREN)`,
             })
 
-            enrollmentDependents.map((dependent, index) => {
+            for (let dependent of enrollmentDependents) {
                 // console.log(dependent.dataValues)
                 if (dependent) {
                     helperHeight += 28
@@ -2417,7 +2417,7 @@ export default async function enrollment(doc = null, id = '') {
                         answer: dependent.dataValues.gender,
                     })
                 }
-            })
+            }
         }
 
         helperHeight += 30
@@ -2497,7 +2497,7 @@ export default async function enrollment(doc = null, id = '') {
             page: 5,
             pages: 6 + enrollmentSponsor.length,
         })
-    })
+    }
 
     doc.addPage()
 

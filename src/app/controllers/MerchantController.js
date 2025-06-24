@@ -16,7 +16,7 @@ import {
 const { Op } = Sequelize
 
 class MerchantController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'name', asc: 'ASC' }
             let {
@@ -112,16 +112,12 @@ class MerchantController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'MerchantController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { merchant_id } = req.params
             const merchant = await Merchant.findByPk(merchant_id, {
@@ -157,18 +153,12 @@ class MerchantController {
 
             return res.json(merchant)
         } catch (err) {
-            const className = 'MerchantController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const {
                 filial,
@@ -215,7 +205,7 @@ class MerchantController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -246,7 +236,7 @@ class MerchantController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             } else {
@@ -263,27 +253,20 @@ class MerchantController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
-            await t.commit()
+            await req.transaction.commit()
 
             return res.json(new_merchant)
         } catch (err) {
-            await t.rollback()
-            const className = 'MerchantController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { merchant_id } = req.params
 
@@ -369,7 +352,7 @@ class MerchantController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -382,7 +365,7 @@ class MerchantController {
                     where: {
                         merchant_id,
                     },
-                    transaction: t,
+                    transaction: req.transaction,
                 })
 
                 if (req.body.merchantxchartofaccounts?.length > 0) {
@@ -398,7 +381,7 @@ class MerchantController {
                                     created_by: req.userId,
                                 },
                                 {
-                                    transaction: t,
+                                    transaction: req.transaction,
                                 }
                             )
                         })
@@ -406,23 +389,16 @@ class MerchantController {
                 }
             }
 
-            await t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(merchantExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'MerchantController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async delete(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async delete(req, res, next) {
         try {
             const { merchant_id } = req.params
 
@@ -435,21 +411,16 @@ class MerchantController {
             }
 
             await merchantExists.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
-            await t.commit()
+            await req.transaction.commit()
 
             return res
                 .status(200)
                 .json({ message: 'Merchant deleted successfully.' })
         } catch (err) {
-            await t.rollback()
-            const className = 'MerchantController'
-            const functionName = 'delete'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

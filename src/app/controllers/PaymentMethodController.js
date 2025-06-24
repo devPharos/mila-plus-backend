@@ -16,7 +16,7 @@ import {
 const { Op } = Sequelize
 
 class PaymentMethodController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'description', asc: 'ASC' }
             let {
@@ -103,16 +103,12 @@ class PaymentMethodController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'PaymentMethodController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { paymentmethod_id } = req.params
 
@@ -149,19 +145,12 @@ class PaymentMethodController {
 
             return res.json(paymentMethod)
         } catch (err) {
-            const className = 'PaymentMethodController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
-
+    async store(req, res, next) {
         try {
             const {
                 filial,
@@ -202,26 +191,19 @@ class PaymentMethodController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            await t.commit()
+            await req.transaction.commit()
 
             return res.json(newPaymentMethod)
         } catch (err) {
-            await t.rollback()
-            const className = 'PaymentMethodController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { paymentmethod_id } = req.params
             const {
@@ -272,26 +254,19 @@ class PaymentMethodController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            await t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(paymentMethodExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'PaymentMethodController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async delete(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async delete(req, res, next) {
         try {
             const { id } = req.params
 
@@ -304,21 +279,16 @@ class PaymentMethodController {
             }
 
             await paymentMethodExists.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
-            await t.commit()
+            await req.transaction.commit()
 
             return res
                 .status(200)
                 .json({ message: 'Payment method deleted successfully.' })
         } catch (err) {
-            await t.rollback()
-            const className = 'PaymentMethodController'
-            const functionName = 'delete'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

@@ -18,9 +18,7 @@ import UserGroupXUser from '../models/UserGroupXUser.js'
 const { Op } = Sequelize
 
 class UserGroupController {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { filialtype_id, name, filial } = req.body
 
@@ -62,7 +60,7 @@ class UserGroupController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
             const menus = await MenuHierarchy.findAll({
@@ -84,26 +82,19 @@ class UserGroupController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
-            t.commit()
+            await req.transaction.commit()
             return res.json(group)
         } catch (err) {
-            await t.rollback()
-            const className = 'UserGroupController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { group_id } = req.params
             const { name, filialtype_id, groupAccess, filial } = req.body
@@ -154,7 +145,7 @@ class UserGroupController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -181,7 +172,7 @@ class UserGroupController {
                                         updated_by: req.userId,
                                     },
                                     {
-                                        transaction: t,
+                                        transaction: req.transaction,
                                     }
                                 )
                                 .then(async (son) => {
@@ -204,7 +195,8 @@ class UserGroupController {
                                                         updated_by: req.userId,
                                                     },
                                                     {
-                                                        transaction: t,
+                                                        transaction:
+                                                            req.transaction,
                                                     }
                                                 )
                                             }
@@ -225,28 +217,23 @@ class UserGroupController {
                                     created_by: req.userId,
                                 },
                                 {
-                                    transaction: t,
+                                    transaction: req.transaction,
                                 }
                             )
                         })
                 }
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(userGroupExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'UserGroupController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'name', asc: 'ASC' }
             let {
@@ -322,16 +309,12 @@ class UserGroupController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'UserGroupController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { group_id } = req.params
             const userGroup = await UserGroup.findByPk(group_id, {
@@ -372,18 +355,12 @@ class UserGroupController {
 
             return res.json(userGroup)
         } catch (err) {
-            const className = 'UserGroupController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async inactivate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async inactivate(req, res, next) {
         try {
             const { group_id } = req.params
             const userGroup = await UserGroup.findByPk(group_id, {
@@ -424,20 +401,15 @@ class UserGroupController {
             }
 
             await userGroup.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(userGroup)
         } catch (err) {
-            await t.rollback()
-            const className = 'UserGroupController'
-            const functionName = 'inactivate'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

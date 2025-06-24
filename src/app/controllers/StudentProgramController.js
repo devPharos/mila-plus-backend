@@ -8,9 +8,7 @@ import Studentprogram from '../models/Studentprogram.js'
 const { Op } = Sequelize
 
 class StudentProgramController {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { student_id, file_id, start_date, end_date } = req.body
 
@@ -47,7 +45,7 @@ class StudentProgramController {
 
                     updated_by: req.userId || 2,
                 },
-                { transaction: t }
+                { transaction: req.transaction }
             )
 
             const studentprogram = await Studentprogram.create(
@@ -59,7 +57,7 @@ class StudentProgramController {
                     end_date,
                     created_by: req.userId || 2,
                 },
-                { transaction: t }
+                { transaction: req.transaction }
             )
 
             if (!studentExists.dataValues.start_date) {
@@ -68,11 +66,11 @@ class StudentProgramController {
                         start_date: start_date,
                         updated_by: req.userId || 2,
                     },
-                    { transaction: t }
+                    { transaction: req.transaction }
                 )
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             const studentProgram = await Studentprogram.findByPk(
                 studentprogram.id,
@@ -90,13 +88,8 @@ class StudentProgramController {
 
             return res.status(201).json(studentProgram)
         } catch (err) {
-            const className = 'StudentProgramController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            await t.rollback()
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

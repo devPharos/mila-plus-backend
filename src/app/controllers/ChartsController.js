@@ -6,7 +6,7 @@ import Student from '../models/Student.js'
 const { Op } = Sequelize
 
 class ChartsController {
-    async frequencyControl(req, res) {
+    async frequencyControl(req, res, next) {
         try {
             const results = [
                 {
@@ -48,12 +48,8 @@ class ChartsController {
 
             return res.status(200).json(results)
         } catch (err) {
-            const className = 'FrequencyControlController'
-            const functionName = 'frequencyControl'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

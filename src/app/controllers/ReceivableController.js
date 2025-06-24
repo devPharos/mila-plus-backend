@@ -1346,7 +1346,7 @@ export function canBeFloat(str) {
 }
 
 class ReceivableController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'due_date', asc: 'ASC' }
             let {
@@ -1514,16 +1514,12 @@ class ReceivableController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'ReceivableController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { receivable_id } = req.params
 
@@ -1621,18 +1617,12 @@ class ReceivableController {
 
             return res.json(receivable)
         } catch (err) {
-            const className = 'ReceivableController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const {
                 filial,
@@ -1714,11 +1704,11 @@ class ReceivableController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            await t.commit()
+            await req.transaction.commit()
 
             const db = getDb()
             const notificationCollection = db.collection('notifications')
@@ -1736,19 +1726,12 @@ class ReceivableController {
 
             return res.json(newReceivable)
         } catch (err) {
-            await t.rollback()
-            const className = 'ReceivableController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async refund(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async refund(req, res, next) {
         try {
             const { receivable_id } = req.params
             let { refund_amount } = req.body
@@ -1823,7 +1806,7 @@ class ReceivableController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
             await receivableExists.update(
@@ -1835,30 +1818,22 @@ class ReceivableController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
             const settlement = await Settlement.findByPk(settlements[0].id)
             await settlement.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
-            t.commit()
+            await req.transaction.commit()
             return res.json(receivableExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'ReceivableController'
-            const functionName = 'refund'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
-
+    async update(req, res, next) {
         try {
             const { receivable_id } = req.params
             const {
@@ -1942,27 +1917,20 @@ class ReceivableController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            await t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(receivableExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'ReceivableController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async delete(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async delete(req, res, next) {
         try {
             const { receivable_id } = req.params
 
@@ -1987,27 +1955,20 @@ class ReceivableController {
             }
 
             await receivableExists.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
-            await t.commit()
+            await req.transaction.commit()
 
             return res
                 .status(200)
                 .json({ message: 'Receivable deleted successfully.' })
         } catch (err) {
-            await t.rollback()
-            const className = 'ReceivableController'
-            const functionName = 'delete'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async settlement(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async settlement(req, res, next) {
         try {
             const {
                 receivables,
@@ -2078,7 +2039,7 @@ class ReceivableController {
                             manual_discount: manual_discount.toFixed(2),
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
 
@@ -2097,7 +2058,7 @@ class ReceivableController {
                                 created_by: 2,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                     }
@@ -2109,7 +2070,7 @@ class ReceivableController {
                             settlement_date,
                             paymentmethod_id: paymentMethod.id,
                             settlement_memo,
-                            t: t,
+                            t: req.transaction,
                         },
                         req
                     )
@@ -2173,7 +2134,7 @@ class ReceivableController {
                                 created_by: 2,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                     }
@@ -2201,26 +2162,18 @@ class ReceivableController {
                 }
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json({
                 message: 'Settlements created successfully.',
             })
         } catch (err) {
-            await t.rollback()
-            const className = 'ReceivableController'
-            const functionName = 'settlement'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async renegociation(req, res) {
-        // console.log('Executing renegociation')
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async renegociation(req, res, next) {
         try {
             let {
                 receivables,
@@ -2257,7 +2210,7 @@ class ReceivableController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -2272,7 +2225,7 @@ class ReceivableController {
                         renegociation_to: renegociation.id,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
                 await verifyAndCancelParcelowPaymentLink(receivable.id)
@@ -2346,7 +2299,7 @@ class ReceivableController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 ).then(async (receivable) => {
                     if (installment === 0) {
@@ -2355,7 +2308,7 @@ class ReceivableController {
                 })
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             setTimeout(() => {
                 if (send_invoice && firstGeneratedReceivable) {
@@ -2367,19 +2320,12 @@ class ReceivableController {
 
             return res.json(renegociation)
         } catch (err) {
-            const className = 'ReceivableController'
-            const functionName = 'renegociation'
-            MailLog({ className, functionName, req, err })
-            await t.rollback()
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async feeAdjustment(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async feeAdjustment(req, res, next) {
         try {
             const { receivable_id, fee, reason } = req.body
 
@@ -2400,7 +2346,7 @@ class ReceivableController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
                 .then(async () => {
@@ -2418,11 +2364,11 @@ class ReceivableController {
                                 updated_by: req.userId,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                         .then(async (receivable) => {
-                            t.commit()
+                            await req.transaction.commit()
                             return res.json(receivable)
                         })
                         .catch((err) => {
@@ -2437,17 +2383,12 @@ class ReceivableController {
                     })
                 })
         } catch (err) {
-            await t.rollback()
-            const className = 'ReceivableController'
-            const functionName = 'feeAdjustment'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async excel(req, res) {
+    async excel(req, res, next) {
         try {
             const name = `receivables_${Date.now()}`
             const path = `${resolve(
@@ -2813,7 +2754,7 @@ class ReceivableController {
             ws2.row(row).filter()
             ws2.row(row).freeze()
 
-            receivables.map((receivable, index) => {
+            for (let receivable of receivables) {
                 let chartOfAccount = ''
                 if (receivable.chartOfAccount) {
                     if (receivable.chartOfAccount.Father) {
@@ -2961,7 +2902,7 @@ class ReceivableController {
                 nCol++
                 ws2.cell(index + 3, nCol).string(receivable.id)
                 nCol++
-            })
+            }
 
             row += receivables.length + 1
 
@@ -3018,17 +2959,12 @@ class ReceivableController {
             })
             return ret
         } catch (err) {
-            const className = 'ReceivableController'
-            const functionName = 'excel'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async sendInvoice(req, res) {
-        // console.log('Executing sendInvoice')
+    async sendInvoice(req, res, next) {
         try {
             const { receivable_id } = req.params
             const receivable = await Receivable.findByPk(receivable_id)
@@ -3096,12 +3032,8 @@ class ReceivableController {
             // })
             return res.json(receivable)
         } catch (err) {
-            const className = 'ReceivableController'
-            const functionName = 'sendInvoice'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

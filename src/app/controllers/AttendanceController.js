@@ -9,7 +9,7 @@ import Studentgroup from '../models/Studentgroup.js'
 const { Op } = Sequelize
 
 class AttendanceController {
-    async list(req, res) {
+    async list(req, res, next) {
         try {
             const { student_id } = req.params
             const { from_date, until_date } = req.query
@@ -59,18 +59,12 @@ class AttendanceController {
 
             return res.json({ student, attendances })
         } catch (err) {
-            const className = 'AttendanceController'
-            const functionName = 'list'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { student_id } = req.params
             const { attendances } = req.body
@@ -121,22 +115,17 @@ class AttendanceController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(student)
         } catch (err) {
-            await t.rollback()
-            const className = 'AttendanceController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

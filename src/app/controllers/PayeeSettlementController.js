@@ -21,7 +21,7 @@ import {
 } from '../functions/index.js'
 
 class PayeeSettlementController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'created_at', asc: 'ASC' }
             let {
@@ -130,16 +130,12 @@ class PayeeSettlementController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'PayeeSettlementController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { receivable_id } = req.params
 
@@ -203,18 +199,12 @@ class PayeeSettlementController {
 
             return res.json(receivable)
         } catch (err) {
-            const className = 'SettlementController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async delete(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async delete(req, res, next) {
         try {
             const { settlement_id } = req.params
 
@@ -234,7 +224,7 @@ class PayeeSettlementController {
 
             await settlement
                 .destroy({
-                    transaction: t,
+                    transaction: req.transaction,
                 })
                 .then(async () => {
                     await payee
@@ -253,17 +243,17 @@ class PayeeSettlementController {
                                 updated_by: req.userId,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                         .then(async () => {
-                            await t.commit()
+                            await req.transaction.commit()
                             return res.status(200).json({
                                 message: 'Settlement deleted successfully.',
                             })
                         })
                         .catch(async (err) => {
-                            await t.rollback()
+                            await req.transaction.rollback()
                             const className = 'SettlementController'
                             const functionName = 'delete'
                             MailLog({ className, functionName, req, err })
@@ -273,13 +263,8 @@ class PayeeSettlementController {
                         })
                 })
         } catch (err) {
-            await t.rollback()
-            const className = 'PayeeSettlementController'
-            const functionName = 'delete'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

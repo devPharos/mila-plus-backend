@@ -72,7 +72,7 @@ export async function generateRecurrencePayees({
             for (const payee of payees) {
                 if (payee.dataValues.status === 'Pending') {
                     await payee.destroy({
-                        transaction: t,
+                        transaction: req.transaction,
                     })
                 }
             }
@@ -172,7 +172,7 @@ export async function generateRecurrencePayees({
 }
 
 class PayeeRecurrenceController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'first_due_date', asc: 'ASC' }
             let {
@@ -269,16 +269,12 @@ class PayeeRecurrenceController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'PayeeRecurrenceController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { payeerecurrence_id } = req.params
 
@@ -338,18 +334,12 @@ class PayeeRecurrenceController {
 
             return res.json(payeeRecurrence)
         } catch (err) {
-            const className = 'PayeeRecurrenceController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const {
                 filial,
@@ -444,11 +434,11 @@ class PayeeRecurrenceController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            await t.commit()
+            await req.transaction.commit()
 
             generateRecurrencePayees({
                 recurrence: newPayeeRecurrence,
@@ -457,19 +447,12 @@ class PayeeRecurrenceController {
 
             return res.json(newPayeeRecurrence)
         } catch (err) {
-            await t.rollback()
-            const className = 'PayeeRecurrenceController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { payeerecurrence_id } = req.params
 
@@ -554,11 +537,11 @@ class PayeeRecurrenceController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            await t.commit()
+            await req.transaction.commit()
 
             generateRecurrencePayees({
                 recurrence: payeeRecurrence,
@@ -567,13 +550,8 @@ class PayeeRecurrenceController {
 
             return res.status(200).json(payeeRecurrence)
         } catch (err) {
-            await t.rollback()
-            const className = 'PayeeRecurrenceController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

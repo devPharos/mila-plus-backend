@@ -132,7 +132,7 @@ export async function generateRecurrenceReceivables({
                     await verifyAndCancelTextToPayTransaction(receivable.id)
                     await verifyAndCancelParcelowPaymentLink(receivable.id)
                     await receivable.destroy({
-                        transaction: t,
+                        transaction: req.transaction,
                     })
                 }
             }
@@ -284,23 +284,19 @@ export async function generateRecurrenceReceivables({
                 })
             }
 
-            await Receivable.create(newReceivable)
-                .then((receivable) => {
-                    appliedDiscounts.map((discount) => {
-                        Receivablediscounts.create({
-                            receivable_id: receivable.id,
-                            discount_id: discount.id,
-                            name: discount.name,
-                            type: discount.type,
-                            value: discount.value,
-                            percent: discount.percent,
-                            created_by: 2,
-                        })
-                    })
+            const receivable = await Receivable.create(newReceivable)
+
+            for (let discount of appliedDiscounts) {
+                await Receivablediscounts.create({
+                    receivable_id: receivable.id,
+                    discount_id: discount.id,
+                    name: discount.name,
+                    type: discount.type,
+                    value: discount.value,
+                    percent: discount.percent,
+                    created_by: 2,
                 })
-                .catch((err) => {
-                    console.log(err)
-                })
+            }
         }
     } catch (err) {
         const className = 'RecurrenceController'
@@ -310,7 +306,7 @@ export async function generateRecurrenceReceivables({
 }
 
 class RecurrenceController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'registration_number', asc: 'ASC' }
             let {
@@ -389,15 +385,11 @@ class RecurrenceController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'RecurrenceController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { student_id } = req.params
             const recurrences = await Student.findByPk(student_id, {
@@ -480,17 +472,11 @@ class RecurrenceController {
 
             return res.json(recurrences)
         } catch (err) {
-            const className = 'RecurrenceController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { filial, paymentMethod, paymentCriteria, chartOfAccount } =
                 req.body
@@ -560,10 +546,10 @@ class RecurrenceController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
-                t.commit()
+                await req.transaction.commit()
             } else {
                 await recurrence.update(
                     {
@@ -577,10 +563,10 @@ class RecurrenceController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
-                t.commit()
+                await req.transaction.commit()
             }
 
             await handleStudentDiscounts({
@@ -591,18 +577,11 @@ class RecurrenceController {
             generateRecurrenceReceivables({ recurrence, clearAll: true })
             return res.json(recurrence)
         } catch (err) {
-            await t.rollback()
-            const className = 'RecurrenceController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
-    async fillAutopayData(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async fillAutopayData(req, res, next) {
         try {
             const { recurrence_id } = req.params
             const {
@@ -647,26 +626,19 @@ class RecurrenceController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(recurrence)
         } catch (err) {
-            await t.rollback()
-            const className = 'RecurrenceController'
-            const functionName = 'autopayData'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
-    async stopRecurrence(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async stopRecurrence(req, res, next) {
         try {
             const { student_id } = req.params
             const student = await Student.findByPk(student_id)
@@ -718,29 +690,24 @@ class RecurrenceController {
             })
 
             await recurrence.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
             for (let receivable of receivables) {
                 await verifyAndCancelParcelowPaymentLink(receivable.id)
                 await verifyAndCancelTextToPayTransaction(receivable.id)
                 await receivable.destroy({
-                    transaction: t,
+                    transaction: req.transaction,
                 })
             }
-            t.commit()
+            await req.transaction.commit()
             return res.json(recurrence)
         } catch (err) {
-            await t.rollback()
-            const className = 'RecurrenceController'
-            const functionName = 'stopRecurrence'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
-    async recurrenceReceivables(req, res) {
+    async recurrenceReceivables(req, res, next) {
         try {
             const { recurrence_id } = req.params
             const recurrence = await Recurrence.findByPk(recurrence_id)
@@ -780,12 +747,8 @@ class RecurrenceController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'RecurrenceController'
-            const functionName = 'recurrenceReceivables'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

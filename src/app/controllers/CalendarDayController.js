@@ -7,9 +7,7 @@ import Calendarday from '../models/Calendarday.js'
 const { Op } = Sequelize
 
 class CalendarDayController {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { filial, day, dayto } = req.body
             if (!filial) {
@@ -31,26 +29,19 @@ class CalendarDayController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(new_calendar)
         } catch (err) {
-            await t.rollback()
-            const className = 'CalendarDayController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { filial, day, dayto } = req.body
             if (!filial) {
@@ -80,24 +71,19 @@ class CalendarDayController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(calendarDayExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'CalendarDayController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const calendarDays = await Calendarday.findAll({
                 include: [
@@ -127,16 +113,12 @@ class CalendarDayController {
 
             return res.json(calendarDays)
         } catch (err) {
-            const className = 'CalendarDayController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { calendarDay_id } = req.params
             const calendarDay = await Calendarday.findByPk(calendarDay_id, {
@@ -161,18 +143,12 @@ class CalendarDayController {
 
             return res.json(calendarDay)
         } catch (err) {
-            const className = 'CalendarDayController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async inactivate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async inactivate(req, res, next) {
         try {
             const { calendarDay_id } = req.params
             const calendarDay = await Calendarday.findByPk(calendarDay_id, {
@@ -194,26 +170,21 @@ class CalendarDayController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             } else {
                 await calendarDay.destroy({
-                    transaction: t,
+                    transaction: req.transaction,
                 })
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(calendarDay)
         } catch (err) {
-            await t.rollback()
-            const className = 'CalendarDayController'
-            const functionName = 'inactivate'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

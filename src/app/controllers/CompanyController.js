@@ -4,7 +4,7 @@ import Filial from '../models/Filial.js'
 const { Op } = Sequelize
 
 class CompanyController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const companies = await Company.findAll({
                 where: { canceled_at: null },
@@ -26,22 +26,10 @@ class CompanyController {
 
             return res.json(companies)
         } catch (err) {
-            // Log de erro simples, pode ser substituído por MailLog se desejar
-            console.error('CompanyController.index error:', err)
-            return res.status(500).json({
-                error: 'Internal server error',
-                details: err.message,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
-
-    // async store(req, res) {
-    //     const { name, active, created_by } = req.body;
-
-    //     const newCompany = await Company.create({ name, active, created_by, created_at: new Date() })
-
-    //     return res.json(newCompany);
-    // }
 }
 
 export default new CompanyController()
