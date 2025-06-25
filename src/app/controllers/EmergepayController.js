@@ -384,6 +384,7 @@ class EmergepayController {
                         error: err,
                     })
                 })
+            await req.transaction.commit()
         } catch (err) {
             err.transaction = req.transaction
             next(err)
@@ -549,9 +550,11 @@ class EmergepayController {
                         )
                     }
                 }
+                await req.transaction.commit()
                 res.sendStatus(200)
                 return
             }
+            await req.transaction.commit()
         } catch (err) {
             err.transaction = req.transaction
             next(err)
@@ -626,6 +629,9 @@ class EmergepayController {
                         created_by: 2,
                     })
                 })
+            await req.transaction.commit()
+
+            return res.sendStatus(200)
         } catch (err) {
             err.transaction = req.transaction
             next(err)
