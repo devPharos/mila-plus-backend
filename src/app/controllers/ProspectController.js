@@ -589,19 +589,17 @@ class ProspectController {
 
             // Validar para não replicar a mesma timeline em caso de reenvio de e-mail
             if (step_status !== nextTimeline.step_status) {
-                promise.push(
-                    await Enrollmenttimeline.create(
-                        {
-                            enrollment_id: enrollment.id,
-                            processtype_id,
-                            status,
-                            processsubstatus_id,
-                            ...nextTimeline,
-                        },
-                        {
-                            transaction: req.transaction,
-                        }
-                    )
+                await Enrollmenttimeline.create(
+                    {
+                        enrollment_id: enrollment.id,
+                        processtype_id,
+                        status,
+                        processsubstatus_id,
+                        ...nextTimeline,
+                    },
+                    {
+                        transaction: req.transaction,
+                    }
                 )
             }
 
@@ -610,18 +608,14 @@ class ProspectController {
                       <p>You have been asked to please complete the <strong>${title}</strong>.</p>
                       <br/>
                       <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/fill-form/${page}?crypt=${enrollment.id}" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the form</a></p>`
-            promise.push(
-                await mailer.sendMail({
-                    from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
-                    to: student.dataValues.email,
-                    subject: `MILA Plus - ${title}`,
-                    html: MailLayout({ title, content, filial: filial.name }),
-                })
-            )
-
-            Promise.all(promise).then(async () => {
-                await req.transaction.commit()
+            await mailer.sendMail({
+                from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+                to: student.dataValues.email,
+                subject: `MILA Plus - ${title}`,
+                html: MailLayout({ title, content, filial: filial.name }),
             })
+
+            await req.transaction.commit()
 
             return res.status(200).json({
                 ok: 'ok',

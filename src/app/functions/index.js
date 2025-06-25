@@ -334,3 +334,15 @@ export async function handleStudentDiscounts({
         }
     }
 }
+
+export function isDefaultRequest(defaultFilters, query) {
+    if (
+        defaultFilters.limit === query.limit &&
+        defaultFilters.page === query.page &&
+        defaultFilters.search === query.search &&
+        defaultFilters.type === query.type
+    ) {
+        return true
+    }
+    return false
+}
