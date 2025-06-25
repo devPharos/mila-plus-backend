@@ -1186,6 +1186,7 @@ class PayeeController {
                 .style(styleTotal)
 
             let ret = null
+            await req.transaction.commit()
             wb.write(path, async (err, stats) => {
                 if (err) {
                     ret = res.status(400).json({ err, stats })
@@ -1197,11 +1198,9 @@ class PayeeController {
                             }
                         })
                     }, 10000)
-                    await req.transaction.commit()
                     return res.json({ path, name })
                 }
             })
-            await req.transaction.commit()
             return ret
         } catch (err) {
             err.transaction = req.transaction

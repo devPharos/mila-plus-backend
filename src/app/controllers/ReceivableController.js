@@ -1987,7 +1987,7 @@ class ReceivableController {
             let { total_amount } = req.body
 
             for (let rec of receivables) {
-                console.log('--- SETTLEMENT ---', rec.id)
+                // console.log('--- SETTLEMENT ---', rec.id)
                 const receivable = await Receivable.findByPk(rec.id)
 
                 if (!receivable) {
@@ -2951,6 +2951,7 @@ class ReceivableController {
                 .style(styleTotal)
 
             let ret = null
+            await req.transaction.commit()
             wb.write(path, async (err, stats) => {
                 if (err) {
                     ret = res.status(400).json({ err, stats })
@@ -2962,12 +2963,10 @@ class ReceivableController {
                             }
                         })
                     }, 10000)
-                    await req.transaction.commit()
                     return res.json({ path, name })
                 }
             })
 
-            await req.transaction.commit()
             return ret
         } catch (err) {
             err.transaction = req.transaction
