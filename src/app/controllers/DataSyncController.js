@@ -52,7 +52,7 @@ class DataSyncController {
             const { importType } = req.body
             const file = req.file
             if (importType === 'Students') {
-                fs.readFile(file.path, 'utf8', async (err, data) => {
+                fs.readFile(file?.path, 'utf8', async (err, data) => {
                     if (err) {
                         console.error(err)
                         return
@@ -368,7 +368,7 @@ class DataSyncController {
                     })
                 })
             } else if (importType === 'EmergepayTransactions') {
-                fs.readFile(file.path, 'utf8', async (err, data) => {
+                fs.readFile(file?.path, 'utf8', async (err, data) => {
                     const lines = data.replaceAll('"', '').split('\n')
                     const head = lines[0].split(',')
 
