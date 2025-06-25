@@ -611,7 +611,7 @@ class StudentController {
                     studentExists.id,
                     studentgroupExists.id,
                     req,
-                    t
+                    req.transaction
                 )
             }
 
