@@ -19,7 +19,7 @@ const indexCacheHandler = async (req, res, next) => {
         next()
         return
     }
-    const defaultFilters = {
+    let defaultFilters = {
         search: '',
         limit: '50',
         type: 'null',
@@ -33,6 +33,15 @@ const indexCacheHandler = async (req, res, next) => {
         type = defaultFilters.type,
         page = defaultFilters.page,
     } = req.query
+
+    if (req.path === '/receivables') {
+        defaultFilters = {
+            search: '',
+            limit: '50',
+            type: 'pending',
+            page: '1',
+        }
+    }
 
     const shouldCache = isDefaultRequest(defaultFilters, {
         orderBy,
@@ -48,9 +57,9 @@ const indexCacheHandler = async (req, res, next) => {
         if (cachedData) {
             return res.json(cachedData)
         }
+        req.cacheKey = cacheKey
     }
 
-    req.cacheKey = cacheKey
     next() // Continua para o próximo middleware/controller
 }
 
@@ -58,7 +67,7 @@ export function handleCache({ cacheKey, rows, count }) {
     const plainRows = rows.map((row) => row.toJSON())
     const responseData = { totalRows: count, rows: plainRows }
     sequelizeCache.set(cacheKey, responseData)
-    console.log('Data cached for key:', cacheKey)
+    // console.log('Data cached for key:', cacheKey)
 }
 
 export default indexCacheHandler

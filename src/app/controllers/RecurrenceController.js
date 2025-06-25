@@ -33,6 +33,7 @@ import { verifyAndCancelTextToPayTransaction } from './EmergepayController.js'
 import Filial from '../models/Filial.js'
 import PaymentMethod from '../models/PaymentMethod.js'
 import Chartofaccount from '../models/Chartofaccount.js'
+import { handleCache } from '../middlewares/indexCacheHandler.js'
 
 export async function generateRecurrenceReceivables({
     recurrence = null,
@@ -382,6 +383,10 @@ class RecurrenceController {
                 offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
+
+            if (req.cacheKey) {
+                handleCache({ cacheKey: req.cacheKey, rows, count })
+            }
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
