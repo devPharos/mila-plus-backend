@@ -15,12 +15,14 @@ import Staff from '../models/Staff.js'
 import Filial from '../models/Filial.js'
 import { mailer } from '../../config/mailer.js'
 import MailLayout from '../../Mails/MailLayout.js'
-import databaseConfig from '../../config/database.js'
+import databaseConfig, { sequelizeCache } from '../../config/database.js'
+import { handleCache } from '../middlewares/indexCacheHandler.js'
 
 const { Op } = Sequelize
 
 class MessageController {
     async index(req, res, next) {
+        console.log('Buscando dados...')
         try {
             const defaultOrderBy = { column: 'created_at', asc: 'DESC' }
             let {
@@ -71,6 +73,10 @@ class MessageController {
                 offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
+
+            if (req.cacheKey) {
+                handleCache({ cacheKey: req.cacheKey, rows, count })
+            }
 
             return res.json({ totalRows: count, rows })
         } catch (err) {

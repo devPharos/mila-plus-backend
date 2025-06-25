@@ -26,6 +26,7 @@ import Studentinactivation from '../models/Studentinactivation.js'
 import Attendance from '../models/Attendance.js'
 import Grade from '../models/Grade.js'
 import File from '../models/File.js'
+import { handleCache } from '../middlewares/indexCacheHandler.js'
 
 const { Op } = Sequelize
 
@@ -300,6 +301,7 @@ class StudentgroupController {
                 search = '',
                 limit = 10,
                 page = 1,
+                type = 'null',
             } = req.query
 
             if (!verifyFieldInModel(orderBy, Studentgroup)) {
@@ -410,6 +412,10 @@ class StudentgroupController {
                 offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
+
+            if (req.cacheKey) {
+                handleCache({ cacheKey: req.cacheKey, rows, count })
+            }
 
             return res.json({ totalRows: count, rows })
         } catch (err) {

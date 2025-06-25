@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import NodeCache from 'node-cache'
 
 export default {
     dialect: 'postgres',
@@ -9,7 +10,7 @@ export default {
     database: process.env.DB_DATABASE,
     idleTimeoutMillis: 30000,
     logging: false,
-    max: 40,
+    max: 80,
     acquire: 30000, // Tempo máximo, em ms, que o pool tentará adquirir uma conexão antes de gerar um erro
     idle: 10000, // Tempo máximo, em ms, que uma conexão pode ficar ociosa antes de ser liberada
     connectionTimeoutMillis: 10000,
@@ -23,3 +24,5 @@ export default {
         underscoredAll: true,
     },
 }
+
+export const sequelizeCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 })

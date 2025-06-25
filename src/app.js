@@ -17,6 +17,7 @@ import { jobPutInClass } from './app/controllers/StudentgroupController.js'
 import { connectToMongo } from './config/mongodb.js'
 import transactionHandler from './app/middlewares/transactionHandler.js'
 import errorHandler from './app/middlewares/errorHandler.js'
+import indexCacheHandler from './app/middlewares/indexCacheHandler.js'
 
 class App {
     constructor() {
@@ -49,6 +50,7 @@ class App {
             })
         )
         this.server.use(transactionHandler)
+        this.server.use(indexCacheHandler)
     }
 
     routes() {
