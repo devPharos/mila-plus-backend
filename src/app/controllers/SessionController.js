@@ -113,6 +113,8 @@ class SessionController {
             //   expiresIn: authConfig.expiresInRefresh,
             // });
 
+            await req.transaction.commit()
+
             return res.json({
                 user: userData,
                 token: accessToken,

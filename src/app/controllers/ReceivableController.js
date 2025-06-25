@@ -2957,6 +2957,7 @@ class ReceivableController {
                             }
                         })
                     }, 10000)
+                    req.transaction.commit()
                     return res.json({ path, name })
                 }
             })
