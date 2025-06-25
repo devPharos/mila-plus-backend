@@ -2960,6 +2960,8 @@ class ReceivableController {
                     return res.json({ path, name })
                 }
             })
+            await req.transaction.commit()
+
             return ret
         } catch (err) {
             err.transaction = req.transaction
