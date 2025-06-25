@@ -1710,19 +1710,19 @@ class ReceivableController {
 
             await req.transaction.commit()
 
-            const db = getDb()
-            const notificationCollection = db.collection('notifications')
+            // const db = getDb()
+            // const notificationCollection = db.collection('notifications')
 
-            const notificationData = {
-                filial: filialExists.id,
-                type: 'receivable-created',
-                message: `A receivable has been created with the invoice number ${newReceivable.invoice_number}.`,
-                receivableId: newReceivable.id, // Link para o registro no Postgres
-                status: 'unread',
-                createdAt: new Date(),
-            }
+            // const notificationData = {
+            //     filial: filialExists.id,
+            //     type: 'receivable-created',
+            //     message: `A receivable has been created with the invoice number ${newReceivable.invoice_number}.`,
+            //     receivableId: newReceivable.id, // Link para o registro no Postgres
+            //     status: 'unread',
+            //     createdAt: new Date(),
+            // }
 
-            notificationCollection.insertOne(notificationData)
+            // notificationCollection.insertOne(notificationData)
 
             return res.json(newReceivable)
         } catch (err) {
