@@ -22,9 +22,7 @@ import {
 const { Op } = Sequelize
 
 class MilaUserController {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { name, email } = req.body
             const userExists = await Milauser.findOne({
@@ -53,7 +51,7 @@ class MilaUserController {
                     password,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -66,13 +64,13 @@ class MilaUserController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
 
-            Promise.all(promises).then(() => {
-                t.commit()
+            Promise.all(promises).then(async () => {
+                await req.transaction.commit()
 
                 const title = `Account created`
                 const content = `<p>Dear ${name},</p>
@@ -97,19 +95,12 @@ class MilaUserController {
             const { id } = newUser
             return res.json({ id, name, email })
         } catch (err) {
-            await t.rollback()
-            const className = 'UserController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async createUserToFilial(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async createUserToFilial(req, res, next) {
         try {
             const { email, name, filials, group } = req.body
 
@@ -150,7 +141,7 @@ class MilaUserController {
                     password,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -162,7 +153,7 @@ class MilaUserController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -178,7 +169,7 @@ class MilaUserController {
                                 created_by: req.userId,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                         addedFilials.push(filial.id)
@@ -186,7 +177,7 @@ class MilaUserController {
                 }
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             const title = `Account created`
             const content = `<p>Dear ${name},</p>
@@ -211,20 +202,14 @@ class MilaUserController {
 
             return res.json({ id, email, name })
         } catch (err) {
-            await t.rollback()
-            const className = 'UserController'
-            const functionName = 'createUserToFilial'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
+    async update(req, res, next) {
         const { user_id } = req.params
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+
         try {
             const {
                 email,
@@ -315,7 +300,7 @@ class MilaUserController {
             await userExists.update(
                 { ...req.body, updated_by: req.userId },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -332,7 +317,7 @@ class MilaUserController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             } else {
@@ -349,7 +334,7 @@ class MilaUserController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
                 }
@@ -384,7 +369,7 @@ class MilaUserController {
             })
 
             await userGroupXUser.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
             await UserGroupXUser.create(
@@ -395,7 +380,7 @@ class MilaUserController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -407,7 +392,7 @@ class MilaUserController {
             })
 
             await userXFilial.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
             const addedFilials = []
@@ -424,13 +409,13 @@ class MilaUserController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
                 addedFilials.push(filial.id)
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json({
                 name: userExists.name,
@@ -439,17 +424,12 @@ class MilaUserController {
                 avatar,
             })
         } catch (err) {
-            await t.rollback()
-            const className = 'UserController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         const defaultOrderBy = { column: 'name', asc: 'ASC' }
         try {
             let {
@@ -531,99 +511,105 @@ class MilaUserController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'MilauserController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async shortInfo(req, res) {
-        const { user_id } = req.params
+    async shortInfo(req, res, next) {
+        try {
+            const { user_id } = req.params
 
-        if (!user_id || user_id === null) {
-            return res.status(400).json({
-                error: 'User not found.',
-            })
-        }
+            if (!user_id || user_id === null) {
+                return res.status(400).json({
+                    error: 'User not found.',
+                })
+            }
 
-        const user = await Milauser.findByPk(user_id, {
-            attributes: ['id', 'name'],
-            where: {
-                company_id: 1,
-                canceled_at: null,
-            },
-        })
-
-        if (!user) {
-            return res.status(400).json({
-                error: 'User not found.',
-            })
-        }
-
-        return res.json(user)
-    }
-
-    async show(req, res) {
-        const { user_id } = req.params
-        const userExists = await Milauser.findByPk(user_id, {
-            where: { canceled_at: null, company_id: 1 },
-            include: [
-                {
-                    model: Staff,
-                    as: 'staff',
-                    required: false,
-                    attributes: ['id', 'name', 'last_name', 'email'],
+            const user = await Milauser.findByPk(user_id, {
+                attributes: ['id', 'name'],
+                where: {
+                    company_id: 1,
+                    canceled_at: null,
                 },
-                {
-                    model: UserXFilial,
-                    as: 'filials',
-                    attributes: ['id', 'filial_id'],
-                    where: {
-                        canceled_at: null,
+            })
+
+            if (!user) {
+                return res.status(400).json({
+                    error: 'User not found.',
+                })
+            }
+
+            return res.json(user)
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
+    }
+
+    async show(req, res, next) {
+        try {
+            const { user_id } = req.params
+            const userExists = await Milauser.findByPk(user_id, {
+                where: { canceled_at: null, company_id: 1 },
+                include: [
+                    {
+                        model: Staff,
+                        as: 'staff',
+                        required: false,
+                        attributes: ['id', 'name', 'last_name', 'email'],
                     },
-                    include: [
-                        {
-                            model: Filial,
-                            as: 'filial',
-                            attributes: ['id', 'alias', 'name'],
+                    {
+                        model: UserXFilial,
+                        as: 'filials',
+                        attributes: ['id', 'filial_id'],
+                        where: {
+                            canceled_at: null,
                         },
-                    ],
-                },
-                {
-                    model: UserGroupXUser,
-                    as: 'groups',
-                    attributes: ['id'],
-                    where: {
-                        canceled_at: null,
-                    },
-                    include: [
-                        {
-                            model: UserGroup,
-                            as: 'group',
-                            attributes: ['id', 'name'],
-                            where: {
-                                canceled_at: null,
+                        include: [
+                            {
+                                model: Filial,
+                                as: 'filial',
+                                attributes: ['id', 'alias', 'name'],
                             },
+                        ],
+                    },
+                    {
+                        model: UserGroupXUser,
+                        as: 'groups',
+                        attributes: ['id'],
+                        where: {
+                            canceled_at: null,
                         },
-                    ],
-                },
-            ],
-            attributes: ['id', 'name', 'email', 'avatar_id'],
-        })
-
-        if (!userExists) {
-            return res.status(400).json({
-                error: 'Nenhum usuário está cadastrado.',
+                        include: [
+                            {
+                                model: UserGroup,
+                                as: 'group',
+                                attributes: ['id', 'name'],
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
+                    },
+                ],
+                attributes: ['id', 'name', 'email', 'avatar_id'],
             })
-        }
 
-        return res.json(userExists)
+            if (!userExists) {
+                return res.status(400).json({
+                    error: 'Nenhum usuário está cadastrado.',
+                })
+            }
+
+            return res.json(userExists)
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
     }
 
-    async filialAssociate(req, res) {
+    async filialAssociate(req, res, next) {
         try {
             const { user_id, filial_id } = req.body
 
@@ -658,13 +644,12 @@ class MilaUserController {
 
             return res.status(200).json({ ok: 'sucesso' })
         } catch (err) {
-            return res.status(402).json({ error: 'general-error' })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async sendResetPasswordEmail(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async sendResetPasswordEmail(req, res, next) {
         try {
             const { user_mail } = req.body
 
@@ -694,7 +679,7 @@ class MilaUserController {
                     ),
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -710,26 +695,19 @@ class MilaUserController {
                 html: MailLayout({ title, content, filial: '' }),
             })
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json({
                 message: 'Password reset email sent',
                 token,
             })
         } catch (err) {
-            await t.rollback()
-            const className = 'UserController'
-            const functionName = 'sendResetPasswordEmail'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async resetPassword(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async resetPassword(req, res, next) {
         try {
             const { token } = req.params
             const { password, confirmPassword } = req.body
@@ -772,53 +750,53 @@ class MilaUserController {
                     password_reset_expire: null,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json({
                 message: 'Password reseted!',
                 token,
             })
         } catch (err) {
-            await t.rollback()
-            const className = 'MilauserController'
-            const functionName = 'resetPassword'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async getUserByToken(req, res) {
-        const { token } = req.params
+    async getUserByToken(req, res, next) {
+        try {
+            const { token } = req.params
 
-        if (!token) {
-            return res.status(400).json({
-                error: 'Token not found',
-            })
-        }
+            if (!token) {
+                return res.status(400).json({
+                    error: 'Token not found',
+                })
+            }
 
-        const user = await Milauser.findOne({
-            where: {
-                password_reset_token: token,
-                password_reset_expire: {
-                    [Op.gt]: new Date(),
+            const user = await Milauser.findOne({
+                where: {
+                    password_reset_token: token,
+                    password_reset_expire: {
+                        [Op.gt]: new Date(),
+                    },
+                    canceled_at: null,
                 },
-                canceled_at: null,
-            },
-        })
-
-        if (!user) {
-            return res.status(400).json({
-                error: 'Token not found',
             })
-        }
 
-        return res.json(user)
+            if (!user) {
+                return res.status(400).json({
+                    error: 'Token not found',
+                })
+            }
+
+            return res.json(user)
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
     }
 }
 

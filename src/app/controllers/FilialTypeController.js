@@ -12,7 +12,7 @@ import {
 const { Op } = Sequelize
 
 class FilialTypeController {
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { filialtype_id } = req.params
 
@@ -26,16 +26,12 @@ class FilialTypeController {
 
             return res.json(filialtypes)
         } catch (err) {
-            const className = 'FilialTypeController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         const defaultOrderBy = { column: 'name', asc: 'ASC' }
         try {
             let {
@@ -76,18 +72,12 @@ class FilialTypeController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'FilialTypeController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const filialTypeExist = await Filialtype.findOne({
                 where: {
@@ -110,27 +100,20 @@ class FilialTypeController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(newFilialType)
         } catch (err) {
-            await t.rollback()
-            const className = 'FilialTypeController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { filialtype_id } = req.params
             const filialTypeExist = await Filialtype.findByPk(filialtype_id)
@@ -147,21 +130,16 @@ class FilialTypeController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(filialType)
         } catch (err) {
-            await t.rollback()
-            const className = 'FilialTypeController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

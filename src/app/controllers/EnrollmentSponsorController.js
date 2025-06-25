@@ -22,9 +22,7 @@ import Enrollmentsponsordocument from '../models/Enrollmentsponsordocument.js'
 const { Op } = Sequelize
 
 class EnrollmentsponsorController {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { enrollment_id } = req.body
 
@@ -49,11 +47,11 @@ class EnrollmentsponsorController {
                     created_by: req.userId || 2,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit().then(async () => {
+            await req.transaction.commit().then(async () => {
                 const retSponsor = await Enrollmentsponsor.findByPk(
                     sponsor.dataValues.id,
                     {
@@ -70,19 +68,12 @@ class EnrollmentsponsorController {
                 return res.json(retSponsor)
             })
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentSponsorController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async inactivate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async inactivate(req, res, next) {
         try {
             const { enrollmentsponsor_id } = req.params
             const enrollmentsponsor = await Enrollmentsponsor.findByPk(
@@ -112,26 +103,19 @@ class EnrollmentsponsorController {
             }
 
             await enrollmentsponsor.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(enrollmentsponsor)
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentSponsorController'
-            const functionName = 'inactivate'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async outsideUpdate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async outsideUpdate(req, res, next) {
         let nextTimeline = null
         let notifyAgent = false
         try {
@@ -189,7 +173,7 @@ class EnrollmentsponsorController {
                         id: sponsor_id,
                         canceled_at: null,
                     },
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -252,15 +236,15 @@ class EnrollmentsponsorController {
                         ...nextTimeline,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
 
             const filial = await Filial.findByPk(enrollmentExists.filial_id)
 
-            Promise.all(promises).then(() => {
-                t.commit()
+            Promise.all(promises).then(async () => {
+                await req.transaction.commit()
                 if (notifyAgent) {
                     const title = `Enrollment Process - Agent`
                     const content = `<p>Dear ${enrollmentExists.agents.name},</p>
@@ -281,19 +265,12 @@ class EnrollmentsponsorController {
                 return res.status(200).json(enrollmentExists)
             })
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentsponsorController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async outsideShow(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async outsideShow(req, res, next) {
         try {
             const { sponsor_id } = req.params
             const enrollments = await Enrollment.findOne({
@@ -413,12 +390,8 @@ class EnrollmentsponsorController {
 
             return res.json(enrollments)
         } catch (err) {
-            const className = 'EnrollmentController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

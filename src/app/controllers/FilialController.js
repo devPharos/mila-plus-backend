@@ -32,7 +32,7 @@ const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
 class FilialController {
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { filial_id } = req.params
 
@@ -124,16 +124,12 @@ class FilialController {
 
             return res.json(filial)
         } catch (err) {
-            const className = 'FilialController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         const defaultOrderBy = { column: 'name', asc: 'ASC' }
         try {
             let {
@@ -197,18 +193,12 @@ class FilialController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'FilialController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const filialExist = await Filial.findOne({
                 where: {
@@ -231,7 +221,7 @@ class FilialController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -254,7 +244,7 @@ class FilialController {
 
                     const password = randomPassword()
 
-                    await Milauser.create({
+                    const newUser = await Milauser.create({
                         company_id: 1,
                         name,
                         email,
@@ -263,90 +253,64 @@ class FilialController {
 
                         created_by: req.userId,
                     })
-                        .then(async (newUser) => {
-                            newFilial.update({
-                                administrator_id: newUser.id,
-                                updated_by: req.userId,
-                            })
+                    newFilial.update({
+                        administrator_id: newUser.id,
+                        updated_by: req.userId,
+                    })
 
-                            await UserXFilial.create(
-                                {
-                                    user_id: newUser.id,
-                                    filial_id: newFilial.id,
+                    await UserXFilial.create(
+                        {
+                            user_id: newUser.id,
+                            filial_id: newFilial.id,
 
-                                    created_by: req.userId,
-                                },
-                                {
-                                    transaction: t,
-                                }
-                            )
-                            await UserGroupXUser.create(
-                                {
-                                    user_id: newUser.id,
-                                    group_id:
-                                        'ae0453fd-b493-41ff-803b-9aea989a8567',
+                            created_by: req.userId,
+                        },
+                        {
+                            transaction: req.transaction,
+                        }
+                    )
+                    await UserGroupXUser.create(
+                        {
+                            user_id: newUser.id,
+                            group_id: 'ae0453fd-b493-41ff-803b-9aea989a8567',
 
-                                    created_by: req.userId,
-                                },
-                                {
-                                    transaction: t,
-                                }
-                            )
-                        })
-                        .finally(() => {
-                            const title = `Account created`
-                            const content = `<p>Dear ${name},</p>
-                            <p>Now you have access to MILA Plus system, please use these information on your first access:<br/>
-                            E-mail: ${email}</br>
-                            Password: ${password}</p>
-                            <br/>
-                            <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
+                            created_by: req.userId,
+                        },
+                        {
+                            transaction: req.transaction,
+                        }
+                    )
+                    const title = `Account created`
+                    const content = `<p>Dear ${name},</p>
+                    <p>Now you have access to MILA Plus system, please use these information on your first access:<br/>
+                    E-mail: ${email}</br>
+                    Password: ${password}</p>
+                    <br/>
+                    <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
 
-                            // console.log('from: ' + process.env.MAIL_FROM)
-                            // console.log('to: ' + email)
-                            // console.log('title: ' + title)
-
-                            mailer.sendMail({
-                                from:
-                                    '"MILA Plus" <' +
-                                    process.env.MAIL_FROM +
-                                    '>',
-                                to: sponsor.dataValues.email,
-                                subject: `MILA Plus - ${title}`,
-                                html: MailLayout({
-                                    title,
-                                    content,
-                                    filial: newFilial.dataValues.name,
-                                }),
-                            })
-                        })
-                        .catch((err) => {
-                            console.log(err)
-                            t.rollback()
-                            return res.status(400).json({
-                                error: 'An error has ocourred.',
-                            })
-                        })
+                    mailer.sendMail({
+                        from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+                        to: sponsor.dataValues.email,
+                        subject: `MILA Plus - ${title}`,
+                        html: MailLayout({
+                            title,
+                            content,
+                            filial: newFilial.dataValues.name,
+                        }),
+                    })
                 }
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(newFilial)
         } catch (err) {
-            await t.rollback()
-            const className = 'FilialController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { filial_id } = req.params
             const filialExist = await Filial.findByPk(filial_id)
@@ -372,7 +336,7 @@ class FilialController {
 
                         updated_by: req.userId || 2,
                     },
-                    { transaction: t }
+                    { transaction: req.transaction }
                 )
 
                 if (fileCreated) {
@@ -382,7 +346,7 @@ class FilialController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
 
@@ -409,7 +373,7 @@ class FilialController {
                         res.pipe(parkingSpotImageLink)
                     })
                 }
-                t.commit()
+                await req.transaction.commit()
                 return res.status(201).json(filialExist)
             }
 
@@ -419,7 +383,7 @@ class FilialController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -433,39 +397,35 @@ class FilialController {
                     (pricelist) => pricelist.id
                 )
 
-                pricesToCreate.map((newPrice) => {
+                for (let newPrice of pricesToCreate) {
                     delete newPrice.id
-                    promises.push(
-                        FilialPriceList.create(
-                            {
-                                filial_id: filial.id,
-                                ...newPrice,
-                                created_by: req.userId,
-                            },
-                            {
-                                transaction: t,
-                            }
-                        )
+                    await FilialPriceList.create(
+                        {
+                            filial_id: filial.id,
+                            ...newPrice,
+                            created_by: req.userId,
+                        },
+                        {
+                            transaction: req.transaction,
+                        }
                     )
-                })
+                }
 
-                pricesToUpdate.map((updPrice) => {
-                    promises.push(
-                        FilialPriceList.update(
-                            {
-                                filial_id: filial.id,
-                                ...updPrice,
-                                updated_by: req.userId,
+                for (let updPrice of pricesToUpdate) {
+                    await FilialPriceList.update(
+                        {
+                            filial_id: filial.id,
+                            ...updPrice,
+                            updated_by: req.userId,
+                        },
+                        {
+                            where: {
+                                id: updPrice.id,
                             },
-                            {
-                                where: {
-                                    id: updPrice.id,
-                                },
-                                transaction: t,
-                            }
-                        )
+                            transaction: req.transaction,
+                        }
                     )
-                })
+                }
             }
 
             if (req.body.discountlists) {
@@ -476,212 +436,197 @@ class FilialController {
                     (discount) => discount.id
                 )
 
-                discountsToCreate.map((newDiscount) => {
+                for (let newDiscount of discountsToCreate) {
                     delete newDiscount.id
-                    promises.push(
-                        FilialDiscountList.create(
-                            {
-                                filial_id: filial.id,
-                                ...newDiscount,
-                                created_by: req.userId,
-                            },
-                            {
-                                transaction: t,
-                            }
-                        )
+                    await FilialDiscountList.create(
+                        {
+                            filial_id: filial.id,
+                            ...newDiscount,
+                            created_by: req.userId,
+                        },
+                        {
+                            transaction: req.transaction,
+                        }
                     )
-                })
+                }
 
-                discountsToUpdate.map((updDiscount) => {
-                    promises.push(
-                        FilialDiscountList.update(
-                            {
-                                filial_id: filial.id,
-                                ...updDiscount,
-                                updated_by: req.userId,
+                for (let updDiscount of discountsToUpdate) {
+                    await FilialDiscountList.update(
+                        {
+                            filial_id: filial.id,
+                            ...updDiscount,
+                            updated_by: req.userId,
+                        },
+                        {
+                            where: {
+                                id: updDiscount.id,
                             },
-                            {
-                                where: {
-                                    id: updDiscount.id,
-                                },
-                                transaction: t,
-                            }
-                        )
+                            transaction: req.transaction,
+                        }
                     )
-                })
+                }
             }
 
-            Promise.all(promises).then(async () => {
-                if (!req.body.administrator.id) {
-                    const { name, email } = req.body.administrator
-                    if (name && email) {
-                        const userExists = await Milauser.findOne({
-                            where: {
-                                email,
-                                canceled_at: null,
-                            },
-                            attributes: ['id'],
+            if (!req.body.administrator.id) {
+                const { name, email } = req.body.administrator
+                if (name && email) {
+                    const userExists = await Milauser.findOne({
+                        where: {
+                            email,
+                            canceled_at: null,
+                        },
+                        attributes: ['id'],
+                    })
+
+                    if (userExists) {
+                        return res.status(400).json({
+                            error: 'User e-mail already exist.',
                         })
+                    }
 
-                        if (userExists) {
-                            return res.status(400).json({
-                                error: 'User e-mail already exist.',
-                            })
+                    const password = randomPassword()
+
+                    await Milauser.create(
+                        {
+                            company_id: 1,
+                            name,
+                            email,
+                            password,
+                            force_password_change: true,
+
+                            created_by: req.userId,
+                        },
+                        {
+                            transaction: req.transaction,
                         }
+                    )
+                        .then(async (newUser) => {
+                            await filial.update(
+                                {
+                                    administrator_id: newUser.id,
+                                    updated_by: req.userId,
+                                },
+                                {
+                                    transaction: req.transaction,
+                                }
+                            )
 
-                        const password = randomPassword()
+                            await UserXFilial.create(
+                                {
+                                    user_id: newUser.id,
+                                    filial_id,
 
-                        await Milauser.create(
-                            {
-                                company_id: 1,
-                                name,
-                                email,
-                                password,
-                                force_password_change: true,
+                                    created_by: req.userId,
+                                },
+                                {
+                                    transaction: req.transaction,
+                                }
+                            )
+                            await UserGroupXUser.create(
+                                {
+                                    user_id: newUser.id,
+                                    group_id:
+                                        'ae0453fd-b493-41ff-803b-9aea989a8567',
 
-                                created_by: req.userId,
-                            },
-                            {
-                                transaction: t,
-                            }
-                        )
-                            .then(async (newUser) => {
-                                await filial.update(
-                                    {
-                                        administrator_id: newUser.id,
-                                        updated_by: req.userId,
-                                    },
-                                    {
-                                        transaction: t,
-                                    }
-                                )
-
-                                await UserXFilial.create(
-                                    {
-                                        user_id: newUser.id,
-                                        filial_id,
-
-                                        created_by: req.userId,
-                                    },
-                                    {
-                                        transaction: t,
-                                    }
-                                )
-                                await UserGroupXUser.create(
-                                    {
-                                        user_id: newUser.id,
-                                        group_id:
-                                            'ae0453fd-b493-41ff-803b-9aea989a8567',
-
-                                        created_by: req.userId,
-                                    },
-                                    {
-                                        transaction: t,
-                                    }
-                                )
-                            })
-                            .finally(() => {
-                                const title = `Account created`
-                                const content = `<p>Dear ${name},</p>
+                                    created_by: req.userId,
+                                },
+                                {
+                                    transaction: req.transaction,
+                                }
+                            )
+                        })
+                        .finally(() => {
+                            const title = `Account created`
+                            const content = `<p>Dear ${name},</p>
                               <p>Now you have access to MILA Plus system, please use these information on your first access:<br/>
                               E-mail: ${email}</br>
                               Password: ${password}</p>
                               <br/>
                               <p style='margin: 12px 0;'><a href="${FRONTEND_URL}/" style='background-color: #ff5406;color:#FFF;font-weight: bold;font-size: 14px;padding: 10px 20px;border-radius: 6px;text-decoration: none;'>Click here to access the system</a></p>`
 
-                                // console.log('from: ' + process.env.MAIL_FROM)
-                                // console.log('to: ' + email)
-                                // console.log('title: ' + title)
-
-                                mailer.sendMail({
-                                    from:
-                                        '"MILA Plus" <' +
-                                        process.env.MAIL_FROM +
-                                        '>',
-                                    to: email,
-                                    subject: `MILA Plus - ${title}`,
-                                    html: MailLayout({
-                                        title,
-                                        content,
-                                        filial: filial.name,
-                                    }),
-                                })
+                            mailer.sendMail({
+                                from:
+                                    '"MILA Plus" <' +
+                                    process.env.MAIL_FROM +
+                                    '>',
+                                to: email,
+                                subject: `MILA Plus - ${title}`,
+                                html: MailLayout({
+                                    title,
+                                    content,
+                                    filial: filial.name,
+                                }),
                             })
-                            .catch((err) => {
-                                console.log(err)
-                                t.rollback()
-                                return res.status(400).json({
-                                    error: 'An error has ocourred.',
-                                })
+                        })
+                        .catch((err) => {
+                            console.log(err)
+                            req.transaction.rollback()
+                            return res.status(400).json({
+                                error: 'An error has ocourred.',
                             })
-                    }
+                        })
                 }
+            }
 
-                if (req.body.administrator.id) {
-                    const { name, email } = req.body.administrator
-                    if (name && email) {
-                        const userExists = await Milauser.findByPk(
-                            req.body.administrator.id
-                        )
+            if (req.body.administrator.id) {
+                const { name, email } = req.body.administrator
+                if (name && email) {
+                    const userExists = await Milauser.findByPk(
+                        req.body.administrator.id
+                    )
 
-                        const password = randomPassword()
+                    const password = randomPassword()
 
-                        await userExists.update(
-                            {
-                                name,
-                                email,
-                                password,
-                                force_password_change: true,
+                    await userExists.update(
+                        {
+                            name,
+                            email,
+                            password,
+                            force_password_change: true,
 
-                                updated_by: req.userId,
-                            },
-                            {
-                                transaction: t,
-                            }
-                        )
-                    }
+                            updated_by: req.userId,
+                        },
+                        {
+                            transaction: req.transaction,
+                        }
+                    )
                 }
+            }
 
-                filial = await Filial.findByPk(filial.id, {
-                    include: [
-                        {
-                            model: FilialPriceList,
-                            as: 'pricelists',
-                            required: false,
-                            where: {
-                                canceled_at: null,
-                            },
+            filial = await Filial.findByPk(filial.id, {
+                include: [
+                    {
+                        model: FilialPriceList,
+                        as: 'pricelists',
+                        required: false,
+                        where: {
+                            canceled_at: null,
                         },
-                        {
-                            model: FilialDiscountList,
-                            as: 'discountlists',
-                            required: false,
-                            where: {
-                                canceled_at: null,
-                            },
+                    },
+                    {
+                        model: FilialDiscountList,
+                        as: 'discountlists',
+                        required: false,
+                        where: {
+                            canceled_at: null,
                         },
-                        {
-                            model: Milauser,
-                            as: 'administrator',
-                            required: false,
-                            where: {
-                                canceled_at: null,
-                            },
+                    },
+                    {
+                        model: Milauser,
+                        as: 'administrator',
+                        required: false,
+                        where: {
+                            canceled_at: null,
                         },
-                    ],
-                })
-
-                t.commit()
-                return res.json(filial)
+                    },
+                ],
             })
+
+            await req.transaction.commit()
+            return res.json(filial)
         } catch (err) {
-            await t.rollback()
-            const className = 'FilialController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

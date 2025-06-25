@@ -13,9 +13,7 @@ import {
 const { Op } = Sequelize
 
 class AgentController {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const new_agent = await Agent.create(
                 {
@@ -26,56 +24,46 @@ class AgentController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(new_agent)
         } catch (err) {
-            await t.rollback()
-            const className = 'AgentController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { agent_id } = req.params
 
             const agentExists = await Agent.findByPk(agent_id)
 
             if (!agentExists) {
-                return res.status(400).json({ error: 'Agent does not exist.' })
+                return res.status(400).json({
+                    error: 'Agent does not exist.',
+                })
             }
 
             await agentExists.update(
                 { ...req.body, updated_by: req.userId, updated_at: new Date() },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(agentExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'AgentController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'name', asc: 'ASC' }
             let {
@@ -130,20 +118,24 @@ class AgentController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'AgentController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { agent_id } = req.params
             const agent = await Agent.findByPk(agent_id, {
                 where: { canceled_at: null },
+                include: [
+                    {
+                        model: Filial,
+                        as: 'filial',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                ],
             })
 
             if (!agent) {
@@ -154,18 +146,12 @@ class AgentController {
 
             return res.json(agent)
         } catch (err) {
-            const className = 'AgentController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async inactivate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async inactivate(req, res, next) {
         try {
             const { agent_id } = req.params
             const agent = await Agent.findByPk(agent_id, {
@@ -187,26 +173,21 @@ class AgentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             } else {
                 await agent.destroy({
-                    transaction: t,
+                    transaction: req.transaction,
                 })
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(agent)
         } catch (err) {
-            await t.rollback()
-            const className = 'AgentController'
-            const functionName = 'inactivate'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

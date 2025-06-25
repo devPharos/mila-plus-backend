@@ -28,9 +28,7 @@ import Issuer from '../models/Issuer.js'
 const { Op } = Sequelize
 
 class ProspectController {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { filial, agent, processtypes, processsubstatuses } = req.body
 
@@ -88,11 +86,11 @@ class ProspectController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             handleStudentDiscounts({
                 student_id: newProspect.id,
@@ -101,19 +99,12 @@ class ProspectController {
 
             return res.json(newProspect)
         } catch (err) {
-            await t.rollback()
-            const className = 'ProspectController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { prospect_id } = req.params
             const { filial, agent, processtypes, processsubstatuses } = req.body
@@ -193,7 +184,7 @@ class ProspectController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -209,11 +200,11 @@ class ProspectController {
                     where: {
                         student_id: prospectExists.id,
                     },
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             if (req.body.prices) {
                 handleStudentDiscounts({
@@ -224,17 +215,12 @@ class ProspectController {
 
             return res.json(changedProspect)
         } catch (err) {
-            await t.rollback()
-            const className = 'ProspectController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { prospect_id } = req.params
             const prospect = await Student.findByPk(prospect_id, {
@@ -356,16 +342,12 @@ class ProspectController {
 
             return res.json(prospect)
         } catch (err) {
-            const className = 'ProspectController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'name;last_name', asc: 'ASC' }
             let {
@@ -464,18 +446,12 @@ class ProspectController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'ProspectController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async formMail(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async formMail(req, res, next) {
         try {
             const { crypt } = req.body
 
@@ -623,7 +599,7 @@ class ProspectController {
                             ...nextTimeline,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
                 )
@@ -643,18 +619,16 @@ class ProspectController {
                 })
             )
 
-            Promise.all(promise).then(() => {
-                t.commit()
+            Promise.all(promise).then(async () => {
+                await req.transaction.commit()
             })
 
             return res.status(200).json({
                 ok: 'ok',
             })
         } catch (err) {
-            console.log(err)
-            return res.status(400).json({
-                error: 'An error has ocourred.',
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

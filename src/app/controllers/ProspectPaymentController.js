@@ -25,9 +25,7 @@ import { parcelowAPI } from '../../config/parcelowAPI.js'
 const { Op } = Sequelize
 
 class ProspectPaymentController {
-    async generateFees(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async generateFees(req, res, next) {
         try {
             const { filial_id, student_id, enrollment_id, paymentmethod_id } =
                 req.body
@@ -134,11 +132,11 @@ class ProspectPaymentController {
                             ? registrationFee.invoice_number
                             : used_invoice,
                         paymentmethod_id,
-                        t,
+                        t: req.transaction,
                     })
                 }
 
-                t.commit()
+                await req.transaction.commit()
                 return res.json({
                     issuer: issuerExists,
                     registrationFee,
@@ -146,19 +144,12 @@ class ProspectPaymentController {
                 })
             }, 3000)
         } catch (err) {
-            await t.rollback()
-            const className = 'ProspectPaymentController'
-            const functionName = 'createIssuer'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async sendPaymentLink(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async sendPaymentLink(req, res, next) {
         try {
             const {
                 issuer_id,
@@ -247,7 +238,7 @@ class ProspectPaymentController {
                         })
                     })
                     .catch((err) => {
-                        t.rollback()
+                        req.transaction.rollback()
                         const className = 'EmergepayController'
                         const functionName = 'textToPay'
                         MailLog({ className, functionName, req, err })
@@ -332,7 +323,7 @@ class ProspectPaymentController {
                             })
                     })
                     .catch((err) => {
-                        t.rollback()
+                        req.transaction.rollback()
                         const className = 'ParcelowController'
                         const functionName = 'ParcelowPaymentLink'
                         MailLog({ className, functionName, req, err })
@@ -355,13 +346,8 @@ class ProspectPaymentController {
                 })
             }
         } catch (err) {
-            await t.rollback()
-            const className = 'ProspectPaymentController'
-            const functionName = 'sendPaymentLink'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
 
         function generateEmail({
@@ -580,7 +566,7 @@ class ProspectPaymentController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
 
@@ -603,10 +589,10 @@ class ProspectPaymentController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
-                    t.commit()
+                    await req.transaction.commit()
 
                     return res.json({ status: 'ok' })
                 })

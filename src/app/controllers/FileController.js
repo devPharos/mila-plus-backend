@@ -5,7 +5,7 @@ import File from '../models/File.js'
 const { Op } = Sequelize
 
 class FileController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const files = await File.findAll({
                 where: {
@@ -17,12 +17,8 @@ class FileController {
 
             return res.json(files)
         } catch (err) {
-            const className = 'FileController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

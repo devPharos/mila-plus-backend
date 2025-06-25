@@ -14,7 +14,7 @@ import Studentgroup from '../models/Studentgroup.js'
 const { Op } = Sequelize
 
 class ClassroomController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'class_number', asc: 'ASC' }
             let {
@@ -88,18 +88,12 @@ class ClassroomController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'ClassroomController'
-            const functionName = 'index'
-            console.log(err)
-
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { classroom_id } = req.params
             const classroom = await Classroom.findByPk(classroom_id, {
@@ -132,19 +126,12 @@ class ClassroomController {
 
             return res.json(classroom)
         } catch (err) {
-            const className = 'ClassroomController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
-
+    async store(req, res, next) {
         try {
             const { filial } = req.body
 
@@ -179,26 +166,19 @@ class ClassroomController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(201).json(classroom)
         } catch (err) {
-            await t.rollback()
-            const className = 'ClassroomController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { classroom_id } = req.params
 
@@ -243,20 +223,15 @@ class ClassroomController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(classroom)
         } catch (err) {
-            await t.rollback()
-            const className = 'ClassroomController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

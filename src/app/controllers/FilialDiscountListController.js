@@ -6,7 +6,7 @@ import FilialDiscountList from '../models/FilialDiscountList.js'
 const { Op } = Sequelize
 
 class FilialDiscountListController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const filialDiscounts = await FilialDiscountList.findAll({
                 where: {
@@ -17,12 +17,8 @@ class FilialDiscountListController {
 
             return res.json(filialDiscounts)
         } catch (err) {
-            const className = 'FilialDiscountListController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

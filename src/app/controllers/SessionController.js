@@ -11,7 +11,7 @@ import UserXFilial from '../models/UserXFilial.js'
 const { Op } = Sequelize
 
 class SessionController {
-    async store(req, res) {
+    async store(req, res, next) {
         try {
             const schema = Yup.object().shape({
                 email: Yup.string().email().required(),
@@ -119,22 +119,8 @@ class SessionController {
                 // refreshToken: refreshToken
             })
         } catch (err) {
-            return res.status(401).json({ error: 'Token not authorized!' })
-        }
-    }
-
-    async resetpw(req, res) {
-        const { id } = req.body
-        try {
-            const user = await Milauser.findByPk(id)
-            if (user) {
-                Milauser.update({
-                    password: 'Mila@123',
-                })
-            }
-            return res.json({ nome: Milauser.nome, email: Milauser.email })
-        } catch (err) {
-            return res.status(401).json({ error: 'user-not-found' })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

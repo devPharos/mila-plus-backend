@@ -1,6 +1,4 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog.js'
-import databaseConfig from '../../config/database.js'
 import Student from '../models/Student.js'
 import Filial from '../models/Filial.js'
 import Studentinactivation from '../models/Studentinactivation.js'
@@ -14,7 +12,6 @@ import {
 import Receivable from '../models/Receivable.js'
 import Issuer from '../models/Issuer.js'
 import Recurrence from '../models/Recurrence.js'
-import { verifyAndCancelParcelowPaymentLink } from './ParcelowController.js'
 import { verifyAndCancelTextToPayTransaction } from './EmergepayController.js'
 import Processtype from '../models/Processtype.js'
 import Processsubstatus from '../models/Processsubstatus.js'
@@ -39,15 +36,16 @@ import { dirname, resolve } from 'path'
 import xl from 'excel4node'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
+import NodeCache from 'node-cache'
 
 const { Op } = Sequelize
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
+const myCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 }) // Cache expira em 1 hora (3600 segundos), verifica a cada 10 minutos
+
 class StudentController {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { filial, processtypes, processsubstatuses } = req.body
 
@@ -96,10 +94,10 @@ class StudentController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             handleStudentDiscounts({
                 student_id: newStudent.id,
@@ -108,20 +106,12 @@ class StudentController {
 
             return res.json(newStudent)
         } catch (err) {
-            // console.log(err)
-            await t.rollback()
-            const className = 'StudentController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { student_id } = req.params
 
@@ -177,7 +167,7 @@ class StudentController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -186,31 +176,46 @@ class StudentController {
                 prices: req.body.prices,
             })
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(studentExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         try {
-            const defaultOrderBy = { column: 'name;last_name', asc: 'ASC' }
+            const defaultOrderBy = { column: 'name', asc: 'ASC' }
             let {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 10,
+                limit = 50,
                 type = '',
                 page = 1,
             } = req.query
+
+            const cacheKey = 'initialStudentsData'
+
+            const isDefaultRequest =
+                limit == 50 && // Supondo que 10 é o limite padrão para os primeiros resultados
+                page == 1 &&
+                search === '' &&
+                type === 'null' &&
+                orderBy === defaultOrderBy.column &&
+                orderASC === defaultOrderBy.asc
+
+            if (isDefaultRequest) {
+                const cachedData = myCache.get(cacheKey)
+                if (cachedData) {
+                    console.log(
+                        'Servindo dados do cache para a requisição padrão.'
+                    )
+                    return res.json(cachedData)
+                }
+            }
 
             if (!verifyFieldInModel(orderBy, Student)) {
                 orderBy = defaultOrderBy.column
@@ -285,19 +290,22 @@ class StudentController {
                 offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
+            const plainRows = rows.map((row) => row.toJSON())
+            const responseData = { totalRows: count, rows: plainRows }
+            // Se for a requisição padrão, armazena no cache
+            if (isDefaultRequest) {
+                myCache.set(cacheKey, responseData)
+                console.log('Dados da requisição padrão armazenados em cache.')
+            }
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'StudentController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { student_id } = req.params
             const student = await Student.findByPk(student_id, {
@@ -410,18 +418,12 @@ class StudentController {
 
             return res.json(student)
         } catch (err) {
-            const className = 'StudentController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async inactivate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async inactivate(req, res, next) {
         try {
             const { student_id, reason, date } = req.body
 
@@ -462,7 +464,7 @@ class StudentController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -492,11 +494,11 @@ class StudentController {
                             canceled_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
                     await receivable.destroy({
-                        transaction: t,
+                        transaction: req.transaction,
                     })
                 }
 
@@ -511,7 +513,7 @@ class StudentController {
                             issuer_id: issuer.id,
                             canceled_at: null,
                         },
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
@@ -526,7 +528,7 @@ class StudentController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -543,7 +545,7 @@ class StudentController {
                         end_date: null,
                         canceled_at: null,
                     },
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
             await removeStudentAttendances({
@@ -553,26 +555,19 @@ class StudentController {
                     ? date
                     : format(parseISO(date), 'yyyy-MM-dd'),
                 req,
-                t,
+                t: req.transaction,
             })
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(student)
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentController'
-            const functionName = 'inactivate'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async activate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async activate(req, res, next) {
         try {
             const { student_id } = req.params
             const studentExists = await Student.findByPk(student_id)
@@ -632,7 +627,7 @@ class StudentController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -645,25 +640,18 @@ class StudentController {
                 )
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json({
                 message: 'Student activated.',
             })
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentController'
-            const functionName = 'activate'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async transfer(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async transfer(req, res, next) {
         try {
             const { student_id } = req.params
             const { date, studentgroup } = req.body
@@ -719,7 +707,7 @@ class StudentController {
             if (activeStudentGroup) {
                 if (activeStudentGroup.dataValues.start_date === date) {
                     await activeStudentGroup.destroy({
-                        transaction: t,
+                        transaction: req.transaction,
                     })
                 } else {
                     await activeStudentGroup.update(
@@ -732,7 +720,7 @@ class StudentController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
                 }
@@ -751,7 +739,7 @@ class StudentController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -766,7 +754,7 @@ class StudentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
                 await studentXGroup.update(
@@ -775,7 +763,7 @@ class StudentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
                 await removeStudentAttendances({
@@ -783,86 +771,77 @@ class StudentController {
                     studentgroup_id: activeStudentGroup.dataValues.group_id,
                     from_date: date,
                     req,
-                    t,
+                    t: req.transaction,
                 })
                 await createStudentAttendances({
                     student_id: studentExists.id,
                     studentgroup_id: studentgroupExists.id,
                     from_date: date,
                     req,
-                    t,
+                    t: req.transaction,
                 })
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(studentExists)
         } catch (err) {
-            const className = 'StudentController'
-            const functionName = 'transfer'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async deleteTransfer(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async deleteTransfer(req, res, next) {
         try {
             const { transfer_id } = req.params
 
             const transfer = await StudentXGroup.findByPk(transfer_id)
 
             await transfer.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
             return res.status(200).json(transfer)
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentController'
-            const functionName = 'deleteTransfer'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async prospectToStudent(req, res) {
-        const { student_id } = req.params
-        const studentExists = await Student.findByPk(student_id)
+    async prospectToStudent(req, res, next) {
+        try {
+            const { student_id } = req.params
+            const studentExists = await Student.findByPk(student_id)
 
-        if (!studentExists) {
-            return res.status(400).json({
-                error: 'Prospect not found.',
+            if (!studentExists) {
+                return res.status(400).json({
+                    error: 'Prospect not found.',
+                })
+            }
+
+            const student = await studentExists.update({
+                category: 'Student',
+                status: 'Waiting List',
+                sub_status: 'Initial',
+
+                updated_by: req.userId,
             })
+
+            if (!student) {
+                return res.status(400).json({
+                    error: 'It was not possible to update this prospect status, review your information.',
+                })
+            }
+
+            return res.json(student)
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
         }
-
-        const student = await studentExists.update({
-            category: 'Student',
-            status: 'Waiting List',
-            sub_status: 'Initial',
-
-            updated_by: req.userId,
-        })
-
-        if (!student) {
-            return res.status(400).json({
-                error: 'It was not possible to update this prospect status, review your information.',
-            })
-        }
-
-        return res.json(student)
     }
 
     // vacations
-    async storeVacation(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
-
+    async storeVacation(req, res, next) {
         const {
             student_id = null,
             date_from = null,
@@ -901,12 +880,12 @@ class StudentController {
                     note,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
             if (!newVacation) {
-                await t.rollback()
+                await req.transaction.rollback()
                 return res.status(400).json({
                     error: 'Vacation not found.',
                 })
@@ -925,7 +904,7 @@ class StudentController {
 
                         updated_by: req.userId || 2,
                     },
-                    { transaction: t }
+                    { transaction: req.transaction }
                 )
 
                 await VacationFiles.create(
@@ -935,7 +914,7 @@ class StudentController {
                         created_by: req.userId || 2,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
@@ -970,7 +949,7 @@ class StudentController {
             })
 
             if (!attendances.length) {
-                await t.rollback()
+                await req.transaction.rollback()
                 return res.status(400).json({
                     error: 'Attendance not found in this period.',
                 })
@@ -984,12 +963,12 @@ class StudentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
 
-            await t.commit()
+            await req.transaction.commit()
 
             const vacations = await Vacation.findAll({
                 where: { student_id, canceled_at: null },
@@ -1004,20 +983,12 @@ class StudentController {
 
             return res.status(200).json(vacations)
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async deleteVacation(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
-
+    async deleteVacation(req, res, next) {
         const { vacation_id } = req.params
 
         try {
@@ -1037,7 +1008,7 @@ class StudentController {
             const fileIds = vacationFiles.map((vf) => vf.file_id)
 
             await vacation.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
             const files = await File.findAll({
@@ -1049,7 +1020,7 @@ class StudentController {
             })
             for (let file of files) {
                 await file.destroy({
-                    transaction: t,
+                    transaction: req.transaction,
                 })
             }
 
@@ -1091,26 +1062,21 @@ class StudentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(vacation)
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentController'
-            const functionName = 'deleteVacation'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async showVacation(req, res) {
+    async showVacation(req, res, next) {
         const { student_id } = req.params
 
         try {
@@ -1130,20 +1096,13 @@ class StudentController {
 
             return res.status(200).json(vacationList)
         } catch (err) {
-            const className = 'StudentController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
     // medical excuse
-    async storeMedicalExcuse(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
-
+    async storeMedicalExcuse(req, res, next) {
         const {
             student_id = null,
             date_from = null,
@@ -1182,7 +1141,7 @@ class StudentController {
                     note,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -1197,7 +1156,7 @@ class StudentController {
                         registry_type: 'Student Medical Excuse',
                         created_by: req.userId || 2,
                     },
-                    { transaction: t }
+                    { transaction: req.transaction }
                 )
 
                 await MedicalExcuseFiles.create(
@@ -1207,7 +1166,7 @@ class StudentController {
                         created_by: req.userId || 2,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
@@ -1236,7 +1195,7 @@ class StudentController {
             })
 
             if (!attendances.length) {
-                await t.rollback()
+                await req.transaction.rollback()
                 return res.status(400).json({
                     error: 'Attendance not found in this period.',
                 })
@@ -1250,12 +1209,12 @@ class StudentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
 
-            await t.commit()
+            await req.transaction.commit()
 
             const medicalExcuse = await MedicalExcuse.findAll({
                 where: { student_id, canceled_at: null },
@@ -1270,20 +1229,12 @@ class StudentController {
 
             return res.status(200).json(medicalExcuse)
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentController'
-            const functionName = 'storeMedicalExcuse'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async deleteMedicalExcuse(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
-
+    async deleteMedicalExcuse(req, res, next) {
         const { medical_excuse_id } = req.params
 
         try {
@@ -1305,7 +1256,7 @@ class StudentController {
             const fileIds = medicalExcusesFiles.map((vf) => vf.file_id)
 
             await medicalexcuse.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
             const files = await File.findAll({
@@ -1317,7 +1268,7 @@ class StudentController {
             })
             for (let file of files) {
                 await file.destroy({
-                    transaction: t,
+                    transaction: req.transaction,
                 })
             }
 
@@ -1360,26 +1311,21 @@ class StudentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(medicalExcusesFiles)
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentController'
-            const functionName = 'deleteVacation'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async showMedicalExcuse(req, res) {
+    async showMedicalExcuse(req, res, next) {
         const { student_id } = req.params
 
         const student = await Student.findByPk(student_id)
@@ -1407,16 +1353,12 @@ class StudentController {
 
             return res.status(200).json(meList)
         } catch (err) {
-            const className = 'StudentController'
-            const functionName = 'showMedicalExcuse'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async excelVacation(req, res) {
+    async excelVacation(req, res, next) {
         try {
             const {
                 start_date_from,
@@ -1556,20 +1498,12 @@ class StudentController {
                 return res.json({ path, name })
             })
         } catch (err) {
-            MailLog({
-                className: 'VacationController',
-                functionName: 'excel',
-                req,
-                err,
-            })
-            console.error(err)
-            return res
-                .status(500)
-                .json({ error: 'An internal server error has occurred.' })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async excelMedicalExcuse(req, res) {
+    async excelMedicalExcuse(req, res, next) {
         try {
             const { date_from, date_to } = req.body
 
@@ -1695,16 +1629,8 @@ class StudentController {
                 return res.json({ path, name })
             })
         } catch (err) {
-            MailLog({
-                className: 'MedicalExcuseController',
-                functionName: 'excelMedicalExcuse',
-                req,
-                err,
-            })
-            console.error(err)
-            return res
-                .status(500)
-                .json({ error: 'An internal server error has occurred.' })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

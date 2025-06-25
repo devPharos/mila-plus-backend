@@ -15,6 +15,8 @@ import {
 import { mailer } from './config/mailer.js'
 import { jobPutInClass } from './app/controllers/StudentgroupController.js'
 import { connectToMongo } from './config/mongodb.js'
+import transactionHandler from './app/middlewares/transactionHandler.js'
+import errorHandler from './app/middlewares/errorHandler.js'
 
 class App {
     constructor() {
@@ -46,6 +48,7 @@ class App {
                 credentials: true, // This option is important for handling cookies and authentication headers
             })
         )
+        this.server.use(transactionHandler)
     }
 
     routes() {
@@ -53,6 +56,7 @@ class App {
     }
 
     exceptionHandler() {
+        this.server.use(errorHandler)
         this.server.use(async (err, req, res, next) => {
             // Se for ambiente de desenvolvimento, detalha o erro
             if (process.env.NODE_ENV === 'development') {

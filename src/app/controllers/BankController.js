@@ -13,7 +13,7 @@ import {
 const { Op } = Sequelize
 
 class BankController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'bank_name', asc: 'ASC' }
             let {
@@ -57,18 +57,12 @@ class BankController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'BankController'
-            const functionName = 'index'
-            console.log(err)
-
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { bank_id } = req.params
             const bank = await Bank.findByPk(bank_id, {
@@ -89,18 +83,12 @@ class BankController {
 
             return res.json(bank)
         } catch (err) {
-            const className = 'BankController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         const data = req.body
 
         try {
@@ -113,26 +101,19 @@ class BankController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(201).json(new_bank)
         } catch (err) {
-            await t.rollback()
-            const className = 'BankController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { bank_id } = req.params
 
@@ -145,26 +126,19 @@ class BankController {
             await bankExists.update(
                 { ...req.body, updated_by: req.userId, updated_at: new Date() },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(bankExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'BankController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async delete(req, res) {
-        // const connection = new Sequelize(databaseConfig)
-        // const t = await connection.transaction()
+    async delete(req, res, next) {
         try {
             const { bank_id } = req.params
             const bank = await Bank.findByPk(bank_id)
@@ -175,13 +149,8 @@ class BankController {
                 .status(200)
                 .json({ message: 'Bank deleted successfully.' })
         } catch (err) {
-            // await t.rollback()
-            const className = 'BankController'
-            const functionName = 'delete'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

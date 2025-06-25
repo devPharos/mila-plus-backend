@@ -13,7 +13,7 @@ import {
 const { Op } = Sequelize
 
 class ProcessTypeController {
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { processtype_id } = req.params
 
@@ -38,16 +38,12 @@ class ProcessTypeController {
 
             return res.json(processtypes)
         } catch (err) {
-            const className = 'ProcessTypeController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         const defaultOrderBy = {
             column: 'name',
             asc: 'ASC',
@@ -100,18 +96,12 @@ class ProcessTypeController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'ProcessTypeController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const processtypeExist = await Processtype.findOne({
                 where: {
@@ -132,27 +122,19 @@ class ProcessTypeController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(newProcessType)
         } catch (err) {
-            await t.rollback()
-            const className = 'ProcessTypeController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        // console.log(...req.body)
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { processtype_id } = req.params
             const processtypeExist = await Processtype.findByPk(processtype_id)
@@ -169,20 +151,15 @@ class ProcessTypeController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(processtype)
         } catch (err) {
-            await t.rollback()
-            const className = 'ProcessTypeController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

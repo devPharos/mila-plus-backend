@@ -12,9 +12,7 @@ import {
 const { Op } = Sequelize
 
 class DocumentController {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const new_document = await Document.create(
                 {
@@ -24,26 +22,19 @@ class DocumentController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(new_document)
         } catch (err) {
-            await t.rollback()
-            const className = 'DocumentController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { document_id } = req.params
 
@@ -58,24 +49,19 @@ class DocumentController {
             await documentExists.update(
                 { ...req.body, updated_by: req.userId, updated_at: new Date() },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(documentExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'DocumentController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         const defaultOrderBy = {
             column: 'origin;type;subtype;title',
             asc: 'ASC',
@@ -119,16 +105,12 @@ class DocumentController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'DocumentController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { document_id } = req.params
             const documents = await Document.findByPk(document_id)
@@ -141,16 +123,12 @@ class DocumentController {
 
             return res.json(documents)
         } catch (err) {
-            const className = 'DocumentController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async showByOriginTypeSubtype(req, res) {
+    async showByOriginTypeSubtype(req, res, next) {
         try {
             const { origin = null, type = null, subtype = null } = req.query
             let documents = []
@@ -176,18 +154,12 @@ class DocumentController {
 
             return res.json(documents)
         } catch (err) {
-            const className = 'DocumentController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async inactivate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async inactivate(req, res, next) {
         try {
             const { document_id } = req.params
             const document = await Document.findByPk(document_id, {
@@ -209,26 +181,21 @@ class DocumentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             } else {
                 await document.destroy({
-                    transaction: t,
+                    transaction: req.transaction,
                 })
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(document)
         } catch (err) {
-            await t.rollback()
-            const className = 'DocumentController'
-            const functionName = 'inactivate'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

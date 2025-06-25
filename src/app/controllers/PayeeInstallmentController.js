@@ -21,7 +21,7 @@ function calculateTotalInstallments(
 }
 
 class PayeeInstallmentController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const installments = await PayeeInstallment.findAll({
                 include: [
@@ -58,16 +58,12 @@ class PayeeInstallmentController {
 
             return res.json(installments)
         } catch (err) {
-            const className = 'PayeeInstallmentController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { id } = req.params
             const installment = await PayeeInstallment.findByPk(id, {
@@ -105,18 +101,12 @@ class PayeeInstallmentController {
 
             return res.json(installment)
         } catch (err) {
-            const className = 'PayeeInstallmentController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async storeTemp(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async storeTemp(req, res, next) {
         const resources = req.body
 
         try {
@@ -197,24 +187,16 @@ class PayeeInstallmentController {
                 oldStatusDate = new Date(newStatusDate)
             }
 
-            await t.commit()
+            await req.transaction.commit()
 
             return res.json(installmentsItens)
         } catch (err) {
-            await t.rollback()
-            const className = 'PayeeInstallmentController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { id } = req.params
 
@@ -229,20 +211,15 @@ class PayeeInstallmentController {
             await installmentExists.update(
                 { ...req.body, updated_by: req.userId, updated_at: new Date() },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            await t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(installmentExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'PayeeInstallmentController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
@@ -425,7 +402,7 @@ class PayeeInstallmentController {
 
         for (const installment of canceledInstallments) {
             await installment.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
         }
     }

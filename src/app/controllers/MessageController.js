@@ -20,7 +20,7 @@ import databaseConfig from '../../config/database.js'
 const { Op } = Sequelize
 
 class MessageController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'created_at', asc: 'DESC' }
             let {
@@ -74,17 +74,12 @@ class MessageController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'MessageController'
-            const functionName = 'index'
-
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { message_id } = req.params
             const message = await Message.findByPk(message_id, {
@@ -151,16 +146,12 @@ class MessageController {
 
             return res.json(message)
         } catch (err) {
-            const className = 'MessageController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async indexStudents(req, res) {
+    async indexStudents(req, res, next) {
         try {
             const students = await Student.findAll({
                 where: {
@@ -205,18 +196,12 @@ class MessageController {
 
             return res.json(students)
         } catch (err) {
-            const className = 'MessageController'
-            const functionName = 'indexStudents'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async sendMessage(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async sendMessage(req, res, next) {
         try {
             const {
                 filial,
@@ -248,7 +233,7 @@ class MessageController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -289,38 +274,52 @@ class MessageController {
                                 created_by: req.userId,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                     }
                     emailsToSend.push(studentExists.dataValues.email)
                 }
 
+                let mailContent = content
+
                 for (let mailToSend of emailsToSend) {
-                    mailer.sendMail({
-                        from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
-                        to: mailToSend,
-                        subject: `MILA Plus - ${type}: ${subject}`,
-                        html: MailLayout({
-                            title: type + ': ' + subject,
-                            content,
-                            filial: filialExists.name,
-                        }),
-                    })
+                    if (process.env.NODE_ENV === 'development') {
+                        mailContent =
+                            content +
+                            '\n\n' +
+                            'This e-mail is going to: ' +
+                            mailToSend
+                        mailToSend =
+                            'admin@pharosit.com.br;it.admin@milaorlandousa.com'
+                    }
+
+                    mailer
+                        .sendMail({
+                            from: '"MILA Plus" <' + process.env.MAIL_FROM + '>',
+                            to: mailToSend,
+                            subject: `MILA Plus - ${type}: ${subject}`,
+                            html: MailLayout({
+                                title: type + ': ' + subject,
+                                content,
+                                filial: filialExists.name,
+                            }),
+                        })
+                        .catch((err) => {
+                            console.log(err)
+                            return res.status(400).json({
+                                error: 'An error has ocourred.',
+                            })
+                        })
                 }
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(message)
         } catch (err) {
-            await t.rollback()
-            const className = 'MessageController'
-            const functionName = 'sendMessage'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

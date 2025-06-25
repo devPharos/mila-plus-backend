@@ -84,7 +84,7 @@ export async function createIssuerFromStudent({
 }
 
 class IssuerController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'name', asc: 'ASC' }
             let {
@@ -156,16 +156,12 @@ class IssuerController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'IssuerController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { issuer_id } = req.params
             const issuer = await Issuer.findByPk(issuer_id, {
@@ -200,18 +196,12 @@ class IssuerController {
 
             return res.json(issuer)
         } catch (err) {
-            const className = 'IssuerController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { filial = null, merchant = null, student = null } = req.body
 
@@ -258,27 +248,19 @@ class IssuerController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            await t.commit()
+            await req.transaction.commit()
 
             return res.json(newIssuer)
         } catch (err) {
-            await t.rollback()
-            const className = 'IssuerController'
-            const functionName = 'store'
-            console.log(err)
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { issuer_id } = req.params
 
@@ -329,26 +311,19 @@ class IssuerController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            await t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(issuerExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'IssuerController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async delete(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async delete(req, res, next) {
         try {
             const { id } = req.params
 
@@ -359,21 +334,16 @@ class IssuerController {
             }
 
             await issuerExists.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
-            await t.commit()
+            await req.transaction.commit()
 
             return res
                 .status(200)
                 .json({ message: 'Issuer deleted successfully.' })
         } catch (err) {
-            await t.rollback()
-            const className = 'IssuerController'
-            const functionName = 'delete'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

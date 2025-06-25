@@ -12,7 +12,7 @@ import {
 const { Op } = Sequelize
 
 class LanguageController {
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { language_id } = req.params
 
@@ -26,16 +26,12 @@ class LanguageController {
 
             return res.json(languages)
         } catch (err) {
-            const className = 'LanguageController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         const defaultOrderBy = { column: 'name', asc: 'ASC' }
         try {
             let {
@@ -76,18 +72,12 @@ class LanguageController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'LanguageController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const languageExist = await Language.findOne({
                 where: {
@@ -110,26 +100,19 @@ class LanguageController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(newlanguage)
         } catch (err) {
-            await t.rollback()
-            const className = 'LanguageController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { language_id } = req.params
             const languageExist = await Language.findByPk(language_id)
@@ -159,20 +142,15 @@ class LanguageController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(language)
         } catch (err) {
-            await t.rollback()
-            const className = 'LanguageController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

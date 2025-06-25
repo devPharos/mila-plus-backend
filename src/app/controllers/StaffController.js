@@ -19,9 +19,7 @@ import Milauser from '../models/Milauser.js'
 const { Op } = Sequelize
 
 class StaffController {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { filial } = req.body
             const filialExists = await Filial.findByPk(filial.id)
@@ -39,26 +37,19 @@ class StaffController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(new_staff)
         } catch (err) {
-            await t.rollback()
-            const className = 'StaffController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { staff_id } = req.params
             const { filial } = req.body
@@ -92,7 +83,7 @@ class StaffController {
 
                             updated_by: req.userId,
                         },
-                        { transaction: t }
+                        { transaction: req.transaction }
                     )
 
                     if (fileCreated) {
@@ -104,9 +95,9 @@ class StaffController {
                                 document_id: files.document_id,
                                 created_by: req.userId,
                             },
-                            { transaction: t }
+                            { transaction: req.transaction }
                         )
-                        t.commit()
+                        await req.transaction.commit()
                     }
                 }
 
@@ -120,24 +111,19 @@ class StaffController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(staffExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'StaffController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'name', asc: 'ASC' }
             let {
@@ -221,16 +207,12 @@ class StaffController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'StaffController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { staff_id } = req.params
             const staff = await Staff.findByPk(staff_id, {
@@ -268,18 +250,12 @@ class StaffController {
 
             return res.json(staff)
         } catch (err) {
-            const className = 'StaffController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async inactivate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async inactivate(req, res, next) {
         try {
             const { staff_id } = req.params
             const staff = await Staff.findByPk(staff_id, {
@@ -301,32 +277,25 @@ class StaffController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             } else {
                 await staff.destroy({
-                    transaction: t,
+                    transaction: req.transaction,
                 })
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(staff)
         } catch (err) {
-            await t.rollback()
-            const className = 'StaffController'
-            const functionName = 'inactivate'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async updateOutside(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async updateOutside(req, res, next) {
         try {
             const { staff_id } = req.params
 
@@ -339,24 +308,19 @@ class StaffController {
             await staffExists.update(
                 { ...req.body, updated_by: 2, updated_at: new Date() },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(staffExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'StaffController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async formMail(req, res) {
+    async formMail(req, res, next) {
         const { crypt } = req.body
 
         const staff = await Staff.findByPk(crypt)
@@ -377,16 +341,14 @@ class StaffController {
                     filial: filial.dataValues.name,
                 }),
             })
-        } catch (err) {
-            console.log(err)
-            return res.status(400).json({
-                error: 'An error has ocourred.',
-            })
-        }
 
-        return res.status(200).json({
-            ok: 'ok',
-        })
+            return res.status(200).json({
+                ok: 'ok',
+            })
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
     }
 }
 

@@ -8,9 +8,7 @@ import Filial from '../models/Filial.js'
 const { Op } = Sequelize
 
 class FilialDocumentController {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { files, filial_id } = req.body
 
@@ -34,7 +32,7 @@ class FilialDocumentController {
 
                         updated_by: req.userId || 2,
                     },
-                    { transaction: t }
+                    { transaction: req.transaction }
                 )
 
                 if (fileCreated) {
@@ -46,31 +44,24 @@ class FilialDocumentController {
                             document_id: files.document_id,
                             created_by: req.userId || 2,
                         },
-                        { transaction: t }
+                        { transaction: req.transaction }
                     )
                 }
-                t.commit()
+                await req.transaction.commit()
                 return res.status(201).json(filialExist)
             }
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(400).json({
                 error: 'No files were provided.',
             })
         } catch (err) {
-            const className = 'FilialDocumentController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            await t.rollback()
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async inactivate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async inactivate(req, res, next) {
         try {
             const { filialDocument_id } = req.params
             const document = await Filialdocument.findByPk(filialDocument_id, {
@@ -84,25 +75,20 @@ class FilialDocumentController {
             }
 
             await document.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
             const file = await File.findByPk(document.file_id)
             await file.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(document)
         } catch (err) {
-            await t.rollback()
-            const className = 'FilialDocumentController'
-            const functionName = 'inactivate'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

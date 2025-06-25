@@ -30,8 +30,6 @@ import File from '../models/File.js'
 const { Op } = Sequelize
 
 export async function jobPutInClass() {
-    const connection = new Sequelize(databaseConfig)
-    const t = await connection.transaction()
     try {
         const pendingStudents = await StudentXGroup.findAll({
             where: {
@@ -65,11 +63,11 @@ export async function jobPutInClass() {
             )
         }
 
-        t.commit()
+        await req.transaction.commit()
 
         return true
     } catch (err) {
-        await t.rollback()
+        await req.transaction.rollback()
         const className = 'StudentgroupController'
         const functionName = 'jobPutInClass'
         MailLog({ className, functionName, req: null, err })
@@ -96,14 +94,14 @@ export async function putInClass(
         studentgroup_id: student.dataValues.group_id,
         from_date: date,
         req,
-        t,
+        t: req.transaction,
     })
     await createStudentAttendances({
         student_id: student.id,
         studentgroup_id: studentGroup.id,
         from_date: date,
         req,
-        t,
+        t: req.transaction,
     })
 
     await student.update(
@@ -115,7 +113,7 @@ export async function putInClass(
             updated_by: 2,
         },
         {
-            transaction: t || null,
+            transaction: req.transaction || null,
         }
     )
 
@@ -134,7 +132,7 @@ export async function putInClass(
                 },
                 canceled_at: null,
             },
-            transaction: t || null,
+            transaction: req.transaction || null,
         }
     )
 
@@ -180,7 +178,7 @@ export async function createStudentAttendances({
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
         }
@@ -222,7 +220,7 @@ export async function removeStudentAttendances({
         })
         for (let attendance of attendance) {
             await attendance.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
         }
     }
@@ -293,7 +291,7 @@ async function StudentGroupProgress(studentgroup_id = null) {
 }
 
 class StudentgroupController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'name', asc: 'ASC' }
             let {
@@ -415,17 +413,12 @@ class StudentgroupController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'StudentgroupController'
-            const functionName = 'index'
-
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { studentgroup_id } = req.params
             const studentGroup = await Studentgroup.findByPk(studentgroup_id, {
@@ -619,19 +612,12 @@ class StudentgroupController {
 
             return res.json(studentGroup)
         } catch (err) {
-            const className = 'StudentgroupController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
-
+    async store(req, res, next) {
         try {
             const {
                 filial,
@@ -868,7 +854,7 @@ class StudentgroupController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             ).then(async (studentGroup) => {
                 for (let {
@@ -890,7 +876,7 @@ class StudentgroupController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     ).then(async (studentGroupClass) => {
                         if (paceGuides) {
@@ -905,30 +891,23 @@ class StudentgroupController {
                                         created_by: req.userId,
                                     },
                                     {
-                                        transaction: t,
+                                        transaction: req.transaction,
                                     }
                                 )
                             }
                         }
                     })
                 }
-                t.commit()
+                await req.transaction.commit()
                 return res.status(201).json(studentGroup)
             })
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentgroupController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { studentgroup_id } = req.params
 
@@ -1223,7 +1202,7 @@ class StudentgroupController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -1246,7 +1225,7 @@ class StudentgroupController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
                 if (paceGuides) {
@@ -1261,30 +1240,23 @@ class StudentgroupController {
                                 created_by: req.userId,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                     }
                 }
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(studentGroup)
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentgroupController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async startGroup(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async startGroup(req, res, next) {
         try {
             const { studentgroup_id } = req.params
             const studentgroup = await Studentgroup.findByPk(studentgroup_id)
@@ -1307,7 +1279,7 @@ class StudentgroupController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -1330,27 +1302,20 @@ class StudentgroupController {
                         'yyyy-MM-dd'
                     ),
                     req,
-                    t,
+                    t: req.transaction,
                 })
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(studentgroup)
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentgroupController'
-            const functionName = 'startGroup'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async pauseGroup(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async pauseGroup(req, res, next) {
         try {
             const { studentgroup_id } = req.params
             const studentgroup = await Studentgroup.findByPk(studentgroup_id)
@@ -1412,7 +1377,7 @@ class StudentgroupController {
                             },
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
                 }
@@ -1424,25 +1389,20 @@ class StudentgroupController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(studentgroup)
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentgroupController'
-            const functionName = 'pauseGroup'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async attendance(req, res) {
+    async attendance(req, res, next) {
         try {
             const { studentgroup_id } = req.params
             const { attendanceId = null } = req.query
@@ -1625,19 +1585,12 @@ class StudentgroupController {
                 studentGroupProgress,
             })
         } catch (err) {
-            const className = 'StudentgroupController'
-            const functionName = 'attendance'
-
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async storeAttendance(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async storeAttendance(req, res, next) {
         try {
             const { shifts, studentgroupclass_id, paceguides, lock } = req.body
 
@@ -1669,7 +1622,7 @@ class StudentgroupController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -1716,7 +1669,7 @@ class StudentgroupController {
                                 updated_by: req.userId,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                     } else {
@@ -1730,7 +1683,7 @@ class StudentgroupController {
                                 created_by: req.userId,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                     }
@@ -1761,28 +1714,21 @@ class StudentgroupController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(studentgroup)
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentgroupController'
-            const functionName = 'storeAttendance'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async storeGrades(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async storeGrades(req, res, next) {
         try {
             const { studentgroup_id } = req.params
             const { grades, studentgroupclass_id } = req.body
@@ -1818,7 +1764,7 @@ class StudentgroupController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
                     continue
@@ -1833,22 +1779,17 @@ class StudentgroupController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(studentgroup)
         } catch (err) {
-            await t.rollback()
-            const className = 'StudentgroupController'
-            const functionName = 'storeGrades'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

@@ -91,9 +91,6 @@ routes.post(
 routes.post('/emergepay/refund', EmergepayController.refund)
 
 routes.post('/sessions', SessionController.store)
-// routes.post('/forgot_password', ForgotPasswordController.store);
-routes.put('/reset_password', SessionController.resetpw)
-// routes.put('/forgot_password', ForgotPasswordController.update);
 
 routes.get('/outside/filials/:filial_id', FilialController.show)
 

@@ -13,7 +13,7 @@ import {
 const { Op } = Sequelize
 
 class ProcessSubstatusController {
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { processsubstatus_id } = req.params
 
@@ -42,16 +42,12 @@ class ProcessSubstatusController {
 
             return res.json(processsubstatuses)
         } catch (err) {
-            const className = 'ProcessSubstatusController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         const defaultOrderBy = {
             column: 'name',
             asc: 'ASC',
@@ -94,18 +90,12 @@ class ProcessSubstatusController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'ProcessSubstatusController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const processsubstatusExist = await Processsubstatus.findOne({
                 where: {
@@ -126,27 +116,19 @@ class ProcessSubstatusController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(newProcessSubstatus)
         } catch (err) {
-            await t.rollback()
-            const className = 'ProcessSubstatusController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        // console.log(...req.body)
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { processsubstatus_id } = req.params
             const processsubstatusExist = await Processsubstatus.findByPk(
@@ -165,20 +147,15 @@ class ProcessSubstatusController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(processsubstatus)
         } catch (err) {
-            await t.rollback()
-            const className = 'ProcessSubstatusController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

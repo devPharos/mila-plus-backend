@@ -9,7 +9,7 @@ import Filial from '../models/Filial.js'
 const { Op } = Sequelize
 
 class MerchantXChartOfAccountController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const merchantXChartOfAccounts =
                 await MerchantXChartOfAccount.findAll({
@@ -36,16 +36,12 @@ class MerchantXChartOfAccountController {
 
             return res.json(merchantXChartOfAccounts)
         } catch (err) {
-            const className = 'MerchantXChartOfAccountController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { merchantxchartofaccount_id } = req.params
 
@@ -82,18 +78,12 @@ class MerchantXChartOfAccountController {
 
             return res.json(merchantXChartOfAccount)
         } catch (err) {
-            const className = 'MerchantXChartOfAccountController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const newMerchantXChartOfAccount =
                 await MerchantXChartOfAccount.create(
@@ -107,26 +97,19 @@ class MerchantXChartOfAccountController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
-            await t.commit()
+            await req.transaction.commit()
 
             return res.json(newMerchantXChartOfAccount)
         } catch (err) {
-            await t.rollback()
-            const className = 'MerchantXChartOfAccountController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { merchantxchartofaccount_id } = req.params
 
@@ -148,26 +131,19 @@ class MerchantXChartOfAccountController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            await t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(merchantXChartOfAccountExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'MerchantXChartOfAccountController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async delete(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async delete(req, res, next) {
         try {
             const { merchantxchartofaccount_id } = req.params
 
@@ -183,21 +159,16 @@ class MerchantXChartOfAccountController {
             }
 
             await merchantXChartOfAccountExists.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
-            await t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json({
                 message: 'Merchant X Chart Of Account deleted successfully.',
             })
         } catch (err) {
-            await t.rollback()
-            const className = 'MerchantXChartOfAccountController'
-            const functionName = 'delete'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

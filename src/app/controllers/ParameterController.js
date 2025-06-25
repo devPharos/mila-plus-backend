@@ -12,7 +12,7 @@ import {
 const { Op } = Sequelize
 
 class ParameterController {
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { parameter_id } = req.params
 
@@ -26,16 +26,12 @@ class ParameterController {
 
             return res.json(parameters)
         } catch (err) {
-            const className = 'ParameterController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'name', asc: 'ASC' }
             let {
@@ -68,18 +64,12 @@ class ParameterController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'ParameterController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const parameterExist = await Parameter.findOne({
                 where: {
@@ -104,27 +94,20 @@ class ParameterController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(newParameter)
         } catch (err) {
-            await t.rollback()
-            const className = 'ParameterController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { parameter_id } = req.params
             const parameterExist = await Parameter.findByPk(parameter_id)
@@ -141,21 +124,16 @@ class ParameterController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(parameter)
         } catch (err) {
-            await t.rollback()
-            const className = 'ParameterController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

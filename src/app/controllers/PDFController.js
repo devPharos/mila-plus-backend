@@ -15,9 +15,7 @@ const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
 class PDFController {
-    async show(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async show(req, res, next) {
         const { layout, id } = req.params
 
         try {
@@ -76,13 +74,8 @@ class PDFController {
                 )
             })
         } catch (err) {
-            await t.rollback()
-            const className = 'PDFController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

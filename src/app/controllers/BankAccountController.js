@@ -14,7 +14,7 @@ import {
 const { Op } = Sequelize
 
 class BankAccountController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'account', asc: 'ASC' }
             let {
@@ -77,18 +77,12 @@ class BankAccountController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'BankAccountController'
-            const functionName = 'index'
-            console.log(err)
-
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { bankAccount_id } = req.params
             const bankAccount = await Bankaccounts.findByPk(bankAccount_id, {
@@ -119,19 +113,12 @@ class BankAccountController {
 
             return res.json(bankAccount)
         } catch (err) {
-            const className = 'BankAccountController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
-
+    async store(req, res, next) {
         try {
             const { filial, bank, account, routing_number } = req.body
             const filialExists = await Filial.findByPk(filial.id)
@@ -157,26 +144,19 @@ class BankAccountController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(201).json(new_bankAccount)
         } catch (err) {
-            await t.rollback()
-            const className = 'BankAccountController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { bankAccount_id } = req.params
             const { filial, bank, account, routing_number } = req.body
@@ -213,26 +193,19 @@ class BankAccountController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(bankAccountExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'BankAccountController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async delete(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async delete(req, res, next) {
         try {
             const { bankAccount_id } = req.params
             const bankAccount = await Bankaccounts.findByPk(bankAccount_id)
@@ -244,22 +217,17 @@ class BankAccountController {
             }
 
             await bankAccount.destroy({
-                transaction: t,
+                transaction: req.transaction,
             })
 
-            t.commit()
+            await req.transaction.commit()
 
             return res
                 .status(200)
                 .json({ message: 'Bank Account deleted successfully.' })
         } catch (err) {
-            await t.rollback()
-            const className = 'BankAccountController'
-            const functionName = 'delete'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

@@ -21,7 +21,7 @@ import {
 } from '../functions/index.js'
 
 class SettlementController {
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'settlement_date', asc: 'ASC' }
             let {
@@ -137,16 +137,12 @@ class SettlementController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'SettlementController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { payee_id } = req.params
 
@@ -202,18 +198,12 @@ class SettlementController {
 
             return res.json(payee)
         } catch (err) {
-            const className = 'PayeeSettlementController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async delete(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async delete(req, res, next) {
         try {
             const { settlement_id } = req.params
 
@@ -256,7 +246,7 @@ class SettlementController {
 
             await settlement
                 .destroy({
-                    transaction: t,
+                    transaction: req.transaction,
                 })
                 .then(async () => {
                     const discounts = await Receivablediscounts.findAll({
@@ -278,7 +268,7 @@ class SettlementController {
                             total_discount += discount.dataValues.value
                         }
                         await discount.destroy({
-                            transaction: t,
+                            transaction: req.transaction,
                         })
                     }
                     if (settlement.dataValues.amount === 0) {
@@ -323,17 +313,17 @@ class SettlementController {
                                 updated_by: req.userId,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                         .then(async () => {
-                            await t.commit()
+                            await req.transaction.commit()
                             return res.status(200).json({
                                 message: 'Settlement deleted successfully.',
                             })
                         })
                         .catch(async (err) => {
-                            await t.rollback()
+                            await req.transaction.rollback()
                             const className = 'SettlementController'
                             const functionName = 'delete'
                             MailLog({ className, functionName, req, err })
@@ -343,13 +333,8 @@ class SettlementController {
                         })
                 })
         } catch (err) {
-            await t.rollback()
-            const className = 'SettlementController'
-            const functionName = 'delete'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

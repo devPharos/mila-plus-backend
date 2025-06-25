@@ -64,7 +64,6 @@ export async function mailSponsor({ enrollment_id, student_id }) {
             filial: filial.dataValues.name,
         }),
     })
-    console.log('E-mail sent to sponsor.')
 }
 
 export async function mailDSO(
@@ -91,9 +90,7 @@ export async function mailDSO(
 }
 
 class EnrollmentController {
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const { processsubstatus_id } = req.body
 
@@ -121,7 +118,7 @@ class EnrollmentController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 ).then(async (enrollment) => {
                     await Enrollmenttimeline.create(
@@ -139,7 +136,7 @@ class EnrollmentController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     ).then(async () => {
                         if (newProspect.processsubstatus_id === 4) {
@@ -152,7 +149,7 @@ class EnrollmentController {
                                         created_by: req.userId,
                                     },
                                     {
-                                        transaction: t,
+                                        transaction: req.transaction,
                                     }
                                 )
                             )
@@ -169,26 +166,19 @@ class EnrollmentController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(new_enrollment)
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { enrollment_id } = req.params
 
@@ -203,26 +193,19 @@ class EnrollmentController {
             await enrollmentExists.update(
                 { ...req.body, updated_by: req.userId, updated_at: new Date() },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(enrollmentExists)
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async outsideUpdate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async outsideUpdate(req, res, next) {
         let nextTimeline = null
         try {
             const { enrollment_id } = req.params
@@ -390,7 +373,7 @@ class EnrollmentController {
                                 created_by: 2,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                     )
@@ -410,7 +393,7 @@ class EnrollmentController {
                                 where: {
                                     id: existingEmergency.id,
                                 },
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                     )
@@ -422,45 +405,27 @@ class EnrollmentController {
                 req.body.enrollmentdependents.length > 0
             ) {
                 const { enrollmentdependents } = req.body
-                enrollmentdependents.map((dependent) => {
-                    promises.push(
-                        Enrollmentdependent.update(
-                            {
-                                name: dependent.name,
-                                relationship_type: dependent.relationship_type,
-                                gender: dependent.gender,
-                                dept1_type: dependent.dept1_type,
-                                email: dependent.email,
-                                phone: dependent.phone,
+                for (let dependent of enrollmentdependents) {
+                    await Enrollmentdependent.update(
+                        {
+                            name: dependent.name,
+                            relationship_type: dependent.relationship_type,
+                            gender: dependent.gender,
+                            dept1_type: dependent.dept1_type,
+                            email: dependent.email,
+                            phone: dependent.phone,
 
-                                updated_by: req.userId || 2,
+                            updated_by: req.userId || 2,
+                        },
+                        {
+                            where: {
+                                enrollment_id: enrollmentExists.id,
+                                id: dependent.id,
+                                canceled_at: null,
                             },
-                            {
-                                where: {
-                                    enrollment_id: enrollmentExists.id,
-                                    id: dependent.id,
-                                    canceled_at: null,
-                                },
-                            }
-                        )
-                        // Enrollmentdependent.create(
-                        //   {
-                        //     enrollment_id: enrollmentExists.id,
-                        //     name: dependent.name,
-                        //     relationship_type: dependent.relationship_type,
-                        //     gender: dependent.gender,
-                        //     dept1_type: dependent.dept1_type,
-                        //     email: dependent.email,
-                        //     phone: dependent.phone,
-                        //
-                        //     created_by: 2,
-                        //   },
-                        //   {
-                        //     transaction: t,
-                        //   }
-                        // )
+                        }
                     )
-                })
+                }
             }
 
             if (
@@ -469,32 +434,28 @@ class EnrollmentController {
             ) {
                 const { enrollmentsponsors } = req.body
                 if (existingSponsors) {
-                    existingSponsors.map((sponsor) => {
-                        promises.push(
-                            sponsor.destroy({
-                                transaction: t,
-                            })
-                        )
-                    })
+                    for (let sponsor of existingSponsors) {
+                        await sponsor.destroy({
+                            transaction: req.transaction,
+                        })
+                    }
                 }
-                enrollmentsponsors.map((sponsor) => {
-                    promises.push(
-                        Enrollmentsponsor.create(
-                            {
-                                enrollment_id: enrollmentExists.id,
-                                name: sponsor.name,
-                                relationship_type: sponsor.relationship_type,
-                                email: sponsor.email,
-                                phone: sponsor.phone,
+                for (let sponsor of enrollmentsponsors) {
+                    await Enrollmentsponsor.create(
+                        {
+                            enrollment_id: enrollmentExists.id,
+                            name: sponsor.name,
+                            relationship_type: sponsor.relationship_type,
+                            email: sponsor.email,
+                            phone: sponsor.phone,
 
-                                created_by: 2,
-                            },
-                            {
-                                transaction: t,
-                            }
-                        )
+                            created_by: 2,
+                        },
+                        {
+                            transaction: req.transaction,
+                        }
                     )
-                })
+                }
 
                 if (enrollmentExists.form_step === 'affidavit-of-support') {
                     nextStep = 'documents-upload'
@@ -520,7 +481,7 @@ class EnrollmentController {
                                 updated_by: 2,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                     )
@@ -534,7 +495,7 @@ class EnrollmentController {
                                 created_by: 2,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                     )
@@ -558,7 +519,7 @@ class EnrollmentController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     )
                 )
@@ -576,7 +537,7 @@ class EnrollmentController {
                         ...nextTimeline,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             }
@@ -591,21 +552,21 @@ class EnrollmentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             )
 
-            Promise.all(promises).then(() => {
+            Promise.all(promises).then(async () => {
                 if (nextStep === 'sponsor-signature') {
-                    existingSponsors.map((sponsor) => {
+                    for (let sponsor of existingSponsors) {
                         if (sponsor.dataValues.canceled_at === null) {
                             mailSponsor({
                                 enrollment_id: enrollmentExists.dataValues.id,
                                 student_id: studentExists.dataValues.id,
                             })
                         }
-                    })
+                    }
                 } else if (activeMenu === 'transfer-request') {
                     if (
                         req.body.enrollmenttransfers &&
@@ -635,21 +596,16 @@ class EnrollmentController {
                         }),
                     })
                 }
-                t.commit()
+                await req.transaction.commit()
                 return res.status(200).json(enrollmentExists)
             })
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'code', asc: 'ASC' }
             let {
@@ -757,18 +713,12 @@ class EnrollmentController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'EnrollmentController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async outsideShow(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async outsideShow(req, res, next) {
         try {
             const { enrollment_id } = req.params
             const enrollments = await Enrollment.findByPk(enrollment_id, {
@@ -946,16 +896,12 @@ class EnrollmentController {
 
             return res.json(enrollments)
         } catch (err) {
-            const className = 'EnrollmentController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { enrollment_id } = req.params
             const enrollments = await Enrollment.findByPk(enrollment_id, {
@@ -1019,16 +965,12 @@ class EnrollmentController {
 
             return res.json(enrollments)
         } catch (err) {
-            const className = 'EnrollmentController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async showByOriginTypeSubtype(req, res) {
+    async showByOriginTypeSubtype(req, res, next) {
         try {
             const { origin, type, subtype } = req.query
             const enrollments = await Enrollment.findAll({
@@ -1043,18 +985,12 @@ class EnrollmentController {
 
             return res.json(enrollments)
         } catch (err) {
-            const className = 'EnrollmentController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async inactivate(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async inactivate(req, res, next) {
         try {
             const { enrollment_id } = req.params
             const enrollment = await Enrollment.findByPk(enrollment_id, {
@@ -1076,32 +1012,25 @@ class EnrollmentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
             } else {
                 await enrollment.destroy({
-                    transaction: t,
+                    transaction: req.transaction,
                 })
             }
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(enrollment)
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentController'
-            const functionName = 'inactivate'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async studentsignature(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async studentsignature(req, res, next) {
         try {
             const { enrollment_id } = req.body
             const enrollment = await Enrollment.findByPk(enrollment_id, {
@@ -1128,7 +1057,7 @@ class EnrollmentController {
 
                     updated_by: req.userId || 2,
                 },
-                { transaction: t }
+                { transaction: req.transaction }
             )
 
             if (signatureFile) {
@@ -1138,7 +1067,7 @@ class EnrollmentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
 
@@ -1159,23 +1088,16 @@ class EnrollmentController {
                     res.pipe(signatureFileLink)
                 })
             }
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(enrollment)
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentController'
-            const functionName = 'studentsignature'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async sponsorsignature(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async sponsorsignature(req, res, next) {
         try {
             const { sponsor_id } = req.body
             const sponsor = await Enrollmentsponsor.findByPk(sponsor_id, {
@@ -1202,7 +1124,7 @@ class EnrollmentController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
@@ -1220,7 +1142,7 @@ class EnrollmentController {
 
                     updated_by: req.userId || 2,
                 },
-                { transaction: t }
+                { transaction: req.transaction }
             )
 
             if (signatureFile) {
@@ -1230,7 +1152,7 @@ class EnrollmentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
 
@@ -1251,23 +1173,16 @@ class EnrollmentController {
                     res.pipe(signatureFileLink)
                 })
             }
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(sponsor)
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentController'
-            const functionName = 'sponsorsignature'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async dsosignature(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async dsosignature(req, res, next) {
         try {
             const { enrollment_id } = req.body
             const enrollment = await Enrollment.findByPk(enrollment_id, {
@@ -1307,7 +1222,7 @@ class EnrollmentController {
 
                     updated_by: req.userId || 2,
                 },
-                { transaction: t }
+                { transaction: req.transaction }
             )
 
             if (signatureFile) {
@@ -1327,7 +1242,7 @@ class EnrollmentController {
                             enrollment_id: enrollment_id,
                             canceled_at: null,
                         },
-                        transaction: t,
+                        transaction: req.transaction,
                     }
                 )
 
@@ -1348,23 +1263,16 @@ class EnrollmentController {
                     res.pipe(signatureFileLink)
                 })
             }
-            t.commit()
+            await req.transaction.commit()
 
             return res.status(200).json(enrollment)
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentController'
-            const functionName = 'dsosignature'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async startProcess(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async startProcess(req, res, next) {
         try {
             const { processType, student_id } = req.body
 
@@ -1406,7 +1314,7 @@ class EnrollmentController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     ).then(async (enrollment) => {
                         await Enrollmenttimeline.create(
@@ -1428,7 +1336,7 @@ class EnrollmentController {
                                 created_by: req.userId,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         ).then(async () => {
                             await Enrollmenttransfer.create(
@@ -1439,7 +1347,7 @@ class EnrollmentController {
                                     created_by: req.userId,
                                 },
                                 {
-                                    transaction: t,
+                                    transaction: req.transaction,
                                 }
                             ).then(async () => {
                                 const title = `Transfer Eligibility Form - Student`
@@ -1470,7 +1378,7 @@ class EnrollmentController {
                 )
 
                 Promise.all(promises).then(async () => {
-                    t.commit()
+                    await req.transaction.commit()
 
                     const enrollment = await Enrollment.findOne({
                         where: {
@@ -1511,7 +1419,7 @@ class EnrollmentController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     ).then(async (enrollment) => {
                         await Enrollmenttimeline.create(
@@ -1533,14 +1441,14 @@ class EnrollmentController {
                                 created_by: req.userId,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         )
                     })
                 )
 
                 Promise.all(promises).then(async () => {
-                    t.commit()
+                    await req.transaction.commit()
 
                     const enrollment = await Enrollment.findOne({
                         where: {
@@ -1581,7 +1489,7 @@ class EnrollmentController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: t,
+                            transaction: req.transaction,
                         }
                     ).then(async (enrollment) => {
                         await Enrollmenttimeline.create(
@@ -1603,7 +1511,7 @@ class EnrollmentController {
                                 created_by: req.userId,
                             },
                             {
-                                transaction: t,
+                                transaction: req.transaction,
                             }
                         ).then(async () => {
                             const title = `Placement Test Form - Student`
@@ -1633,7 +1541,7 @@ class EnrollmentController {
                 )
 
                 Promise.all(promises).then(async () => {
-                    t.commit()
+                    await req.transaction.commit()
 
                     const enrollment = await Enrollment.findOne({
                         where: {
@@ -1648,17 +1556,12 @@ class EnrollmentController {
 
             // return res.json({ status: 'ok' });
         } catch (err) {
-            await t.rollback()
-            const className = 'EnrollmentController'
-            const functionName = 'startProcess'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async sendFormMail(req, res) {
+    async sendFormMail(req, res, next) {
         try {
             const { type, enrollment_id, student_id } = req.body
             if (type === 'enrollment-process') {
@@ -1672,12 +1575,8 @@ class EnrollmentController {
             }
             return res.json({ ok: true })
         } catch (err) {
-            const className = 'EnrollmentController'
-            const functionName = 'startProcess'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }

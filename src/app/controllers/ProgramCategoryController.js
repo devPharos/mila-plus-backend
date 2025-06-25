@@ -13,7 +13,7 @@ import {
 const { Op } = Sequelize
 
 class ProgramcategoryController {
-    async show(req, res) {
+    async show(req, res, next) {
         try {
             const { programcategory_id } = req.params
 
@@ -37,16 +37,12 @@ class ProgramcategoryController {
 
             return res.json(programCategorys)
         } catch (err) {
-            const className = 'ProgramcategoryController'
-            const functionName = 'show'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async index(req, res) {
+    async index(req, res, next) {
         const defaultOrderBy = { column: 'name', asc: 'ASC' }
         try {
             let {
@@ -97,18 +93,12 @@ class ProgramcategoryController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            const className = 'ProgramcategoryController'
-            const functionName = 'index'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async store(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async store(req, res, next) {
         try {
             const programCategoryExist = await Programcategory.findOne({
                 where: {
@@ -132,27 +122,20 @@ class ProgramcategoryController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(newProgramcategory)
         } catch (err) {
-            await t.rollback()
-            const className = 'ProgramcategoryController'
-            const functionName = 'store'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 
-    async update(req, res) {
-        const connection = new Sequelize(databaseConfig)
-        const t = await connection.transaction()
+    async update(req, res, next) {
         try {
             const { programcategory_id } = req.params
             const programCategoryExist = await Programcategory.findByPk(
@@ -171,21 +154,16 @@ class ProgramcategoryController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: t,
+                    transaction: req.transaction,
                 }
             )
 
-            t.commit()
+            await req.transaction.commit()
 
             return res.json(programCategory)
         } catch (err) {
-            await t.rollback()
-            const className = 'ProgramcategoryController'
-            const functionName = 'update'
-            MailLog({ className, functionName, req, err })
-            return res.status(500).json({
-                error: err,
-            })
+            err.transaction = req.transaction
+            next(err)
         }
     }
 }
