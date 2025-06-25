@@ -997,7 +997,10 @@ class PayeeController {
             ws2.row(row).filter()
             ws2.row(row).freeze()
 
-            for (let payee of payees) {
+            for (let i = 0; i < payees.length; i++) {
+                let payee = payees[i]
+                const index = i
+
                 let chartOfAccount = ''
                 if (payee.chartOfAccount) {
                     if (payee.chartOfAccount.Father) {

@@ -2754,7 +2754,10 @@ class ReceivableController {
             ws2.row(row).filter()
             ws2.row(row).freeze()
 
-            for (let receivable of receivables) {
+            for (let i = 0; i < receivables.length; i++) {
+                let receivable = receivables[i]
+                const index = i
+
                 let chartOfAccount = ''
                 if (receivable.chartOfAccount) {
                     if (receivable.chartOfAccount.Father) {

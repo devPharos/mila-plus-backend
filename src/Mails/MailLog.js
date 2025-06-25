@@ -16,7 +16,7 @@ export default async function MailLog({
     const title = `🛠️ Error @ ${className} - ${functionName}`
     let content = req
         ? `<p><strong>Method:</strong> ${req.method}<br/>
-        <strong>Route:</strong> ${req.route.path}<br/>
+        <strong>Route:</strong> ${req.route?.path}<br/>
         <strong>Company:</strong> ${req.companyId}<br/>
         <strong>User:</strong> ${req.userId}</p>
         <p><strong>Query:</strong> ${JSON.stringify(req.query)}</p>
