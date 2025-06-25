@@ -24,6 +24,7 @@ import { searchPromise } from '../functions/searchPromise.js'
 import Enrollmentsponsor from '../models/Enrollmentsponsor.js'
 import Receivable from '../models/Receivable.js'
 import Issuer from '../models/Issuer.js'
+import { handleCache } from '../middlewares/indexCacheHandler.js'
 
 const { Op } = Sequelize
 
@@ -443,6 +444,10 @@ class ProspectController {
                 offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
+
+            if (req.cacheKey) {
+                handleCache({ cacheKey: req.cacheKey, rows, count })
+            }
 
             return res.json({ totalRows: count, rows })
         } catch (err) {

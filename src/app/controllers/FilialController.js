@@ -27,6 +27,7 @@ const { Op } = Sequelize
 import client from 'https'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
+import { handleCache } from '../middlewares/indexCacheHandler.js'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
@@ -190,6 +191,10 @@ class FilialController {
                 offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
+
+            if (req.cacheKey) {
+                handleCache({ cacheKey: req.cacheKey, rows, count })
+            }
 
             return res.json({ totalRows: count, rows })
         } catch (err) {

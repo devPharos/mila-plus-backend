@@ -58,6 +58,7 @@ import { getDb } from '../../config/mongodb.js'
 import xl from 'excel4node'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
+import { handleCache } from '../middlewares/indexCacheHandler.js'
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
@@ -1511,6 +1512,10 @@ class ReceivableController {
                 offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
+
+            if (req.cacheKey) {
+                handleCache({ cacheKey: req.cacheKey, rows, count })
+            }
 
             return res.json({ totalRows: count, rows })
         } catch (err) {

@@ -9,6 +9,7 @@ import {
     verifyFieldInModel,
     verifyFilialSearch,
 } from '../functions/index.js'
+import { handleCache } from '../middlewares/indexCacheHandler.js'
 
 const { Op } = Sequelize
 
@@ -54,6 +55,10 @@ class BankController {
                 offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
+
+            if (req.cacheKey) {
+                handleCache({ cacheKey: req.cacheKey, rows, count })
+            }
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
