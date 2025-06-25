@@ -2946,7 +2946,7 @@ class ReceivableController {
                 .style(styleTotal)
 
             let ret = null
-            wb.write(path, (err, stats) => {
+            wb.write(path, async (err, stats) => {
                 if (err) {
                     ret = res.status(400).json({ err, stats })
                 } else {
@@ -2957,12 +2957,12 @@ class ReceivableController {
                             }
                         })
                     }, 10000)
-                    req.transaction.commit()
+                    await req.transaction.commit()
                     return res.json({ path, name })
                 }
             })
-            await req.transaction.commit()
 
+            await req.transaction.commit()
             return ret
         } catch (err) {
             err.transaction = req.transaction
