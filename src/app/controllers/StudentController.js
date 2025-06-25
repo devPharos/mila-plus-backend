@@ -1,6 +1,4 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog.js'
-import databaseConfig from '../../config/database.js'
 import Student from '../models/Student.js'
 import Filial from '../models/Filial.js'
 import Studentinactivation from '../models/Studentinactivation.js'
@@ -14,7 +12,6 @@ import {
 import Receivable from '../models/Receivable.js'
 import Issuer from '../models/Issuer.js'
 import Recurrence from '../models/Recurrence.js'
-import { verifyAndCancelParcelowPaymentLink } from './ParcelowController.js'
 import { verifyAndCancelTextToPayTransaction } from './EmergepayController.js'
 import Processtype from '../models/Processtype.js'
 import Processsubstatus from '../models/Processsubstatus.js'
@@ -39,10 +36,13 @@ import { dirname, resolve } from 'path'
 import xl from 'excel4node'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
+import NodeCache from 'node-cache'
 
 const { Op } = Sequelize
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
+
+const myCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 }) // Cache expira em 1 hora (3600 segundos), verifica a cada 10 minutos
 
 class StudentController {
     async store(req, res, next) {
@@ -187,15 +187,35 @@ class StudentController {
 
     async index(req, res, next) {
         try {
-            const defaultOrderBy = { column: 'name;last_name', asc: 'ASC' }
+            const defaultOrderBy = { column: 'name', asc: 'ASC' }
             let {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 10,
+                limit = 50,
                 type = '',
                 page = 1,
             } = req.query
+
+            const cacheKey = 'initialStudentsData'
+
+            const isDefaultRequest =
+                limit == 50 && // Supondo que 10 é o limite padrão para os primeiros resultados
+                page == 1 &&
+                search === '' &&
+                type === 'null' &&
+                orderBy === defaultOrderBy.column &&
+                orderASC === defaultOrderBy.asc
+
+            if (isDefaultRequest) {
+                const cachedData = myCache.get(cacheKey)
+                if (cachedData) {
+                    console.log(
+                        'Servindo dados do cache para a requisição padrão.'
+                    )
+                    return res.json(cachedData)
+                }
+            }
 
             if (!verifyFieldInModel(orderBy, Student)) {
                 orderBy = defaultOrderBy.column
@@ -270,6 +290,13 @@ class StudentController {
                 offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
+            const plainRows = rows.map((row) => row.toJSON())
+            const responseData = { totalRows: count, rows: plainRows }
+            // Se for a requisição padrão, armazena no cache
+            if (isDefaultRequest) {
+                myCache.set(cacheKey, responseData)
+                console.log('Dados da requisição padrão armazenados em cache.')
+            }
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
