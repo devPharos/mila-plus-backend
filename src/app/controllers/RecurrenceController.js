@@ -132,9 +132,7 @@ export async function generateRecurrenceReceivables({
                     })
                     await verifyAndCancelTextToPayTransaction(receivable.id)
                     await verifyAndCancelParcelowPaymentLink(receivable.id)
-                    await receivable.destroy({
-                        transaction: req.transaction,
-                    })
+                    await receivable.destroy()
                 }
             }
         } else {
