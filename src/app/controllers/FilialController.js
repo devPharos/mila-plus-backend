@@ -219,10 +219,13 @@ class FilialController {
                 })
             }
 
+            const { filialtype } = req.body
+
             const newFilial = await Filial.create(
                 {
                     company_id: 1,
                     ...req.body,
+                    filialtype_id: filialtype.id,
                     created_by: req.userId,
                 },
                 {
@@ -382,9 +385,12 @@ class FilialController {
                 return res.status(201).json(filialExist)
             }
 
+            const { filialtype } = req.body
+
             let filial = await filialExist.update(
                 {
                     ...req.body,
+                    filialtype_id: filialtype.id,
                     updated_by: req.userId,
                 },
                 {
