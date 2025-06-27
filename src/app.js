@@ -29,7 +29,7 @@ class App {
         this.tests()
         this.schedule()
 
-        connectToMongo()
+        // connectToMongo()
     }
 
     middlewares() {
