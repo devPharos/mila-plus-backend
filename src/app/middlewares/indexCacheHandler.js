@@ -4,7 +4,7 @@ import { sequelizeCache } from '../../config/database.js'
 import { isDefaultRequest } from '../functions/index.js'
 
 const indexCacheHandler = async (req, res, next) => {
-    let cacheKey = 'mila' + req.path
+    let cacheKey = 'mila' + req.path + req.headers.filial
     cacheKey = cacheKey.split('/')
     cacheKey = cacheKey[0] + '/' + cacheKey[1]
 

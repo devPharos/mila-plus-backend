@@ -22,7 +22,6 @@ const { Op } = Sequelize
 
 class MessageController {
     async index(req, res, next) {
-        console.log('Buscando dados...')
         try {
             const defaultOrderBy = { column: 'created_at', asc: 'DESC' }
             let {
