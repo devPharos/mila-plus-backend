@@ -6,13 +6,13 @@ import { initializeApp } from 'firebase/app'
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: 'AIzaSyCUeP6LLI-sjj4uaaBAvX8cURHl4azNtYA',
-    authDomain: 'milaplus-pharosit.firebaseapp.com',
-    projectId: 'milaplus-pharosit',
-    storageBucket: 'milaplus-pharosit.appspot.com',
-    messagingSenderId: '540478084805',
-    appId: '1:540478084805:web:c2b28b664c9219b16742ac',
-    measurementId: 'G-5TGK4YT5HG',
+    apiKey: process.env.FIREBASE_API_KEY,
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.FIREBASE_APP_ID,
+    measurementId: process.env.FIREBASE_MEASUREMENT_ID,
 }
 
 // Initialize Firebase
