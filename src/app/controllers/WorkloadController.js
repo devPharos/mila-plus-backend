@@ -187,24 +187,26 @@ class WorkloadController {
             const {
                 days_per_week,
                 hours_per_day,
-                languagemode_id,
-                level_id,
+                languagemode,
+                level,
                 file_id,
             } = req.body
 
             let myFile = null
             if (file_id) {
-                ;(myFile = await File.create({
-                    company_id: 1,
-                    name: file_id.name,
-                    size: file_id.size,
-                    url: file_id.url,
-                    registry_type: 'Workload',
-                    created_by: req.userId,
-                })),
+                myFile = await File.create(
+                    {
+                        company_id: 1,
+                        name: file_id.name,
+                        size: file_id.size,
+                        url: file_id.url,
+                        registry_type: 'Workload',
+                        created_by: req.userId,
+                    },
                     {
                         transaction: req.transaction,
                     }
+                )
 
                 delete req.body.file_id
             }
@@ -216,8 +218,8 @@ class WorkloadController {
                     days_per_week,
                     file_id: myFile ? myFile.id : null,
                     hours_per_day,
-                    languagemode_id,
-                    level_id,
+                    languagemode_id: languagemode.id,
+                    level_id: level.id,
                     created_by: req.userId,
                 },
                 {
@@ -254,8 +256,15 @@ class WorkloadController {
                 })
             }
 
-            const { days_per_week, hours_per_day, paceGuides, file_id } =
-                req.body
+            const {
+                days_per_week,
+                hours_per_day,
+                paceGuides,
+                file_id,
+                level,
+                languagemode,
+            } = req.body
+
             let myFile = null
 
             if (file_id) {
@@ -269,34 +278,36 @@ class WorkloadController {
                             'Scope and Sequence/' + fileExist.dataValues.name
                         )
 
-                        deleteObject(fileRef)
-                            .then(() => {})
-                            .catch((error) => {
-                                console.log(error)
-                            })
+                        await deleteObject(fileRef)
                     }
                 }
 
-                ;(myFile = await File.create({
-                    company_id: 1,
-                    name: file_id.name,
-                    size: file_id.size || 0,
-                    url: file_id.url,
-                    registry_type: 'Workload',
-                    registry_uuidkey: workloadExist.id,
-                    created_by: req.userId,
-                })),
+                myFile = await File.create(
+                    {
+                        company_id: 1,
+                        name: file_id.name,
+                        size: file_id.size || 0,
+                        url: file_id.url,
+                        registry_type: 'Workload',
+                        registry_uuidkey: workloadExist.id,
+                        created_by: req.userId,
+                    },
                     {
                         transaction: req.transaction,
                     }
-
+                )
                 delete req.body.file_id
             }
+
+            delete req.body.level
+            delete req.body.languagemode
 
             const workload = await workloadExist.update(
                 {
                     ...req.body,
                     file_id: myFile ? myFile.id : workloadExist.file_id,
+                    level_id: level.id,
+                    languagemode_id: languagemode.id,
                     updated_by: req.userId,
                 },
                 {
