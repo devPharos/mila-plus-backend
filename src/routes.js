@@ -62,6 +62,7 @@ import MessageController from './app/controllers/MessageController.js'
 import AttendanceController from './app/controllers/AttendanceController.js'
 import GradeController from './app/controllers/GradeController.js'
 import ChartsController from './app/controllers/ChartsController.js'
+import AbsenseControlController from './app/controllers/AbsenseControlController.js'
 
 const routes = new Router()
 
@@ -347,6 +348,8 @@ routes.delete('/agents/:agent_id', AgentController.inactivate)
 
 routes.get('/attendances/:student_id', AttendanceController.list)
 routes.put('/attendances/:student_id', AttendanceController.update)
+
+routes.get('/absenseControl/:student_id', AbsenseControlController.show)
 
 routes.get('/grades/:student_id', GradeController.list)
 routes.put('/grades/:student_id', GradeController.update)

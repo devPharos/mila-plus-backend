@@ -42,6 +42,14 @@ class Attendance extends Model {
             foreignKey: 'studentgroupclass_id',
             as: 'studentgroupclasses',
         })
+        this.belongsTo(models.Vacation, {
+            foreignKey: 'vacation_id',
+            as: 'vacation',
+        })
+        this.belongsTo(models.MedicalExcuse, {
+            foreignKey: 'medical_excuse_id',
+            as: 'medical_excuse',
+        })
     }
 }
 

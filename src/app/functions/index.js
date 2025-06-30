@@ -219,7 +219,6 @@ export async function getIssuerByName(search = '') {
 }
 
 export function verifyFilialSearch(model = null, req = null) {
-    console.log(req.headers.filial)
     return model.rawAttributes['filial_id']
         ? {
               [Op.or]: [
