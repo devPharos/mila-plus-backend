@@ -44,6 +44,26 @@ class MenuHierarchyController {
                                     canceled_at: null,
                                 },
                             },
+                            {
+                                model: MenuHierarchy,
+                                as: 'children',
+                                include: [
+                                    {
+                                        model: MenuHierarchyXGroups,
+                                        attributes: [
+                                            'id',
+                                            'view',
+                                            'edit',
+                                            'create',
+                                            'inactivate',
+                                        ],
+                                        where: {
+                                            group_id,
+                                            canceled_at: null,
+                                        },
+                                    },
+                                ],
+                            },
                         ],
                     },
                     {
@@ -110,6 +130,34 @@ class MenuHierarchyController {
                         as: 'children',
                         required: true,
                         include: [
+                            {
+                                model: MenuHierarchy,
+                                as: 'children',
+                                required: false,
+                                include: [
+                                    {
+                                        model: MenuHierarchyXGroups,
+                                        attributes: [
+                                            'id',
+                                            'view',
+                                            'edit',
+                                            'create',
+                                            'inactivate',
+                                        ],
+                                        required: true,
+                                        where: {
+                                            view: true,
+                                            group_id: {
+                                                [Op.in]: groupIds,
+                                            },
+                                            canceled_at: null,
+                                        },
+                                    },
+                                ],
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
                             {
                                 model: MenuHierarchyXGroups,
                                 attributes: [
