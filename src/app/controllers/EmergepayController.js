@@ -127,11 +127,10 @@ export async function settlement(
                 paymentmethod_id,
                 settlement_date,
                 memo: settlement_memo,
-
                 created_by: 2,
             },
             {
-                transaction: req.transaction,
+                transaction: t,
             }
         )
         await receivable.update(
@@ -148,11 +147,11 @@ export async function settlement(
                 updated_by: 2,
             },
             {
-                transaction: req.transaction,
+                transaction: t,
             }
         )
-        await createPaidTimeline()
-        await SettlementMail({
+        createPaidTimeline()
+        SettlementMail({
             receivable_id: receivable.id,
             amount: amountPaidBalance,
         })

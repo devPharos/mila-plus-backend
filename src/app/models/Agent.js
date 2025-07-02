@@ -1,4 +1,4 @@
-import Sequelize, { Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize'
 
 class Agent extends Model {
     static init(sequelize) {
@@ -7,7 +7,7 @@ class Agent extends Model {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
-                    primaryKey: true
+                    primaryKey: true,
                 },
                 company_id: Sequelize.INTEGER,
                 filial_id: Sequelize.INTEGER,
@@ -24,14 +24,15 @@ class Agent extends Model {
             {
                 sequelize,
             }
-        );
+        )
 
-        return this;
+        return this
     }
 
     static associate(models) {
-        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' });
+        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
+        this.belongsTo(models.Milauser, { foreignKey: 'user_id', as: 'user' })
     }
 }
 
-export default Agent;
+export default Agent

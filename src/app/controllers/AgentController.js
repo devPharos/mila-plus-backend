@@ -10,16 +10,27 @@ import {
     verifyFilialSearch,
 } from '../functions/index.js'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
+import Milauser from '../models/Milauser.js'
 
 const { Op } = Sequelize
 
 class AgentController {
     async store(req, res, next) {
         try {
+            const { user } = req.body
+            if (user.id) {
+                const userExists = await Milauser.findByPk(user.id)
+                if (!userExists) {
+                    return res.status(400).json({
+                        error: 'User does not exist.',
+                    })
+                }
+            }
             const new_agent = await Agent.create(
                 {
                     filial_id: req.headers.filial,
                     ...req.body,
+                    user_id: user.id,
                     company_id: 1,
 
                     created_by: req.userId,
@@ -49,8 +60,30 @@ class AgentController {
                 })
             }
 
+            let email = ''
+
+            const { user } = req.body
+            if (user.id) {
+                const userExists = await Milauser.findByPk(user.id)
+                if (!userExists) {
+                    return res.status(400).json({
+                        error: 'User does not exist.',
+                    })
+                }
+                email = userExists.dataValues.email
+            }
+
+            delete req.body.email
+            delete req.body.user
+
             await agentExists.update(
-                { ...req.body, updated_by: req.userId, updated_at: new Date() },
+                {
+                    ...req.body,
+                    user_id: user.id,
+                    email,
+                    updated_by: req.userId,
+                    updated_at: new Date(),
+                },
                 {
                     transaction: req.transaction,
                 }
@@ -117,10 +150,6 @@ class AgentController {
                 order: searchOrder,
             })
 
-            if (req.cacheKey) {
-                handleCache({ cacheKey: req.cacheKey, rows, count })
-            }
-
             return res.json({ totalRows: count, rows })
         } catch (err) {
             err.transaction = req.transaction
@@ -139,6 +168,13 @@ class AgentController {
                         as: 'filial',
                         required: false,
                         where: { canceled_at: null },
+                    },
+                    {
+                        model: Milauser,
+                        as: 'user',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'name', 'email'],
                     },
                 ],
             })
