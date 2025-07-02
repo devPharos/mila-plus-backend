@@ -9,7 +9,6 @@ const indexCacheHandler = async (req, res, next) => {
     cacheKey = cacheKey[0] + '/' + cacheKey[1]
 
     if (req.method !== 'GET') {
-        console.log('remove cacheKey', cacheKey)
         if (sequelizeCache.has(cacheKey)) {
             sequelizeCache.del(cacheKey)
         }
