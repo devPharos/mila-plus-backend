@@ -1987,11 +1987,9 @@ class ReceivableController {
             let { total_amount } = req.body
 
             for (let rec of receivables) {
-                console.log('--- SETTLEMENT ---', rec.id)
                 const receivable = await Receivable.findByPk(rec.id)
 
                 if (!receivable) {
-                    console.log('receivable not found')
                     return res.status(400).json({
                         error: 'Receivable not found.',
                     })
@@ -2014,7 +2012,6 @@ class ReceivableController {
                     )
 
                     if (discount) {
-                        console.log('discount found')
                         total_amount_with_discount = applyDiscounts({
                             applied_at: 'Settlement',
                             type: 'Financial',
@@ -2032,9 +2029,7 @@ class ReceivableController {
 
                 const thisDiscounts = total_amount - total_amount_with_discount
 
-                // console.log(receivable.dataValues.status)
                 if (receivable.dataValues.status !== 'Paid') {
-                    console.log('status is not paid')
                     await receivable.update(
                         {
                             discount: (
@@ -2075,8 +2070,6 @@ class ReceivableController {
                         )
                     }
 
-                    console.log('settlement')
-
                     await settlement(
                         {
                             receivable_id: receivable.id,
@@ -2089,7 +2082,6 @@ class ReceivableController {
                         req
                     )
                     if (approvalData) {
-                        console.log('approval data')
                         const {
                             accountCardType,
                             accountEntryMethod,
@@ -2157,7 +2149,6 @@ class ReceivableController {
                         rec.id === receivables[receivables.length - 1].id &&
                         receivable.dataValues.is_recurrence
                     ) {
-                        console.log('recurrence')
                         const recurrence = await Recurrence.findOne({
                             where: {
                                 issuer_id: receivable.dataValues.issuer_id,
