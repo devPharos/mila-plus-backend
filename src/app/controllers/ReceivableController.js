@@ -1987,10 +1987,11 @@ class ReceivableController {
             let { total_amount } = req.body
 
             for (let rec of receivables) {
-                // console.log('--- SETTLEMENT ---', rec.id)
+                console.log('--- SETTLEMENT ---', rec.id)
                 const receivable = await Receivable.findByPk(rec.id)
 
                 if (!receivable) {
+                    console.log('receivable not found')
                     return res.status(400).json({
                         error: 'Receivable not found.',
                     })
@@ -2007,12 +2008,13 @@ class ReceivableController {
 
                 let total_amount_with_discount = total_amount
 
-                if (prices.discounts && prices.discounts.length > 0) {
+                if (prices && prices.discounts && prices.discounts.length > 0) {
                     const discount = await FilialDiscountList.findByPk(
                         prices.discounts[0].filial_discount_list_id
                     )
 
                     if (discount) {
+                        console.log('discount found')
                         total_amount_with_discount = applyDiscounts({
                             applied_at: 'Settlement',
                             type: 'Financial',
@@ -2032,6 +2034,7 @@ class ReceivableController {
 
                 // console.log(receivable.dataValues.status)
                 if (receivable.dataValues.status !== 'Paid') {
+                    console.log('status is not paid')
                     await receivable.update(
                         {
                             discount: (
@@ -2048,7 +2051,11 @@ class ReceivableController {
                         }
                     )
 
-                    if (prices.discounts && prices.discounts.length > 0) {
+                    if (
+                        prices &&
+                        prices.discounts &&
+                        prices.discounts.length > 0
+                    ) {
                         const discount = await FilialDiscountList.findByPk(
                             prices.discounts[0].filial_discount_list_id
                         )
@@ -2068,6 +2075,8 @@ class ReceivableController {
                         )
                     }
 
+                    console.log('settlement')
+
                     await settlement(
                         {
                             receivable_id: receivable.id,
@@ -2080,6 +2089,7 @@ class ReceivableController {
                         req
                     )
                     if (approvalData) {
+                        console.log('approval data')
                         const {
                             accountCardType,
                             accountEntryMethod,
@@ -2147,6 +2157,7 @@ class ReceivableController {
                         rec.id === receivables[receivables.length - 1].id &&
                         receivable.dataValues.is_recurrence
                     ) {
+                        console.log('recurrence')
                         const recurrence = await Recurrence.findOne({
                             where: {
                                 issuer_id: receivable.dataValues.issuer_id,

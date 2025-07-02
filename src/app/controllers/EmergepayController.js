@@ -126,7 +126,6 @@ export async function settlement(
             paymentmethod_id,
             settlement_date,
             memo: settlement_memo,
-
             created_by: 2,
         })
         await receivable.update({
