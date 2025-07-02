@@ -52,9 +52,9 @@ const indexCacheHandler = async (req, res, next) => {
         page,
     })
 
-    if (req.path === '/receivables' || req.path === '/payees') {
-        shouldCache = false
-    }
+    // if (req.path === '/receivables' || req.path === '/payees') {
+    shouldCache = false
+    // }
 
     if (shouldCache) {
         const cachedData = sequelizeCache.get(cacheKey)
