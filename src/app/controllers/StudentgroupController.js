@@ -159,6 +159,7 @@ export async function createStudentAttendances({
         where: {
             studentgroup_id: studentgroup.id,
             canceled_at: null,
+            status: 'Pending',
             date: {
                 [Op.gte]: from_date,
             },
@@ -1227,7 +1228,7 @@ class StudentgroupController {
                         weekday: weekDays[dayOfWeek],
                         shift,
                         notes: memo,
-                        status: 'Pending',
+                        status: memo ? 'Holiday' : 'Pending',
                         created_by: req.userId,
                     },
                     {
@@ -1432,6 +1433,9 @@ class StudentgroupController {
                 where: {
                     ...filialSearch,
                     studentgroup_id: studentgroup.id,
+                    status: {
+                        [Op.ne]: 'Holiday',
+                    },
                     canceled_at: null,
                 },
                 include: [
