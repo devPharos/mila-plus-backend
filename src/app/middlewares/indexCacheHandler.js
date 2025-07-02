@@ -9,6 +9,7 @@ const indexCacheHandler = async (req, res, next) => {
     cacheKey = cacheKey[0] + '/' + cacheKey[1]
 
     if (req.method !== 'GET') {
+        console.log('remove cacheKey', cacheKey)
         if (sequelizeCache.has(cacheKey)) {
             sequelizeCache.del(cacheKey)
         }
@@ -43,7 +44,7 @@ const indexCacheHandler = async (req, res, next) => {
         }
     }
 
-    const shouldCache = isDefaultRequest(defaultFilters, {
+    let shouldCache = isDefaultRequest(defaultFilters, {
         orderBy,
         orderASC,
         search,
@@ -51,6 +52,10 @@ const indexCacheHandler = async (req, res, next) => {
         type,
         page,
     })
+
+    if (req.path === '/receivables' || req.path === '/payees') {
+        shouldCache = false
+    }
 
     if (shouldCache) {
         const cachedData = sequelizeCache.get(cacheKey)
