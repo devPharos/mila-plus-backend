@@ -1493,7 +1493,9 @@ class StudentgroupController {
                     ...attendanceFilter,
                     ...filialSearch,
                     studentgroup_id: studentgroup.id,
-
+                    status: {
+                        [Op.ne]: 'Holiday',
+                    },
                     canceled_at: null,
                 },
                 include: [
