@@ -1,6 +1,5 @@
 import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog.js'
-import databaseConfig from '../../config/database.js'
 import Studentgroup from '../models/Studentgroup.js'
 import {
     generateSearchByFields,
@@ -24,9 +23,19 @@ import Paceguide from '../models/Paceguide.js'
 import Studentgrouppaceguide from '../models/Studentgrouppaceguide.js'
 import Studentinactivation from '../models/Studentinactivation.js'
 import Attendance from '../models/Attendance.js'
+import Vacation from '../models/Vacation.js'
+import MedicalExcuse from '../models/MedicalExcuse.js'
 import Grade from '../models/Grade.js'
 import File from '../models/File.js'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
+import { dirname, resolve } from 'path'
+
+import PDFDocument from 'pdfkit'
+import fs from 'fs'
+import { fileURLToPath } from 'url'
+
+const filename = fileURLToPath(import.meta.url)
+const directory = dirname(filename)
 
 const { Op } = Sequelize
 
@@ -144,6 +153,7 @@ export async function createStudentAttendances({
     student_id = null,
     studentgroup_id = null,
     from_date = null,
+    to_date = null,
     req = { userId: 2 },
     t = null,
 }) {
@@ -159,10 +169,16 @@ export async function createStudentAttendances({
         where: {
             studentgroup_id: studentgroup.id,
             canceled_at: null,
-            status: 'Pending',
-            date: {
-                [Op.gte]: from_date,
+            status: {
+                [Op.ne]: 'Holiday',
             },
+            date: to_date
+                ? {
+                      [Op.between]: [from_date, to_date],
+                  }
+                : {
+                      [Op.gte]: from_date,
+                  },
         },
         attributes: ['id', 'shift', 'date'],
         order: [['date', 'ASC']],
@@ -170,6 +186,30 @@ export async function createStudentAttendances({
 
     for (let class_ of classes) {
         for (const shift of class_.shift.split('/')) {
+            const vacation = await Vacation.findOne({
+                where: {
+                    student_id: student_id,
+                    date_from: {
+                        [Op.lte]: format(parseISO(class_.date), 'yyyy-MM-dd'),
+                    },
+                    date_to: {
+                        [Op.gte]: format(parseISO(class_.date), 'yyyy-MM-dd'),
+                    },
+                    canceled_at: null,
+                },
+            })
+            const medicalExcuse = await MedicalExcuse.findOne({
+                where: {
+                    student_id: student_id,
+                    date_from: {
+                        [Op.lte]: format(parseISO(class_.date), 'yyyy-MM-dd'),
+                    },
+                    date_to: {
+                        [Op.gte]: format(parseISO(class_.date), 'yyyy-MM-dd'),
+                    },
+                    canceled_at: null,
+                },
+            })
             await Attendance.create(
                 {
                     studentgroupclass_id: class_.id,
@@ -177,6 +217,8 @@ export async function createStudentAttendances({
                     shift,
                     first_check: 'Absent',
                     second_check: 'Absent',
+                    vacation_id: vacation?.id,
+                    medical_excuse_id: medicalExcuse?.id,
                     created_by: req.userId,
                 },
                 {
@@ -213,14 +255,14 @@ export async function removeStudentAttendances({
     })
 
     for (let class_ of classes) {
-        const attendance = await Attendance.findAll({
+        const attendances = await Attendance.findAll({
             where: {
                 studentgroupclass_id: class_.id,
                 student_id: student_id,
                 canceled_at: null,
             },
         })
-        for (let attendance of attendance) {
+        for (let attendance of attendances) {
             await attendance.destroy({
                 transaction: req.transaction,
             })
@@ -1301,16 +1343,32 @@ class StudentgroupController {
             })
 
             for (let student of students) {
-                await createStudentAttendances({
-                    student_id: student.id,
-                    studentgroup_id: studentgroup.id,
-                    from_date: format(
-                        parseISO(studentgroup.dataValues.start_date),
-                        'yyyy-MM-dd'
-                    ),
-                    req,
-                    t: req.transaction,
+                const studentXGroups = await StudentXGroup.findAll({
+                    where: {
+                        student_id: student.id,
+                        group_id: studentgroup.id,
+                        canceled_at: null,
+                    },
+                    attributes: ['start_date', 'end_date'],
                 })
+                for (let studentXGroup of studentXGroups) {
+                    await createStudentAttendances({
+                        student_id: student.id,
+                        studentgroup_id: studentgroup.id,
+                        from_date: format(
+                            parseISO(studentXGroup.dataValues.start_date),
+                            'yyyy-MM-dd'
+                        ),
+                        to_date: studentXGroup.dataValues.end_date
+                            ? format(
+                                  parseISO(studentXGroup.dataValues.end_date),
+                                  'yyyy-MM-dd'
+                              )
+                            : null,
+                        req,
+                        t: req.transaction,
+                    })
+                }
             }
 
             await req.transaction.commit()
@@ -1480,12 +1538,14 @@ class StudentgroupController {
                 }
             }
 
-            const attendance = await Studentgroupclass.findOne({
+            const studentgroupclass = await Studentgroupclass.findOne({
                 where: {
                     ...attendanceFilter,
                     ...filialSearch,
                     studentgroup_id: studentgroup.id,
-
+                    status: {
+                        [Op.ne]: 'Holiday',
+                    },
                     canceled_at: null,
                 },
                 include: [
@@ -1535,15 +1595,6 @@ class StudentgroupController {
                         attributes: ['id', 'name'],
                         include: [
                             {
-                                model: Student,
-                                as: 'students',
-                                required: false,
-                                where: {
-                                    canceled_at: null,
-                                },
-                                attributes: ['id', 'name', 'last_name'],
-                            },
-                            {
                                 model: Staff,
                                 as: 'staff',
                                 required: false,
@@ -1556,6 +1607,34 @@ class StudentgroupController {
                     },
                 ],
                 order: [['date', 'ASC']],
+            })
+
+            const students = await Student.findAll({
+                where: {
+                    studentgroup_id: studentgroup.id,
+                    canceled_at: null,
+                },
+                include: [
+                    {
+                        model: Attendance,
+                        as: 'attendances',
+                        required: true,
+                        where: {
+                            studentgroupclass_id: studentgroupclass.id,
+                            canceled_at: null,
+                        },
+                        attributes: [
+                            'id',
+                            'student_id',
+                            'shift',
+                            'first_check',
+                            'second_check',
+                            'vacation_id',
+                            'medical_excuse_id',
+                        ],
+                    },
+                ],
+                attributes: ['id', 'name', 'last_name'],
             })
 
             const pendingPaceguides = await Studentgrouppaceguide.findAll({
@@ -1589,7 +1668,8 @@ class StudentgroupController {
             )
 
             return res.json({
-                attendance,
+                students,
+                studentgroupclass,
                 pendingPaceguides,
                 otherPaceGuides,
                 studentGroupProgress,
@@ -1637,65 +1717,71 @@ class StudentgroupController {
             )
 
             for (let shift of shifts) {
-                for (let student of shift.students) {
-                    let firstCheck = 'Absent'
-                    let secondCheck = 'Absent'
-                    if (
-                        student[`first_check_${shift.shift}_${student.id}`] ===
-                        'Present'
-                    ) {
-                        firstCheck = 'Present'
-                    } else if (
-                        student[`first_check_${shift.shift}_${student.id}`] ===
-                        'Late'
-                    ) {
-                        firstCheck = 'Late'
-                    }
-                    if (
-                        student[`second_check_${shift.shift}_${student.id}`] ===
-                        'Present'
-                    ) {
-                        secondCheck = 'Present'
-                    } else if (
-                        student[`second_check_${shift.shift}_${student.id}`] ===
-                        'Late'
-                    ) {
-                        secondCheck = 'Late'
-                    }
-                    const attendanceExists = await Attendance.findOne({
-                        where: {
-                            studentgroupclass_id: studentgroupclass.id,
-                            student_id: student.id,
-                            shift: shift.shift,
-                            canceled_at: null,
-                        },
-                    })
-
-                    if (attendanceExists) {
-                        await attendanceExists.update(
-                            {
-                                first_check: firstCheck,
-                                second_check: secondCheck,
-                                updated_by: req.userId,
-                            },
-                            {
-                                transaction: req.transaction,
-                            }
-                        )
-                    } else {
-                        await Attendance.create(
-                            {
+                if (shift.students?.length > 0) {
+                    for (let student of shift.students) {
+                        let firstCheck = 'Absent'
+                        let secondCheck = 'Absent'
+                        if (
+                            student[
+                                `first_check_${shift.shift}_${student.id}`
+                            ] === 'Present'
+                        ) {
+                            firstCheck = 'Present'
+                        } else if (
+                            student[
+                                `first_check_${shift.shift}_${student.id}`
+                            ] === 'Late'
+                        ) {
+                            firstCheck = 'Late'
+                        }
+                        if (
+                            student[
+                                `second_check_${shift.shift}_${student.id}`
+                            ] === 'Present'
+                        ) {
+                            secondCheck = 'Present'
+                        } else if (
+                            student[
+                                `second_check_${shift.shift}_${student.id}`
+                            ] === 'Late'
+                        ) {
+                            secondCheck = 'Late'
+                        }
+                        const attendanceExists = await Attendance.findOne({
+                            where: {
                                 studentgroupclass_id: studentgroupclass.id,
                                 student_id: student.id,
                                 shift: shift.shift,
-                                first_check: firstCheck,
-                                second_check: secondCheck,
-                                created_by: req.userId,
+                                canceled_at: null,
                             },
-                            {
-                                transaction: req.transaction,
-                            }
-                        )
+                        })
+
+                        if (attendanceExists) {
+                            await attendanceExists.update(
+                                {
+                                    first_check: firstCheck,
+                                    second_check: secondCheck,
+                                    updated_by: req.userId,
+                                },
+                                {
+                                    transaction: req.transaction,
+                                }
+                            )
+                        } else {
+                            await Attendance.create(
+                                {
+                                    studentgroupclass_id: studentgroupclass.id,
+                                    student_id: student.id,
+                                    shift: shift.shift,
+                                    first_check: firstCheck,
+                                    second_check: secondCheck,
+                                    created_by: req.userId,
+                                },
+                                {
+                                    transaction: req.transaction,
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -1797,6 +1883,388 @@ class StudentgroupController {
             await req.transaction.commit()
 
             return res.status(200).json(studentgroup)
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
+    }
+
+    async attendanceReport(req, res, next) {
+        function header(doc) {
+            const maxWidth = doc.options.layout === 'landscape' ? 750 : 612
+            let left = maxWidth * 0.25
+            let top = 50
+            let width = 40
+            let height = 20
+            let boxWidth = 20
+
+            doc.rect(20, top, maxWidth, height).strokeColor('#868686').stroke()
+
+            doc.fillColor('#222')
+                .fontSize(9)
+                .font('Helvetica-Bold')
+                .text(`Absence Type Key`, 20, top + 7, {
+                    width: left - 20,
+                    align: 'center',
+                })
+
+            doc.rect(left, top + 1, 20, height - 2).fill('#E6E6FA')
+            doc.fontSize(9)
+                .font('Helvetica')
+                .fillColor('#222')
+                .text(`CC`, left, top + 7, {
+                    width: boxWidth,
+                    align: 'center',
+                })
+                .fontSize(6)
+                .font('Helvetica-Bold')
+                .text(`CLASS CANCELED`, left + boxWidth + 5, top + 4.2, {
+                    width: width,
+                    align: 'left',
+                })
+
+            left += width + boxWidth + 5
+            width = 32
+
+            doc.rect(left, top + 1, 20, height - 2).fill('#FFFACD')
+            doc.fontSize(9)
+                .font('Helvetica')
+                .fillColor('#222')
+                .text(`O`, left, top + 7, {
+                    width: boxWidth,
+                    align: 'center',
+                })
+                .fontSize(6)
+                .font('Helvetica-Bold')
+                .text(`ON HOLD`, left + boxWidth + 5, top + 8.5, {
+                    width: width,
+                    align: 'left',
+                })
+
+            left += width + boxWidth + 5
+            width = 30
+
+            doc.rect(left, top + 1, 20, height - 2).fill('#FFDAB9')
+            doc.fontSize(9)
+                .font('Helvetica')
+                .fillColor('#222')
+                .text(`A`, left, top + 7, {
+                    width: boxWidth,
+                    align: 'center',
+                })
+                .fontSize(6)
+                .font('Helvetica-Bold')
+                .text(`ABSENT`, left + boxWidth + 5, top + 8.5, {
+                    width: width,
+                    align: 'left',
+                })
+
+            left += width + boxWidth + 5
+            width = 44
+
+            doc.rect(left, top + 1, 20, height - 2).fill('#FFA0a0')
+            doc.fontSize(9)
+                .font('Helvetica')
+                .fillColor('#222')
+                .text(`C`, left, top + 7, {
+                    width: boxWidth,
+                    align: 'center',
+                })
+                .fontSize(6)
+                .font('Helvetica-Bold')
+                .fillColor('#222')
+                .text(`CANCELLED`, left + boxWidth + 5, top + 8.5, {
+                    width: width,
+                    align: 'left',
+                })
+
+            left += width + boxWidth + 5
+            width = 35
+
+            doc.rect(left, top + 1, 20, height - 2).fill('#98FB98')
+            doc.fontSize(9)
+                .font('Helvetica')
+                .fillColor('#222')
+                .text(`F`, left, top + 7, {
+                    width: boxWidth,
+                    align: 'center',
+                })
+                .fontSize(6)
+                .font('Helvetica-Bold')
+                .text(`FINISHED`, left + boxWidth + 5, top + 8.5, {
+                    width: width,
+                    align: 'left',
+                })
+
+            left += width + boxWidth + 5
+            width = 26
+
+            doc.rect(left, top + 1, 20, height - 2).fill('#D3D3D3')
+            doc.fontSize(9)
+                .font('Helvetica')
+                .fillColor('#222')
+                .text(`I`, left, top + 7, {
+                    width: boxWidth,
+                    align: 'center',
+                })
+                .fontSize(6)
+                .font('Helvetica-Bold')
+                .text(`ISSUES`, left + boxWidth + 5, top + 8.5, {
+                    width: width,
+                    align: 'left',
+                })
+
+            left += width + boxWidth + 5
+            width = 34
+
+            doc.rect(left, top + 1, 20, height - 2).fill('#ADD8E6')
+            doc.fontSize(9)
+                .font('Helvetica')
+                .fillColor('#222')
+                .text(`P`, left, top + 7, {
+                    width: boxWidth,
+                    align: 'center',
+                })
+                .fontSize(6)
+                .font('Helvetica-Bold')
+                .text(`HALF PRESENT`, left + boxWidth + 5, top + 4.2, {
+                    width: width,
+                    align: 'left',
+                })
+
+            left += width + boxWidth + 5
+            width = 20
+
+            doc.rect(left, top + 1, 20, height - 2).fill('#C1E1C1')
+            doc.fontSize(9)
+                .font('Helvetica')
+                .fillColor('#222')
+                .text(`S`, left, top + 7, {
+                    width: boxWidth,
+                    align: 'center',
+                })
+                .fontSize(6)
+                .font('Helvetica-Bold')
+                .text(`SICK`, left + boxWidth + 5, top + 8.5, {
+                    width: width,
+                    align: 'left',
+                })
+
+            left += width + boxWidth + 5
+            width = 36
+
+            doc.rect(left, top + 1, 20, height - 2).fill('#FFD580')
+            doc.fontSize(9)
+                .font('Helvetica')
+                .fillColor('#222')
+                .text(`T`, left, top + 7, {
+                    width: boxWidth,
+                    align: 'center',
+                })
+                .fontSize(6)
+                .font('Helvetica-Bold')
+                .text(`TRANSFER`, left + boxWidth + 5, top + 8.5, {
+                    width: width,
+                    align: 'left',
+                })
+
+            left += width + boxWidth + 5
+            width = 36
+
+            doc.rect(left, top + 1, 20, height - 2).fill('#D2B48C')
+            doc.fontSize(9)
+                .font('Helvetica')
+                .fillColor('#222')
+                .text(`I`, left, top + 7, {
+                    width: boxWidth,
+                    align: 'center',
+                })
+                .fontSize(6)
+                .font('Helvetica-Bold')
+                .text(`VACATION`, left + boxWidth + 5, top + 8.5, {
+                    width: width,
+                    align: 'left',
+                })
+        }
+        try {
+            const { studentgroup_id } = req.params
+            const { from_date, to_date } = req.query
+
+            const studentGroup = await Studentgroup.findByPk(studentgroup_id)
+
+            const doc = new PDFDocument({
+                margins: {
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    right: 30,
+                },
+                layout: 'landscape',
+                autoFirstPage: false,
+            })
+
+            const name = `${studentGroup.name}_${format(
+                parseISO(from_date),
+                'yyyyMMdd'
+            )}_${format(parseISO(to_date), 'yyyyMMdd')}.pdf`
+            const path = `${resolve(
+                directory,
+                '..',
+                '..',
+                '..',
+                'tmp',
+                'reporting'
+            )}/${name}`
+            const file = fs.createWriteStream(path, null, {
+                encoding: 'base64',
+            })
+            doc.pipe(file)
+
+            const maxWidth = doc.options.layout === 'landscape' ? 750 : 612
+
+            doc.addPage()
+
+            header(doc)
+
+            let top = 80
+            let height = 20
+
+            const dayWidth = (maxWidth * 0.6) / 31
+
+            doc.rect(20, top, maxWidth * 0.35, height)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.rect(20, top + 20, maxWidth * 0.35, dayWidth * 2)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.rect(maxWidth * 0.35 + 20, top, maxWidth * 0.6, height)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.rect(
+                maxWidth * 0.95 + 20,
+                top,
+                maxWidth * 0.05,
+                height + dayWidth
+            )
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.rect(
+                maxWidth * 0.95 + 20,
+                top + 20 + dayWidth,
+                maxWidth * 0.05,
+                dayWidth
+            )
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.fillColor('#222')
+                .fontSize(9)
+                .font('Helvetica-Bold')
+                .text(`JUNE`, 20, top + 7, {
+                    width: maxWidth * 0.35,
+                    align: 'center',
+                })
+
+            doc.fillColor('#222')
+                .fontSize(8)
+                .font('Helvetica-Bold')
+                .text(`STUDENT'S NAME (PRINT NAME)`, 20, top + 20 + 13, {
+                    width: maxWidth * 0.35,
+                    align: 'center',
+                })
+
+            doc.text(
+                `ATTENDANCE MONTHLY REPORT`,
+                maxWidth * 0.35 + 20,
+                top + 7,
+                {
+                    width: maxWidth * 0.65 - 20,
+                    align: 'center',
+                }
+            )
+            doc.text(`2025`, maxWidth * 0.95 + 20, top + 16, {
+                width: maxWidth * 0.05,
+                align: 'center',
+            })
+
+            top += 20
+            height = dayWidth
+            for (let i = 0; i < 31; i++) {
+                const formattedDate = format(
+                    addDays(parseISO(from_date), i),
+                    'EEEEEE'
+                )
+                doc.rect(
+                    maxWidth * 0.35 + 20 + i * dayWidth,
+                    top,
+                    dayWidth,
+                    height
+                )
+                    .fillAndStroke(
+                        ['Sa', 'Su'].includes(formattedDate)
+                            ? '#D3D3D3'
+                            : '#fff',
+                        '#868686'
+                    )
+                    .stroke()
+
+                doc.rect(
+                    maxWidth * 0.35 + 20 + i * dayWidth,
+                    top + dayWidth,
+                    dayWidth,
+                    height
+                )
+                    .fillAndStroke(
+                        ['Sa', 'Su'].includes(formattedDate)
+                            ? '#D3D3D3'
+                            : '#fff',
+                        '#868686'
+                    )
+                    .stroke()
+
+                doc.fontSize(6)
+                    .fillColor('#222')
+                    .text(
+                        `${formattedDate}`,
+                        maxWidth * 0.35 + 20 + i * dayWidth,
+                        top + 5,
+                        {
+                            width: dayWidth,
+                            align: 'center',
+                        }
+                    )
+                    .text(
+                        (i + 1).toString(),
+                        maxWidth * 0.35 + 20 + i * dayWidth,
+                        top + 5 + dayWidth,
+                        {
+                            width: dayWidth,
+                            align: 'center',
+                        }
+                    )
+            }
+
+            // finalize the PDF and end the stream
+            doc.end()
+            file.addListener('finish', () => {
+                // HERE PDF FILE IS DONE
+                // res.contentType('application/pdf')
+                return res.download(
+                    `${resolve(
+                        directory,
+                        '..',
+                        '..',
+                        '..',
+                        'tmp',
+                        'reporting'
+                    )}/${name}`,
+                    name
+                )
+            })
         } catch (err) {
             err.transaction = req.transaction
             next(err)

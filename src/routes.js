@@ -333,6 +333,11 @@ routes.get(
     StudentgroupController.attendance
 )
 
+routes.get(
+    '/studentgroups/attendanceReport/:studentgroup_id',
+    StudentgroupController.attendanceReport
+)
+
 routes.post(
     '/studentgroups/attendance/:studentgroup_id',
     StudentgroupController.storeAttendance
