@@ -24,6 +24,8 @@ import Paceguide from '../models/Paceguide.js'
 import Studentgrouppaceguide from '../models/Studentgrouppaceguide.js'
 import Studentinactivation from '../models/Studentinactivation.js'
 import Attendance from '../models/Attendance.js'
+import Vacation from '../models/Vacation.js'
+import MedicalExcuse from '../models/MedicalExcuse.js'
 import Grade from '../models/Grade.js'
 import File from '../models/File.js'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
@@ -144,6 +146,7 @@ export async function createStudentAttendances({
     student_id = null,
     studentgroup_id = null,
     from_date = null,
+    to_date = null,
     req = { userId: 2 },
     t = null,
 }) {
@@ -159,10 +162,16 @@ export async function createStudentAttendances({
         where: {
             studentgroup_id: studentgroup.id,
             canceled_at: null,
-            status: 'Pending',
-            date: {
-                [Op.gte]: from_date,
+            status: {
+                [Op.ne]: 'Holiday',
             },
+            date: to_date
+                ? {
+                      [Op.between]: [from_date, to_date],
+                  }
+                : {
+                      [Op.gte]: from_date,
+                  },
         },
         attributes: ['id', 'shift', 'date'],
         order: [['date', 'ASC']],
@@ -170,6 +179,30 @@ export async function createStudentAttendances({
 
     for (let class_ of classes) {
         for (const shift of class_.shift.split('/')) {
+            const vacation = await Vacation.findOne({
+                where: {
+                    student_id: student_id,
+                    date_from: {
+                        [Op.lte]: format(parseISO(class_.date), 'yyyy-MM-dd'),
+                    },
+                    date_to: {
+                        [Op.gte]: format(parseISO(class_.date), 'yyyy-MM-dd'),
+                    },
+                    canceled_at: null,
+                },
+            })
+            const medicalExcuse = await MedicalExcuse.findOne({
+                where: {
+                    student_id: student_id,
+                    date_from: {
+                        [Op.lte]: format(parseISO(class_.date), 'yyyy-MM-dd'),
+                    },
+                    date_to: {
+                        [Op.gte]: format(parseISO(class_.date), 'yyyy-MM-dd'),
+                    },
+                    canceled_at: null,
+                },
+            })
             await Attendance.create(
                 {
                     studentgroupclass_id: class_.id,
@@ -177,6 +210,8 @@ export async function createStudentAttendances({
                     shift,
                     first_check: 'Absent',
                     second_check: 'Absent',
+                    vacation_id: vacation?.id,
+                    medical_excuse_id: medicalExcuse?.id,
                     created_by: req.userId,
                 },
                 {
@@ -1301,7 +1336,7 @@ class StudentgroupController {
             })
 
             for (let student of students) {
-                const studentXGroup = await StudentXGroup.findOne({
+                const studentXGroups = await StudentXGroup.findAll({
                     where: {
                         student_id: student.id,
                         group_id: studentgroup.id,
@@ -1309,16 +1344,24 @@ class StudentgroupController {
                     },
                     attributes: ['start_date', 'end_date'],
                 })
-                await createStudentAttendances({
-                    student_id: student.id,
-                    studentgroup_id: studentgroup.id,
-                    from_date: format(
-                        parseISO(studentXGroup.dataValues.start_date),
-                        'yyyy-MM-dd'
-                    ),
-                    req,
-                    t: req.transaction,
-                })
+                for (let studentXGroup of studentXGroups) {
+                    await createStudentAttendances({
+                        student_id: student.id,
+                        studentgroup_id: studentgroup.id,
+                        from_date: format(
+                            parseISO(studentXGroup.dataValues.start_date),
+                            'yyyy-MM-dd'
+                        ),
+                        to_date: studentXGroup.dataValues.end_date
+                            ? format(
+                                  parseISO(studentXGroup.dataValues.end_date),
+                                  'yyyy-MM-dd'
+                              )
+                            : null,
+                        req,
+                        t: req.transaction,
+                    })
+                }
             }
 
             await req.transaction.commit()
