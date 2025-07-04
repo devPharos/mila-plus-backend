@@ -1667,65 +1667,71 @@ class StudentgroupController {
             )
 
             for (let shift of shifts) {
-                for (let student of shift.students) {
-                    let firstCheck = 'Absent'
-                    let secondCheck = 'Absent'
-                    if (
-                        student[`first_check_${shift.shift}_${student.id}`] ===
-                        'Present'
-                    ) {
-                        firstCheck = 'Present'
-                    } else if (
-                        student[`first_check_${shift.shift}_${student.id}`] ===
-                        'Late'
-                    ) {
-                        firstCheck = 'Late'
-                    }
-                    if (
-                        student[`second_check_${shift.shift}_${student.id}`] ===
-                        'Present'
-                    ) {
-                        secondCheck = 'Present'
-                    } else if (
-                        student[`second_check_${shift.shift}_${student.id}`] ===
-                        'Late'
-                    ) {
-                        secondCheck = 'Late'
-                    }
-                    const attendanceExists = await Attendance.findOne({
-                        where: {
-                            studentgroupclass_id: studentgroupclass.id,
-                            student_id: student.id,
-                            shift: shift.shift,
-                            canceled_at: null,
-                        },
-                    })
-
-                    if (attendanceExists) {
-                        await attendanceExists.update(
-                            {
-                                first_check: firstCheck,
-                                second_check: secondCheck,
-                                updated_by: req.userId,
-                            },
-                            {
-                                transaction: req.transaction,
-                            }
-                        )
-                    } else {
-                        await Attendance.create(
-                            {
+                if (shift.students?.length > 0) {
+                    for (let student of shift.students) {
+                        let firstCheck = 'Absent'
+                        let secondCheck = 'Absent'
+                        if (
+                            student[
+                                `first_check_${shift.shift}_${student.id}`
+                            ] === 'Present'
+                        ) {
+                            firstCheck = 'Present'
+                        } else if (
+                            student[
+                                `first_check_${shift.shift}_${student.id}`
+                            ] === 'Late'
+                        ) {
+                            firstCheck = 'Late'
+                        }
+                        if (
+                            student[
+                                `second_check_${shift.shift}_${student.id}`
+                            ] === 'Present'
+                        ) {
+                            secondCheck = 'Present'
+                        } else if (
+                            student[
+                                `second_check_${shift.shift}_${student.id}`
+                            ] === 'Late'
+                        ) {
+                            secondCheck = 'Late'
+                        }
+                        const attendanceExists = await Attendance.findOne({
+                            where: {
                                 studentgroupclass_id: studentgroupclass.id,
                                 student_id: student.id,
                                 shift: shift.shift,
-                                first_check: firstCheck,
-                                second_check: secondCheck,
-                                created_by: req.userId,
+                                canceled_at: null,
                             },
-                            {
-                                transaction: req.transaction,
-                            }
-                        )
+                        })
+
+                        if (attendanceExists) {
+                            await attendanceExists.update(
+                                {
+                                    first_check: firstCheck,
+                                    second_check: secondCheck,
+                                    updated_by: req.userId,
+                                },
+                                {
+                                    transaction: req.transaction,
+                                }
+                            )
+                        } else {
+                            await Attendance.create(
+                                {
+                                    studentgroupclass_id: studentgroupclass.id,
+                                    student_id: student.id,
+                                    shift: shift.shift,
+                                    first_check: firstCheck,
+                                    second_check: secondCheck,
+                                    created_by: req.userId,
+                                },
+                                {
+                                    transaction: req.transaction,
+                                }
+                            )
+                        }
                     }
                 }
             }

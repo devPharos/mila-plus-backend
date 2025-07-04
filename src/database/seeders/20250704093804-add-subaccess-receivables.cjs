@@ -5,6 +5,11 @@ module.exports = {
             [
                 {
                     father_id: 42, // Receivables
+                    alias: 'delete',
+                    name: 'Delete',
+                },
+                {
+                    father_id: 42, // Receivables
                     alias: 'fee-adjustments',
                     name: 'Fee Adjustments',
                 },
@@ -25,8 +30,23 @@ module.exports = {
                 },
                 {
                     father_id: 42, // Receivables
-                    alias: 'resend-invoice',
-                    name: 'Resend Invoice',
+                    alias: 'resend-invoice-tab',
+                    name: 'Resend Invoice Tab',
+                },
+                {
+                    father_id: 42, // Receivables
+                    alias: 'settlements-tab',
+                    name: 'Settlements Tab',
+                },
+                {
+                    father_id: 42, // Receivables
+                    alias: 'refunds-tab',
+                    name: 'Refunds Tab',
+                },
+                {
+                    father_id: 42, // Receivables
+                    alias: 'mail-logs-tab',
+                    name: 'Mail Logs Tab',
                 },
             ],
             {}
