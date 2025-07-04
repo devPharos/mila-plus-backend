@@ -63,6 +63,7 @@ import AttendanceController from './app/controllers/AttendanceController.js'
 import GradeController from './app/controllers/GradeController.js'
 import ChartsController from './app/controllers/ChartsController.js'
 import AbsenseControlController from './app/controllers/AbsenseControlController.js'
+import PartnersAndInfluencersController from './app/controllers/PartnersAndInfluencersController.js'
 
 const routes = new Router()
 
@@ -592,6 +593,10 @@ routes.get(
 routes.delete(
     '/students/Medical_Excuse/:medical_excuse_id',
     StudentController.deleteMedicalExcuse
+)
+routes.post(
+    '/partners_and_influencers',
+    PartnersAndInfluencersController.store
 )
 
 export default routes
