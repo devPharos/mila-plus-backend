@@ -1301,11 +1301,19 @@ class StudentgroupController {
             })
 
             for (let student of students) {
+                const studentXGroup = await StudentXGroup.findOne({
+                    where: {
+                        student_id: student.id,
+                        group_id: studentgroup.id,
+                        canceled_at: null,
+                    },
+                    attributes: ['start_date', 'end_date'],
+                })
                 await createStudentAttendances({
                     student_id: student.id,
                     studentgroup_id: studentgroup.id,
                     from_date: format(
-                        parseISO(studentgroup.dataValues.start_date),
+                        parseISO(studentXGroup.dataValues.start_date),
                         'yyyy-MM-dd'
                     ),
                     req,
@@ -1480,7 +1488,7 @@ class StudentgroupController {
                 }
             }
 
-            const attendance = await Studentgroupclass.findOne({
+            const studentgroupclass = await Studentgroupclass.findOne({
                 where: {
                     ...attendanceFilter,
                     ...filialSearch,
@@ -1535,15 +1543,6 @@ class StudentgroupController {
                         attributes: ['id', 'name'],
                         include: [
                             {
-                                model: Student,
-                                as: 'students',
-                                required: false,
-                                where: {
-                                    canceled_at: null,
-                                },
-                                attributes: ['id', 'name', 'last_name'],
-                            },
-                            {
                                 model: Staff,
                                 as: 'staff',
                                 required: false,
@@ -1556,6 +1555,34 @@ class StudentgroupController {
                     },
                 ],
                 order: [['date', 'ASC']],
+            })
+
+            const students = await Student.findAll({
+                where: {
+                    studentgroup_id: studentgroup.id,
+                    canceled_at: null,
+                },
+                include: [
+                    {
+                        model: Attendance,
+                        as: 'attendances',
+                        required: true,
+                        where: {
+                            studentgroupclass_id: studentgroupclass.id,
+                            canceled_at: null,
+                        },
+                        attributes: [
+                            'id',
+                            'student_id',
+                            'shift',
+                            'first_check',
+                            'second_check',
+                            'vacation_id',
+                            'medical_excuse_id',
+                        ],
+                    },
+                ],
+                attributes: ['id', 'name', 'last_name'],
             })
 
             const pendingPaceguides = await Studentgrouppaceguide.findAll({
@@ -1589,7 +1616,8 @@ class StudentgroupController {
             )
 
             return res.json({
-                attendance,
+                students,
+                studentgroupclass,
                 pendingPaceguides,
                 otherPaceGuides,
                 studentGroupProgress,
