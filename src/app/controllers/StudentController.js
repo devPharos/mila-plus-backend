@@ -1155,10 +1155,7 @@ class StudentController {
                         where: {
                             canceled_at: null,
                             date: {
-                                [Op.gte]: date_from.substring(0, 10),
-                            },
-                            date: {
-                                [Op.lte]: date_to.substring(0, 10),
+                                [Op.between]: [date_from, date_to],
                             },
                         },
                     },

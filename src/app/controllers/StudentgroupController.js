@@ -17,7 +17,13 @@ import Student from '../models/Student.js'
 import StudentXGroup from '../models/StudentXGroup.js'
 import Programcategory from '../models/Programcategory.js'
 import Calendarday from '../models/Calendarday.js'
-import { addDays, format, getDay, parseISO } from 'date-fns'
+import {
+    addDays,
+    differenceInCalendarDays,
+    format,
+    getDay,
+    parseISO,
+} from 'date-fns'
 import Studentgroupclass from '../models/Studentgroupclass.js'
 import Paceguide from '../models/Paceguide.js'
 import Studentgrouppaceguide from '../models/Studentgrouppaceguide.js'
@@ -33,6 +39,7 @@ import { dirname, resolve } from 'path'
 import PDFDocument from 'pdfkit'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
+import Processtype from '../models/Processtype.js'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
@@ -882,7 +889,7 @@ class StudentgroupController {
                 if (passedDays > 0) {
                     end_date = format(
                         addDays(parseISO(start_date), passedDays - 1),
-                        'yyyyMMdd'
+                        'yyyy-MM-dd'
                     )
                 }
             }
@@ -1233,7 +1240,7 @@ class StudentgroupController {
                 if (passedDays > 0) {
                     end_date = format(
                         addDays(parseISO(start_date), passedDays - 1),
-                        'yyyyMMdd'
+                        'yyyy-MM-dd'
                     )
                 }
             }
@@ -2075,7 +2082,7 @@ class StudentgroupController {
             doc.fontSize(9)
                 .font('Helvetica')
                 .fillColor('#222')
-                .text(`I`, left, top + 7, {
+                .text(`V`, left, top + 7, {
                     width: boxWidth,
                     align: 'center',
                 })
@@ -2091,6 +2098,19 @@ class StudentgroupController {
             const { from_date, to_date } = req.query
 
             const studentGroup = await Studentgroup.findByPk(studentgroup_id)
+
+            const teacher = await Staff.findByPk(
+                studentGroup.dataValues.staff_id
+            )
+
+            const initialClass = await Studentgroupclass.findOne({
+                where: {
+                    studentgroup_id,
+                    canceled_at: null,
+                },
+            })
+
+            const shifts = initialClass.dataValues.shift.split('/')
 
             const doc = new PDFDocument({
                 margins: {
@@ -2120,132 +2140,607 @@ class StudentgroupController {
             })
             doc.pipe(file)
 
+            // dates between from_date and to_date
+            const numberOfDays = differenceInCalendarDays(
+                parseISO(to_date),
+                parseISO(from_date)
+            )
+
             const maxWidth = doc.options.layout === 'landscape' ? 750 : 612
 
-            doc.addPage()
+            for (let shift of shifts) {
+                doc.addPage()
 
-            header(doc)
+                header(doc)
 
-            let top = 80
-            let height = 20
+                let top = 80
+                let height = 20
 
-            const dayWidth = (maxWidth * 0.6) / 31
+                const dayWidth = (maxWidth * 0.6) / numberOfDays
 
-            doc.rect(20, top, maxWidth * 0.35, height)
-                .strokeColor('#868686')
-                .stroke()
+                doc.rect(20, top, maxWidth * 0.35, height)
+                    .strokeColor('#868686')
+                    .stroke()
 
-            doc.rect(20, top + 20, maxWidth * 0.35, dayWidth * 2)
-                .strokeColor('#868686')
-                .stroke()
+                doc.rect(20, top + 20, maxWidth * 0.35, dayWidth * 2)
+                    .strokeColor('#868686')
+                    .stroke()
 
-            doc.rect(maxWidth * 0.35 + 20, top, maxWidth * 0.6, height)
-                .strokeColor('#868686')
-                .stroke()
+                doc.rect(maxWidth * 0.35 + 20, top, maxWidth * 0.6, height)
+                    .strokeColor('#868686')
+                    .stroke()
 
-            doc.rect(
-                maxWidth * 0.95 + 20,
-                top,
-                maxWidth * 0.05,
-                height + dayWidth
-            )
-                .strokeColor('#868686')
-                .stroke()
-
-            doc.rect(
-                maxWidth * 0.95 + 20,
-                top + 20 + dayWidth,
-                maxWidth * 0.05,
-                dayWidth
-            )
-                .strokeColor('#868686')
-                .stroke()
-
-            doc.fillColor('#222')
-                .fontSize(9)
-                .font('Helvetica-Bold')
-                .text(`JUNE`, 20, top + 7, {
-                    width: maxWidth * 0.35,
-                    align: 'center',
-                })
-
-            doc.fillColor('#222')
-                .fontSize(8)
-                .font('Helvetica-Bold')
-                .text(`STUDENT'S NAME (PRINT NAME)`, 20, top + 20 + 13, {
-                    width: maxWidth * 0.35,
-                    align: 'center',
-                })
-
-            doc.text(
-                `ATTENDANCE MONTHLY REPORT`,
-                maxWidth * 0.35 + 20,
-                top + 7,
-                {
-                    width: maxWidth * 0.65 - 20,
-                    align: 'center',
-                }
-            )
-            doc.text(`2025`, maxWidth * 0.95 + 20, top + 16, {
-                width: maxWidth * 0.05,
-                align: 'center',
-            })
-
-            top += 20
-            height = dayWidth
-            for (let i = 0; i < 31; i++) {
-                const formattedDate = format(
-                    addDays(parseISO(from_date), i),
-                    'EEEEEE'
-                )
                 doc.rect(
-                    maxWidth * 0.35 + 20 + i * dayWidth,
+                    maxWidth * 0.95 + 20,
                     top,
-                    dayWidth,
-                    height
+                    maxWidth * 0.05,
+                    height + dayWidth
                 )
-                    .fillAndStroke(
-                        ['Sa', 'Su'].includes(formattedDate)
-                            ? '#D3D3D3'
-                            : '#fff',
-                        '#868686'
-                    )
+                    .strokeColor('#868686')
                     .stroke()
 
                 doc.rect(
-                    maxWidth * 0.35 + 20 + i * dayWidth,
-                    top + dayWidth,
-                    dayWidth,
-                    height
+                    maxWidth * 0.95 + 20,
+                    top + 20 + dayWidth,
+                    maxWidth * 0.05,
+                    dayWidth
                 )
-                    .fillAndStroke(
-                        ['Sa', 'Su'].includes(formattedDate)
-                            ? '#D3D3D3'
-                            : '#fff',
-                        '#868686'
-                    )
+                    .strokeColor('#868686')
                     .stroke()
+
+                doc.fillColor('#222')
+                    .fontSize(9)
+                    .font('Helvetica-Bold')
+                    .text(
+                        format(parseISO(from_date), 'MMMM').toUpperCase(),
+                        20,
+                        top + 7,
+                        {
+                            width: maxWidth * 0.35,
+                            align: 'center',
+                        }
+                    )
+
+                doc.fillColor('#222')
+                    .fontSize(8)
+                    .font('Helvetica-Oblique')
+                    .text(`STUDENT'S NAME (PRINT NAME)`, 20, top + 20 + 13, {
+                        width: maxWidth * 0.35,
+                        align: 'center',
+                    })
+                    .font('Helvetica-Bold')
+
+                doc.text(
+                    `ATTENDANCE MONTHLY REPORT`,
+                    maxWidth * 0.35 + 20,
+                    top + 7,
+                    {
+                        width: maxWidth * 0.65 - 20,
+                        align: 'center',
+                    }
+                )
+                doc.text(
+                    format(parseISO(from_date), 'yyyy'),
+                    maxWidth * 0.95 + 20,
+                    top + 16,
+                    {
+                        width: maxWidth * 0.05,
+                        align: 'center',
+                    }
+                )
 
                 doc.fontSize(6)
-                    .fillColor('#222')
                     .text(
-                        `${formattedDate}`,
-                        maxWidth * 0.35 + 20 + i * dayWidth,
-                        top + 5,
+                        `TOTAL`,
+                        maxWidth * 0.95 + 20,
+                        top + 20 + dayWidth + 6,
                         {
-                            width: dayWidth,
+                            width: maxWidth * 0.05,
                             align: 'center',
                         }
                     )
-                    .text(
-                        (i + 1).toString(),
-                        maxWidth * 0.35 + 20 + i * dayWidth,
-                        top + 5 + dayWidth,
+                    .font('Helvetica')
+
+                // const students = await Studentgroupclass.findAll({
+                //     where: {
+                //         studentgroup_id,
+                //         canceled_at: null,
+                //         date: {
+                //             [Op.between]: [from_date, to_date],
+                //         },
+                //     },
+                //     distinct: true,
+                //     include: [
+                //         {
+                //             model: Attendance,
+                //             as: 'attendances',
+                //             required: true,
+                //             where: {
+                //                 shift,
+                //                 canceled_at: null,
+                //             },
+                //             include: [
+                //                 {
+                //                     model: Student,
+                //                     as: 'student',
+                //                     required: true,
+                //                     where: {
+                //                         canceled_at: null,
+                //                     },
+                //                     include: [
+                //                         {
+                //                             model: Processtype,
+                //                             as: 'processtypes',
+                //                             required: false,
+                //                             where: {
+                //                                 canceled_at: null,
+                //                             },
+                //                             attributes: ['name'],
+                //                         },
+                //                     ],
+                //                     attributes: [
+                //                         'id',
+                //                         'name',
+                //                         'last_name',
+                //                         'start_date',
+                //                     ],
+                //                 },
+                //             ],
+                //             attributes: [
+                //                 'first_check',
+                //                 'second_check',
+                //                 'vacation_id',
+                //                 'medical_excuse_id',
+                //                 'status',
+                //             ],
+                //         },
+                //     ],
+                //     attributes: ['shift'],
+                // })
+
+                const students = await Student.findAll({
+                    where: {
+                        canceled_at: null,
+                    },
+                    include: [
                         {
-                            width: dayWidth,
+                            model: Studentinactivation,
+                            as: 'inactivation',
+                            required: false,
+                            where: {
+                                canceled_at: null,
+                            },
+                        },
+                        {
+                            model: Processtype,
+                            as: 'processtypes',
+                            required: false,
+                            where: {
+                                canceled_at: null,
+                            },
+                            attributes: ['name'],
+                        },
+                        {
+                            model: Attendance,
+                            as: 'attendances',
+                            required: true,
+                            where: {
+                                shift,
+                                canceled_at: null,
+                            },
+                            attributes: [],
+                            include: [
+                                {
+                                    model: Studentgroupclass,
+                                    as: 'studentgroupclasses',
+                                    required: true,
+                                    where: {
+                                        canceled_at: null,
+                                        date: {
+                                            [Op.between]: [from_date, to_date],
+                                        },
+                                    },
+                                    attributes: [],
+                                },
+                            ],
+                        },
+                    ],
+                    attributes: ['id', 'name', 'last_name', 'start_date'],
+                    order: [
+                        ['name', 'ASC'],
+                        ['last_name', 'ASC'],
+                    ],
+                })
+
+                top += 20
+                height = dayWidth
+                for (let i = 0; i < numberOfDays; i++) {
+                    const hasClass = await Studentgroupclass.findOne({
+                        where: {
+                            studentgroup_id,
+                            date: format(
+                                addDays(parseISO(from_date), i),
+                                'yyyy-MM-dd'
+                            ),
+                            canceled_at: null,
+                        },
+                    })
+                    const formattedDate = format(
+                        addDays(parseISO(from_date), i),
+                        'EEEEEE'
+                    )
+                    doc.rect(
+                        maxWidth * 0.35 + 20 + i * dayWidth,
+                        top,
+                        dayWidth,
+                        height
+                    )
+                        .font('Helvetica-Bold')
+                        .fillAndStroke(
+                            ['Sa', 'Su'].includes(formattedDate) || !hasClass
+                                ? '#D3D3D3'
+                                : '#fff',
+                            '#868686'
+                        )
+                        .stroke()
+
+                    doc.rect(
+                        maxWidth * 0.35 + 20 + i * dayWidth,
+                        top + dayWidth,
+                        dayWidth,
+                        height
+                    )
+                        .fillAndStroke(
+                            ['Sa', 'Su'].includes(formattedDate) || !hasClass
+                                ? '#D3D3D3'
+                                : '#fff',
+                            '#868686'
+                        )
+                        .stroke()
+
+                    doc.fontSize(6)
+                        .fillColor('#222')
+                        .text(
+                            `${formattedDate}`,
+                            maxWidth * 0.35 + 20 + i * dayWidth,
+                            top + 5,
+                            {
+                                width: dayWidth,
+                                align: 'center',
+                            }
+                        )
+                        .text(
+                            (i + 1).toString(),
+                            maxWidth * 0.35 + 20 + i * dayWidth,
+                            top + 5 + dayWidth,
+                            {
+                                width: dayWidth,
+                                align: 'center',
+                            }
+                        )
+
+                    let classIndex = 0
+                    for (let student of students) {
+                        classIndex++
+                        doc.rect(
+                            maxWidth * 0.35 + 20 + i * dayWidth,
+                            top + dayWidth * 2 + classIndex * 20,
+                            dayWidth,
+                            20
+                        )
+                            .fillAndStroke(
+                                ['Sa', 'Su'].includes(formattedDate) ||
+                                    !hasClass
+                                    ? '#D3D3D3'
+                                    : '#fff',
+                                '#868686'
+                            )
+                            .stroke()
+                    }
+                }
+
+                top += dayWidth * 2
+                height = 20
+                doc.rect(20, top, maxWidth * 0.25, height)
+                    .strokeColor('#868686')
+                    .stroke()
+                doc.rect(20 + maxWidth * 0.25, top, maxWidth * 0.1, height)
+                    .strokeColor('#868686')
+                    .stroke()
+
+                doc.fillColor('#222')
+                    .fontSize(8)
+                    .font('Helvetica-Bold')
+                    .text(`EVENING`, 20, top + 7, {
+                        width: maxWidth * 0.25,
+                        align: 'center',
+                    })
+                    .fontSize(6)
+                    .text(`COMM`, maxWidth * 0.25, top + 9, {
+                        width: maxWidth * 0.15,
+                        align: 'center',
+                    })
+
+                doc.rect(20 + maxWidth * 0.35, top, maxWidth * 0.05, height)
+                    .strokeColor('#868686')
+                    .stroke()
+
+                doc.fillColor('#222')
+                    .font('Helvetica-Bold')
+                    .text(`GROUP:`, 20 + maxWidth * 0.35, top + 9, {
+                        width: maxWidth * 0.05,
+                        align: 'center',
+                    })
+
+                doc.rect(20 + maxWidth * 0.4, top, maxWidth * 0.15, height)
+                    .strokeColor('#868686')
+                    .stroke()
+
+                doc.fillColor('#222')
+                    .font('Helvetica')
+                    .text(
+                        studentGroup.dataValues.name.toUpperCase(),
+                        20 + maxWidth * 0.4,
+                        top + 9,
+                        {
+                            width: maxWidth * 0.15,
                             align: 'center',
                         }
                     )
+
+                doc.rect(20 + maxWidth * 0.55, top, maxWidth * 0.06, height)
+                    .strokeColor('#868686')
+                    .stroke()
+
+                doc.fillColor('#222')
+                    .font('Helvetica-Bold')
+                    .text(`TEACHER:`, 20 + maxWidth * 0.55, top + 9, {
+                        width: maxWidth * 0.06,
+                        align: 'center',
+                    })
+
+                doc.rect(20 + maxWidth * 0.61, top, maxWidth * 0.15, height)
+                    .strokeColor('#868686')
+                    .stroke()
+
+                doc.fillColor('#222')
+                    .font('Helvetica')
+                    .text(
+                        teacher.dataValues.name.toUpperCase(),
+                        20 + maxWidth * 0.61,
+                        top + 9,
+                        {
+                            width: maxWidth * 0.15,
+                            align: 'center',
+                        }
+                    )
+
+                doc.rect(20 + maxWidth * 0.76, top, maxWidth * 0.03, height)
+                    .strokeColor('#868686')
+                    .stroke()
+
+                doc.fillColor('#222')
+                    .font('Helvetica-Bold')
+                    .text(`SD:`, 20 + maxWidth * 0.76, top + 9, {
+                        width: maxWidth * 0.03,
+                        align: 'center',
+                    })
+
+                doc.rect(20 + maxWidth * 0.79, top, maxWidth * 0.09, height)
+                    .strokeColor('#868686')
+                    .stroke()
+
+                doc.fillColor('#222')
+                    .font('Helvetica')
+                    .text(
+                        format(
+                            parseISO(studentGroup.dataValues.start_date),
+                            'MMMM do, yyyy'
+                        ),
+                        20 + maxWidth * 0.79,
+                        top + 9,
+                        {
+                            width: maxWidth * 0.09,
+                            align: 'center',
+                        }
+                    )
+
+                doc.rect(20 + maxWidth * 0.88, top, maxWidth * 0.03, height)
+                    .strokeColor('#868686')
+                    .stroke()
+
+                doc.fillColor('#222')
+                    .font('Helvetica-Bold')
+                    .text(`ED:`, 20 + maxWidth * 0.88, top + 9, {
+                        width: maxWidth * 0.03,
+                        align: 'center',
+                    })
+
+                doc.rect(20 + maxWidth * 0.91, top, maxWidth * 0.09, height)
+                    .strokeColor('#868686')
+                    .stroke()
+
+                doc.fillColor('#222')
+                    .font('Helvetica')
+                    .text(
+                        format(
+                            parseISO(studentGroup.dataValues.end_date),
+                            'MMMM do, yyyy'
+                        ),
+                        20 + maxWidth * 0.91,
+                        top + 9,
+                        {
+                            width: maxWidth * 0.09,
+                            align: 'center',
+                        }
+                    )
+
+                let studentIndex = 1
+                doc.fontSize(6).font('Helvetica-Bold')
+                for (let student of students) {
+                    top += 20
+                    doc.rect(20, top, 15, height)
+                        .strokeColor('#868686')
+                        .stroke()
+                    doc.rect(35, top, maxWidth * 0.25 - 15, height)
+                        .strokeColor('#868686')
+                        .stroke()
+
+                    doc.rect(20 + maxWidth * 0.25, top, maxWidth * 0.1, height)
+                        .strokeColor('#868686')
+                        .stroke()
+
+                    doc.rect(20 + maxWidth * 0.95, top, maxWidth * 0.05, height)
+                        .strokeColor('#868686')
+                        .stroke()
+
+                    doc.text(`${studentIndex++}`, 20, top + 7, {
+                        width: 15,
+                        align: 'center',
+                    })
+
+                    const name = student.name
+                    const lastName = student.last_name
+
+                    let fullName = name + ' ' + lastName
+                    if (fullName.length > 40) {
+                        fullName = fullName.substring(0, 40) + '...'
+                    }
+                    doc.text(
+                        `${(
+                            fullName +
+                            ' - ' +
+                            student.processtypes.name
+                        ).toUpperCase()}`,
+                        38,
+                        top + 7,
+                        {
+                            width: maxWidth * 0.25 - 12,
+                            align: 'left',
+                        }
+                    )
+
+                    let studentStartDate = student.start_date
+                    if (studentStartDate) {
+                        studentStartDate =
+                            'SD: ' +
+                            format(parseISO(studentStartDate), 'MMMM do, yyyy')
+                    } else {
+                        studentStartDate = 'SD: '
+                    }
+                    doc.text(
+                        `${studentStartDate}`,
+                        25 + maxWidth * 0.25,
+                        top + 7,
+                        {
+                            width: maxWidth * 0.1 - 5,
+                            align: 'left',
+                        }
+                    )
+
+                    let color = '#fff'
+                    let status = ''
+                    if (status === 'CC') {
+                        color = '#E6E6FA'
+                    } else if (status === 'O') {
+                        color = '#FFFACD'
+                    } else if (status === 'A') {
+                        color = '#FFDAB9'
+                    } else if (status === 'C') {
+                        color = '#FFA0a0'
+                    } else if (status === 'F') {
+                        color = '#98FB98'
+                    } else if (status === 'I') {
+                        color = '#D3D3D3'
+                    } else if (status === 'P') {
+                        color = '#ADD8E6'
+                    } else if (status === 'S') {
+                        color = '#C1E1C1'
+                    } else if (status === 'T') {
+                        color = '#FFD580'
+                    } else if (status === 'V') {
+                        color = '#D2B48C'
+                    }
+
+                    for (let day = 0; day < numberOfDays; day++) {
+                        const attendance = await Attendance.findOne({
+                            where: {
+                                student_id: student.id,
+                                shift,
+                                canceled_at: null,
+                            },
+                            include: [
+                                {
+                                    model: Studentgroupclass,
+                                    as: 'studentgroupclasses',
+                                    required: true,
+                                    where: {
+                                        canceled_at: null,
+                                        date: format(
+                                            addDays(parseISO(from_date), day),
+                                            'yyyy-MM-dd'
+                                        ),
+                                    },
+                                },
+                            ],
+                        })
+
+                        if (attendance) {
+                            let status = '.'
+                            if (attendance.vacation_id) {
+                                status = 'V'
+                            } else if (attendance.medical_excuse_id) {
+                                status = 'S'
+                            } else if (attendance.first_check === 'Present') {
+                                if (attendance.second_check === 'Present') {
+                                    status = '.'
+                                } else if (attendance.second_check === 'Late') {
+                                    status = 'P'
+                                } else {
+                                    status = 'P'
+                                }
+                            } else if (attendance.first_check === 'Late') {
+                                if (attendance.second_check === 'Present') {
+                                    status = 'P'
+                                } else if (attendance.second_check === 'Late') {
+                                    status = 'A'
+                                } else {
+                                    status = 'A'
+                                }
+                            } else if (attendance.first_check === 'Absent') {
+                                if (attendance.second_check === 'Present') {
+                                    status = 'P'
+                                } else if (attendance.second_check === 'Late') {
+                                    status = 'A'
+                                } else {
+                                    status = 'A'
+                                }
+                            } else if (student.inactivation) {
+                                status = 'C'
+                            }
+                            doc.rect(
+                                maxWidth * 0.35 + 20 + day * dayWidth,
+                                top,
+                                dayWidth,
+                                height
+                            )
+                                .fillAndStroke(color, '#868686')
+                                .stroke()
+                                .fill('#222')
+                                .fontSize(8)
+                                .text(
+                                    `${status}`,
+                                    maxWidth * 0.35 + 20 + day * dayWidth,
+                                    top + 7,
+                                    {
+                                        width: dayWidth,
+                                        align: 'center',
+                                    }
+                                )
+                                .fontSize(6)
+                        }
+                    }
+                }
             }
 
             // finalize the PDF and end the stream

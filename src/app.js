@@ -18,6 +18,7 @@ import { connectToMongo } from './config/mongodb.js'
 import transactionHandler from './app/middlewares/transactionHandler.js'
 import errorHandler from './app/middlewares/errorHandler.js'
 import indexCacheHandler from './app/middlewares/indexCacheHandler.js'
+import { adjustUserGroups } from './app/controllers/UserGroupController.js'
 
 class App {
     constructor() {
@@ -96,6 +97,7 @@ class App {
     }
 
     async schedule() {
+        adjustUserGroups()
         if (process.env.NODE_ENV === 'production') {
             schedule.scheduleJob(`0 0 4 * * *`, sendAutopayRecurrenceJob)
             schedule.scheduleJob(`0 15 4 * * *`, sendBeforeDueDateInvoices)

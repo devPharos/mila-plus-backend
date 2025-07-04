@@ -18,6 +18,48 @@ import { handleCache } from '../middlewares/indexCacheHandler.js'
 
 const { Op } = Sequelize
 
+export async function adjustUserGroups() {
+    try {
+        const userGroups = await UserGroup.findAll({
+            where: {
+                canceled_at: null,
+            },
+        })
+
+        const menus = await MenuHierarchy.findAll({
+            where: {
+                canceled_at: null,
+            },
+        })
+
+        for (let userGroup of userGroups) {
+            for (let menu of menus) {
+                const menuXGroups = await MenuHierarchyXGroups.findOne({
+                    where: {
+                        group_id: userGroup.id,
+                        access_id: menu.id,
+                        canceled_at: null,
+                    },
+                })
+                if (!menuXGroups) {
+                    await MenuHierarchyXGroups.create({
+                        group_id: userGroup.id,
+                        access_id: menu.id,
+                        view: false,
+                        edit: false,
+                        create: false,
+                        inactivate: false,
+
+                        created_by: 1,
+                    })
+                }
+            }
+        }
+    } catch (err) {
+        console.log(err)
+    }
+}
+
 class UserGroupController {
     async store(req, res, next) {
         try {
@@ -152,76 +194,115 @@ class UserGroupController {
 
             for (let module of groupAccess) {
                 for (let menu of module.menus) {
-                    const { view, edit, create, inactivate, fatherId, menuId } =
-                        menu
-                    await MenuHierarchyXGroups.findOne({
+                    const {
+                        view,
+                        edit,
+                        create,
+                        inactivate,
+                        fatherId,
+                        menuId,
+                        submenus,
+                    } = menu
+                    const findMenu = await MenuHierarchyXGroups.findOne({
                         where: {
                             group_id: group_id,
                             access_id: menuId,
                             canceled_at: null,
                         },
                     })
-                        .then(async (findMenu) => {
-                            await findMenu
-                                .update(
-                                    {
-                                        view,
-                                        edit,
-                                        create,
-                                        inactivate,
+                    const son = await findMenu.update(
+                        {
+                            view,
+                            edit,
+                            create,
+                            inactivate,
 
-                                        updated_by: req.userId,
-                                    },
-                                    {
-                                        transaction: req.transaction,
-                                    }
-                                )
-                                .then(async (son) => {
-                                    if (view === 'Yes') {
-                                        await MenuHierarchyXGroups.findOne({
-                                            where: {
-                                                group_id: son.group_id,
-                                                access_id: fatherId,
-                                                canceled_at: null,
-                                            },
-                                        }).then(async (father) => {
-                                            if (
-                                                father &&
-                                                !father.dataValues.view
-                                            ) {
-                                                await father.update(
-                                                    {
-                                                        view: true,
-
-                                                        updated_by: req.userId,
-                                                    },
-                                                    {
-                                                        transaction:
-                                                            req.transaction,
-                                                    }
-                                                )
-                                            }
-                                        })
-                                    }
-                                })
+                            updated_by: req.userId,
+                        },
+                        {
+                            transaction: req.transaction,
+                        }
+                    )
+                    if (view === 'Yes') {
+                        const father = await MenuHierarchyXGroups.findOne({
+                            where: {
+                                group_id: son.group_id,
+                                access_id: fatherId,
+                                canceled_at: null,
+                            },
                         })
-                        .catch(async () => {
-                            await MenuHierarchyXGroups.create(
-                                {
-                                    group_id,
-                                    access_id: menu.menuId,
-                                    view,
-                                    edit,
-                                    create,
-                                    inactivate,
 
-                                    created_by: req.userId,
+                        if (father && !father.dataValues.view) {
+                            await father.update(
+                                {
+                                    view: true,
+
+                                    updated_by: req.userId,
                                 },
                                 {
                                     transaction: req.transaction,
                                 }
                             )
-                        })
+                        }
+
+                        if (submenus && submenus.length > 0) {
+                            for (let submenu of submenus) {
+                                const findSubmenu =
+                                    await MenuHierarchyXGroups.findOne({
+                                        where: {
+                                            group_id: son.group_id,
+                                            access_id: submenu.menuId,
+                                            canceled_at: null,
+                                        },
+                                    })
+
+                                if (findSubmenu) {
+                                    await findSubmenu.update(
+                                        {
+                                            view: submenu.view,
+                                            edit: submenu.edit,
+                                            create: submenu.create,
+                                            inactivate: submenu.inactivate,
+
+                                            updated_by: req.userId,
+                                        },
+                                        {
+                                            transaction: req.transaction,
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        if (submenus && submenus.length > 0) {
+                            for (let submenu of submenus) {
+                                const findSubmenu =
+                                    await MenuHierarchyXGroups.findOne({
+                                        where: {
+                                            group_id: son.group_id,
+                                            access_id: submenu.menuId,
+                                            canceled_at: null,
+                                        },
+                                    })
+
+                                if (findSubmenu) {
+                                    await findSubmenu.update(
+                                        {
+                                            view: false,
+                                            edit: false,
+                                            create: false,
+                                            inactivate: false,
+
+                                            updated_by: req.userId,
+                                        },
+                                        {
+                                            transaction: req.transaction,
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
