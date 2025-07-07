@@ -2182,6 +2182,7 @@ class StudentgroupController {
                                     required: true,
                                     where: {
                                         canceled_at: null,
+                                        studentgroup_id: studentgroup_id,
                                         date: {
                                             [Op.between]: [from_date, to_date],
                                         },
@@ -2270,7 +2271,18 @@ class StudentgroupController {
                         )
 
                     let classIndex = 0
+                    let studentIndex = 0
+                    let page = 1
                     for (let student of students) {
+                        studentIndex++
+                        if (
+                            (page === 1 && studentIndex % 22 === 0) ||
+                            (page > 1 && studentIndex % 27 === 0)
+                        ) {
+                            page++
+                            doc.addPage()
+                            top = 80
+                        }
                         classIndex++
                         doc.rect(
                             maxWidth * 0.35 + 20 + i * dayWidth,
