@@ -1748,6 +1748,9 @@ class StudentgroupController {
             for (let shift of shifts) {
                 if (shift.students?.length > 0) {
                     for (let student of shift.students) {
+                        if (!student) {
+                            continue
+                        }
                         let firstCheck = 'Absent'
                         let secondCheck = 'Absent'
                         if (
