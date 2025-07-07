@@ -2202,7 +2202,6 @@ class StudentgroupController {
                 top += 20
                 height = dayWidth
                 for (let i = 0; i < numberOfDays; i++) {
-                    console.log(`Day: ${i}`)
                     const hasClass = await Studentgroupclass.findOne({
                         where: {
                             studentgroup_id,
@@ -2213,7 +2212,6 @@ class StudentgroupController {
                             canceled_at: null,
                         },
                     })
-                    console.log(`hasClass`)
                     const formattedDate = format(
                         addDays(parseISO(from_date), i),
                         'EEEEEE'
@@ -2276,7 +2274,6 @@ class StudentgroupController {
                     let studentIndex = 0
                     let page = 1
                     for (let student of students) {
-                        console.log(`student: ${student.name}`)
                         studentIndex++
                         if (
                             (page === 1 && studentIndex % 22 === 0) ||
@@ -2443,9 +2440,7 @@ class StudentgroupController {
                 let studentIndex = 1
                 doc.fontSize(6).font('Helvetica-Bold')
 
-                console.log(`part two`)
                 for (let student of students) {
-                    console.log(`student: ${student.name}`)
                     let absensesCount = 0
                     top += 20
                     doc.rect(20, top, 15, height)
@@ -2511,16 +2506,13 @@ class StudentgroupController {
                             align: 'left',
                         }
                     )
-                    console.log('Getting absence status')
                     const absenceStatus = await getAbsenceStatus(
                         student.id,
                         from_date,
                         to_date
                     )
-                    console.log('Got!')
 
                     for (let day = 0; day < numberOfDays; day++) {
-                        console.log(`day: ${day}`)
                         const attendance = await Attendance.findOne({
                             where: {
                                 student_id: student.id,
@@ -2542,7 +2534,6 @@ class StudentgroupController {
                                 },
                             ],
                         })
-                        console.log(`attendance`)
 
                         if (
                             attendance &&
