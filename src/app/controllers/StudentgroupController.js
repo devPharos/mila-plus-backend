@@ -2613,6 +2613,7 @@ class StudentgroupController {
                                     align: 'center',
                                 }
                             )
+                            .fillColor('#222222')
                     } else {
                         doc.fontSize(6)
                             .fillColor('#222')
