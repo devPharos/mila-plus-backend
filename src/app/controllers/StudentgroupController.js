@@ -1659,6 +1659,7 @@ class StudentgroupController {
                             'second_check',
                             'vacation_id',
                             'medical_excuse_id',
+                            'status',
                         ],
                     },
                 ],
