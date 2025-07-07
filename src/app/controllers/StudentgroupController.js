@@ -2542,7 +2542,7 @@ class StudentgroupController {
                                 },
                             ],
                         })
-                        console.log(`attendance: ${attendance.id}`)
+                        console.log(`attendance`)
 
                         if (
                             attendance &&
