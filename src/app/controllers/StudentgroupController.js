@@ -22,6 +22,7 @@ import {
     differenceInCalendarDays,
     format,
     getDay,
+    lastDayOfMonth,
     parseISO,
 } from 'date-fns'
 import Studentgroupclass from '../models/Studentgroupclass.js'
@@ -40,6 +41,8 @@ import PDFDocument from 'pdfkit'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import Processtype from '../models/Processtype.js'
+import { calculateAttendanceStatus } from './AttendanceController.js'
+import { getAbsenceStatus } from './AbsenseControlController.js'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
@@ -111,7 +114,7 @@ export async function putInClass(
         studentgroup_id: student.dataValues.group_id,
         from_date: date,
         req,
-        t: req.transaction,
+        reason: null,
     })
     await createStudentAttendances({
         student_id: student.id,
@@ -224,6 +227,7 @@ export async function createStudentAttendances({
                     shift,
                     first_check: 'Absent',
                     second_check: 'Absent',
+                    status: 'A',
                     vacation_id: vacation?.id,
                     medical_excuse_id: medicalExcuse?.id,
                     created_by: req.userId,
@@ -241,7 +245,7 @@ export async function removeStudentAttendances({
     studentgroup_id = null,
     from_date = null,
     req = { userId: 2 },
-    t = null,
+    reason = null,
 }) {
     const student = await Student.findByPk(student_id)
     if (!student) {
@@ -269,10 +273,27 @@ export async function removeStudentAttendances({
                 canceled_at: null,
             },
         })
-        for (let attendance of attendances) {
-            await attendance.destroy({
-                transaction: req.transaction,
-            })
+        if (
+            class_.date >
+                format(lastDayOfMonth(parseISO(from_date)), 'yyyy-MM-dd') ||
+            reason === null
+        ) {
+            for (let attendance of attendances) {
+                await attendance.destroy({
+                    transaction: req.transaction,
+                })
+            }
+        } else {
+            for (let attendance of attendances) {
+                await attendance.update(
+                    {
+                        status: reason,
+                    },
+                    {
+                        transaction: req.transaction,
+                    }
+                )
+            }
         }
     }
 }
@@ -1774,8 +1795,12 @@ class StudentgroupController {
                                     transaction: req.transaction,
                                 }
                             )
+                            await calculateAttendanceStatus(
+                                attendanceExists.id,
+                                req
+                            )
                         } else {
-                            await Attendance.create(
+                            const attendance = await Attendance.create(
                                 {
                                     studentgroupclass_id: studentgroupclass.id,
                                     student_id: student.id,
@@ -1788,6 +1813,7 @@ class StudentgroupController {
                                     transaction: req.transaction,
                                 }
                             )
+                            await calculateAttendanceStatus(attendance.id, req)
                         }
                     }
                 }
@@ -1897,201 +1923,78 @@ class StudentgroupController {
     }
 
     async attendanceReport(req, res, next) {
+        const colorMap = {
+            CC: '#E6E6FA',
+            O: '#FFFACD',
+            A: '#FFDAB9',
+            C: '#F08080',
+            F: '#8FBC8F',
+            I: '#D3D3D3',
+            P: '#ADD8E6',
+            S: '#A2CD5A',
+            T: '#FFD700',
+            V: '#CD853F',
+            '.': '#FFF',
+        }
+        function getColor(status) {
+            return colorMap[status] || '#FFF'
+        }
         function header(doc) {
             const maxWidth = doc.options.layout === 'landscape' ? 750 : 612
-            let left = maxWidth * 0.25
-            let top = 50
-            let width = 40
-            let height = 20
-            let boxWidth = 20
+            const top = 50
+            const boxWidth = 20
+            const height = 20
 
             doc.rect(20, top, maxWidth, height).strokeColor('#868686').stroke()
+
+            const statusLegend = [
+                // { key: 'CC', label: 'CLASS CANCELED', width: 40 },
+                // { key: 'O', label: 'ON HOLD', width: 32 },
+                { key: 'A', label: 'ABSENT', width: 30 },
+                { key: 'C', label: 'CANCELED', width: 44 },
+                { key: 'F', label: 'FINISHED', width: 35 },
+                // { key: 'I', label: 'ISSUES', width: 26 },
+                { key: 'P', label: 'HALF PRESENT', width: 34 },
+                { key: 'S', label: 'SICK', width: 20 },
+                { key: 'T', label: 'TRANSFER', width: 36 },
+                { key: 'V', label: 'VACATION', width: 36 },
+            ]
+
+            const equalWidth = 61.25
+            let left = maxWidth - equalWidth * statusLegend.length
 
             doc.fillColor('#222')
                 .fontSize(9)
                 .font('Helvetica-Bold')
                 .text(`Absence Type Key`, 20, top + 7, {
-                    width: left - 20,
+                    width: left,
                     align: 'center',
                 })
 
-            doc.rect(left, top + 1, 20, height - 2).fill('#E6E6FA')
-            doc.fontSize(9)
-                .font('Helvetica')
-                .fillColor('#222')
-                .text(`CC`, left, top + 7, {
-                    width: boxWidth,
-                    align: 'center',
-                })
-                .fontSize(6)
-                .font('Helvetica-Bold')
-                .text(`CLASS CANCELED`, left + boxWidth + 5, top + 4.2, {
-                    width: width,
-                    align: 'left',
-                })
-
-            left += width + boxWidth + 5
-            width = 32
-
-            doc.rect(left, top + 1, 20, height - 2).fill('#FFFACD')
-            doc.fontSize(9)
-                .font('Helvetica')
-                .fillColor('#222')
-                .text(`O`, left, top + 7, {
-                    width: boxWidth,
-                    align: 'center',
-                })
-                .fontSize(6)
-                .font('Helvetica-Bold')
-                .text(`ON HOLD`, left + boxWidth + 5, top + 8.5, {
-                    width: width,
-                    align: 'left',
-                })
-
-            left += width + boxWidth + 5
-            width = 30
-
-            doc.rect(left, top + 1, 20, height - 2).fill('#FFDAB9')
-            doc.fontSize(9)
-                .font('Helvetica')
-                .fillColor('#222')
-                .text(`A`, left, top + 7, {
-                    width: boxWidth,
-                    align: 'center',
-                })
-                .fontSize(6)
-                .font('Helvetica-Bold')
-                .text(`ABSENT`, left + boxWidth + 5, top + 8.5, {
-                    width: width,
-                    align: 'left',
-                })
-
-            left += width + boxWidth + 5
-            width = 44
-
-            doc.rect(left, top + 1, 20, height - 2).fill('#FFA0a0')
-            doc.fontSize(9)
-                .font('Helvetica')
-                .fillColor('#222')
-                .text(`C`, left, top + 7, {
-                    width: boxWidth,
-                    align: 'center',
-                })
-                .fontSize(6)
-                .font('Helvetica-Bold')
-                .fillColor('#222')
-                .text(`CANCELLED`, left + boxWidth + 5, top + 8.5, {
-                    width: width,
-                    align: 'left',
-                })
-
-            left += width + boxWidth + 5
-            width = 35
-
-            doc.rect(left, top + 1, 20, height - 2).fill('#98FB98')
-            doc.fontSize(9)
-                .font('Helvetica')
-                .fillColor('#222')
-                .text(`F`, left, top + 7, {
-                    width: boxWidth,
-                    align: 'center',
-                })
-                .fontSize(6)
-                .font('Helvetica-Bold')
-                .text(`FINISHED`, left + boxWidth + 5, top + 8.5, {
-                    width: width,
-                    align: 'left',
-                })
-
-            left += width + boxWidth + 5
-            width = 26
-
-            doc.rect(left, top + 1, 20, height - 2).fill('#D3D3D3')
-            doc.fontSize(9)
-                .font('Helvetica')
-                .fillColor('#222')
-                .text(`I`, left, top + 7, {
-                    width: boxWidth,
-                    align: 'center',
-                })
-                .fontSize(6)
-                .font('Helvetica-Bold')
-                .text(`ISSUES`, left + boxWidth + 5, top + 8.5, {
-                    width: width,
-                    align: 'left',
-                })
-
-            left += width + boxWidth + 5
-            width = 34
-
-            doc.rect(left, top + 1, 20, height - 2).fill('#ADD8E6')
-            doc.fontSize(9)
-                .font('Helvetica')
-                .fillColor('#222')
-                .text(`P`, left, top + 7, {
-                    width: boxWidth,
-                    align: 'center',
-                })
-                .fontSize(6)
-                .font('Helvetica-Bold')
-                .text(`HALF PRESENT`, left + boxWidth + 5, top + 4.2, {
-                    width: width,
-                    align: 'left',
-                })
-
-            left += width + boxWidth + 5
-            width = 20
-
-            doc.rect(left, top + 1, 20, height - 2).fill('#C1E1C1')
-            doc.fontSize(9)
-                .font('Helvetica')
-                .fillColor('#222')
-                .text(`S`, left, top + 7, {
-                    width: boxWidth,
-                    align: 'center',
-                })
-                .fontSize(6)
-                .font('Helvetica-Bold')
-                .text(`SICK`, left + boxWidth + 5, top + 8.5, {
-                    width: width,
-                    align: 'left',
-                })
-
-            left += width + boxWidth + 5
-            width = 36
-
-            doc.rect(left, top + 1, 20, height - 2).fill('#FFD580')
-            doc.fontSize(9)
-                .font('Helvetica')
-                .fillColor('#222')
-                .text(`T`, left, top + 7, {
-                    width: boxWidth,
-                    align: 'center',
-                })
-                .fontSize(6)
-                .font('Helvetica-Bold')
-                .text(`TRANSFER`, left + boxWidth + 5, top + 8.5, {
-                    width: width,
-                    align: 'left',
-                })
-
-            left += width + boxWidth + 5
-            width = 36
-
-            doc.rect(left, top + 1, 20, height - 2).fill('#D2B48C')
-            doc.fontSize(9)
-                .font('Helvetica')
-                .fillColor('#222')
-                .text(`V`, left, top + 7, {
-                    width: boxWidth,
-                    align: 'center',
-                })
-                .fontSize(6)
-                .font('Helvetica-Bold')
-                .text(`VACATION`, left + boxWidth + 5, top + 8.5, {
-                    width: width,
-                    align: 'left',
-                })
+            statusLegend.forEach(({ key, label, width }) => {
+                doc.rect(left, top + 3, boxWidth - 5, boxWidth - 5).fill(
+                    getColor(key)
+                )
+                doc.fontSize(9)
+                    .font('Helvetica')
+                    .fillColor('#222')
+                    .text(key, left - 2.5, top + 7, {
+                        width: boxWidth,
+                        align: 'center',
+                    })
+                    .fontSize(6)
+                    .font('Helvetica-Bold')
+                    .text(
+                        label,
+                        left + boxWidth,
+                        top + (label.length > 10 ? 4.2 : 8.5),
+                        {
+                            width: equalWidth - 25,
+                            align: 'left',
+                        }
+                    )
+                left += equalWidth
+            })
         }
         try {
             const { studentgroup_id } = req.params
@@ -2241,63 +2144,6 @@ class StudentgroupController {
                     )
                     .font('Helvetica')
 
-                // const students = await Studentgroupclass.findAll({
-                //     where: {
-                //         studentgroup_id,
-                //         canceled_at: null,
-                //         date: {
-                //             [Op.between]: [from_date, to_date],
-                //         },
-                //     },
-                //     distinct: true,
-                //     include: [
-                //         {
-                //             model: Attendance,
-                //             as: 'attendances',
-                //             required: true,
-                //             where: {
-                //                 shift,
-                //                 canceled_at: null,
-                //             },
-                //             include: [
-                //                 {
-                //                     model: Student,
-                //                     as: 'student',
-                //                     required: true,
-                //                     where: {
-                //                         canceled_at: null,
-                //                     },
-                //                     include: [
-                //                         {
-                //                             model: Processtype,
-                //                             as: 'processtypes',
-                //                             required: false,
-                //                             where: {
-                //                                 canceled_at: null,
-                //                             },
-                //                             attributes: ['name'],
-                //                         },
-                //                     ],
-                //                     attributes: [
-                //                         'id',
-                //                         'name',
-                //                         'last_name',
-                //                         'start_date',
-                //                     ],
-                //                 },
-                //             ],
-                //             attributes: [
-                //                 'first_check',
-                //                 'second_check',
-                //                 'vacation_id',
-                //                 'medical_excuse_id',
-                //                 'status',
-                //             ],
-                //         },
-                //     ],
-                //     attributes: ['shift'],
-                // })
-
                 const students = await Student.findAll({
                     where: {
                         canceled_at: null,
@@ -2377,7 +2223,9 @@ class StudentgroupController {
                     )
                         .font('Helvetica-Bold')
                         .fillAndStroke(
-                            ['Sa', 'Su'].includes(formattedDate) || !hasClass
+                            ['Sa', 'Su'].includes(formattedDate) ||
+                                !hasClass ||
+                                hasClass.dataValues.status === 'Holiday'
                                 ? '#D3D3D3'
                                 : '#fff',
                             '#868686'
@@ -2391,7 +2239,9 @@ class StudentgroupController {
                         height
                     )
                         .fillAndStroke(
-                            ['Sa', 'Su'].includes(formattedDate) || !hasClass
+                            ['Sa', 'Su'].includes(formattedDate) ||
+                                !hasClass ||
+                                hasClass.dataValues.status === 'Holiday'
                                 ? '#D3D3D3'
                                 : '#fff',
                             '#868686'
@@ -2451,7 +2301,7 @@ class StudentgroupController {
                 doc.fillColor('#222')
                     .fontSize(8)
                     .font('Helvetica-Bold')
-                    .text(`EVENING`, 20, top + 7, {
+                    .text(shift.toUpperCase(), 20, top + 7, {
                         width: maxWidth * 0.25,
                         align: 'center',
                     })
@@ -2578,6 +2428,7 @@ class StudentgroupController {
                 let studentIndex = 1
                 doc.fontSize(6).font('Helvetica-Bold')
                 for (let student of students) {
+                    let absensesCount = 0
                     top += 20
                     doc.rect(20, top, 15, height)
                         .strokeColor('#868686')
@@ -2594,10 +2445,15 @@ class StudentgroupController {
                         .strokeColor('#868686')
                         .stroke()
 
-                    doc.text(`${studentIndex++}`, 20, top + 7, {
-                        width: 15,
-                        align: 'center',
-                    })
+                    doc.font('Helvetica').text(
+                        `${studentIndex++}`,
+                        20,
+                        top + 7,
+                        {
+                            width: 15,
+                            align: 'center',
+                        }
+                    )
 
                     const name = student.name
                     const lastName = student.last_name
@@ -2637,30 +2493,11 @@ class StudentgroupController {
                             align: 'left',
                         }
                     )
-
-                    let color = '#fff'
-                    let status = ''
-                    if (status === 'CC') {
-                        color = '#E6E6FA'
-                    } else if (status === 'O') {
-                        color = '#FFFACD'
-                    } else if (status === 'A') {
-                        color = '#FFDAB9'
-                    } else if (status === 'C') {
-                        color = '#FFA0a0'
-                    } else if (status === 'F') {
-                        color = '#98FB98'
-                    } else if (status === 'I') {
-                        color = '#D3D3D3'
-                    } else if (status === 'P') {
-                        color = '#ADD8E6'
-                    } else if (status === 'S') {
-                        color = '#C1E1C1'
-                    } else if (status === 'T') {
-                        color = '#FFD580'
-                    } else if (status === 'V') {
-                        color = '#D2B48C'
-                    }
+                    const absenceStatus = await getAbsenceStatus(
+                        student.id,
+                        from_date,
+                        to_date
+                    )
 
                     for (let day = 0; day < numberOfDays; day++) {
                         const attendance = await Attendance.findOne({
@@ -2685,39 +2522,26 @@ class StudentgroupController {
                             ],
                         })
 
-                        if (attendance) {
-                            let status = '.'
-                            if (attendance.vacation_id) {
-                                status = 'V'
-                            } else if (attendance.medical_excuse_id) {
-                                status = 'S'
-                            } else if (attendance.first_check === 'Present') {
-                                if (attendance.second_check === 'Present') {
-                                    status = '.'
-                                } else if (attendance.second_check === 'Late') {
-                                    status = 'P'
-                                } else {
-                                    status = 'P'
-                                }
-                            } else if (attendance.first_check === 'Late') {
-                                if (attendance.second_check === 'Present') {
-                                    status = 'P'
-                                } else if (attendance.second_check === 'Late') {
-                                    status = 'A'
-                                } else {
-                                    status = 'A'
-                                }
-                            } else if (attendance.first_check === 'Absent') {
-                                if (attendance.second_check === 'Present') {
-                                    status = 'P'
-                                } else if (attendance.second_check === 'Late') {
-                                    status = 'A'
-                                } else {
-                                    status = 'A'
-                                }
-                            } else if (student.inactivation) {
-                                status = 'C'
+                        if (
+                            attendance &&
+                            attendance.dataValues.studentgroupclasses.locked_at
+                        ) {
+                            let status = attendance.dataValues.status
+                            if (
+                                !attendance.dataValues.studentgroupclasses
+                                    .locked_at
+                            ) {
+                                status = 'A'
                             }
+
+                            let color = getColor(status)
+
+                            if (status === 'A') {
+                                absensesCount += 1
+                            } else if (status === 'P') {
+                                absensesCount += 0.5
+                            }
+
                             doc.rect(
                                 maxWidth * 0.35 + 20 + day * dayWidth,
                                 top,
@@ -2738,7 +2562,47 @@ class StudentgroupController {
                                     }
                                 )
                                 .fontSize(6)
+                        } else {
+                            doc.rect(
+                                maxWidth * 0.35 + 20 + day * dayWidth,
+                                top,
+                                dayWidth,
+                                height
+                            )
+                                .fillAndStroke('#D3D3D3', '#868686')
+                                .stroke()
+                                .fill('#222')
+                                .fontSize(6)
                         }
+                    }
+
+                    if (
+                        absenceStatus.totals.totalAbsenses > 0 &&
+                        absenceStatus.totals.frequency < 80
+                    ) {
+                        doc.fontSize(6)
+                            .fillColor('#ff0000')
+                            .text(
+                                absensesCount.toFixed(2),
+                                maxWidth * 0.95 + 20,
+                                top + 6,
+                                {
+                                    width: maxWidth * 0.05,
+                                    align: 'center',
+                                }
+                            )
+                    } else {
+                        doc.fontSize(6)
+                            .fillColor('#222')
+                            .text(
+                                absensesCount.toFixed(2),
+                                maxWidth * 0.95 + 20,
+                                top + 6,
+                                {
+                                    width: maxWidth * 0.05,
+                                    align: 'center',
+                                }
+                            )
                     }
                 }
             }

@@ -37,6 +37,7 @@ import xl from 'excel4node'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
+import { calculateAttendanceStatus } from './AttendanceController.js'
 
 const { Op } = Sequelize
 const filename = fileURLToPath(import.meta.url)
@@ -525,12 +526,12 @@ class StudentController {
             )
             await removeStudentAttendances({
                 student_id: student.id,
-                studentgroup_id: student.dataValues.group_id,
+                studentgroup_id: student.dataValues.studentgroup_id,
                 from_date: date.includes('-')
                     ? date
                     : format(parseISO(date), 'yyyy-MM-dd'),
                 req,
-                t: req.transaction,
+                reason: reason === 'Terminated' ? 'F' : 'C',
             })
 
             await req.transaction.commit()
@@ -747,6 +748,7 @@ class StudentController {
                     from_date: date,
                     req,
                     t: req.transaction,
+                    reason: 'T',
                 })
                 await createStudentAttendances({
                     student_id: studentExists.id,
@@ -933,6 +935,7 @@ class StudentController {
             for (let attendance of attendances) {
                 await attendance.update(
                     {
+                        status: 'V',
                         vacation_id: newVacation.id,
 
                         updated_by: req.userId,
@@ -1040,6 +1043,7 @@ class StudentController {
                         transaction: req.transaction,
                     }
                 )
+                await calculateAttendanceStatus(attendance.id, req)
             }
 
             await req.transaction.commit()
@@ -1176,6 +1180,7 @@ class StudentController {
             for (let attendance of attendances) {
                 await attendance.update(
                     {
+                        status: 'S',
                         medical_excuse_id: newMedicalExcuse.id,
 
                         updated_by: req.userId,
@@ -1286,6 +1291,7 @@ class StudentController {
                         transaction: req.transaction,
                     }
                 )
+                await calculateAttendanceStatus(attendance.id, req)
             }
 
             await req.transaction.commit()
