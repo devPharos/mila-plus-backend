@@ -1,18 +1,12 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog.js'
-import databaseConfig from '../../config/database.js'
 import Student from '../models/Student.js'
 import Attendance from '../models/Attendance.js'
 import Studentgroupclass from '../models/Studentgroupclass.js'
 import Studentgroup from '../models/Studentgroup.js'
-import { format } from 'date-fns'
 
 const { Op } = Sequelize
 
-export async function calculateAttendanceStatus(
-    attendance_id = null,
-    req = null
-) {
+export async function calculateAttendanceStatus(attendance_id = null) {
     const attendance = await Attendance.findOne({
         where: {
             id: attendance_id,
@@ -177,14 +171,12 @@ export async function calculateAttendanceStatus(
     await Attendance.update(
         {
             status: newStatus,
-            updated_by: req.userId,
         },
         {
             where: {
                 id: attendance_id,
                 canceled_at: null,
             },
-            transaction: req ? req.transaction : null,
         }
     )
 
