@@ -43,6 +43,8 @@ import { fileURLToPath } from 'url'
 import Processtype from '../models/Processtype.js'
 import { calculateAttendanceStatus } from './AttendanceController.js'
 import { getAbsenceStatus } from './AbsenseControlController.js'
+import Recurrence from '../models/Recurrence.js'
+import Issuer from '../models/Issuer.js'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
@@ -371,6 +373,27 @@ export async function adjustStudentXGroups() {
     })
 
     for (let student of students) {
+        const recurrence = await Recurrence.findOne({
+            include: [
+                {
+                    model: Issuer,
+                    as: 'issuer',
+                    required: true,
+                    where: {
+                        student_id: student.id,
+                        canceled_at: null,
+                    },
+                },
+            ],
+            where: {
+                canceled_at: null,
+            },
+        })
+
+        if (!recurrence) {
+            continue
+        }
+
         const studentXGroups = await StudentXGroup.findOne({
             where: {
                 student_id: student.id,
@@ -378,20 +401,28 @@ export async function adjustStudentXGroups() {
                 canceled_at: null,
             },
         })
+        const { entry_date } = recurrence.dataValues
 
-        // if (!studentXGroups) {
-        //     await StudentXGroup.create({
-        //         company_id: 1,
-        //         filial_id: student.dataValues.filial_id,
-        //         student_id: student.id,
-        //         group_id: 1,
-        //         start_date: '2025-01-01',
-        //         end_date: null,
-        //         status: 'Pending',
-        //         created_by: 2,
-        //     })
-        //     await putInClass(student.id, 1, 1)
-        // }
+        const start_date =
+            entry_date.substring(0, 4) +
+            '-' +
+            entry_date.substring(4, 6) +
+            '-' +
+            entry_date.substring(6, 8)
+
+        if (!studentXGroups) {
+            await StudentXGroup.create({
+                company_id: 1,
+                filial_id: student.dataValues.filial_id,
+                student_id: student.id,
+                group_id: 1,
+                start_date,
+                end_date: null,
+                status: 'Pending',
+                created_by: 2,
+            })
+            await putInClass(student.id, 1, 1)
+        }
     }
 }
 
