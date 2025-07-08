@@ -13,7 +13,10 @@ import {
     sendOnDueDateInvoices,
 } from './app/controllers/ReceivableController.js'
 import { mailer } from './config/mailer.js'
-import { jobPutInClass } from './app/controllers/StudentgroupController.js'
+import {
+    adjustStudentXGroups,
+    jobPutInClass,
+} from './app/controllers/StudentgroupController.js'
 import { connectToMongo } from './config/mongodb.js'
 import transactionHandler from './app/middlewares/transactionHandler.js'
 import errorHandler from './app/middlewares/errorHandler.js'
@@ -98,6 +101,8 @@ class App {
 
     async schedule() {
         adjustUserGroups()
+
+        adjustStudentXGroups()
         if (process.env.NODE_ENV === 'production') {
             schedule.scheduleJob(`0 0 4 * * *`, sendAutopayRecurrenceJob)
             schedule.scheduleJob(`0 15 4 * * *`, sendBeforeDueDateInvoices)

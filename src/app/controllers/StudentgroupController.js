@@ -230,7 +230,7 @@ export async function createStudentAttendances({
                     status: 'A',
                     vacation_id: vacation?.id,
                     medical_excuse_id: medicalExcuse?.id,
-                    created_by: req.userId,
+                    created_by: req.userId || 2,
                 },
                 {
                     transaction: req.transaction,
@@ -359,6 +359,39 @@ async function StudentGroupProgress(studentgroup_id = null) {
         const functionName = 'StudentGroupProgress'
         MailLog({ className, functionName, req: null, err })
         return false
+    }
+}
+
+export async function adjustStudentXGroups() {
+    const students = await Student.findAll({
+        where: {
+            studentgroup_id: 1,
+            canceled_at: null,
+        },
+    })
+
+    for (let student of students) {
+        const studentXGroups = await StudentXGroup.findOne({
+            where: {
+                student_id: student.id,
+                group_id: 1,
+                canceled_at: null,
+            },
+        })
+
+        // if (!studentXGroups) {
+        //     await StudentXGroup.create({
+        //         company_id: 1,
+        //         filial_id: student.dataValues.filial_id,
+        //         student_id: student.id,
+        //         group_id: 1,
+        //         start_date: '2025-01-01',
+        //         end_date: null,
+        //         status: 'Pending',
+        //         created_by: 2,
+        //     })
+        //     await putInClass(student.id, 1, 1)
+        // }
     }
 }
 
@@ -1745,6 +1778,8 @@ class StudentgroupController {
                 }
             )
 
+            const attendancesIds = []
+
             for (let shift of shifts) {
                 if (shift.students?.length > 0) {
                     for (let student of shift.students) {
@@ -1799,10 +1834,7 @@ class StudentgroupController {
                                     transaction: req.transaction,
                                 }
                             )
-                            await calculateAttendanceStatus(
-                                attendanceExists.id,
-                                req
-                            )
+                            attendancesIds.push(attendanceExists.id)
                         } else {
                             const attendance = await Attendance.create(
                                 {
@@ -1817,7 +1849,7 @@ class StudentgroupController {
                                     transaction: req.transaction,
                                 }
                             )
-                            await calculateAttendanceStatus(attendance.id, req)
+                            attendancesIds.push(attendance.id)
                         }
                     }
                 }
@@ -1853,6 +1885,10 @@ class StudentgroupController {
             }
 
             await req.transaction.commit()
+
+            for (let attendanceId of attendancesIds) {
+                calculateAttendanceStatus(attendanceId)
+            }
 
             return res.status(200).json(studentgroup)
         } catch (err) {
