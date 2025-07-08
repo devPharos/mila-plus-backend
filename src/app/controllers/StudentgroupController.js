@@ -227,7 +227,7 @@ export async function createStudentAttendances({
                     shift,
                     first_check: 'Absent',
                     second_check: 'Absent',
-                    status: 'A',
+                    status: vacation ? 'V' : medicalExcuse ? 'S' : 'A',
                     vacation_id: vacation?.id,
                     medical_excuse_id: medicalExcuse?.id,
                     created_by: req.userId || 2,
