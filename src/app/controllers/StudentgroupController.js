@@ -1700,34 +1700,38 @@ class StudentgroupController {
                 order: [['date', 'ASC']],
             })
 
-            const students = await Student.findAll({
-                where: {
-                    studentgroup_id: studentgroup.id,
-                    canceled_at: null,
-                },
-                include: [
-                    {
-                        model: Attendance,
-                        as: 'attendances',
-                        required: true,
-                        where: {
-                            studentgroupclass_id: studentgroupclass?.id,
-                            canceled_at: null,
-                        },
-                        attributes: [
-                            'id',
-                            'student_id',
-                            'shift',
-                            'first_check',
-                            'second_check',
-                            'vacation_id',
-                            'medical_excuse_id',
-                            'status',
-                        ],
+            let students = []
+
+            if (studentgroupclass) {
+                await Student.findAll({
+                    where: {
+                        studentgroup_id: studentgroup.id,
+                        canceled_at: null,
                     },
-                ],
-                attributes: ['id', 'name', 'last_name'],
-            })
+                    include: [
+                        {
+                            model: Attendance,
+                            as: 'attendances',
+                            required: true,
+                            where: {
+                                studentgroupclass_id: studentgroupclass.id,
+                                canceled_at: null,
+                            },
+                            attributes: [
+                                'id',
+                                'student_id',
+                                'shift',
+                                'first_check',
+                                'second_check',
+                                'vacation_id',
+                                'medical_excuse_id',
+                                'status',
+                            ],
+                        },
+                    ],
+                    attributes: ['id', 'name', 'last_name'],
+                })
+            }
 
             const pendingPaceguides = await Studentgrouppaceguide.findAll({
                 include: [
