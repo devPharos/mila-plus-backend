@@ -2220,6 +2220,16 @@ class StudentgroupController {
                     },
                     include: [
                         {
+                            model: StudentXGroup,
+                            as: 'studentxgroups',
+                            required: false,
+                            where: {
+                                canceled_at: null,
+                                group_id: studentgroup_id,
+                            },
+                            attributes: ['start_date', 'end_date'],
+                        },
+                        {
                             model: Studentinactivation,
                             as: 'inactivation',
                             required: false,
@@ -2559,7 +2569,8 @@ class StudentgroupController {
                         }
                     )
 
-                    let studentStartDate = student.start_date
+                    let studentStartDate =
+                        student.studentxgroups[0].dataValues.start_date
                     if (studentStartDate) {
                         studentStartDate =
                             'SD: ' +
