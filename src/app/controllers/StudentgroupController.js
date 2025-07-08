@@ -1618,7 +1618,7 @@ class StudentgroupController {
             })
 
             let attendanceFilter = {
-                locked_at: null,
+                // locked_at: null,
                 date: {
                     [Op.lte]: format(new Date(), 'yyyy-MM-dd'),
                 },
