@@ -249,6 +249,7 @@ export async function removeStudentAttendances({
     req = { userId: 2 },
     reason = null,
 }) {
+    console.log({ student_id, studentgroup_id, from_date, req, reason })
     const student = await Student.findByPk(student_id)
     if (!student) {
         return false
@@ -266,6 +267,7 @@ export async function removeStudentAttendances({
             },
         },
     })
+    console.log('classes.length', classes.length)
 
     for (let class_ of classes) {
         const attendances = await Attendance.findAll({
@@ -275,26 +277,22 @@ export async function removeStudentAttendances({
                 canceled_at: null,
             },
         })
+        console.log('attendances.length', attendances.length)
         if (
             class_.date >
                 format(lastDayOfMonth(parseISO(from_date)), 'yyyy-MM-dd') ||
             reason === null
         ) {
+            console.log('after end of month')
             for (let attendance of attendances) {
-                await attendance.destroy({
-                    transaction: req.transaction,
-                })
+                await attendance.destroy()
             }
         } else {
+            console.log('in month')
             for (let attendance of attendances) {
-                await attendance.update(
-                    {
-                        status: reason,
-                    },
-                    {
-                        transaction: req.transaction,
-                    }
-                )
+                await attendance.update({
+                    status: reason,
+                })
             }
         }
     }
