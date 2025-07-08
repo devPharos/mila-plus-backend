@@ -1711,7 +1711,7 @@ class StudentgroupController {
                         as: 'attendances',
                         required: true,
                         where: {
-                            studentgroupclass_id: studentgroupclass.id,
+                            studentgroupclass_id: studentgroupclass?.id,
                             canceled_at: null,
                         },
                         attributes: [

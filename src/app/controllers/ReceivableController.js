@@ -1,6 +1,5 @@
-import Sequelize, { Op } from 'sequelize'
+import { Op, Sequelize } from 'sequelize'
 import MailLog from '../../Mails/MailLog.js'
-import databaseConfig from '../../config/database.js'
 import Receivable from '../models/Receivable.js'
 import PaymentMethod from '../models/PaymentMethod.js'
 import ChartOfAccount from '../models/Chartofaccount.js'
@@ -17,8 +16,10 @@ import {
     addYears,
     differenceInDays,
     format,
+    lastDayOfMonth,
     parseISO,
     subDays,
+    subMonths,
 } from 'date-fns'
 import { mailer } from '../../config/mailer.js'
 import { emergepay } from '../../config/emergepay.js'
@@ -1346,6 +1347,38 @@ export function canBeFloat(str) {
 }
 
 class ReceivableController {
+    async dashboard(req, res, next) {
+        try {
+            const receivables = await Receivable.findAll({
+                attributes: [
+                    'due_date',
+                    [Sequelize.fn('SUM', Sequelize.col('balance')), 'balance'],
+                    [
+                        Sequelize.fn(
+                            'SUM',
+                            Sequelize.literal('total - balance')
+                        ),
+                        'total',
+                    ],
+                ],
+                where: {
+                    canceled_at: null,
+                    due_date: {
+                        [Op.gte]: format(subMonths(new Date(), 2), 'yyyyMMdd'),
+                        [Op.lte]: format(new Date(), 'yyyyMMdd'),
+                    },
+                },
+                distinct: true,
+                group: ['due_date'],
+                order: [['due_date', 'ASC']],
+            })
+
+            return res.json(receivables)
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
+    }
     async index(req, res, next) {
         try {
             const defaultOrderBy = { column: 'due_date', asc: 'ASC' }

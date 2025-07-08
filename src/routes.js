@@ -529,6 +529,7 @@ routes.post(
     '/receivables/send-invoice/:receivable_id',
     ReceivableController.sendInvoice
 )
+routes.get('/receivables-dashboard', ReceivableController.dashboard)
 
 // settlements
 routes.get('/settlements', SettlementController.index)
@@ -594,9 +595,6 @@ routes.delete(
     '/students/Medical_Excuse/:medical_excuse_id',
     StudentController.deleteMedicalExcuse
 )
-routes.post(
-    '/partners_and_influencers',
-    PartnersAndInfluencersController.store
-)
+routes.post('/partners_and_influencers', PartnersAndInfluencersController.store)
 
 export default routes
