@@ -2570,7 +2570,7 @@ class StudentgroupController {
                     )
 
                     let studentStartDate =
-                        student.studentxgroups[0].dataValues.start_date
+                        student.studentxgroups[0]?.dataValues?.start_date
                     if (studentStartDate) {
                         studentStartDate =
                             'SD: ' +
