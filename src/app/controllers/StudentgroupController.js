@@ -1479,8 +1479,7 @@ class StudentgroupController {
                     studentgroup_id: studentgroup.id,
                     canceled_at: null,
                 },
-                attributes: ['id', 'shift', 'date'],
-                order: [['date', 'ASC']],
+                attributes: ['id', 'shift'],
             })
 
             const students = await Student.findAll({
