@@ -50,6 +50,11 @@ class Attendance extends Model {
             foreignKey: 'medical_excuse_id',
             as: 'medical_excuse',
         })
+        this.belongsToMany(models.Studentgroupclass, {
+            through: 'StudentgroupclassAttendance',
+            foreignKey: 'attendance_id',
+            as: 'attendances',
+        })
     }
 }
 

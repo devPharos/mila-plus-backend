@@ -5,8 +5,191 @@ import Student from '../models/Student.js'
 import Attendance from '../models/Attendance.js'
 import Studentgroupclass from '../models/Studentgroupclass.js'
 import Studentgroup from '../models/Studentgroup.js'
+import { format } from 'date-fns'
 
 const { Op } = Sequelize
+
+export async function calculateAttendanceStatus(
+    attendance_id = null,
+    req = null
+) {
+    const attendance = await Attendance.findOne({
+        where: {
+            id: attendance_id,
+            canceled_at: null,
+        },
+        include: [
+            {
+                model: Studentgroupclass,
+                as: 'studentgroupclasses',
+                required: true,
+                where: {
+                    canceled_at: null,
+                },
+                attributes: ['date', 'studentgroup_id'],
+            },
+        ],
+        attributes: [
+            'status',
+            'first_check',
+            'second_check',
+            'vacation_id',
+            'medical_excuse_id',
+            'student_id',
+            'shift',
+        ],
+    })
+
+    if (!attendance) {
+        return
+    }
+
+    const {
+        status,
+        first_check,
+        second_check,
+        vacation_id,
+        medical_excuse_id,
+        student_id,
+        shift,
+        studentgroupclasses,
+    } = attendance.dataValues
+
+    const { date, studentgroup_id } = studentgroupclasses.dataValues
+
+    if (
+        status !== 'A' &&
+        status !== 'P' &&
+        status !== 'V' &&
+        status !== 'S' &&
+        status !== '.' &&
+        status !== null
+    ) {
+        return
+    }
+
+    let newStatus = '.' // Present
+
+    if (first_check === 'Absent' || second_check === 'Absent') {
+        newStatus = 'A' // Absent
+        if (first_check === 'Present' || second_check === 'Present') {
+            newStatus = 'P' // Half Present
+        }
+    }
+    if (first_check === 'Late' || second_check === 'Late') {
+        const howManyFirstCheckLates = await Attendance.count({
+            where: {
+                student_id: student_id,
+                shift: shift,
+                first_check: 'Late',
+            },
+            include: [
+                {
+                    model: Studentgroupclass,
+                    as: 'studentgroupclasses',
+                    required: true,
+                    where: {
+                        studentgroup_id,
+                        date: {
+                            [Op.lt]: date,
+                        },
+                    },
+                },
+            ],
+            distinct: true,
+        })
+
+        const howManySecondCheckLates = await Attendance.count({
+            where: {
+                student_id: student_id,
+                shift: shift,
+                second_check: 'Late',
+                canceled_at: null,
+            },
+            include: [
+                {
+                    model: Studentgroupclass,
+                    as: 'studentgroupclasses',
+                    required: true,
+                    where: {
+                        canceled_at: null,
+                        date: {
+                            [Op.lt]: date,
+                        },
+                        studentgroup_id,
+                    },
+                    attributes: [],
+                },
+            ],
+            distinct: true,
+        })
+
+        let totalLates = howManyFirstCheckLates + howManySecondCheckLates
+
+        if (first_check === 'Late') {
+            const isThreeLates = totalLates % 3 === 2
+            newStatus = '.' // Present
+
+            if (isThreeLates) {
+                newStatus = 'P' // Half Present
+            }
+            if (second_check === 'Absent') {
+                if (newStatus === 'P') {
+                    newStatus = 'A' // Absent
+                } else {
+                    newStatus = 'P' // Half Present
+                }
+            }
+            totalLates++
+        }
+
+        if (second_check === 'Late') {
+            const isThreeLates = totalLates % 3 === 2
+
+            if (isThreeLates) {
+                newStatus = 'P' // Half Present
+            }
+
+            if (first_check === 'Present') {
+                newStatus = '.' // Present
+                if (isThreeLates) {
+                    newStatus = 'P' // Half Present
+                }
+            }
+
+            if (first_check === 'Absent') {
+                newStatus = 'P' // Half Present
+                if (isThreeLates) {
+                    newStatus = 'A' // Absent
+                }
+            }
+        }
+    }
+
+    if (vacation_id) {
+        newStatus = 'V' // Vacation
+    }
+
+    if (medical_excuse_id) {
+        newStatus = 'S' // Sick
+    }
+
+    await Attendance.update(
+        {
+            status: newStatus,
+            updated_by: req.userId,
+        },
+        {
+            where: {
+                id: attendance_id,
+                canceled_at: null,
+            },
+            transaction: req ? req.transaction : null,
+        }
+    )
+
+    return
+}
 
 class AttendanceController {
     async list(req, res, next) {

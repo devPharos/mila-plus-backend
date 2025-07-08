@@ -145,6 +145,10 @@ class Student extends Model {
             foreignKey: 'student_id',
             as: 'medical_excuses',
         })
+        this.hasMany(models.Attendance, {
+            foreignKey: 'student_id',
+            as: 'attendances',
+        })
     }
 }
 

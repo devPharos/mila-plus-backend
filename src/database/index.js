@@ -78,6 +78,7 @@ import MedicalExcuse from '../app/models/MedicalExcuse.js'
 import MedicalExcuseFiles from '../app/models/MedicalExcuseFiles.js'
 import Message from '../app/models/Message.js'
 import MessageXStudent from '../app/models/MessageXStudent.js'
+import PartnersAndInfluencers from '../app/models/PartnersAndInfluencers.js'
 
 const models = [
     Processtype,
@@ -157,6 +158,7 @@ const models = [
     MedicalExcuse,
     MedicalExcuseFiles,
     Textpaymenttransaction,
+    PartnersAndInfluencers,
 ]
 
 class Database {

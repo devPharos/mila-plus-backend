@@ -4,7 +4,7 @@ module.exports = {
             'menu_hierarchies',
             [
                 {
-                    father_id: 25,
+                    father_id: 25, // Students
                     alias: 'attendance-adjustments',
                     name: 'Attendance Adjustments',
                 },
@@ -42,6 +42,21 @@ module.exports = {
                     father_id: 25,
                     alias: 'excel',
                     name: 'Excel',
+                },
+                {
+                    father_id: 25,
+                    alias: 'admission-tab',
+                    name: 'Admission Tab',
+                },
+                {
+                    father_id: 25,
+                    alias: 'academic-tab',
+                    name: 'Academic Tab',
+                },
+                {
+                    father_id: 25,
+                    alias: 'dso-tab',
+                    name: 'DSO Tab',
                 },
             ],
             {}

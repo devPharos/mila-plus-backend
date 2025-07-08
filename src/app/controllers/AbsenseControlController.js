@@ -11,12 +11,13 @@ import xl from 'excel4node'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { format, parseISO } from 'date-fns'
+import { alignment } from 'excel4node/distribution/lib/types/index.js'
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
 const { Op } = Sequelize
 
-async function getAbsenceStatus(
+export async function getAbsenceStatus(
     student_id = null,
     from_date = null,
     until_date = null
@@ -34,6 +35,30 @@ async function getAbsenceStatus(
         ],
     })
 
+    const studentGroupClass = await Studentgroupclass.findOne({
+        include: [
+            {
+                model: Attendance,
+                as: 'attendances',
+                required: true,
+                where: {
+                    student_id,
+                    canceled_at: null,
+                },
+            },
+        ],
+        where: {
+            date: {
+                [Op.between]: [from_date, until_date],
+            },
+            canceled_at: null,
+        },
+    })
+
+    const shifts = studentGroupClass
+        ? studentGroupClass.dataValues?.shift?.split('/')
+        : []
+
     const attendances = await Attendance.findAll({
         where: {
             student_id,
@@ -45,6 +70,9 @@ async function getAbsenceStatus(
                 as: 'studentgroupclasses',
                 required: true,
                 where: {
+                    locked_at: {
+                        [Op.not]: null,
+                    },
                     date: {
                         [Op.between]: [from_date, until_date],
                     },
@@ -96,18 +124,16 @@ async function getAbsenceStatus(
                 },
             },
         ],
+        distinct: true,
     })
 
     let totals = {
         attendances: attendances.length,
-        attendancesPeriods: attendances.length * 2,
+        attendancesPeriods: attendances.length * shifts.length,
         groups: [],
         totalAbsenses: 0,
         frequency: 0,
-        lateAbsenses: 0,
     }
-
-    let lates = 0
 
     for (let attendance of attendances) {
         const group = attendance.studentgroupclasses.studentgroup
@@ -118,47 +144,14 @@ async function getAbsenceStatus(
                 group,
                 totalAbsenses: 0,
                 frequency: 0,
-                lateAbsenses: 0,
             })
         }
 
         totals.groups.find((g) => g.group.id === group.id).attendances++
-        totals.groups.find(
-            (g) => g.group.id === group.id
-        ).attendancePeriods += 2
+        totals.groups.find((g) => g.group.id === group.id).attendancePeriods +=
+            shifts.length
 
-        if (attendance.first_check === 'Late') {
-            lates++
-            if (lates === 3) {
-                lates = 0
-                totals.groups.find((g) => g.group.id === group.id)
-                    .lateAbsenses++
-                totals.groups.find((g) => g.group.id === group.id)
-                    .totalAbsenses++
-                totals.totalAbsenses++
-                totals.lateAbsenses++
-            }
-        }
-
-        if (attendance.first_check === 'Absent') {
-            totals.groups.find((g) => g.group.id === group.id).totalAbsenses++
-            totals.totalAbsenses++
-        }
-
-        if (attendance.second_check === 'Late') {
-            lates++
-            if (lates === 3) {
-                lates = 0
-                totals.groups.find((g) => g.group.id === group.id)
-                    .lateAbsenses++
-                totals.groups.find((g) => g.group.id === group.id)
-                    .totalAbsenses++
-                totals.totalAbsenses++
-                totals.lateAbsenses++
-            }
-        }
-
-        if (attendance.second_check === 'Absent') {
+        if (attendance.status === 'A') {
             totals.groups.find((g) => g.group.id === group.id).totalAbsenses++
             totals.totalAbsenses++
         }
@@ -222,30 +215,24 @@ class AbsenseControlController {
 
             var styleTotal = wb.createStyle({
                 font: {
-                    color: '#00aa00',
+                    color: '#222222',
                     size: 12,
                     bold: true,
                 },
-                fill: {
-                    type: 'pattern',
-                    fgColor: '#ff0000',
-                    bgColor: '#ffffff',
+                alignment: {
+                    horizontal: 'center',
                 },
-                numberFormat: '$ #,##0.00; ($#,##0.00); -',
             })
 
-            var styleTotalNegative = wb.createStyle({
+            var styleOver80 = wb.createStyle({
                 font: {
-                    color: '#aa0000',
+                    color: '#ff0000',
                     size: 12,
                     bold: true,
                 },
-                fill: {
-                    type: 'pattern',
-                    fgColor: '#ff0000',
-                    bgColor: '#ffffff',
+                alignment: {
+                    horizontal: 'center',
                 },
-                numberFormat: '$ #,##0.00; ($#,##0.00); -',
             })
 
             var styleHeading = wb.createStyle({
@@ -297,6 +284,30 @@ class AbsenseControlController {
                     company_id: 1,
                     canceled_at: null,
                 },
+                include: [
+                    {
+                        model: Attendance,
+                        as: 'attendances',
+                        required: true,
+                        where: {
+                            canceled_at: null,
+                        },
+                        include: [
+                            {
+                                model: Studentgroupclass,
+                                as: 'studentgroupclasses',
+                                required: true,
+                                where: {
+                                    date: {
+                                        [Op.between]: [from_date, until_date],
+                                    },
+                                    canceled_at: null,
+                                },
+                                attributes: [],
+                            },
+                        ],
+                    },
+                ],
                 attributes: [
                     'id',
                     'name',
@@ -308,6 +319,7 @@ class AbsenseControlController {
                     ['name', 'ASC'],
                     ['last_name', 'ASC'],
                 ],
+                distinct: true,
             })
 
             let row = 2
@@ -326,7 +338,7 @@ class AbsenseControlController {
                         student.name + ' ' + student.last_name
                     )
                     col++
-                    ws2.cell(row, col).string(student.email)
+                    ws2.cell(row, col).string(student.email || '')
                     col++
 
                     let groupNames = ''
@@ -335,11 +347,15 @@ class AbsenseControlController {
                     }
                     ws2.cell(row, col).string(groupNames)
                     col++
-                    ws2.cell(row, col).number(totals.totalAbsenses || 0)
+                    ws2.cell(row, col)
+                        .number(totals.totalAbsenses || 0)
+                        .style(styleTotal)
                     col++
-                    ws2.cell(row, col).number(
-                        totals.frequency ? Math.ceil(totals.frequency) : 0
-                    )
+                    ws2.cell(row, col)
+                        .number(
+                            totals.frequency ? Math.ceil(totals.frequency) : 0
+                        )
+                        .style(totals.frequency < 80 ? styleOver80 : styleTotal)
                     row++
                     col++
                 }
