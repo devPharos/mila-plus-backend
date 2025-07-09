@@ -10,6 +10,12 @@ class PartnersAndInfluencers extends Model {
                     primaryKey: true,
                     allowNull: false,
                 },
+                filial_id: {
+                    type: Sequelize.INTEGER,
+                    allowNull: false,
+                    references: { model: 'filials', key: 'id' },
+                    onUpdate: 'NO ACTION',
+                },
                 partners_name: {
                     type: Sequelize.STRING,
                     allowNull: false
@@ -82,6 +88,10 @@ class PartnersAndInfluencers extends Model {
         )
 
         return this
+    }
+
+    static associate(models) {
+        this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
     }
 }
 
