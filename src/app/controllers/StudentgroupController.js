@@ -619,6 +619,7 @@ class StudentgroupController {
                         include: [
                             {
                                 model: File,
+                                required: false,
                             },
                         ],
                         where: {
@@ -1526,7 +1527,6 @@ class StudentgroupController {
                             where: {
                                 studentgroupclass_id: class_.id,
                                 student_id: student.id,
-                                shift: class_.shift,
                                 canceled_at: null,
                             },
                         },

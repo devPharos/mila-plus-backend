@@ -102,7 +102,7 @@ class App {
     async schedule() {
         adjustUserGroups()
 
-        adjustStudentXGroups()
+        // adjustStudentXGroups()
         if (process.env.NODE_ENV === 'production') {
             schedule.scheduleJob(`0 0 4 * * *`, sendAutopayRecurrenceJob)
             schedule.scheduleJob(`0 15 4 * * *`, sendBeforeDueDateInvoices)
