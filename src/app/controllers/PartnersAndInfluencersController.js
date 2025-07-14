@@ -1,5 +1,6 @@
 import PartnersAndInfluencers from '../models/PartnersAndInfluencers.js'
 import Milauser from '../models/Milauser.js'
+import Filial from '../models/Filial.js'
 import * as Yup from 'yup'
 
 // {
@@ -20,6 +21,10 @@ class PartnersAndInfluencersController {
   async store(req, res, next) {
     try {
       const schema = Yup.object().shape({
+        filial: Yup.object().shape({
+          name: Yup.string().required('Company name is required.'),
+          id: Yup.string().required('Company ID is required.'),
+        }).required('Affiliate is mandatory'),
         partners_name: Yup.string().required(),
         contacts_name: Yup.string().required(),
         social_network_type: Yup.string().required(),
@@ -31,32 +36,41 @@ class PartnersAndInfluencersController {
         birth_country: Yup.string().required(),
         state: Yup.string().required(),
         city: Yup.string().required(),
-      })
+      });
 
       if (!(await schema.isValid(req.body))) {
-        return res.status(400).json({ error: 'Erro de validação! ' })
+        return res.status(400).json({ error: 'Validation error!' })
       }
 
-      const { user } = req.body;
+      const filialExists = await Filial.findByPk(req.body.filial.id);
+
+      if (!filialExists) {
+        return res.status(400).json({
+          error: 'Company does not exist.',
+        });
+      }
 
       if (req.userId) {
-          const userExists = await Milauser.findByPk(req.userId)
-          if (!userExists) {
-              return res.status(400).json({
-                  error: 'User does not exist.',
-              })
-          }
+        const userExists = await Milauser.findByPk(req.userId);
+
+        if (!userExists) {
+          return res.status(400).json({
+            error: 'User does not exist.',
+          });
+        }
       }
 
       PartnersAndInfluencers.create({
         ...req.body,
         zip: req.body.zip,
-        created_by: req.userId
-      })
+        created_by: req.userId,
+        filial_id: req.body.filial.id
+      });
 
-      return res.status(200).json({ })
+      return res.status(200).json({ });
+
     } catch(err) {
-      next(err)
+      next(err);
     }
   }
 }

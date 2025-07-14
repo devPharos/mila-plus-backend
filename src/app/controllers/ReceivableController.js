@@ -2372,7 +2372,7 @@ class ReceivableController {
                     .json({ error: 'Receivable does not exist.' })
             }
 
-            Feeadjustment.create(
+            await Feeadjustment.create(
                 {
                     receivable_id: receivableExists.id,
                     old_fee: receivableExists.dataValues.fee,
@@ -2384,39 +2384,21 @@ class ReceivableController {
                     transaction: req.transaction,
                 }
             )
-                .then(async () => {
-                    const difference = receivableExists.dataValues.fee - fee
-                    receivableExists
-                        .update(
-                            {
-                                fee,
-                                balance:
-                                    receivableExists.dataValues.balance -
-                                    difference,
-                                total:
-                                    receivableExists.dataValues.total -
-                                    difference,
-                                updated_by: req.userId,
-                            },
-                            {
-                                transaction: req.transaction,
-                            }
-                        )
-                        .then(async (receivable) => {
-                            await req.transaction.commit()
-                            return res.json(receivable)
-                        })
-                        .catch((err) => {
-                            return res.status(400).json({
-                                error: err,
-                            })
-                        })
-                })
-                .catch((err) => {
-                    return res.status(400).json({
-                        error: err,
-                    })
-                })
+            const difference = receivableExists.dataValues.fee - fee
+
+            await receivableExists.update(
+                {
+                    fee,
+                    balance: receivableExists.dataValues.balance - difference,
+                    total: receivableExists.dataValues.total - difference,
+                    updated_by: req.userId,
+                },
+                {
+                    transaction: req.transaction,
+                }
+            )
+            await req.transaction.commit()
+            return res.json(receivableExists)
         } catch (err) {
             err.transaction = req.transaction
             next(err)

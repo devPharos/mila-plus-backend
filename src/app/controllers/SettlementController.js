@@ -249,94 +249,74 @@ class SettlementController {
                 })
             }
 
-            await settlement
-                .destroy({
+            await settlement.destroy({
+                transaction: req.transaction,
+            })
+            const discounts = await Receivablediscounts.findAll({
+                where: {
+                    receivable_id: receivable.id,
+                    canceled_at: null,
+                    type: 'Financial',
+                },
+            })
+            let total_settled = settlement.dataValues.amount
+            let total_discount = 0
+            for (let discount of discounts) {
+                if (discount.dataValues.percent) {
+                    total_discount +=
+                        (total_settled * 100) /
+                            (100 - discount.dataValues.value) -
+                        total_settled
+                } else {
+                    total_discount += discount.dataValues.value
+                }
+                await discount.destroy({
                     transaction: req.transaction,
                 })
-                .then(async () => {
-                    const discounts = await Receivablediscounts.findAll({
-                        where: {
-                            receivable_id: receivable.id,
-                            canceled_at: null,
-                            type: 'Financial',
-                        },
-                    })
-                    let total_settled = settlement.dataValues.amount
-                    let total_discount = 0
-                    for (let discount of discounts) {
-                        if (discount.dataValues.percent) {
-                            total_discount +=
-                                (total_settled * 100) /
-                                    (100 - discount.dataValues.value) -
-                                total_settled
-                        } else {
-                            total_discount += discount.dataValues.value
-                        }
-                        await discount.destroy({
-                            transaction: req.transaction,
-                        })
-                    }
-                    if (settlement.dataValues.amount === 0) {
-                        total_settled = 0
-                        total_discount =
-                            receivable.dataValues.amount +
-                            receivable.dataValues.fee
-                    }
+            }
+            if (settlement.dataValues.amount === 0) {
+                total_settled = 0
+                total_discount =
+                    receivable.dataValues.amount + receivable.dataValues.fee
+            }
 
-                    if (total_discount === Infinity) {
-                        total_discount = receivable.dataValues.discount
-                    }
+            if (total_discount === Infinity) {
+                total_discount = receivable.dataValues.discount
+            }
 
-                    const return_amount =
-                        total_settled === 0
-                            ? receivable.dataValues.balance + total_discount
-                            : receivable.dataValues.balance +
-                              total_settled +
-                              total_discount
+            const return_amount =
+                total_settled === 0
+                    ? receivable.dataValues.balance + total_discount
+                    : receivable.dataValues.balance +
+                      total_settled +
+                      total_discount
 
-                    await receivable
-                        .update(
-                            {
-                                discount: (
-                                    receivable.dataValues.discount -
-                                    total_discount
-                                ).toFixed(2),
-                                balance: return_amount.toFixed(2),
-                                status:
-                                    return_amount.toFixed(2) ===
-                                    (
-                                        receivable.dataValues.total +
-                                        total_discount
-                                    ).toFixed(2)
-                                        ? 'Pending'
-                                        : 'Parcial Paid',
-                                total:
-                                    receivable.dataValues.total +
-                                    total_discount,
-                                manual_discount: 0,
-
-                                updated_by: req.userId,
-                            },
-                            {
-                                transaction: req.transaction,
-                            }
+            await receivable.update(
+                {
+                    discount: (
+                        receivable.dataValues.discount - total_discount
+                    ).toFixed(2),
+                    balance: return_amount.toFixed(2),
+                    status:
+                        return_amount.toFixed(2) ===
+                        (receivable.dataValues.total + total_discount).toFixed(
+                            2
                         )
-                        .then(async () => {
-                            await req.transaction.commit()
-                            return res.status(200).json({
-                                message: 'Settlement deleted successfully.',
-                            })
-                        })
-                        .catch(async (err) => {
-                            await req.transaction.rollback()
-                            const className = 'SettlementController'
-                            const functionName = 'delete'
-                            MailLog({ className, functionName, req, err })
-                            return res.status(500).json({
-                                error: err,
-                            })
-                        })
-                })
+                            ? 'Pending'
+                            : 'Parcial Paid',
+                    total: receivable.dataValues.total + total_discount,
+                    manual_discount: 0,
+
+                    updated_by: req.userId,
+                },
+                {
+                    transaction: req.transaction,
+                }
+            )
+            await req.transaction.commit()
+            return res.status(200).json({
+                message: 'Settlement deleted successfully.',
+            })
         } catch (err) {
             err.transaction = req.transaction
             next(err)
