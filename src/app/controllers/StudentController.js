@@ -778,6 +778,8 @@ class StudentController {
                 transaction: req.transaction,
             })
 
+            await req.transaction.commit()
+
             return res.status(200).json(transfer)
         } catch (err) {
             err.transaction = req.transaction

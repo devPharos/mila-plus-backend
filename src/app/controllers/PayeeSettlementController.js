@@ -227,46 +227,30 @@ class PayeeSettlementController {
                 return res.status(400).json({ error: 'Payee does not exist.' })
             }
 
-            await settlement
-                .destroy({
-                    transaction: req.transaction,
-                })
-                .then(async () => {
-                    await payee
-                        .update(
-                            {
-                                balance:
-                                    payee.dataValues.balance +
-                                    settlement.dataValues.amount,
-                                status:
-                                    payee.dataValues.balance +
-                                        settlement.dataValues.amount ===
-                                    payee.dataValues.total
-                                        ? 'Pending'
-                                        : 'Partial Paid',
+            await settlement.destroy({
+                transaction: req.transaction,
+            })
+            await payee.update(
+                {
+                    balance:
+                        payee.dataValues.balance + settlement.dataValues.amount,
+                    status:
+                        payee.dataValues.balance +
+                            settlement.dataValues.amount ===
+                        payee.dataValues.total
+                            ? 'Pending'
+                            : 'Partial Paid',
 
-                                updated_by: req.userId,
-                            },
-                            {
-                                transaction: req.transaction,
-                            }
-                        )
-                        .then(async () => {
-                            await req.transaction.commit()
-                            return res.status(200).json({
-                                message: 'Settlement deleted successfully.',
-                            })
-                        })
-                        .catch(async (err) => {
-                            await req.transaction.rollback()
-                            const className = 'SettlementController'
-                            const functionName = 'delete'
-                            MailLog({ className, functionName, req, err })
-                            return res.status(500).json({
-                                error: err,
-                            })
-                        })
-                })
+                    updated_by: req.userId,
+                },
+                {
+                    transaction: req.transaction,
+                }
+            )
+            await req.transaction.commit()
+            return res.status(200).json({
+                message: 'Settlement deleted successfully.',
+            })
         } catch (err) {
             err.transaction = req.transaction
             next(err)

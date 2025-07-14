@@ -150,6 +150,8 @@ class BankController {
 
             await bank.destroy()
 
+            await req.transaction.commit()
+
             return res
                 .status(200)
                 .json({ message: 'Bank deleted successfully.' })
