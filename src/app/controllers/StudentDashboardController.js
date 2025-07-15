@@ -11,7 +11,10 @@ import Attendance from '../models/Attendance.js'
 import Studentgrouppaceguide from '../models/Studentgrouppaceguide.js'
 import Grade from '../models/Grade.js'
 import { calculateAttendanceStatus } from './AttendanceController.js'
-import { StudentGroupProgress } from './StudentgroupController.js'
+import {
+    loadGroupProrgess,
+    StudentGroupProgress,
+} from './StudentgroupController.js'
 import { getAbsenceStatus } from './AbsenseControlController.js'
 
 const { Op } = Sequelize
@@ -276,7 +279,6 @@ class StudentDashboardController {
 
             const groups = []
             for (let groupInstance of groupInstances) {
-                // groupInstances.map((groupInstance) => {
                 let group = groupInstance.get({ plain: true })
 
                 if (group.group) {
@@ -300,7 +302,7 @@ class StudentDashboardController {
                 group.finalAverageGrade = 0
                 group.result = 'FAIL'
 
-                const groupProgress = await StudentGroupProgress(group.groupID)
+                const groupProgress = await loadGroupProrgess(group.groupId)
 
                 group.givenClassPercentage = groupProgress.class
                 group.givenContentPercentage = groupProgress.content
@@ -313,9 +315,9 @@ class StudentDashboardController {
                 date: {
                     [Op.lte]: thisPeriod + '-31',
                 },
-                // locked_at: {
-                //     [Op.ne]: null,
-                // },
+                locked_at: {
+                    [Op.ne]: null,
+                },
             }
 
             if (period !== 'all') {
@@ -391,7 +393,7 @@ class StudentDashboardController {
 
             const periodsMap = {}
 
-            // 1. Processa e agrupa todas as aulas em um único loop
+            // Processa e agrupa todas as aulas em um único loop
             for (const classInstance of classesInstances) {
                 const _class = classInstance.get({ plain: true })
 
@@ -441,8 +443,7 @@ class StudentDashboardController {
 
             const frequency = []
 
-            // 2. (Opcional, mas recomendado) Adiciona o total de faltas a cada período
-            // Este loop garante que getAbsenceStatus seja chamado apenas uma vez por período, se necessário
+            // Adiciona o total de faltas a cada período
             for (const p of periods) {
                 const groupStatus = await getAbsenceStatus(
                     student.id,
