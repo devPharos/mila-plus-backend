@@ -299,6 +299,10 @@ export async function removeStudentAttendances({
 }
 
 export async function loadGroupProrgess(studentgroup_id = null) {
+    const progress = {
+        content: 0,
+        class: 0,
+    }
     const studentGroupClasses = await Studentgroupclass.findAll({
         where: {
             studentgroup_id,
@@ -355,7 +359,7 @@ export async function StudentGroupProgress(studentgroup_id = null) {
         if (!studentgroup_id) {
             return progress
         }
-        const data = await loadGroupProrgess()
+        const data = await loadGroupProrgess(studentgroup_id)
         progress.content = data.content
         progress.class = data.class
 
