@@ -298,6 +298,54 @@ export async function removeStudentAttendances({
     }
 }
 
+export async function loadGroupProrgess(studentgroup_id = null) {
+    const studentGroupClasses = await Studentgroupclass.findAll({
+        where: {
+            studentgroup_id,
+            canceled_at: null,
+        },
+        attributes: ['id', 'locked_at', 'status'],
+    })
+
+    progress.content =
+        (
+            (studentGroupClasses.filter((class_) => class_.locked_at).length /
+                studentGroupClasses.length) *
+            100
+        ).toFixed(0) || 0
+
+    const studentGroupPaceguides = await Studentgrouppaceguide.findAll({
+        where: {
+            studentgroup_id,
+            canceled_at: null,
+        },
+        include: [
+            {
+                model: Studentgroupclass,
+                as: 'studentgroupclass',
+                required: false,
+                where: {
+                    canceled_at: null,
+                },
+                attributes: ['id', 'status', 'locked_at'],
+            },
+        ],
+        attributes: ['id', 'status'],
+    })
+
+    progress.class =
+        (
+            (studentGroupPaceguides.filter(
+                (paceguide) =>
+                    paceguide.status === 'Done' &&
+                    paceguide.studentgroupclass.locked_at
+            ).length /
+                studentGroupPaceguides.length) *
+            100
+        ).toFixed(0) || 0
+    return { content: progress.content, class: progress.class }
+}
+
 export async function StudentGroupProgress(studentgroup_id = null) {
     const progress = {
         content: 0,
@@ -307,51 +355,9 @@ export async function StudentGroupProgress(studentgroup_id = null) {
         if (!studentgroup_id) {
             return progress
         }
-        const studentGroupClasses = await Studentgroupclass.findAll({
-            where: {
-                studentgroup_id,
-                canceled_at: null,
-            },
-            attributes: ['id', 'locked_at', 'status'],
-        })
-
-        progress.content =
-            (
-                (studentGroupClasses.filter((class_) => class_.locked_at)
-                    .length /
-                    studentGroupClasses.length) *
-                100
-            ).toFixed(0) || 0
-
-        const studentGroupPaceguides = await Studentgrouppaceguide.findAll({
-            where: {
-                studentgroup_id,
-                canceled_at: null,
-            },
-            include: [
-                {
-                    model: Studentgroupclass,
-                    as: 'studentgroupclass',
-                    required: false,
-                    where: {
-                        canceled_at: null,
-                    },
-                    attributes: ['id', 'status', 'locked_at'],
-                },
-            ],
-            attributes: ['id', 'status'],
-        })
-
-        progress.class =
-            (
-                (studentGroupPaceguides.filter(
-                    (paceguide) =>
-                        paceguide.status === 'Done' &&
-                        paceguide.studentgroupclass.locked_at
-                ).length /
-                    studentGroupPaceguides.length) *
-                100
-            ).toFixed(0) || 0
+        const data = await loadGroupProrgess()
+        progress.content = data.content
+        progress.class = data.class
 
         return progress
     } catch (err) {

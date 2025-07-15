@@ -274,7 +274,9 @@ class StudentDashboardController {
                 attributes: ['start_date', 'end_date'],
             })
 
-            const groups = groupInstances.map((groupInstance) => {
+            const groups = []
+            for (let groupInstance of groupInstances) {
+                // groupInstances.map((groupInstance) => {
                 let group = groupInstance.get({ plain: true })
 
                 if (group.group) {
@@ -297,11 +299,14 @@ class StudentDashboardController {
 
                 group.finalAverageGrade = 0
                 group.result = 'FAIL'
-                group.givenClassPercentage = 0
-                group.givenContentPercentage = 0
 
-                return group
-            })
+                const groupProgress = await StudentGroupProgress(group.groupID)
+
+                group.givenClassPercentage = groupProgress.class
+                group.givenContentPercentage = groupProgress.content
+
+                groups.push(group)
+            }
 
             const periodWhereClause = {
                 canceled_at: null,
