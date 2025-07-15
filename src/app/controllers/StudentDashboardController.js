@@ -445,16 +445,17 @@ class StudentDashboardController {
                     `${p.period}-31`
                 )
 
-                const totalAbsences = groupStatus.totals.groups.find(
+                const groupTotals = groupStatus.totals.groups.find(
                     (g) => g.group.id === p.groupId
-                )?.totalAbsenses
+                )
+                const totalAbsences = groupTotals?.totalAbsenses
 
                 p.totalAbsences = totalAbsences || 0
 
                 frequency.push({
                     period: p.period,
-                    totalAbsences: p.totalAbsences,
-                    percFrequency: p.totalAbsences / p.classes.length,
+                    totalAbsences: groupTotals?.totalAbsenses || 0,
+                    percFrequency: groupTotals?.percFrequency || 0,
                 })
             }
 
