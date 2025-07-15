@@ -298,7 +298,7 @@ export async function removeStudentAttendances({
     }
 }
 
-async function StudentGroupProgress(studentgroup_id = null) {
+export async function StudentGroupProgress(studentgroup_id = null) {
     const progress = {
         content: 0,
         class: 0,

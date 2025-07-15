@@ -64,6 +64,7 @@ import GradeController from './app/controllers/GradeController.js'
 import ChartsController from './app/controllers/ChartsController.js'
 import AbsenseControlController from './app/controllers/AbsenseControlController.js'
 import PartnersAndInfluencersController from './app/controllers/PartnersAndInfluencersController.js'
+import StudentDashboardController from './app/controllers/StudentDashboardController.js'
 
 const routes = new Router()
 
@@ -596,5 +597,18 @@ routes.delete(
     StudentController.deleteMedicalExcuse
 )
 routes.post('/partners_and_influencers', PartnersAndInfluencersController.store)
+
+routes.get(
+    '/student-dashboard/students/:registration_number/:email',
+    StudentDashboardController.searchStudent
+)
+routes.get(
+    '/student-dashboard/student/:student_id',
+    StudentDashboardController.getStudent
+)
+routes.get(
+    '/student-dashboard/dashboard/:registration_number/:period',
+    StudentDashboardController.getDashboard
+)
 
 export default routes
