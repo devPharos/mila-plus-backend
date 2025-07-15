@@ -455,7 +455,7 @@ class StudentDashboardController {
                 frequency.push({
                     period: p.period,
                     totalAbsences: groupTotals?.totalAbsenses || 0,
-                    percFrequency: groupTotals?.percFrequency || 0,
+                    percFrequency: groupTotals?.frequency || 0,
                 })
             }
 
