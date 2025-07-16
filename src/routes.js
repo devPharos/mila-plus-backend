@@ -596,5 +596,8 @@ routes.delete(
     StudentController.deleteMedicalExcuse
 )
 routes.post('/partners_and_influencers', PartnersAndInfluencersController.store)
+routes.get('/partners_and_influencers', PartnersAndInfluencersController.index)
+routes.get('/partners_and_influencers/:partners_and_influencers_id', PartnersAndInfluencersController.show)
+routes.put('/partners_and_influencers/:partners_and_influencers_id', PartnersAndInfluencersController.update)
 
 export default routes
