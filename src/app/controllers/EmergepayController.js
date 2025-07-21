@@ -451,6 +451,8 @@ class EmergepayController {
             var rawData = req.body
             var jsonData = JSON.stringify(rawData)
 
+            const { justTransaction = false } = req.body
+
             var signatureMatched = false
 
             if (hmacSignature) {
@@ -484,10 +486,7 @@ class EmergepayController {
                     transactionReference,
                     transactionType,
                     uniqueTransId,
-                    justTransaction = false,
                 } = emergeData
-
-                console.log({ justTransaction })
 
                 await Emergepaytransaction.create({
                     account_card_type: accountCardType,

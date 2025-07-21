@@ -2348,6 +2348,7 @@ class ReceivableController {
                 balance:
                     receivable.dataValues.balance -
                     parseFloat(settlement_amount),
+                paymentmethod_id: paymentMethod.id,
                 updated_by: req.userId,
             })
 
