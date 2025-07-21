@@ -487,6 +487,8 @@ class EmergepayController {
                     justTransaction = false,
                 } = emergeData
 
+                console.log({ justTransaction })
+
                 await Emergepaytransaction.create({
                     account_card_type: accountCardType,
                     account_entry_method: accountEntryMethod,
