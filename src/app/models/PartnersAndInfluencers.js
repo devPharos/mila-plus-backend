@@ -28,6 +28,10 @@ class PartnersAndInfluencers extends Model {
                     type: Sequelize.NUMBER,
                     allowNull: true
                 },
+                social_network: {
+                    type: Sequelize.STRING,
+                    allowNull: true
+                },
                 compensation: {
                     type: Sequelize.STRING,
                     allowNull: true
@@ -45,6 +49,10 @@ class PartnersAndInfluencers extends Model {
                     allowNull: true
                 },
                 zip: {
+                    type: Sequelize.STRING,
+                    allowNull: true
+                },
+                birth_country: {
                     type: Sequelize.STRING,
                     allowNull: true
                 },
