@@ -2304,10 +2304,14 @@ class ReceivableController {
             }
 
             createPaidTimeline(receivable_id)
-            SettlementMail({
-                receivable_id: receivable_id,
-                amount: settlementAmount,
-            })
+
+            const method = await PaymentMethod.findByPk(paymentMethod.id)
+            if (method.dataValues.platform !== 'Gravity - Online') {
+                SettlementMail({
+                    receivable_id: receivable_id,
+                    amount: settlementAmount,
+                })
+            }
 
             await req.transaction.commit()
             return res.json(receivable)
