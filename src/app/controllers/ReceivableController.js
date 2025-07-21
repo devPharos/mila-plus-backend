@@ -2319,7 +2319,7 @@ class ReceivableController {
                         entry_date: format(new Date(), 'yyyyMMdd'),
                         due_date,
                         memo: firstReceivable.memo,
-                        is_recurrence: false,
+                        is_recurrence: firstReceivable.is_recurrence,
                         amount: installment_amount,
                         total: installment_amount,
                         balance: installment_amount,
@@ -2399,6 +2399,43 @@ class ReceivableController {
             )
             await req.transaction.commit()
             return res.json(receivableExists)
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
+    }
+
+    async hasInvoiceBefore(req, res, next) {
+        try {
+            const { receivable_id } = req.params
+            const receivable = await Receivable.findByPk(receivable_id)
+            if (!receivable) {
+                return res
+                    .status(400)
+                    .json({ error: 'Receivable does not exist.' })
+            }
+            const receivableBefore = await Receivable.findOne({
+                where: {
+                    issuer_id: receivable.dataValues.issuer_id,
+                    due_date: {
+                        [Op.lt]: receivable.dataValues.due_date,
+                    },
+                    status: {
+                        [Op.in]: ['Pending', 'Parcial Paid'],
+                    },
+                    canceled_at: null,
+                },
+                attributes: [
+                    'id',
+                    'due_date',
+                    'invoice_number',
+                    'status',
+                    'balance',
+                ],
+                order: [['due_date', 'ASC']],
+            })
+
+            return res.json(receivableBefore)
         } catch (err) {
             err.transaction = req.transaction
             next(err)
