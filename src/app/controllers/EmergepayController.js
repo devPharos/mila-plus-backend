@@ -517,36 +517,40 @@ class EmergepayController {
                 })
                 const findRec = await Receivable.findByPk(externalTransactionId)
                 if (findRec && resultMessage === 'Approved') {
-                    const paymentMethod = await PaymentMethod.findOne({
-                        where: {
-                            platform: 'Gravity - Online',
-                            canceled_at: null,
-                        },
-                    })
-
-                    const receivablesByInvoiceNumber = await Receivable.findAll(
-                        {
+                    if (!justTransaction) {
+                        const paymentMethod = await PaymentMethod.findOne({
                             where: {
-                                invoice_number:
-                                    findRec.dataValues.invoice_number,
-                                balance: {
-                                    [Op.gte]: 0,
-                                },
+                                platform: 'Gravity - Online',
                                 canceled_at: null,
                             },
+                        })
+
+                        const receivablesByInvoiceNumber =
+                            await Receivable.findAll({
+                                where: {
+                                    invoice_number:
+                                        findRec.dataValues.invoice_number,
+                                    balance: {
+                                        [Op.gte]: 0,
+                                    },
+                                    canceled_at: null,
+                                },
+                            })
+                        for (let receivable of receivablesByInvoiceNumber) {
+                            await settlement(
+                                {
+                                    receivable_id: receivable.id,
+                                    amountPaidBalance:
+                                        receivable.dataValues.balance,
+                                    settlement_date: format(
+                                        new Date(),
+                                        'yyyyMMdd'
+                                    ),
+                                    paymentmethod_id: paymentMethod.id,
+                                },
+                                req
+                            )
                         }
-                    )
-                    for (let receivable of receivablesByInvoiceNumber) {
-                        await settlement(
-                            {
-                                receivable_id: receivable.id,
-                                amountPaidBalance:
-                                    receivable.dataValues.balance,
-                                settlement_date: format(new Date(), 'yyyyMMdd'),
-                                paymentmethod_id: paymentMethod.id,
-                            },
-                            req
-                        )
                     }
                 }
                 await req.transaction.commit()
