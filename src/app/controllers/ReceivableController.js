@@ -2351,7 +2351,7 @@ class ReceivableController {
                 updated_by: req.userId,
             })
 
-            SettlementMail({
+            await SettlementMail({
                 receivable_id: receivable_id,
                 amount: parseFloat(settlement_amount),
             })

@@ -230,6 +230,9 @@ class SettlementController {
                     .json({ error: 'Receivable does not exist.' })
             }
 
+            const { amount, fee, discount, total, balance } =
+                receivable.dataValues
+
             const paymentMethod = await PaymentMethod.findByPk(
                 settlement.dataValues.paymentmethod_id
             )
@@ -276,8 +279,7 @@ class SettlementController {
             }
             if (settlement.dataValues.amount === 0) {
                 total_settled = 0
-                total_discount =
-                    receivable.dataValues.amount + receivable.dataValues.fee
+                total_discount = amount + fee
             }
 
             if (total_discount === Infinity) {
@@ -286,25 +288,22 @@ class SettlementController {
 
             const return_amount =
                 total_settled === 0
-                    ? receivable.dataValues.balance + total_discount
-                    : receivable.dataValues.balance +
-                      total_settled +
-                      total_discount
+                    ? balance + total_discount
+                    : balance + total_settled + total_discount
+
+            const isPending =
+                return_amount.toFixed(2) === (total + total_discount).toFixed(2)
 
             await receivable.update(
                 {
-                    discount: (
-                        receivable.dataValues.discount - total_discount
-                    ).toFixed(2),
-                    balance: return_amount.toFixed(2),
-                    status:
-                        return_amount.toFixed(2) ===
-                        (receivable.dataValues.total + total_discount).toFixed(
-                            2
-                        )
-                            ? 'Pending'
-                            : 'Partial Paid',
-                    total: receivable.dataValues.total + total_discount,
+                    discount: isPending
+                        ? 0
+                        : (discount - total_discount).toFixed(2),
+                    total: isPending ? amount + fee : total + total_discount,
+                    balance: isPending
+                        ? amount + fee
+                        : return_amount.toFixed(2),
+                    status: isPending ? 'Pending' : 'Partial Paid',
                     manual_discount: 0,
 
                     updated_by: req.userId,

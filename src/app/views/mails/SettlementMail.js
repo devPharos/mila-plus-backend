@@ -37,9 +37,6 @@ export async function SettlementMail({
         const paymentCriteria = await PaymentCriteria.findByPk(
             receivable.dataValues.paymentcriteria_id
         )
-        if (!paymentCriteria) {
-            return false
-        }
         const paymentMethod = await PaymentMethod.findByPk(
             receivable.dataValues.paymentmethod_id
         )
@@ -275,11 +272,11 @@ export async function SettlementMail({
                                               </td>
                                           </tr>
                                           ${
-                                              paymentCriteria.dataValues
-                                                  .late_fee_description
+                                              paymentCriteria?.dataValues
+                                                  ?.late_fee_description
                                                   ? `<tr>
                                               <td style="padding: 40px;font-size: 12px;text-align: justify;">
-                                                  <strong style='color:#a00;'>LATE Payments:</strong> - ${paymentCriteria.dataValues.late_fee_description}
+                                                  <strong style='color:#a00;'>LATE Payments:</strong> - ${paymentCriteria?.dataValues?.late_fee_description}
                                               </td>
                                           </tr>`
                                                   : ''
