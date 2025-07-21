@@ -453,6 +453,8 @@ class EmergepayController {
 
             const { justTransaction = false } = req.body
 
+            console.log({ justTransaction })
+
             var signatureMatched = false
 
             if (hmacSignature) {
