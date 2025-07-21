@@ -451,10 +451,6 @@ class EmergepayController {
             var rawData = req.body
             var jsonData = JSON.stringify(rawData)
 
-            const { justTransaction = false } = req.body
-
-            console.log({ justTransaction })
-
             var signatureMatched = false
 
             if (hmacSignature) {
@@ -520,40 +516,39 @@ class EmergepayController {
                 })
                 const findRec = await Receivable.findByPk(externalTransactionId)
                 if (findRec && resultMessage === 'Approved') {
-                    if (!justTransaction) {
-                        const paymentMethod = await PaymentMethod.findOne({
+                    const paymentMethod = await PaymentMethod.findOne({
+                        where: {
+                            platform: 'Gravity - Online',
+                            canceled_at: null,
+                        },
+                    })
+
+                    const receivablesByInvoiceNumber = await Receivable.findAll(
+                        {
                             where: {
-                                platform: 'Gravity - Online',
+                                invoice_number:
+                                    findRec.dataValues.invoice_number,
+                                balance: {
+                                    [Op.gte]: 0,
+                                },
                                 canceled_at: null,
                             },
-                        })
-
-                        const receivablesByInvoiceNumber =
-                            await Receivable.findAll({
-                                where: {
-                                    invoice_number:
-                                        findRec.dataValues.invoice_number,
-                                    balance: {
-                                        [Op.gte]: 0,
-                                    },
-                                    canceled_at: null,
-                                },
-                            })
-                        for (let receivable of receivablesByInvoiceNumber) {
-                            await settlement(
-                                {
-                                    receivable_id: receivable.id,
-                                    amountPaidBalance:
-                                        receivable.dataValues.balance,
-                                    settlement_date: format(
-                                        new Date(),
-                                        'yyyyMMdd'
-                                    ),
-                                    paymentmethod_id: paymentMethod.id,
-                                },
-                                req
-                            )
                         }
+                    )
+                    for (let receivable of receivablesByInvoiceNumber) {
+                        await settlement(
+                            {
+                                receivable_id: receivable.id,
+                                amountPaidBalance:
+                                    amountProcessed <
+                                    receivable.dataValues.balance
+                                        ? amountProcessed
+                                        : receivable.dataValues.balance,
+                                settlement_date: format(new Date(), 'yyyyMMdd'),
+                                paymentmethod_id: paymentMethod.id,
+                            },
+                            req
+                        )
                     }
                 }
                 await req.transaction.commit()
