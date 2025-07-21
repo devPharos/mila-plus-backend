@@ -101,7 +101,7 @@ export async function settlement(
         }
 
         if (
-            receivable.dataValues.status === 'Parcial Paid' &&
+            receivable.dataValues.status === 'Partial Paid' &&
             receivable.dataValues.balance < amountPaidBalance
         ) {
             return false
@@ -111,7 +111,7 @@ export async function settlement(
             paymentmethod_id = receivable.dataValues.paymentmethod_id
         }
 
-        const parcial =
+        const partial =
             receivable.dataValues.manual_discount !== 0 &&
             // amountPaidBalance !== 0 &&
             amountPaidBalance < receivable.dataValues.balance
@@ -119,7 +119,7 @@ export async function settlement(
         await Settlement.create(
             {
                 receivable_id: receivable.id,
-                amount: parcial
+                amount: partial
                     ? amountPaidBalance
                     : amountPaidBalance === 0
                     ? 0
@@ -135,10 +135,10 @@ export async function settlement(
         )
         await receivable.update(
             {
-                status: parcial ? 'Parcial Paid' : 'Paid',
+                status: partial ? 'Partial Paid' : 'Paid',
                 balance: (
                     receivable.balance -
-                    (parcial
+                    (partial
                         ? amountPaidBalance
                         : receivable.dataValues.balance)
                 ).toFixed(2),

@@ -303,7 +303,7 @@ class SettlementController {
                             2
                         )
                             ? 'Pending'
-                            : 'Parcial Paid',
+                            : 'Partial Paid',
                     total: receivable.dataValues.total + total_discount,
                     manual_discount: 0,
 

@@ -1457,13 +1457,13 @@ class ReceivableController {
                 if (type === 'pending') {
                     typeSearches = {
                         status: {
-                            [Op.in]: ['Pending', 'Parcial Paid'],
+                            [Op.in]: ['Pending', 'Partial Paid'],
                         },
                     }
                 } else if (type === 'paid') {
                     typeSearches = {
                         status: {
-                            [Op.in]: ['Paid', 'Parcial Paid'],
+                            [Op.in]: ['Paid', 'Partial Paid'],
                         },
                     }
                 }
@@ -1820,7 +1820,7 @@ class ReceivableController {
                     .status(400)
                     .json({ error: 'Receivable does not have a settlement.' })
             }
-            const parcial =
+            const partial =
                 receivableExists.dataValues.balance + refund_amount <
                 receivableExists.dataValues.total
                     ? true
@@ -1848,7 +1848,7 @@ class ReceivableController {
             )
             await receivableExists.update(
                 {
-                    status: parcial ? 'Parcial Paid' : 'Pending',
+                    status: partial ? 'Partial Paid' : 'Pending',
                     balance:
                         receivableExists.dataValues.balance + refund_amount,
 
@@ -2208,6 +2208,134 @@ class ReceivableController {
         }
     }
 
+    async applyDiscounts(req, res, next) {
+        try {
+            const { receivable_id, discount_id } = req.body
+
+            const receivable = await Receivable.findByPk(receivable_id)
+            if (!receivable) {
+                return res
+                    .status(400)
+                    .json({ error: 'Receivable does not exist.' })
+            }
+
+            const discountRegistry = await FilialDiscountList.findByPk(
+                discount_id
+            )
+            if (!discountRegistry) {
+                return res
+                    .status(400)
+                    .json({ error: 'Discount does not exist.' })
+            }
+
+            const { value, percent } = discountRegistry.dataValues
+
+            const { amount, fee, discount, total, balance } =
+                receivable.dataValues
+            const settledAmount = total - balance
+
+            let discountAmount = 0
+            if (percent) {
+                discountAmount = (balance * value) / 100
+            } else {
+                discountAmount = value
+            }
+
+            await receivable.update({
+                discount: discountAmount,
+                total: amount + fee - discountAmount,
+                balance: amount + fee - discountAmount - settledAmount,
+            })
+            await req.transaction.commit()
+            return res.json(receivable)
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
+    }
+
+    async fullSettlement(req, res, next) {
+        try {
+            const {
+                receivable_id,
+                settlement_date,
+                paymentMethod,
+                settlement_memo,
+            } = req.body
+
+            const receivable = await Receivable.findByPk(receivable_id)
+            if (!receivable) {
+                return res
+                    .status(400)
+                    .json({ error: 'Receivable does not exist.' })
+            }
+
+            await Settlement.create({
+                receivable_id: receivable.id,
+                amount: receivable.dataValues.balance,
+                settlement_date,
+                paymentmethod_id: paymentMethod.id,
+                settlement_memo,
+                created_by: req.userId,
+            })
+
+            await receivable.update({
+                status: 'Paid',
+                balance: 0,
+                settlement_date,
+                updated_by: req.userId,
+            })
+
+            await req.transaction.commit()
+            return res.json(receivable)
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
+    }
+
+    async partialSettlement(req, res, next) {
+        try {
+            const {
+                receivable_id,
+                settlement_amount,
+                settlement_date,
+                paymentMethod,
+                settlement_memo,
+            } = req.body
+
+            const receivable = await Receivable.findByPk(receivable_id)
+            if (!receivable) {
+                return res
+                    .status(400)
+                    .json({ error: 'Receivable does not exist.' })
+            }
+
+            await Settlement.create({
+                receivable_id: receivable.id,
+                amount: parseFloat(settlement_amount),
+                settlement_date,
+                paymentmethod_id: paymentMethod.id,
+                settlement_memo,
+                created_by: req.userId,
+            })
+
+            await receivable.update({
+                status: 'Partial Paid',
+                balance:
+                    receivable.dataValues.balance -
+                    parseFloat(settlement_amount),
+                updated_by: req.userId,
+            })
+
+            await req.transaction.commit()
+            return res.json(receivable)
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
+    }
+
     async renegociation(req, res, next) {
         try {
             let {
@@ -2421,7 +2549,7 @@ class ReceivableController {
                         [Op.lt]: receivable.dataValues.due_date,
                     },
                     status: {
-                        [Op.in]: ['Pending', 'Parcial Paid'],
+                        [Op.in]: ['Pending', 'Partial Paid'],
                     },
                     canceled_at: null,
                 },
