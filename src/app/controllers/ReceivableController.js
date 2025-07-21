@@ -29,6 +29,7 @@ import Receivablediscounts from '../models/Receivablediscounts.js'
 import Studentdiscount from '../models/Studentdiscount.js'
 import Settlement from '../models/Settlement.js'
 import {
+    createPaidTimeline,
     settlement,
     verifyAndCancelTextToPayTransaction,
     verifyAndCreateTextToPayTransaction,
@@ -59,6 +60,7 @@ import xl from 'excel4node'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
+import { SettlementMail } from '../views/mails/SettlementMail.js'
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
@@ -2270,9 +2272,11 @@ class ReceivableController {
                     .json({ error: 'Receivable does not exist.' })
             }
 
+            const settlementAmount = receivable.dataValues.balance
+
             await Settlement.create({
                 receivable_id: receivable.id,
-                amount: receivable.dataValues.balance,
+                amount: settlementAmount,
                 settlement_date,
                 paymentmethod_id: paymentMethod.id,
                 settlement_memo,
@@ -2284,6 +2288,25 @@ class ReceivableController {
                 balance: 0,
                 settlement_date,
                 updated_by: req.userId,
+            })
+
+            const recurrence = await Recurrence.findOne({
+                where: {
+                    issuer_id: receivable.dataValues.issuer_id,
+                    canceled_at: null,
+                },
+            })
+            if (recurrence) {
+                await generateRecurrenceReceivables({
+                    recurrence,
+                    clearAll: false,
+                })
+            }
+
+            createPaidTimeline(receivable_id)
+            SettlementMail({
+                receivable_id: receivable_id,
+                amount: settlementAmount,
             })
 
             await req.transaction.commit()
@@ -2326,6 +2349,11 @@ class ReceivableController {
                     receivable.dataValues.balance -
                     parseFloat(settlement_amount),
                 updated_by: req.userId,
+            })
+
+            SettlementMail({
+                receivable_id: receivable_id,
+                amount: parseFloat(settlement_amount),
             })
 
             await req.transaction.commit()
