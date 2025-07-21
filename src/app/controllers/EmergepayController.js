@@ -111,10 +111,11 @@ export async function settlement(
             paymentmethod_id = receivable.dataValues.paymentmethod_id
         }
 
-        const partial =
-            receivable.dataValues.manual_discount !== 0 &&
-            // amountPaidBalance !== 0 &&
-            amountPaidBalance < receivable.dataValues.balance
+        // const partial =
+        //     receivable.dataValues.manual_discount !== 0 &&
+        //     amountPaidBalance < receivable.dataValues.balance
+
+        const partial = amountPaidBalance < receivable.dataValues.balance
 
         await Settlement.create(
             {
@@ -137,7 +138,7 @@ export async function settlement(
             {
                 status: partial ? 'Partial Paid' : 'Paid',
                 balance: (
-                    receivable.balance -
+                    receivable.dataValues.balance -
                     (partial
                         ? amountPaidBalance
                         : receivable.dataValues.balance)
@@ -486,6 +487,8 @@ class EmergepayController {
                     uniqueTransId,
                 } = emergeData
 
+                console.log({ emergeData })
+
                 await Emergepaytransaction.create({
                     account_card_type: accountCardType,
                     account_entry_method: accountEntryMethod,
@@ -540,9 +543,9 @@ class EmergepayController {
                             {
                                 receivable_id: receivable.id,
                                 amountPaidBalance:
-                                    amountProcessed <
+                                    parseFloat(amountProcessed) <
                                     receivable.dataValues.balance
-                                        ? amountProcessed
+                                        ? parseFloat(amountProcessed)
                                         : receivable.dataValues.balance,
                                 settlement_date: format(new Date(), 'yyyyMMdd'),
                                 paymentmethod_id: paymentMethod.id,
