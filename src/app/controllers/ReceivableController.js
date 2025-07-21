@@ -2352,10 +2352,13 @@ class ReceivableController {
                 updated_by: req.userId,
             })
 
-            await SettlementMail({
-                receivable_id: receivable_id,
-                amount: parseFloat(settlement_amount),
-            })
+            const method = await PaymentMethod.findByPk(paymentMethod.id)
+            if (method.dataValues.platform !== 'Gravity - Online') {
+                SettlementMail({
+                    receivable_id: receivable_id,
+                    amount: parseFloat(settlement_amount),
+                })
+            }
 
             await req.transaction.commit()
             return res.json(receivable)
