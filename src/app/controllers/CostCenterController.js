@@ -208,9 +208,6 @@ class CostcentersController {
                     ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
                     ...typeSearches,
-                    father_code: {
-                        [Op.ne]: null,
-                    },
                 },
                 include: [
                     {

@@ -5,8 +5,8 @@ module.exports = {
             [
                 {
                     father_id: 4,
-                    alias: 'center-costs',
-                    name: 'Center Costs',
+                    alias: 'cost-centers',
+                    name: 'Cost Centers',
                 },
             ],
             {}
