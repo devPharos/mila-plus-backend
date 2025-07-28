@@ -18,51 +18,51 @@ class PartnersAndInfluencers extends Model {
                 },
                 partners_name: {
                     type: Sequelize.STRING,
-                    allowNull: false
+                    allowNull: false,
                 },
                 contacts_name: {
                     type: Sequelize.STRING,
-                    allowNull: true
+                    allowNull: true,
                 },
                 social_network_type: {
                     type: Sequelize.NUMBER,
-                    allowNull: true
+                    allowNull: true,
                 },
                 social_network: {
                     type: Sequelize.STRING,
-                    allowNull: true
+                    allowNull: true,
                 },
                 compensation: {
                     type: Sequelize.STRING,
-                    allowNull: true
+                    allowNull: true,
                 },
                 compensation_value: {
                     type: Sequelize.FLOAT,
-                    allowNull: true
+                    allowNull: true,
                 },
                 state: {
                     type: Sequelize.STRING,
-                    allowNull: true
+                    allowNull: true,
                 },
                 city: {
                     type: Sequelize.STRING,
-                    allowNull: true
+                    allowNull: true,
                 },
                 zip: {
                     type: Sequelize.STRING,
-                    allowNull: true
+                    allowNull: true,
                 },
                 birth_country: {
                     type: Sequelize.STRING,
-                    allowNull: true
+                    allowNull: true,
                 },
                 address: {
                     type: Sequelize.TEXT,
-                    allowNull: true
+                    allowNull: true,
                 },
                 phone: {
                     type: Sequelize.STRING,
-                    allowNull: true
+                    allowNull: true,
                 },
                 created_at: {
                     allowNull: false,
@@ -90,8 +90,8 @@ class PartnersAndInfluencers extends Model {
                 },
             },
             {
-              sequelize,
-              tableName: 'partners_and_influencers',
+                sequelize,
+                tableName: 'partners_and_influencers',
             }
         )
 
@@ -100,6 +100,10 @@ class PartnersAndInfluencers extends Model {
 
     static associate(models) {
         this.belongsTo(models.Filial, { foreignKey: 'filial_id', as: 'filial' })
+        this.hasMany(models.Student, {
+            foreignKey: 'partners_and_influencer_id',
+            as: 'students',
+        })
     }
 }
 
