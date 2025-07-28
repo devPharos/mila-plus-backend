@@ -1,6 +1,4 @@
-import Sequelize, { Op } from 'sequelize'
-import MailLog from '../../Mails/MailLog.js'
-import databaseConfig from '../../config/database.js'
+import { Op } from 'sequelize'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import Payee from '../models/Payee.js'
@@ -24,6 +22,7 @@ import BankAccounts from '../models/BankAccount.js'
 import xl from 'excel4node'
 import fs from 'fs'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
+import Costcenter from '../models/Costcenter.js'
 
 class PayeeController {
     async index(req, res, next) {
@@ -127,6 +126,13 @@ class PayeeController {
                         attributes: ['id', 'name'],
                     },
                     {
+                        model: Costcenter,
+                        as: 'costcenter',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'name'],
+                    },
+                    {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
                         required: false,
@@ -206,6 +212,12 @@ class PayeeController {
                         where: { canceled_at: null },
                     },
                     {
+                        model: Costcenter,
+                        as: 'costcenter',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
                         required: false,
@@ -254,6 +266,7 @@ class PayeeController {
                 memo,
                 contract_number,
                 chartOfAccount,
+                costCenter,
                 merchant,
                 paymentMethod,
                 filial,
@@ -300,6 +313,13 @@ class PayeeController {
                 })
             }
 
+            const costCenterExists = await Costcenter.findByPk(costCenter.id)
+            if (!costCenterExists) {
+                return res.status(400).json({
+                    error: 'Cost Center does not exist.',
+                })
+            }
+
             const paymentMethodExists = await PaymentMethod.findByPk(
                 paymentMethod.id
             )
@@ -341,6 +361,7 @@ class PayeeController {
                     memo,
                     contract_number,
                     chartofaccount_id: chartOfAccountExists.id,
+                    costcenter_id: costCenterExists.id,
                     is_recurrence: false,
                     status: 'Pending',
                     status_date: format(new Date(), 'yyyyMMdd'),
@@ -371,6 +392,7 @@ class PayeeController {
             const {
                 merchant = null,
                 chartOfAccount = null,
+                costCenter = null,
                 paymentMethod = null,
                 filial,
                 invoice_number = null,
@@ -399,6 +421,16 @@ class PayeeController {
                 return res.status(400).json({
                     error: 'Chart of Account does not exist.',
                 })
+            }
+
+            let costCenterExists = null
+            if (costCenter) {
+                costCenterExists = await Costcenter.findByPk(costCenter.id)
+                if (!costCenterExists) {
+                    return res.status(400).json({
+                        error: 'Cost Center does not exist.',
+                    })
+                }
             }
 
             const paymentMethodExists = await PaymentMethod.findByPk(
@@ -457,6 +489,7 @@ class PayeeController {
                     ...req.body,
                     filial_id: filialExists.id,
                     chartofaccount_id: chartOfAccountExists.id,
+                    costcenter_id: costCenterExists?.id,
                     issuer_id: issuer.id,
                     paymentmethod_id: paymentMethodExists.id,
                     total: parseFloat(
@@ -1202,6 +1235,47 @@ class PayeeController {
                 }
             })
             return ret
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
+    }
+
+    async classify(req, res, next) {
+        try {
+            const { payee_id } = req.params
+            const { costCenter, chartOfAccount } = req.body
+            const payee = await Payee.findByPk(payee_id)
+            if (!payee) {
+                return res.status(400).json({
+                    error: 'Payee does not exist.',
+                })
+            }
+
+            const chartOfAccountExists = await ChartOfAccount.findByPk(
+                chartOfAccount.id
+            )
+            if (!chartOfAccountExists) {
+                return res.status(400).json({
+                    error: 'Chart of Account does not exist.',
+                })
+            }
+
+            const costCenterExists = await Costcenter.findByPk(costCenter.id)
+            if (!costCenterExists) {
+                return res.status(400).json({
+                    error: 'Cost Center does not exist.',
+                })
+            }
+
+            await payee.update({
+                costcenter_id: costCenterExists.id,
+                chartofaccount_id: chartOfAccountExists.id,
+            })
+
+            await req.transaction.commit()
+
+            return res.json(payee)
         } catch (err) {
             err.transaction = req.transaction
             next(err)

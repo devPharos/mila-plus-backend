@@ -16,6 +16,7 @@ import FilialPriceList from '../app/models/FilialPriceList.js'
 import FilialDiscountList from '../app/models/FilialDiscountList.js'
 import Filialtype from '../app/models/Filialtype.js'
 import Parameter from '../app/models/Parameter.js'
+import Costcenter from '../app/models/Costcenter.js'
 import Chartofaccount from '../app/models/Chartofaccount.js'
 import Language from '../app/models/Language.js'
 import Programcategory from '../app/models/Programcategory.js'
@@ -42,6 +43,7 @@ import Bank from '../app/models/Bank.js'
 import Merchants from '../app/models/Merchants.js'
 import BankAccounts from '../app/models/BankAccount.js'
 import MerchantXChartOfAccount from '../app/models/MerchantXChartOfAccounts.js'
+import MerchantXCostCenter from '../app/models/MerchantXCostCenter.js'
 import Issuer from '../app/models/Issuer.js'
 import Payee from '../app/models/Payee.js'
 import PaymentCriteria from '../app/models/PaymentCriteria.js'
@@ -91,6 +93,7 @@ const models = [
     Classroom,
     Milauser,
     Company,
+    Costcenter,
     Chartofaccount,
     Document,
     Emergepaytransaction,
@@ -128,6 +131,7 @@ const models = [
     MenuHierarchyXGroups,
     Merchants,
     MerchantXChartOfAccount,
+    MerchantXCostCenter,
     Parameter,
     Parcelowpaymentlink,
     Parcelowtransaction,

@@ -45,6 +45,10 @@ class Payeerecurrence extends Model {
                     type: Sequelize.INTEGER,
                     allowNull: false,
                 },
+                costcenter_id: {
+                    type: Sequelize.INTEGER,
+                    allowNull: true,
+                },
                 paymentcriteria_id: {
                     type: Sequelize.UUID,
                     allowNull: false,

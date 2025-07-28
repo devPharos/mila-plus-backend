@@ -1,13 +1,12 @@
 import Sequelize, { Model } from 'sequelize'
 
-class Chartofaccount extends Model {
+class Costcenter extends Model {
     static init(sequelize) {
         super.init(
             {
                 company_id: Sequelize.INTEGER,
                 code: Sequelize.STRING,
                 name: Sequelize.STRING,
-                father_id: Sequelize.INTEGER,
                 visibility: Sequelize.STRING,
                 father_code: Sequelize.STRING,
                 profit_and_loss: Sequelize.BOOLEAN,
@@ -28,12 +27,7 @@ class Chartofaccount extends Model {
         return this
     }
     static associate(models) {
-        // this.hasOne(models.Chartofaccount, {
-        //     sourceKey: 'father_id',
-        //     foreignKey: 'id',
-        //     as: 'Father',
-        // })
-        this.hasOne(models.Chartofaccount, {
+        this.hasOne(models.Costcenter, {
             sourceKey: 'father_code',
             foreignKey: 'code',
             as: 'Father',
@@ -41,4 +35,4 @@ class Chartofaccount extends Model {
     }
 }
 
-export default Chartofaccount
+export default Costcenter

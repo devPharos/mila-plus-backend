@@ -16,7 +16,6 @@ import {
     addYears,
     differenceInDays,
     format,
-    lastDayOfMonth,
     parseISO,
     subDays,
     subMonths,
@@ -54,13 +53,13 @@ import {
     verifyFilialSearch,
 } from '../functions/index.js'
 import Chartofaccount from '../models/Chartofaccount.js'
-import { getDb } from '../../config/mongodb.js'
 
 import xl from 'excel4node'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
 import { SettlementMail } from '../views/mails/SettlementMail.js'
+import Costcenter from '../models/Costcenter.js'
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
@@ -1488,6 +1487,13 @@ class ReceivableController {
                         attributes: ['id', 'name'],
                     },
                     {
+                        model: Costcenter,
+                        as: 'costcenter',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'name'],
+                    },
+                    {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
                         required: false,
@@ -1574,6 +1580,12 @@ class ReceivableController {
                     {
                         model: ChartOfAccount,
                         as: 'chartOfAccount',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Costcenter,
+                        as: 'costcenter',
                         required: false,
                         where: { canceled_at: null },
                     },
@@ -1668,6 +1680,7 @@ class ReceivableController {
                 issuer,
                 paymentMethod,
                 chartOfAccount,
+                costCenter,
                 amount,
                 fee,
                 discount,
@@ -1712,6 +1725,13 @@ class ReceivableController {
                 })
             }
 
+            const costCenterExists = await Costcenter.findByPk(costCenter.id)
+            if (!costCenterExists) {
+                return res.status(400).json({
+                    error: 'Cost Center does not exist.',
+                })
+            }
+
             const newReceivable = await Receivable.create(
                 {
                     company_id: 1,
@@ -1737,6 +1757,7 @@ class ReceivableController {
                     contract_number,
                     authorization_code,
                     chartofaccount_id: chartOfAccountExists.id,
+                    costcenter_id: costCenterExists.id,
                     is_recurrence: false,
                     status: 'Pending',
                     status_date: format(new Date(), 'yyyyMMdd'),
@@ -1880,6 +1901,7 @@ class ReceivableController {
                 issuer,
                 paymentMethod,
                 chartOfAccount,
+                costCenter,
                 amount = 0,
                 fee = 0,
                 discount = 0,
@@ -1917,6 +1939,13 @@ class ReceivableController {
                 })
             }
 
+            const costCenterExists = await Costcenter.findByPk(costCenter.id)
+            if (!costCenterExists) {
+                return res.status(400).json({
+                    error: 'Cost Center does not exist.',
+                })
+            }
+
             const receivableExists = await Receivable.findByPk(receivable_id, {
                 where: { canceled_at: null },
                 include: [
@@ -1945,6 +1974,7 @@ class ReceivableController {
                     issuer_id: issuerExists.id,
                     paymentmethod_id: paymentMethodExists.id,
                     chartofaccount_id: chartOfAccountExists.id,
+                    costcenter_id: costCenterExists.id,
                     total:
                         parseFloat(amount) +
                         parseFloat(fee) -
@@ -2279,7 +2309,7 @@ class ReceivableController {
                 amount: settlementAmount,
                 settlement_date,
                 paymentmethod_id: paymentMethod.id,
-                settlement_memo,
+                memo: settlement_memo,
                 created_by: req.userId,
             })
 
@@ -2314,6 +2344,8 @@ class ReceivableController {
             }
 
             await req.transaction.commit()
+            await verifyAndCancelTextToPayTransaction(receivable_id)
+            await verifyAndCancelParcelowPaymentLink(receivable_id)
             return res.json(receivable)
         } catch (err) {
             err.transaction = req.transaction
@@ -2343,7 +2375,7 @@ class ReceivableController {
                 amount: parseFloat(settlement_amount),
                 settlement_date,
                 paymentmethod_id: paymentMethod.id,
-                settlement_memo,
+                memo: settlement_memo,
                 created_by: req.userId,
             })
 
@@ -2365,6 +2397,9 @@ class ReceivableController {
             }
 
             await req.transaction.commit()
+
+            await verifyAndCancelTextToPayTransaction(receivable_id)
+            await verifyAndCancelParcelowPaymentLink(receivable_id)
             return res.json(receivable)
         } catch (err) {
             err.transaction = req.transaction
@@ -2491,6 +2526,7 @@ class ReceivableController {
                         status: 'Pending',
                         status_date: format(new Date(), 'yyyyMMdd'),
                         chartofaccount_id: firstReceivable.chartofaccount_id,
+                        costcenter_id: firstReceivable.costcenter_id,
                         paymentcriteria_id: paymentCriteria.id,
                         notification_sent: false,
                         renegociation_from: renegociation.id,
@@ -3253,6 +3289,47 @@ class ReceivableController {
             // await receivable.update({
             //     notification_sent: true,
             // })
+            return res.json(receivable)
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
+    }
+
+    async classify(req, res, next) {
+        try {
+            const { receivable_id } = req.params
+            const { costCenter, chartOfAccount } = req.body
+            const receivable = await Receivable.findByPk(receivable_id)
+            if (!receivable) {
+                return res.status(400).json({
+                    error: 'Receivable does not exist.',
+                })
+            }
+
+            const chartOfAccountExists = await ChartOfAccount.findByPk(
+                chartOfAccount.id
+            )
+            if (!chartOfAccountExists) {
+                return res.status(400).json({
+                    error: 'Chart of Account does not exist.',
+                })
+            }
+
+            const costCenterExists = await Costcenter.findByPk(costCenter.id)
+            if (!costCenterExists) {
+                return res.status(400).json({
+                    error: 'Cost Center does not exist.',
+                })
+            }
+
+            await receivable.update({
+                costcenter_id: costCenterExists.id,
+                chartofaccount_id: chartOfAccountExists.id,
+            })
+
+            await req.transaction.commit()
+
             return res.json(receivable)
         } catch (err) {
             err.transaction = req.transaction

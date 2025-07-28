@@ -65,6 +65,8 @@ import ChartsController from './app/controllers/ChartsController.js'
 import AbsenseControlController from './app/controllers/AbsenseControlController.js'
 import PartnersAndInfluencersController from './app/controllers/PartnersAndInfluencersController.js'
 import StudentDashboardController from './app/controllers/StudentDashboardController.js'
+import CostCenterController from './app/controllers/CostCenterController.js'
+import MerchantXCostCenterController from './app/controllers/MerchantXCostCenterController.js'
 
 const routes = new Router()
 
@@ -246,6 +248,12 @@ routes.put(
     '/chartofaccounts/:chartofaccount_id',
     ChartOfAccountsController.update
 )
+
+routes.get('/costcenters', CostCenterController.index)
+routes.get('/costcenters/list', CostCenterController.list)
+routes.get('/costcenters/:costcenter_id', CostCenterController.show)
+routes.post('/costcenters', CostCenterController.store)
+routes.put('/costcenters/:costcenter_id', CostCenterController.update)
 
 routes.get('/languages', LanguageController.index)
 routes.get('/languages/:language_id', LanguageController.show)
@@ -450,6 +458,22 @@ routes.delete(
     MerchantXChartOfAccountController.delete
 )
 
+// merchant x center costs
+routes.get('/merchantxcostcenters', MerchantXCostCenterController.index)
+routes.get(
+    '/merchantxcostcenters/:merchantxcostcenter_id',
+    MerchantXCostCenterController.show
+)
+routes.post('/merchantxcostcenters', MerchantXCostCenterController.store)
+routes.put(
+    '/merchantxcostcenters/:merchantxcostcenter_id',
+    MerchantXCostCenterController.update
+)
+routes.delete(
+    '/merchantxcostcenters/:merchantxcostcenter_id',
+    MerchantXCostCenterController.delete
+)
+
 // payee
 routes.get('/payee', PayeeController.index)
 routes.get('/payee/:payee_id', PayeeController.show)
@@ -459,6 +483,7 @@ routes.put('/payee-value/:payee_id', PayeeController.updateValue)
 routes.delete('/payee/:payee_id', PayeeController.delete)
 routes.post('/payee/settlement', PayeeController.settlement)
 routes.post('/payee/excel', PayeeController.excel)
+routes.put('/payee/classify/:payee_id', PayeeController.classify)
 
 // settlements
 routes.get('/payeesettlements', PayeeSettlementController.index)
@@ -526,6 +551,10 @@ routes.post('/receivables/settlement', ReceivableController.settlement)
 routes.post('/receivables/renegociation', ReceivableController.renegociation)
 routes.post('/receivables/feeadjustment', ReceivableController.feeAdjustment)
 routes.post('/receivables/excel', ReceivableController.excel)
+routes.put(
+    '/receivables/classify/:receivable_id',
+    ReceivableController.classify
+)
 routes.post(
     '/receivables/send-invoice/:receivable_id',
     ReceivableController.sendInvoice

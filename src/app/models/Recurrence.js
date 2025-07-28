@@ -49,6 +49,10 @@ class Recurrence extends Model {
                     type: Sequelize.INTEGER,
                     allowNull: false,
                 },
+                costcenter_id: {
+                    type: Sequelize.INTEGER,
+                    allowNull: true,
+                },
                 card_type: {
                     type: Sequelize.STRING,
                     allowNull: true,

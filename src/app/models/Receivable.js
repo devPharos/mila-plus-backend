@@ -111,6 +111,14 @@ class Receivable extends Model {
                         key: 'id',
                     },
                 },
+                costcenter_id: {
+                    type: Sequelize.INTEGER,
+                    allowNull: true,
+                    references: {
+                        model: 'costcenters',
+                        key: 'id',
+                    },
+                },
                 paymentcriteria_id: {
                     type: Sequelize.UUID,
                     allowNull: true,
@@ -241,6 +249,10 @@ class Receivable extends Model {
         this.hasMany(models.Textpaymenttransaction, {
             foreignKey: 'receivable_id',
             as: 'textpaymenttransactions',
+        })
+        this.belongsTo(models.Costcenter, {
+            foreignKey: 'costcenter_id',
+            as: 'costcenter',
         })
     }
 }
