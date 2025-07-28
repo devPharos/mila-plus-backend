@@ -145,7 +145,7 @@ export async function generateRecurrenceReceivables({
         const paid = receivables.filter(
             (receivable) =>
                 receivable.dataValues.status === 'Paid' ||
-                receivable.dataValues.status === 'Parcial Paid'
+                receivable.dataValues.status === 'Partial Paid'
         )
 
         if (paid.length > 0) {

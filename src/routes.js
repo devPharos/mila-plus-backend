@@ -534,6 +534,12 @@ routes.get(
     '/receivables/has-invoice-before/:receivable_id',
     ReceivableController.hasInvoiceBefore
 )
+routes.post('/receivables/apply-discounts', ReceivableController.applyDiscounts)
+routes.post('/receivables/full-settlement', ReceivableController.fullSettlement)
+routes.post(
+    '/receivables/partial-settlement',
+    ReceivableController.partialSettlement
+)
 routes.get('/receivables-dashboard', ReceivableController.dashboard)
 
 // settlements

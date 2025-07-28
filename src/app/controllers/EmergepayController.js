@@ -101,7 +101,7 @@ export async function settlement(
         }
 
         if (
-            receivable.dataValues.status === 'Parcial Paid' &&
+            receivable.dataValues.status === 'Partial Paid' &&
             receivable.dataValues.balance < amountPaidBalance
         ) {
             return false
@@ -111,15 +111,16 @@ export async function settlement(
             paymentmethod_id = receivable.dataValues.paymentmethod_id
         }
 
-        const parcial =
-            receivable.dataValues.manual_discount !== 0 &&
-            // amountPaidBalance !== 0 &&
-            amountPaidBalance < receivable.dataValues.balance
+        // const partial =
+        //     receivable.dataValues.manual_discount !== 0 &&
+        //     amountPaidBalance < receivable.dataValues.balance
+
+        const partial = amountPaidBalance < receivable.dataValues.balance
 
         await Settlement.create(
             {
                 receivable_id: receivable.id,
-                amount: parcial
+                amount: partial
                     ? amountPaidBalance
                     : amountPaidBalance === 0
                     ? 0
@@ -135,10 +136,10 @@ export async function settlement(
         )
         await receivable.update(
             {
-                status: parcial ? 'Parcial Paid' : 'Paid',
+                status: partial ? 'Partial Paid' : 'Paid',
                 balance: (
-                    receivable.balance -
-                    (parcial
+                    receivable.dataValues.balance -
+                    (partial
                         ? amountPaidBalance
                         : receivable.dataValues.balance)
                 ).toFixed(2),
@@ -484,7 +485,6 @@ class EmergepayController {
                     transactionReference,
                     transactionType,
                     uniqueTransId,
-                    justTransaction = false,
                 } = emergeData
 
                 await Emergepaytransaction.create({
@@ -541,7 +541,10 @@ class EmergepayController {
                             {
                                 receivable_id: receivable.id,
                                 amountPaidBalance:
-                                    receivable.dataValues.balance,
+                                    parseFloat(amountProcessed) <
+                                    receivable.dataValues.balance
+                                        ? parseFloat(amountProcessed)
+                                        : receivable.dataValues.balance,
                                 settlement_date: format(new Date(), 'yyyyMMdd'),
                                 paymentmethod_id: paymentMethod.id,
                             },

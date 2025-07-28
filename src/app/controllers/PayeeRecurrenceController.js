@@ -83,7 +83,7 @@ export async function generateRecurrencePayees({
         const paid = payees.filter(
             (payee) =>
                 payee.dataValues.status === 'Paid' ||
-                payee.dataValues.status === 'Parcial Paid'
+                payee.dataValues.status === 'Partial Paid'
         )
 
         if (paid.length > 0) {
