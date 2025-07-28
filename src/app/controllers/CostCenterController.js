@@ -9,7 +9,7 @@ import {
 } from '../functions/index.js'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
 import Costcenter from '../models/Costcenter.js'
-import MerchantXCostcenter from '../models/MerchantXCostcenter.js'
+import MerchantXCostCenter from '../models/MerchantXCostCenter.js'
 const { Op } = Sequelize
 
 class CostcentersController {
@@ -130,7 +130,7 @@ class CostcentersController {
                     {
                         include: [
                             {
-                                model: MerchantXCostcenter,
+                                model: MerchantXCostCenter,
                                 as: 'merchantxcostcenters',
                                 required: false,
                                 where: {
