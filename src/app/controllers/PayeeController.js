@@ -1252,25 +1252,31 @@ class PayeeController {
                 })
             }
 
-            const chartOfAccountExists = await ChartOfAccount.findByPk(
-                chartOfAccount.id
-            )
-            if (!chartOfAccountExists) {
-                return res.status(400).json({
-                    error: 'Chart of Account does not exist.',
-                })
+            let chartOfAccountExists = null
+            if (chartOfAccount.id) {
+                chartOfAccountExists = await ChartOfAccount.findByPk(
+                    chartOfAccount.id
+                )
+                if (!chartOfAccountExists) {
+                    return res.status(400).json({
+                        error: 'Chart of Account does not exist.',
+                    })
+                }
             }
 
-            const costCenterExists = await Costcenter.findByPk(costCenter.id)
-            if (!costCenterExists) {
-                return res.status(400).json({
-                    error: 'Cost Center does not exist.',
-                })
+            let costCenterExists = null
+            if (costCenter.id) {
+                costCenterExists = await Costcenter.findByPk(costCenter.id)
+                if (!costCenterExists) {
+                    return res.status(400).json({
+                        error: 'Cost Center does not exist.',
+                    })
+                }
             }
 
             await payee.update({
-                costcenter_id: costCenterExists.id,
-                chartofaccount_id: chartOfAccountExists.id,
+                costcenter_id: costCenterExists?.id,
+                chartofaccount_id: chartOfAccountExists?.id,
             })
 
             await req.transaction.commit()
