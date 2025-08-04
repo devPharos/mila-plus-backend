@@ -796,7 +796,9 @@ export default async function enrollment(doc = null, id = '') {
             text: `DEPENDENT INFORMATION (F-2 VISA - SPOUSE AND CHILDREN)`,
         })
 
+        let index = 0
         for (let dependent of enrollmentDependents) {
+            index++
             // console.log(dependent.dataValues)
             if (dependent) {
                 helperHeight += 36
@@ -804,7 +806,7 @@ export default async function enrollment(doc = null, id = '') {
                 doc.fillColor('#111')
                     .fontSize(8)
                     .font('Helvetica-Bold')
-                    .text(`DEPENDENT #${index + 1} CONTACT:`, 30, helperHeight)
+                    .text(`DEPENDENT #${index} CONTACT:`, 30, helperHeight)
                     .font('Helvetica')
 
                 helperHeight += 12
