@@ -131,6 +131,10 @@ class Recurrence extends Model {
             foreignKey: 'chartofaccount_id',
             as: 'chartOfAccount',
         })
+        this.belongsTo(models.Costcenter, {
+            foreignKey: 'costcenter_id',
+            as: 'costCenter',
+        })
         this.belongsTo(models.PaymentCriteria, {
             foreignKey: 'paymentcriteria_id',
             as: 'paymentCriteria',

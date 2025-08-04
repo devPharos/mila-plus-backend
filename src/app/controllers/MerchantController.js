@@ -93,7 +93,7 @@ class MerchantController {
                         include: [
                             {
                                 model: Costcenter,
-                                as: 'costcenter',
+                                as: 'costCenter',
                                 required: false,
                                 where: {
                                     canceled_at: null,
@@ -183,7 +183,7 @@ class MerchantController {
                         include: [
                             {
                                 model: Costcenter,
-                                as: 'costcenter',
+                                as: 'costCenter',
                                 required: false,
                                 where: {
                                     canceled_at: null,

@@ -27,6 +27,7 @@ import {
     verifyFilialSearch,
 } from '../functions/index.js'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
+import Costcenter from '../models/Costcenter.js'
 
 export async function generateRecurrencePayees({
     recurrence = null,
@@ -322,6 +323,12 @@ class PayeeRecurrenceController {
                             where: { canceled_at: null },
                         },
                         {
+                            model: Costcenter,
+                            as: 'costCenter',
+                            required: false,
+                            where: { canceled_at: null },
+                        },
+                        {
                             model: PaymentCriteria,
                             as: 'paymentCriteria',
                             required: false,
@@ -353,6 +360,7 @@ class PayeeRecurrenceController {
                 amount,
                 active,
                 chartOfAccount,
+                costCenter,
                 paymentMethod,
                 paymentCriteria,
                 memo,
@@ -387,6 +395,16 @@ class PayeeRecurrenceController {
                 return res.status(400).json({
                     error: 'Chart of Account does not exist.',
                 })
+            }
+
+            let costCenterExists = null
+            if (costCenter.id) {
+                costCenterExists = await Costcenter.findByPk(costCenter.id)
+                if (!costCenterExists) {
+                    return res.status(400).json({
+                        error: 'Cost Center does not exist.',
+                    })
+                }
             }
 
             const merchantExists = await Merchants.findByPk(merchant.id, {
@@ -432,8 +450,9 @@ class PayeeRecurrenceController {
                     paymentmethod_id: paymentMethodExists.id,
                     amount: amount ? parseFloat(amount).toFixed(2) : 0,
                     active: active,
-                    chartofaccount_id: chartOfAccountExists.id,
-                    paymentcriteria_id: paymentCriteriaExists.id,
+                    chartofaccount_id: chartOfAccountExists?.id,
+                    costcenter_id: costCenterExists?.id,
+                    paymentcriteria_id: paymentCriteriaExists?.id,
                     memo: memo,
 
                     created_by: req.userId,
@@ -476,48 +495,74 @@ class PayeeRecurrenceController {
                 first_due_date,
                 amount,
                 chartOfAccount,
+                costCenter,
                 paymentMethod,
                 paymentCriteria,
                 memo,
                 merchant,
             } = req.body
 
-            const paymentMethodExists = await PaymentMethod.findByPk(
-                paymentMethod.id
-            )
-
-            if (!paymentMethodExists) {
-                return res.status(400).json({
-                    error: 'Payment Method does not exist.',
-                })
+            let paymentMethodExists = null
+            if (paymentMethod.id) {
+                paymentMethodExists = await PaymentMethod.findByPk(
+                    paymentMethod.id
+                )
+                if (!paymentMethodExists) {
+                    return res.status(400).json({
+                        error: 'Payment Method does not exist.',
+                    })
+                }
             }
 
-            const paymentCriteriaExists = await PaymentCriteria.findByPk(
-                paymentCriteria.id
-            )
-
-            if (!paymentCriteriaExists) {
-                return res.status(400).json({
-                    error: 'Payment Criteria does not exist.',
-                })
+            let paymentCriteriaExists = null
+            if (paymentCriteria.id) {
+                paymentCriteriaExists = await PaymentCriteria.findByPk(
+                    paymentCriteria.id
+                )
+                if (!paymentCriteriaExists) {
+                    return res.status(400).json({
+                        error: 'Payment Criteria does not exist.',
+                    })
+                }
             }
 
-            const chartOfAccountExists = await Chartofaccount.findByPk(
-                chartOfAccount.id
-            )
-
-            if (!chartOfAccountExists) {
-                return res.status(400).json({
-                    error: 'Chart of Account does not exist.',
-                })
+            let chartOfAccountExists = null
+            if (chartOfAccount.id) {
+                chartOfAccountExists = await ChartOfAccount.findByPk(
+                    chartOfAccount.id
+                )
+                if (!chartOfAccountExists) {
+                    return res.status(400).json({
+                        error: 'Chart of Account does not exist.',
+                    })
+                }
             }
 
-            const issuer = await Issuer.findByPk(merchant.issuer)
+            let costCenterExists = null
+            if (costCenter.id) {
+                costCenterExists = await Costcenter.findByPk(costCenter.id)
+                if (!costCenterExists) {
+                    return res.status(400).json({
+                        error: 'Cost Center does not exist.',
+                    })
+                }
+            }
 
-            if (!issuer) {
-                return res.status(400).json({
-                    error: 'Issuer does not exist.',
+            let issuerExists = null
+            if (merchant.id) {
+                issuerExists = await Issuer.findOne({
+                    where: {
+                        company_id: 1,
+                        filial_id: filial.id,
+                        merchant_id: merchant.id,
+                        canceled_at: null,
+                    },
                 })
+                if (!issuerExists) {
+                    return res.status(400).json({
+                        error: 'Issuer does not exist.',
+                    })
+                }
             }
 
             const filialExists = await Filial.findByPk(filial.id)
@@ -530,14 +575,15 @@ class PayeeRecurrenceController {
 
             await payeeRecurrence.update(
                 {
-                    filial_id: filialExists.id,
-                    issuer_id: issuer.id,
+                    filial_id: filialExists?.id,
+                    issuer_id: issuerExists?.id,
                     entry_date,
                     first_due_date,
-                    paymentmethod_id: paymentMethodExists.id,
+                    paymentmethod_id: paymentMethodExists?.id,
                     amount: amount ? parseFloat(amount).toFixed(2) : 0,
-                    chartofaccount_id: chartOfAccountExists.id,
-                    paymentcriteria_id: paymentCriteriaExists.id,
+                    chartofaccount_id: chartOfAccountExists?.id,
+                    costcenter_id: costCenterExists?.id,
+                    paymentcriteria_id: paymentCriteriaExists?.id,
                     memo: memo,
                     updated_by: req.userId,
                 },

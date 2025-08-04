@@ -127,7 +127,7 @@ class PayeeController {
                     },
                     {
                         model: Costcenter,
-                        as: 'costcenter',
+                        as: 'costCenter',
                         required: false,
                         where: { canceled_at: null },
                         attributes: ['id', 'name'],
@@ -213,7 +213,7 @@ class PayeeController {
                     },
                     {
                         model: Costcenter,
-                        as: 'costcenter',
+                        as: 'costCenter',
                         required: false,
                         where: { canceled_at: null },
                     },
@@ -394,33 +394,20 @@ class PayeeController {
                 chartOfAccount = null,
                 costCenter = null,
                 paymentMethod = null,
-                filial,
+                filial = null,
                 invoice_number = null,
             } = req.body
 
-            const issuer = await Issuer.findOne({
-                where: {
-                    company_id: 1,
-                    filial_id: filialExists.id,
-                    merchant_id: merchant.id,
-                    canceled_at: null,
-                },
-            })
-
-            if (!issuer) {
-                return res.status(400).json({
-                    error: 'Issuer does not exist.',
-                })
-            }
-
-            const chartOfAccountExists = await ChartOfAccount.findByPk(
-                chartOfAccount.id
-            )
-
-            if (!chartOfAccountExists) {
-                return res.status(400).json({
-                    error: 'Chart of Account does not exist.',
-                })
+            let chartOfAccountExists = null
+            if (chartOfAccount.id) {
+                chartOfAccountExists = await ChartOfAccount.findByPk(
+                    chartOfAccount.id
+                )
+                if (!chartOfAccountExists) {
+                    return res.status(400).json({
+                        error: 'Chart of Account does not exist.',
+                    })
+                }
             }
 
             let costCenterExists = null
@@ -433,14 +420,16 @@ class PayeeController {
                 }
             }
 
-            const paymentMethodExists = await PaymentMethod.findByPk(
-                paymentMethod.id
-            )
-
-            if (!paymentMethodExists) {
-                return res.status(400).json({
-                    error: 'Payment Method does not exist.',
-                })
+            let paymentMethodExists = null
+            if (paymentMethod.id) {
+                paymentMethodExists = await PaymentMethod.findByPk(
+                    paymentMethod.id
+                )
+                if (!paymentMethodExists) {
+                    return res.status(400).json({
+                        error: 'Payment Method does not exist.',
+                    })
+                }
             }
 
             const payeeExists = await Payee.findByPk(payee_id, {
@@ -461,15 +450,33 @@ class PayeeController {
 
             let filialExists = null
             if (filial) {
-                filialExists = await Filial.findByPk(filial.id)?.dataValues?.id
-
-                if (!filialExists) {
-                    return res.status(400).json({
-                        error: 'Filial does not exist.',
-                    })
-                }
+                filialExists = await Filial.findByPk(filial.id)
             } else {
                 filialExists = payeeExists.dataValues.filial_id
+            }
+
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            let issuerExists = null
+            if (merchant.id) {
+                issuerExists = await Issuer.findOne({
+                    where: {
+                        company_id: 1,
+                        filial_id: filial.id,
+                        merchant_id: merchant.id,
+                        canceled_at: null,
+                    },
+                })
+            }
+
+            if (!issuerExists) {
+                return res.status(400).json({
+                    error: 'Issuer does not exist.',
+                })
             }
 
             let { amount, fee, discount } = req.body
@@ -484,14 +491,38 @@ class PayeeController {
                 discount = payeeExists.discount.toFixed(2)
             }
 
+            console.log({
+                ...req.body,
+                filial_id: filialExists?.id,
+                chartofaccount_id: chartOfAccountExists?.id,
+                costcenter_id: costCenterExists?.id,
+                issuer_id: issuerExists?.id,
+                paymentmethod_id: paymentMethodExists?.id,
+                total: parseFloat(
+                    (
+                        parseFloat(amount) +
+                        parseFloat(fee) -
+                        parseFloat(discount)
+                    ).toFixed(2)
+                ),
+                balance: parseFloat(
+                    (
+                        parseFloat(amount) +
+                        parseFloat(fee) -
+                        parseFloat(discount)
+                    ).toFixed(2)
+                ),
+                updated_by: req.userId,
+            })
+
             await payeeExists.update(
                 {
                     ...req.body,
-                    filial_id: filialExists.id,
-                    chartofaccount_id: chartOfAccountExists.id,
+                    filial_id: filialExists?.id,
+                    chartofaccount_id: chartOfAccountExists?.id,
                     costcenter_id: costCenterExists?.id,
-                    issuer_id: issuer.id,
-                    paymentmethod_id: paymentMethodExists.id,
+                    issuer_id: issuerExists?.id,
+                    paymentmethod_id: paymentMethodExists?.id,
                     total: parseFloat(
                         (
                             parseFloat(amount) +

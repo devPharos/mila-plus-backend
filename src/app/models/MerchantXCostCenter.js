@@ -79,7 +79,7 @@ class MerchantXCostCenter extends Model {
         })
         this.belongsTo(models.Costcenter, {
             foreignKey: 'costcenter_id',
-            as: 'costcenter',
+            as: 'costCenter',
         })
     }
 }

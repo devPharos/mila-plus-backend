@@ -18,7 +18,7 @@ class MerchantXCostCenterController {
                     },
                     {
                         model: Costcenter,
-                        as: 'costcenter',
+                        as: 'costCenter',
                         where: { canceled_at: null },
                     },
                     {
@@ -54,7 +54,7 @@ class MerchantXCostCenterController {
                         },
                         {
                             model: Costcenter,
-                            as: 'costcenter',
+                            as: 'costCenter',
                             where: { canceled_at: null },
                         },
                         {
