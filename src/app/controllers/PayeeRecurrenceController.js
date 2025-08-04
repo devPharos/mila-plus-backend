@@ -73,9 +73,7 @@ export async function generateRecurrencePayees({
         if (clearAll) {
             for (const payee of payees) {
                 if (payee.dataValues.status === 'Pending') {
-                    await payee.destroy({
-                        transaction: req.transaction,
-                    })
+                    await payee.destroy()
                 }
             }
         }
