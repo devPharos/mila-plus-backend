@@ -43,8 +43,7 @@ export function newheader({
     title2 = '',
     doc = null,
     maxWidth = 0,
-    date = null,
-    id = '',
+    filial = null,
 }) {
     if (!doc) return
     doc.lineWidth(20)
@@ -89,14 +88,14 @@ export function newheader({
     doc.font(myriadSemiBold)
         .fontSize(10)
         .fillColor('#fff')
-        .text('CAMPUS:', 30, 94, {
+        .text('CAMPUS:  ' + filial.name, 30, 94, {
             align: 'left',
         })
 
     doc.font(myriadSemiBold)
         .fontSize(10)
         .fillColor('#fff')
-        .text('DATE:', 202, 94, {
+        .text('DATE:  ' + format(new Date(), 'MM/dd/yyyy'), 202, 94, {
             align: 'left',
         })
 }
@@ -238,8 +237,6 @@ export function signatureLine({
 export function newfooter({
     doc = null,
     maxWidth = 0,
-    helperHeight = 0,
-    id = '',
     page = null,
     pages = null,
 }) {

@@ -52,6 +52,14 @@ const myriadBold = resolve(
     'myriad-pro',
     'MYRIADPRO-BOLD.OTF'
 )
+const myriad = resolve(
+    directory,
+    '..',
+    'assets',
+    'fonts',
+    'myriad-pro',
+    'MYRIADPRO-REGULAR.OTF'
+)
 const orange = '#ee5827'
 const blue = '#2a2773'
 
@@ -142,6 +150,8 @@ export default async function newenrollment(doc = null, id = '') {
 
     const maxWidth = doc.options.layout === 'landscape' ? 770 : 612
 
+    // Student Information
+
     doc.addPage()
 
     newheader({
@@ -151,6 +161,7 @@ export default async function newenrollment(doc = null, id = '') {
         maxWidth,
         date: signature.dataValues.created_at,
         id,
+        filial,
     })
 
     let helperHeight = 114
@@ -809,1699 +820,557 @@ export default async function newenrollment(doc = null, id = '') {
     newfooter({
         doc,
         maxWidth,
-        helperHeight,
-        id,
         page: 1,
         pages: 6 + enrollmentSponsor.length,
     })
 
+    // Dependent Information
+
     if (enrollmentDependents.length > 0) {
         doc.addPage()
 
-        header({
+        newheader({
             doc,
             title1: 'INTERNATIONAL STUDENT',
-            title2: 'APPLICATION FORM',
+            title2: 'Application Form',
             maxWidth,
             date: signature.dataValues.created_at,
             id,
+            filial,
         })
 
-        helperHeight = 86
+        let helperHeight = 114
 
-        headerLine({
+        newheaderLine({
             doc,
             maxWidth,
-            width: 342,
+            width: 420,
             topPos: helperHeight,
-            text: `DEPENDENT INFORMATION (F-2 VISA - SPOUSE AND CHILDREN)`,
+            text: `Dependent Information (F-2 VISA - Spouse and Children)`,
+            line: 2,
         })
+        helperHeight += 36
 
         let index = 0
         for (let dependent of enrollmentDependents) {
             index++
-            // console.log(dependent.dataValues)
             if (dependent) {
-                helperHeight += 36
+                helperHeight += 6
+                doc.fontSize(10)
+                    .fillColor(orange)
+                    .text('Dependent #' + index, 20, helperHeight, {
+                        width: 80,
+                        align: 'left',
+                    })
+                helperHeight += 9
+                doc.fillColor(orange).text('Contact:', 20, helperHeight, {
+                    width: 80,
+                    align: 'left',
+                })
 
-                doc.fillColor('#111')
-                    .fontSize(8)
-                    .font('Helvetica-Bold')
-                    .text(`DEPENDENT #${index} CONTACT:`, 30, helperHeight)
-                    .font('Helvetica')
+                helperHeight -= 15
 
-                helperHeight += 12
-                inputLine({
+                newinputLine({
                     doc,
-                    maxWidth,
+                    width: 270,
                     text: 'DEPENDENT FULL NAME',
-                    width: '1/2',
                     topPos: helperHeight,
-                    leftPos: '1',
+                    leftPos: 80,
                     answer: dependent.dataValues.name,
                 })
 
-                inputLine({
+                newinputLine({
                     doc,
-                    maxWidth,
+                    width: 80,
                     text: 'DEPENDENT GENDER',
-                    width: '1/4',
                     topPos: helperHeight,
-                    leftPos: '3',
+                    leftPos: 360,
                     answer: dependent.dataValues.gender,
                 })
 
-                inputLine({
+                newinputLine({
                     doc,
-                    maxWidth,
+                    width: 120,
                     text: 'DEPENDENT RELATIONSHIP',
-                    width: '1/4',
                     topPos: helperHeight,
-                    leftPos: '4',
+                    leftPos: 450,
                     answer: dependent.dataValues.relationship_type,
                 })
 
-                // inputLine({
-                //     doc,
-                //     maxWidth,
-                //     text: 'DEPENDENT DEPT1',
-                //     width: '1/4',
-                //     topPos: helperHeight,
-                //     leftPos: '4',
-                //     answer: dependent.dataValues.dept1_type,
-                // })
+                helperHeight += 36
 
-                helperHeight += 28
-
-                inputLine({
+                newinputLine({
                     doc,
-                    maxWidth,
-                    text: 'DEPENDENT EMAIL',
-                    width: '1/2',
+                    width: 290,
+                    text: 'DEPENDENT E-MAIL',
                     topPos: helperHeight,
-                    leftPos: '1',
+                    leftPos: 0,
                     answer: dependent.dataValues.email,
                 })
 
-                inputLine({
+                newinputLine({
                     doc,
-                    maxWidth,
-                    text: 'DEPENDENT PHONE',
-                    width: '1/4',
+                    width: 290,
+                    text: 'DEPENDENT NUMBER',
                     topPos: helperHeight,
-                    leftPos: '3',
+                    leftPos: 300,
                     answer: dependent.dataValues.phone,
                 })
+
+                helperHeight += 36
+
+                if (index < 7) {
+                    faixa({ doc, maxWidth, topPos: helperHeight, height: 8 })
+                }
+                helperHeight += 20
             }
         }
 
-        footer({
+        if (index < 7) {
+            for (let i = index + 1; i <= 7; i++) {
+                doc.fontSize(10)
+                    .fillColor(orange)
+                    .text('Dependent #' + i, 20, helperHeight, {
+                        width: 80,
+                        align: 'left',
+                    })
+                helperHeight += 9
+                doc.fillColor(orange).text('Contact:', 20, helperHeight, {
+                    width: 80,
+                    align: 'left',
+                })
+
+                helperHeight -= 15
+
+                newinputLine({
+                    doc,
+                    width: 270,
+                    text: 'DEPENDENT FULL NAME',
+                    topPos: helperHeight,
+                    leftPos: 80,
+                    answer: '',
+                })
+
+                newinputLine({
+                    doc,
+                    width: 80,
+                    text: 'DEPENDENT GENDER',
+                    topPos: helperHeight,
+                    leftPos: 360,
+                    answer: '',
+                })
+
+                newinputLine({
+                    doc,
+                    width: 120,
+                    text: 'DEPENDENT RELATIONSHIP',
+                    topPos: helperHeight,
+                    leftPos: 450,
+                    answer: '',
+                })
+
+                helperHeight += 36
+
+                newinputLine({
+                    doc,
+                    width: 290,
+                    text: 'DEPENDENT E-MAIL',
+                    topPos: helperHeight,
+                    leftPos: 0,
+                    answer: '',
+                })
+
+                newinputLine({
+                    doc,
+                    width: 290,
+                    text: 'DEPENDENT NUMBER',
+                    topPos: helperHeight,
+                    leftPos: 300,
+                    answer: '',
+                })
+
+                helperHeight += 36
+
+                if (i < 7) {
+                    faixa({ doc, maxWidth, topPos: helperHeight, height: 8 })
+                }
+                helperHeight += 20
+            }
+        }
+
+        newfooter({
             doc,
             maxWidth,
-            id,
             page: 2,
             pages: 6 + enrollmentSponsor.length,
         })
     }
 
-    doc.addPage()
-
-    header({
-        doc,
-        title1: 'ADMISSION TERMS &',
-        title2: 'CONDITIONS AGREEMENT',
-        maxWidth,
-        date: signature.dataValues.created_at,
-        id,
-    })
-
-    helperHeight = 86
-
-    topHelperHeight = helperHeight
-
-    // headerLine({
-    //     doc,
-    //     maxWidth,
-    //     width: 304,
-    //     topPos: helperHeight,
-    //     text: `ADMISSION TERMS & CONDITIONS AGREEMENT ${filial.dataValues.name.toUpperCase()}`,
-    // })
-
-    // helperHeight += 30
-
-    //     doc.fillColor('#111')
-    //         .fontSize(8)
-    //         .text(
-    //             `${filial.dataValues.address} - ${filial.dataValues.city} - ${filial.dataValues.state}, ${filial.dataValues.zipcode} - ${filial.dataValues.phone}`,
-    //             30,
-    //             helperHeight
-    //         )
-
-    //     helperHeight += 18
-
-    //     doc.rect(maxWidth / 2 + 10, helperHeight, 2, helperHeight + 450).fill(
-    //         '#E85F00'
-    //     )
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'FULL NAME',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '1',
-    //         answer: fullName,
-    //     })
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'DATE OF BIRTH (MM/DD/YYYY)',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '2',
-    //         answer: format(
-    //             parseISO(student.dataValues.date_of_birth),
-    //             'MM/dd/yyyy'
-    //         ),
-    //     })
-
-    //     helperHeight += 28
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'ADDRESS',
-    //         width: '1/2',
-    //         topPos: helperHeight,
-    //         leftPos: '1',
-    //         answer:
-    //             student.dataValues.home_country_address +
-    //             ', ' +
-    //             student.dataValues.home_country_city +
-    //             ', ' +
-    //             student.dataValues.home_country_state +
-    //             ', ' +
-    //             student.dataValues.home_country_country,
-    //     })
-
-    //     helperHeight += 28
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'PHONE NUMBER',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '1',
-    //         answer: student.dataValues.home_country_phone,
-    //     })
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'E-MAIL',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '2',
-    //         answer: student.dataValues.email,
-    //     })
-
-    //     helperHeight += 28
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'COUNTRY OF BIRTH',
-    //         width: '1/2',
-    //         topPos: helperHeight,
-    //         leftPos: '1',
-    //         answer: student.dataValues.birth_country,
-    //     })
-
-    //     helperHeight += 30
-
-    //     doc.fillColor('#111')
-    //         .fontSize(8)
-    //         .font('Helvetica-Bold')
-    //         .text(`EMERGENCY CONTACT:`, 30, helperHeight)
-    //         .font('Helvetica')
-
-    //     helperHeight += 12
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'NAME',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '1',
-    //         answer: enrollmentEmergency.dataValues.name,
-    //     })
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'PHONE NUMBER',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '2',
-    //         answer: enrollmentEmergency.dataValues.phone,
-    //     })
-
-    //     helperHeight += 28
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'E-MAIL',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '1',
-    //         answer: enrollmentEmergency.dataValues.email,
-    //     })
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'RELATIONSHIP',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '2',
-    //         answer: enrollmentEmergency.dataValues.relationship_type,
-    //     })
-
-    //     helperHeight += 30
-
-    //     doc.fillColor('#111')
-    //         .fontSize(8)
-    //         .font('Helvetica-Bold')
-    //         .text(`PLACEMENT TEST:`, 30, helperHeight)
-    //         .font('Helvetica')
-
-    //     helperHeight += 12
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'SCORE',
-    //         width: '1/2',
-    //         topPos: helperHeight,
-    //         leftPos: '1',
-    //     })
-
-    //     helperHeight += 30
-
-    //     doc.fillColor('#111')
-    //         .fontSize(8)
-    //         .font('Helvetica-Bold')
-    //         .text(`LEVEL ASSIGNED ESL:`, 30, helperHeight)
-    //         .font('Helvetica')
-    //         .text(
-    //             `(MILA offers 6 levels. Each level takes 16 weeks to be completed)`,
-    //             30,
-    //             helperHeight + 12
-    //         )
-
-    //     helperHeight += 24
-
-    //     doc.lineJoin('round')
-    //         .rect(30, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Basic', 45, helperHeight + 3)
-
-    //     doc.lineJoin('round')
-    //         .rect(120, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Pre-Intermediate', 135, helperHeight + 3)
-
-    //     doc.lineJoin('round')
-    //         .rect(220, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Intermediate', 235, helperHeight + 3)
-
-    //     helperHeight += 18
-
-    //     doc.lineJoin('round')
-    //         .rect(30, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Pre-Advanced', 45, helperHeight + 3)
-
-    //     doc.lineJoin('round')
-    //         .rect(120, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Advanced', 135, helperHeight + 3)
-
-    //     doc.lineJoin('round')
-    //         .rect(220, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Proficient', 235, helperHeight + 3)
-
-    //     helperHeight += 24
-
-    //     doc.fillColor('#111')
-    //         .fontSize(8)
-    //         .font('Helvetica-Bold')
-    //         .text(`LEVEL MBE:`, 30, helperHeight)
-    //         .font('Helvetica')
-    //         .text(
-    //             `(MILA offers 2 levels. Each level takes 16 weeks to be completed)`,
-    //             30,
-    //             helperHeight + 12
-    //         )
-
-    //     helperHeight += 24
-
-    //     doc.lineJoin('round')
-    //         .rect(30, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('MBE1', 45, helperHeight + 3)
-
-    //     doc.lineJoin('round')
-    //         .rect(120, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('MBE2', 135, helperHeight + 3)
-
-    //     helperHeight += 18
-
-    //     doc.fillColor('#111')
-    //         .fontSize(6)
-    //         .font('Helvetica-Bold')
-    //         .text(
-    //             `* to enroll on MBE course, check the attached course catalog Student Handbook and
-    // Mila’s web site for enrollment requirements.`,
-    //             30,
-    //             helperHeight
-    //         )
-    //         .font('Helvetica')
-
-    //     helperHeight += 24
-
-    //     doc.fillColor('#111')
-    //         .fontSize(8)
-    //         .font('Helvetica-Bold')
-    //         .text(`DAYS OF THE WEEK:`, 30, helperHeight)
-    //         .font('Helvetica')
-
-    //     helperHeight += 12
-
-    //     doc.lineJoin('round')
-    //         .rect(30, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Monday', 45, helperHeight + 3)
-
-    //     doc.lineJoin('round')
-    //         .rect(90, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Tuesday', 105, helperHeight + 3)
-
-    //     doc.lineJoin('round')
-    //         .rect(155, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Wednesday', 170, helperHeight + 3)
-
-    //     doc.lineJoin('round')
-    //         .rect(235, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Thursday', 250, helperHeight + 3)
-
-    //     helperHeight += 18
-
-    //     doc.lineJoin('round')
-    //         .rect(30, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Mon/Tue', 45, helperHeight + 3)
-
-    //     doc.lineJoin('round')
-    //         .rect(90, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Fri/Sat', 105, helperHeight + 3)
-
-    //     doc.lineJoin('round')
-    //         .rect(155, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Wed/Thu', 170, helperHeight + 3)
-
-    //     helperHeight += 18
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'FROM:',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '1',
-    //     })
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'TO:',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '2',
-    //     })
-
-    //     helperHeight += 30
-
-    //     doc.lineJoin('round')
-    //         .rect(30, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Private Classes', 45, helperHeight + 3)
-
-    //     helperHeight += 18
-
-    //     doc.lineJoin('round')
-    //         .rect(30, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text(
-    //             'Extensive English Class (16hrs/week) – Non F1 Students',
-    //             45,
-    //             helperHeight + 3
-    //         )
-
-    //     helperHeight += 18
-
-    //     doc.lineJoin('round')
-    //         .rect(30, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text(
-    //             'Intensive English Class (18hrs/week) – F1 Students',
-    //             45,
-    //             helperHeight + 3
-    //         )
-
-    //     helperHeight += 18
-
-    //     doc.lineJoin('round')
-    //         .rect(30, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Morning', 45, helperHeight + 3)
-
-    //     doc.lineJoin('round')
-    //         .rect(90, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Afternoon', 105, helperHeight + 3)
-
-    //     doc.lineJoin('round')
-    //         .rect(155, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Evening', 170, helperHeight + 3)
-
-    //     doc.lineJoin('round')
-    //         .rect(235, helperHeight, 12, 12)
-    //         .strokeColor('#E85F00')
-    //         .stroke()
-    //         .text('Full Time', 250, helperHeight + 3)
-
-    //     helperHeight += 24
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'PROGRAM START DATE:',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '1',
-    //     })
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'END DATE:',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '2',
-    //     })
-
-    //     helperHeight += 28
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'STUDENT START DATE:',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '1',
-    //     })
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'END DATE:',
-    //         width: '1/4',
-    //         topPos: helperHeight,
-    //         leftPos: '2',
-    //     })
-
-    //     helperHeight = topHelperHeight
-
-    //     doc.fillColor('#111')
-    //         .fontSize(8)
-    //         .font('Helvetica-Bold')
-    //         .text(`TUITION:`, 330, helperHeight)
-    //         .font('Helvetica')
-
-    //     helperHeight += 12
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'MONTHLY TUITION FEE PAID ON TIME (EVERY 4 WEEK):',
-    //         width: 260,
-    //         topPos: helperHeight,
-    //         leftPos: 300,
-    //         answer: `$ ` + filialPriceList.dataValues.tuition || (0).toString(),
-    //     })
-
-    //     helperHeight += 28
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'NON-REFUNDABLE REGISTRATION FEE:',
-    //         width: 260,
-    //         topPos: helperHeight,
-    //         leftPos: 300,
-    //         answer:
-    //             `$ ` + filialPriceList.dataValues.registration_fee ||
-    //             (0).toString(),
-    //     })
-
-    //     helperHeight += 28
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'NON-REFUNDABLE BOOK PURCHASE:',
-    //         width: 260,
-    //         topPos: helperHeight,
-    //         leftPos: 300,
-    //         answer: `$ ` + filialPriceList.dataValues.book || (0).toString(),
-    //     })
-
-    //     helperHeight += 28
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'DISCOUNT FIRST PAYMENT:',
-    //         width: 260,
-    //         topPos: helperHeight,
-    //         leftPos: 300,
-    //         answer: '$ 0',
-    //     })
-
-    //     helperHeight += 28
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'PENDING PAYMENT:',
-    //         width: 260,
-    //         topPos: helperHeight,
-    //         leftPos: 300,
-    //         answer: '$ 0',
-    //     })
-
-    //     helperHeight += 28
-
-    //     inputLine({
-    //         doc,
-    //         maxWidth,
-    //         text: 'TOTAL PAYMENT:',
-    //         width: 260,
-    //         topPos: helperHeight,
-    //         leftPos: 300,
-    //         answer:
-    //             `$ ` +
-    //             (filialPriceList.dataValues.registration_fee +
-    //                 filialPriceList.dataValues.book +
-    //                 filialPriceList.dataValues.tuition),
-    //     })
-
-    //     helperHeight += 28
-
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`1. Validity and Legality:`, 30, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `The school is herein referred to as MILA - International Language Academy, d.b.a for C.N.A. Language School LLC. Fees and Admission Terms Conditions Agreement are applicable to all MILA's available courses and are subject to Florida law and supersede all previous Terms and Conditions. Only the English language version of the Admission Terms Conditions is legally binding.`,
-            30,
-            helperHeight + 12,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 56
-
-    doc.fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`2. Application Process:`, 30, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `Students take a placement test, including an oral test and written test. Students under 18 years of age must have their parents or legal guardian complete and sign the following Enrollment Documents in-person: Admission Terms Conditions Agreement (which includes a release Form), Student Handbook Acknowledgment, Affidavit of Support Form, International Student Application Form, Confidential Financial Statement Form, Acknowledgement Statement Receipt and the Parking Map, and pay the application fee.`,
-            30,
-            helperHeight + 12,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 72
-
-    doc.fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`3. Tuition Payment:`, 30, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `Morning, Evening and Two-day Classes 379.00 (every 4 weeks), 489.00 (every 4 weeks) Afternoon Classes`,
-            30,
-            helperHeight + 12,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 18
-    doc.text(
-        `LATE Payments: - Tuition payments are due monthly (every four weeks), if a tuition payment has not been received on the due date, students are issued a Late Payment Warning and charged a late fee of $30. If the tuition payment, including the late fee, has not been made within one week (7 days) of the first Late Payment Warning, the student will receive a second Late Payment Warning. An additional late fee of $30 will be charged at the time of the second Late Payment Warning and each week thereafter until the student’s account has been brought current. Non-payment puts students at risk having their I-20 TERMINATED`,
-        30,
-        helperHeight + 12,
-        {
-            width: 260,
-            align: 'justify',
-        }
-    )
-
-    helperHeight += 82
-
-    doc.fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`3.1. Registration fee:`, 30, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `The registration fee includes the placement test and the first set of books.`,
-            30,
-            helperHeight + 12,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 24
-
-    doc.fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`3.2. Medical Absences:`, 30, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `Regular monthly tuition must be paid during approved medical absenses.`,
-            30,
-            helperHeight + 12,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 24
-
-    doc.fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`3.3. Tuition Fee:`, 30, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `For Changes of Status and/or INITIAL F1 VISA where the Registration Fee was paid and the Terms Conditions signed more than 120 days previous to the Class Start Date, the TUITION FEE will be based on the PRICE LIST in effect at the time the student begins his/her studies at MILA.`,
-            30,
-            helperHeight + 12,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 48
-
-    doc.fontSize(8)
-        .font('Helvetica-Bold')
-        .text(
-            `3.4. Transferred, Change of Status and Initial Students:`,
-            30,
-            helperHeight
-        )
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `Initial, Change of Status and Transfer-in students are expected to attend MILA classes for at least 6 months after the START DATE (first day of student class). If the student has not been attending MILA for at least six (6) months based upon the initial start date (first day of class), a transfer fee in the amount of two (2) monthly tuition fees (the amount charged every 4 weeks) will be charged to complete the transfer/change of status/ Initial. Students wishing to transfer are asked to notify MILA at least 30 days prior to the start of classes at the new institution, but 30-day notification is not required.`,
-            30,
-            helperHeight + 12,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 80
-
-    // footer({ doc, maxWidth, id, page: 3, pages: 6 + enrollmentSponsor.length })
-
-    // doc.addPage()
-
-    // header({
-    //     doc,
-    //     title1: 'INTERNATIONAL STUDENT',
-    //     title2: 'APPLICATION FORM',
-    //     maxWidth,
-    //     date: signature.dataValues.created_at,
-    //     id,
-    // })
-
-    // helperHeight = 86
-
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`3.5. Business English Program:`, 30, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `All policies and procedures in this document apply to the ESL Intensive, Recreational English, and MBE program, with the exception of enrollment requirements for the MBE program: a) Existing Students: Complete MILA’s Proficient level with a score of 70% or higher. b) New Students: Take MILA’s placement test and place in the Proficient level.`,
-            30,
-            helperHeight + 12,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 56
-
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`4. Methods & Refund Policy:`, 30, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(`Payments can be made:`, 30, helperHeight + 12, {
-            width: 260,
-            align: 'justify',
-        })
-        .text(
-            `a) By cash or check issued in U.S. dollars, international money order and/or by credit card (Visa, MasterCard, Discover, or American Express).`,
-            30,
-            helperHeight + 24,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-        .text(
-            `b) By direct deposit to MILA’s bank account: Please speak with the administrative assistant for the school’s bank account information.`,
-            30,
-            helperHeight + 42,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-        .text(
-            `c) Recreational students must pay at the start of each 4 weeks. Once paid, the tuition is not refundable.`,
-            30,
-            helperHeight + 60,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 80
-
-    doc.lineWidth(1)
-
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`5. Minimum Age:`, 30, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `The minimum age for participation in MILA ESL courses is 16 years of age.`,
-            30,
-            helperHeight + 12,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 24
-
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(
-            `6. Private/Semi-private Classes-Forfeiture/Class Rescheduling:`,
-            30,
-            helperHeight
-        )
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `Students shall provide a written request to reschedule a private/recreational class to either the Academic Supervisor or the general Manager at least one day prior to any scheduled class in order to avoid forfeiture of fees. A maximum of 20% of classes may be rescheduled at a student’s request. All Private classes must be completed within thirty (30) days of the end date on the Terms Conditions Agreement.
-            The school is not obligated to provide the same teacher for all classes during the program. Payments will be enforced as per item 4.`,
-            30,
-            helperHeight + 12,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 80
-
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`7. Agreement validity date:`, 30, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `This agreement is in effect until the end date specified or until the student I-20 expires.`,
-            30,
-            helperHeight + 12,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight = topHelperHeight
-
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`8. School Rules:`, 300, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `All students will be expected to comply with MILA’s Student Handbook. Acceptance and compliance with all policies, procedures, and rules, as well as all applicable federal and state laws, are contractual obligations on the part of the student. Program offerings are subject to availability and the school reserves the right to allocate the student to the class that best suits their level or instruct the student to start at a later date. MILA reserves the right to change course start and end dates. Daily attendance is formally monitored. A minimum of 80% attendance is required. F-1 students must study 18 hours per week as stipulated by the federal immigration law. Students who miss more than 20 minutes of any class period, either by arriving late, leaving early, or missing any other part of class will be marked absent. Students who miss up to 20 minutes of any class period will be marked “late.” Two late arrivals will equal one absence. MILA has the right to expel students who do not follow federal laws or who violate the code of conduct.`,
-            300,
-            helperHeight + 12,
-            {
-                width: maxWidth / 2 - 30,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 114
-
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`9. Vacation:`, 300, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `F-1 students may have up to 16 weeks of ONE ANNUAL VACATION. F-1 students must have a minimum of 26 weeks of study (instructional time) to be eligible for ONE ANNUAL VACATION. School Breaks are not considered instructional time. The school will announce School Breaks and Holiday Dates, which may vary each year. Vacation, as well as School Breaks and Holidays are to be paid in full. After 26 weeks of study, the student is eligible for ONE ANNUAL VACATION, but he/she is not obligated to take a vacation. It means that ANNUAL VACATION is optional. ONE ANNUAL VACATION is not cumulative, meaning that if the student wishes to take a total of 16 weeks of vacation, it needs to be taken during the year (52 weeks), considering the dates of the student's program. It means that a student may decide not to go on ANNUAL VACATION, but ANNUAL VACATION not taken (in full or partially) may not be grouped. F-1 students (initials, change of status, and transfers) are subject to this policy. REINSTATEMENT students are not eligible for ONE ANNUAL VACATION until his/her case is approved by USCIS. F-1 students must also have a valid I-20 with a longer program end date than the end of the student's ONE ANNUAL VACATION, meaning that the student must go back to class after going on vacation. The last due date of Tuition Fee (within ONE ANNUAL VACATION) will be free of charge as long as the student requests 12 to 16 weeks of vacation.`,
-            300,
-            helperHeight + 12,
-            {
-                width: maxWidth / 2 - 30,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 163
-
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`10. Accommodation:`, 300, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `MILA doesn't provide housing or accommodation.`,
-            300,
-            helperHeight + 12,
-            {
-                width: maxWidth / 2 - 30,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 26
-
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`11. Health Insurance:`, 300, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `MILA does not provide health insurance. It is suggested that students obtain medical insurance prior to enrollment.`,
-            300,
-            helperHeight + 12,
-            {
-                width: maxWidth / 2 - 30,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 35
-
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`12. Liability:`, 300, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `In the event that services to be provided to students by MILA and its representatives are not provided for reasons beyond MILA’s direct control, MILA and its representatives shall not be liable. MILA and its representatives shall not be held liable for any loss, damage, illness or injury to persons or property however caused, except when such liability is imposed by statute.
-            MILA policies, procedures and regulations are subject to change anytime per the discretion of the school’s (MILA) management. MILA reserves the right to substitute any class and or program for one of equal or greater value per the discretion of the school’s (MILA) management.`,
-            300,
-            helperHeight + 12,
-            {
-                width: maxWidth / 2 - 30,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 90
-
-    doc.fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`13. Refund Policy:`, 300, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `a) Payment to students for reimbursements shall be made by MILA within (30) days of receiving written notification of cancellation.
-            b) If the student does not honor the contract after the course start date, he/she will forfeit the four weeks paid and is subject to a four-week full-price penalty fee.
-            c) Tuition with special promotions: If the student decides to drop out of school during the paid period, he/she will have to pay the difference for the period studied. (Calculation will be based on regular four-week tuition X promotion tuition)
-            d) There are no refunds after the start date for the tuition and the application fee, except If the class level has not been populated with a sufficient number of students, and the school cancels the class. In this circumstance, both tuition as well as registration fee will be reimbursed.
-            e) There shall be no tuition reimbursement or make-up classes as a result of missed group classes or school closing days, with the exception of private one-to-one lessons that will be rescheduled in the event of a public holiday, or 24-hour notice is given.
-            f) For F1 English students, if you are terminated by CNA LANGUA E SCHOOL DBA MILA – INTERNATIONAL LANGUA E ACADEMY due to violations of the school or federal law (including attendance policies), no refund will be given.
-            g) For F-1 English students, if your visa is denied’, your tuition fee (except registration fee, mailing fee) will be refunded only after applicants present the denial letter given by the American Embassy/USCIS.
-            h) Students who are accepted’ and withdraw on their own do does not qualify for refunds.
-            I) Any Change of Status’ or Initial’ student who changes their mind, abandons their program, or starts another process does not qualify for a refund.`,
-            300,
-            helperHeight + 12,
-            {
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 212
-
-    // doc.fontSize(8)
-    //     .font('Helvetica-Bold')
-    //     .text(`ACKNOLEDGMENT STATEMENT RECEIPT`, 330, helperHeight)
-    //     .font('Helvetica')
-    //     .fontSize(7)
-    //     .text(
-    //         `I have received, read, and understood MILA’s Student Handbook, including the Refund Policy, Student Code of Conduct Policy, and Attendance Policy. I know that it is my responsibility to keep in accordance with these policies and that if I do not, that my I-20 is in danger of termination without notice. I also understand that if my level of English proficiency is not to the point that I can understand this, then it is my responsibility to get someone to read this to me in my native language so that I can understand it. I understand that if I move, I MUST update my current living address whenever there are any changes. I also understand that if I am sick, I must contact the PDSO immediately to arrange and provide appropriate medical documentation from a licensed medical physician, doctor of osteopathy, or licensed clinical psychologist to be considered as an excused absence. Failure to prove this documentation will result in absences, and possibly put my I-20 in danger. Finally, I understand that I am responsible for knowing the policies and procedures of International Language Academy – MILA and to follow them completely. If any policies or procedures change, it is my responsibility to check my email to ensure that I am aware of the changes. I do not have to sign a new waiver to account for the change in policy or procedure.`,
-    //         330,
-    //         helperHeight + 12,
-    //         {
-    //             align: 'justify',
-    //         }
-    //     )
-
-    // helperHeight += 136
-
-    // signatureLine({
-    //     doc,
-    //     maxWidth,
-    //     text: 'SIGNATURE',
-    //     width: '1/4',
-    //     topPos: helperHeight,
-    //     leftPos: 300,
-    //     height: 40,
-    // })
-
-    // signatureLine({
-    //     doc,
-    //     maxWidth,
-    //     text: 'DATE (MM/DD/YYYY)',
-    //     width: '1/4',
-    //     topPos: helperHeight,
-    //     leftPos: '4',
-    //     height: 40,
-    // })
-
-    // helperHeight += 66
-
-    footer({ doc, maxWidth, id, page: 3, pages: 6 + enrollmentSponsor.length })
-
-    doc.addPage()
-
-    header({
-        doc,
-        title1: 'ADMISSION TERMS &',
-        title2: 'CONDITIONS AGREEMENT',
-        maxWidth,
-        date: signature.dataValues.created_at,
-        id,
-    })
-
-    helperHeight = 86
-
-    topHelperHeight = helperHeight
-
-    doc.lineWidth(1)
-
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`14. Release Form`, 30, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `By signing this agreement the student authorizes the use of the following personal information: (1) Photos - including electronic (video) images. (2) Student voice - including sound and video recordings.`,
-            30,
-            helperHeight + 12,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 50
-
-    signatureLine({
-        doc,
-        maxWidth,
-        text: 'SIGNATURE',
-        width: '1/2',
-        topPos: helperHeight,
-        leftPos: '1',
-        height: 40,
-    })
-
-    if (fs.existsSync(studentSignatureFile)) {
-        doc.image(studentSignatureFile, 130, helperHeight - 2, {
-            width: 82,
-        })
-    }
-
-    signatureLine({
-        doc,
-        maxWidth,
-        text: 'DATE (MM/DD/YYYY)',
-        width: '1/4',
-        topPos: helperHeight,
-        leftPos: '3',
-        height: 40,
-    })
-
-    doc.fontSize(8)
-        .fillColor('#111')
-        .text(
-            format(signature.dataValues.created_at, 'MM/dd/yyyy'),
-            360,
-            helperHeight + 28
-        )
-
-    helperHeight += 80
-
-    doc.fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`Acknowledgement`, 30, helperHeight)
-        .font('Helvetica')
-        .fontSize(7)
-        .text(
-            `I fully understand and accept the information contained on the Admissions Terms Conditions Agreement program fees, schedules, and the Enrollment Agreement. I authorize release of personal information.`,
-            30,
-            helperHeight + 12,
-            {
-                width: 260,
-                align: 'justify',
-            }
-        )
-
-    helperHeight += 50
-
-    signatureLine({
-        doc,
-        maxWidth,
-        text: 'SIGNATURE',
-        width: '1/2',
-        topPos: helperHeight,
-        leftPos: '1',
-        height: 40,
-    })
-
-    if (fs.existsSync(studentSignatureFile)) {
-        doc.image(studentSignatureFile, 130, helperHeight - 2, {
-            width: 82,
-        })
-    }
-
-    signatureLine({
-        doc,
-        maxWidth,
-        text: 'DATE (MM/DD/YYYY)',
-        width: '1/4',
-        topPos: helperHeight,
-        leftPos: '3',
-        height: 40,
-    })
-
-    doc.fontSize(8)
-        .fillColor('#111')
-        .text(
-            format(signature.dataValues.created_at, 'MM/dd/yyyy'),
-            360,
-            helperHeight + 28
-        )
-
-    helperHeight += 60
-
-    doc.fontSize(7).text(
-        `Note: If a student is under the age of 18, a parent or guardian must sign this application. By signing below, the parent or guardian releases MILA from any liability associated with parental responsibility and the care and well-being of the student as a minor.`,
-        30,
-        helperHeight + 12,
-        {
-            width: 260,
-            align: 'justify',
-        }
-    )
-
-    helperHeight += 50
-
-    signatureLine({
-        doc,
-        maxWidth,
-        text: 'SIGNATURE',
-        width: '1/2',
-        topPos: helperHeight,
-        leftPos: '1',
-        height: 40,
-    })
-
-    if (fs.existsSync(studentSignatureFile)) {
-        doc.image(studentSignatureFile, 130, helperHeight - 2, {
-            width: 82,
-        })
-    }
-
-    signatureLine({
-        doc,
-        maxWidth,
-        text: 'DATE (MM/DD/YYYY)',
-        width: '1/4',
-        topPos: helperHeight,
-        leftPos: '3',
-        height: 40,
-    })
-
-    doc.fontSize(8)
-        .fillColor('#111')
-        .text(
-            format(signature.dataValues.created_at, 'MM/dd/yyyy'),
-            360,
-            helperHeight + 28
-        )
-
-    footer({ doc, maxWidth, id, page: 4, pages: 6 + enrollmentSponsor.length })
+    // Affidavit of Support
 
     for (let sponsor of enrollmentSponsor) {
         doc.addPage()
 
-        header({
+        newheader({
             doc,
-            title1: 'AFFIDAVIT OF SUPPORT',
-            title2: '',
+            title1: 'INTERNATIONAL STUDENT',
+            title2: 'Application Form',
             maxWidth,
             date: signature.dataValues.created_at,
             id,
+            filial,
         })
 
-        helperHeight = 70
+        let helperHeight = 114
 
-        // doc.fillColor('#111')
-        //     .fontSize(8)
-        //     .font('Helvetica-Bold')
-        //     .text(
-        //         `If you are a U.S citizen or legal resident, please fill out the I-134 form`,
-        //         30,
-        //         helperHeight + 12
-        //     )
-        //     .font('Helvetica')
-
-        helperHeight += 24
-
-        headerLine({
+        newheaderLine({
             doc,
             maxWidth,
-            width: 125,
+            width: maxWidth - 40,
             topPos: helperHeight,
-            text: `ONLY FOR SPONSOR:`,
+            text: `AFFIDAVIT OF SUPPORT`,
         })
 
-        helperHeight += 28
+        helperHeight += 38
 
-        doc.fillColor('#111')
-            .fontSize(8)
-            .font('Helvetica-Bold')
+        newheaderLine({
+            doc,
+            maxWidth,
+            width: 180,
+            topPos: helperHeight,
+            text: `Only for Sponsor`,
+            line: 2,
+        })
+
+        helperHeight += 36
+
+        doc.fillColor(blue)
+            .fontSize(10)
+            .font(myriadBold)
             .text(
                 `To be completed by the person whose bank account shows proof of funding for study in the United States. Please see attached financial documents to prove my economic capacity and a copy of my passport.`,
-                30,
-                helperHeight + 12
+                20,
+                helperHeight + 6
             )
-            .font('Helvetica')
 
         helperHeight += 32
 
-        doc.text(`1. I,`, 30, helperHeight + 12)
+        doc.fillColor(orange).text(`1.`, 20, helperHeight + 12)
 
-        doc.text(`of legal age, citizen of`, 250, helperHeight + 12)
-
-        helperHeight += 20
-
-        doc.rect(46, helperHeight, 200, 1)
-            .fill('#111')
-            .fontSize(7)
-            .text(`(Sponsor's Full Name)`, 46, helperHeight + 4, {
-                width: 200,
-                align: 'center',
-            })
-            .text(sponsor.dataValues.name, 46, helperHeight - 8, {
-                width: 200,
-                align: 'center',
-            })
-
-        doc.rect(338, helperHeight, 236, 1)
-            .fill('#111')
-            .fontSize(7)
-            .text(`(Country of Birth)`, 336, helperHeight + 4, {
-                width: 236,
-                align: 'center',
-            })
-            .text(sponsor.dataValues.birth_country, 336, helperHeight - 8, {
-                width: 236,
-                align: 'center',
-            })
-
-        helperHeight += 20
-
-        doc.fontSize(8).text(`Residing at,`, 30, helperHeight + 12)
-
-        helperHeight += 20
-
-        doc.rect(82, helperHeight, 200, 1)
-            .fill('#111')
-            .fontSize(7)
-            .text(`(Street Number and Name)`, 82, helperHeight + 4, {
-                width: 200,
-                align: 'center',
-            })
-            .text(sponsor.dataValues.address, 82, helperHeight - 8, {
-                width: 200,
-                align: 'center',
-            })
-
-        doc.rect(282, helperHeight, 80, 1)
-            .fill('#111')
-            .fontSize(7)
-            .text(`(City)`, 282, helperHeight + 4, {
-                width: 80,
-                align: 'center',
-            })
-            .text(sponsor.dataValues.city, 282, helperHeight - 8, {
-                width: 80,
-                align: 'center',
-            })
-
-        doc.rect(362, helperHeight, 60, 1)
-            .fill('#111')
-            .fontSize(7)
-            .text(`(State)`, 362, helperHeight + 4, {
-                width: 60,
-                align: 'center',
-            })
-            .text(sponsor.dataValues.state, 362, helperHeight - 8, {
-                width: 60,
-                align: 'center',
-            })
-
-        doc.rect(422, helperHeight, 80, 1)
-            .fill('#111')
-            .fontSize(7)
-            .text(`(Zip Code)`, 422, helperHeight + 4, {
-                width: 80,
-                align: 'center',
-            })
-            .text(sponsor.dataValues.zip_code, 422, helperHeight - 8, {
-                width: 80,
-                align: 'center',
-            })
-
-        doc.rect(502, helperHeight, 72, 1)
-            .fill('#111')
-            .fontSize(7)
-            .text(`(Country)`, 502, helperHeight + 4, {
-                width: 72,
-                align: 'center',
-            })
-            .text(sponsor.dataValues.country, 502, helperHeight - 8, {
-                width: 72,
-                align: 'center',
-            })
-
-        helperHeight += 40
-
-        doc.rect(30, helperHeight, maxWidth / 2 - 30, 1)
-            .fill('#111')
-            .fontSize(7)
-            .text(`(Phone #)`, 82, helperHeight + 4, {
-                width: maxWidth / 2 - 30,
-                align: 'center',
-            })
-            .text(sponsor.dataValues.phone, 82, helperHeight - 8, {
-                width: maxWidth / 2 - 30,
-                align: 'center',
-            })
-
-        doc.rect(maxWidth / 2 - 30, helperHeight, maxWidth / 2 - 8, 1)
-            .fill('#111')
-            .fontSize(7)
-            .text(`(E-mail)`, maxWidth / 2 - 30, helperHeight + 4, {
-                width: maxWidth / 2 - 8,
-                align: 'center',
-            })
-            .text(
-                sponsor.dataValues.email,
-                maxWidth / 2 - 30,
-                helperHeight - 8,
-                {
-                    width: maxWidth / 2 - 8,
-                    align: 'center',
-                }
-            )
-
-        helperHeight += 16
-
-        doc.fillColor('#111')
+        doc.font(myriadSemiBold)
             .fontSize(8)
-            .font('Helvetica-Bold')
-            .text(
-                `Certify under penalty of perjury under U.S law, that:`,
-                30,
-                helperHeight + 12
-            )
-            .font('Helvetica')
+            .fillColor(blue)
+            .text(`I,`, 40, helperHeight + 12)
 
-        helperHeight += 28
-
-        doc.fontSize(8).text(`I was born on,`, 30, helperHeight + 12)
-        doc.fontSize(8).text(`in,`, 220, helperHeight + 12)
-
-        helperHeight += 20
-
-        doc.rect(90, helperHeight, 120, 1)
-            .fill('#111')
-            .fontSize(7)
-            .text(`(date [mm/dd/yyyy])`, 90, helperHeight + 4, {
-                width: 120,
-                align: 'center',
-            })
-            .text(
-                sponsor.dataValues.birthday
-                    ? format(
-                          parseISO(sponsor.dataValues.birthday),
-                          'MM/dd/yyyy'
-                      )
-                    : '-',
-                90,
-                helperHeight - 8,
-                {
-                    width: 120,
-                    align: 'center',
-                }
-            )
-
-        doc.rect(240, helperHeight, 120, 1)
-            .fill('#111')
-            .fontSize(7)
-            .text(`(City)`, 240, helperHeight + 4, {
-                width: 120,
-                align: 'center',
-            })
-            .text(sponsor.dataValues.birth_city, 240, helperHeight - 8, {
-                width: 120,
-                align: 'center',
-            })
-
-        doc.rect(360, helperHeight, 120, 1)
-            .fill('#111')
-            .fontSize(7)
-            .text(`(State)`, 360, helperHeight + 4, {
-                width: 120,
-                align: 'center',
-            })
-            .text(sponsor.dataValues.birth_state, 360, helperHeight - 8, {
-                width: 120,
-                align: 'center',
-            })
-
-        doc.rect(480, helperHeight, 94, 1)
-            .fill('#111')
-            .fontSize(7)
-            .text(`(Country)`, 480, helperHeight + 4, {
-                width: 94,
-                align: 'center',
-            })
-            .text(sponsor.dataValues.birth_country, 480, helperHeight - 8, {
-                width: 94,
-                align: 'center',
-            })
-
-        helperHeight += 30
-
-        headerLine({
+        newinputLine({
             doc,
-            maxWidth,
-            width: 330,
+            width: 280,
+            text: 'SPONSOR`S FULL NAME ',
             topPos: helperHeight,
-            text: `2. THIS AFFIDAVIT IS EXECUTED ON BEHALF OF THE APPLICANT:`,
+            leftPos: 30,
+            answer: sponsor.dataValues.name,
         })
 
+        doc.fontSize(8)
+            .fillColor(blue)
+            .text(`of legal age, citizen of`, 334, helperHeight + 12)
+
+        newinputLine({
+            doc,
+            width: 180,
+            text: 'COUNTRY OF BIRTH',
+            topPos: helperHeight,
+            leftPos: 394,
+            answer: sponsor.dataValues.birth_country,
+        })
+
+        helperHeight += 36
+
+        doc.fontSize(8)
+            .fillColor(blue)
+            .text(`Resident at,`, 20, helperHeight + 12)
+
+        newinputLine({
+            doc,
+            width: 220,
+            text: 'STREET NUMBER AND NAME',
+            topPos: helperHeight,
+            leftPos: 50,
+            answer: sponsor.dataValues.address,
+        })
+
+        newinputLine({
+            doc,
+            width: 60,
+            text: 'CITY',
+            topPos: helperHeight,
+            leftPos: 280,
+            answer: sponsor.dataValues.city,
+        })
+
+        newinputLine({
+            doc,
+            width: 60,
+            text: 'STATE',
+            topPos: helperHeight,
+            leftPos: 350,
+            answer: sponsor.dataValues.state,
+        })
+
+        newinputLine({
+            doc,
+            width: 60,
+            text: 'ZIP CODE',
+            topPos: helperHeight,
+            leftPos: 420,
+            answer: sponsor.dataValues.zip_code,
+        })
+
+        newinputLine({
+            doc,
+            width: 100,
+            text: 'COUNTRY',
+            topPos: helperHeight,
+            leftPos: 490,
+            answer: sponsor.dataValues.country,
+        })
+
+        helperHeight += 36
+
+        newinputLine({
+            doc,
+            width: 290,
+            text: 'E-MAIL',
+            topPos: helperHeight,
+            leftPos: 0,
+            answer: sponsor.dataValues.email,
+        })
+
+        newinputLine({
+            doc,
+            width: 290,
+            text: 'PHONE NUMBER',
+            topPos: helperHeight,
+            leftPos: 300,
+            answer: sponsor.dataValues.phone,
+        })
+
+        helperHeight += 36
+
+        doc.fillColor(orange)
+            .fontSize(12)
+            .font(myriadBold)
+            .text(
+                `Certify under penalty of perjury under U.S law, that:`,
+                20,
+                helperHeight + 12
+            )
+
         helperHeight += 28
 
-        inputLine({
+        doc.font(myriadSemiBold)
+            .fontSize(8)
+            .fillColor(blue)
+            .text(`I was born on,`, 20, helperHeight + 12)
+
+        newinputLine({
+            doc,
+            width: 130,
+            text: 'DATE (MM/DD/YYYY)',
+            topPos: helperHeight,
+            leftPos: 55,
+            answer: sponsor.dataValues.birthday
+                ? format(parseISO(sponsor.dataValues.birthday), 'MM/dd/yyyy')
+                : '-',
+        })
+
+        doc.font(myriadSemiBold)
+            .fontSize(8)
+            .fillColor(blue)
+            .text(`in,`, 215, helperHeight + 12)
+
+        newinputLine({
+            doc,
+            width: 90,
+            text: 'CITY',
+            topPos: helperHeight,
+            leftPos: 220,
+            answer: sponsor.dataValues.birth_city,
+        })
+
+        newinputLine({
+            doc,
+            width: 90,
+            text: 'STATE',
+            topPos: helperHeight,
+            leftPos: 320,
+            answer: sponsor.dataValues.birth_state,
+        })
+
+        newinputLine({
+            doc,
+            width: 150,
+            text: 'COUNTRY',
+            topPos: helperHeight,
+            leftPos: 420,
+            answer: sponsor.dataValues.birth_country,
+        })
+
+        helperHeight += 36
+
+        doc.fillColor(orange)
+            .fontSize(12)
+            .font(myriadBold)
+            .text(
+                `This affidavit is executed on behalf of the applicant:`,
+                20,
+                helperHeight + 12
+            )
+
+        helperHeight += 36
+
+        newheaderLine({
             doc,
             maxWidth,
-            text: 'STUDENT FULL NAME',
-            width: '1/2',
+            width: 180,
             topPos: helperHeight,
-            leftPos: '1',
+            text: `Student Information`,
+            line: 2,
+        })
+
+        helperHeight += 36
+
+        newinputLine({
+            doc,
+            width: 340,
+            text: 'LEGAL NAME (AS SHOWN ON THE PASSPORT)',
+            topPos: helperHeight,
+            leftPos: 0,
             answer: fullName,
         })
 
-        inputLine({
+        newinputLine({
             doc,
-            maxWidth,
+            width: 100,
             text: 'GENDER',
-            width: '1/4',
             topPos: helperHeight,
-            leftPos: '3',
+            leftPos: 350,
             answer: student.dataValues.gender,
         })
 
-        inputLine({
+        newinputLine({
             doc,
-            maxWidth,
+            width: 120,
             text: 'DATE OF BIRTH',
-            width: '1/4',
             topPos: helperHeight,
-            leftPos: '4',
+            leftPos: 460,
             answer: format(
                 parseISO(student.dataValues.date_of_birth),
                 'MM/dd/yyyy'
             ),
         })
 
-        helperHeight += 28
+        helperHeight += 38
 
-        inputLine({
+        newinputLine({
             doc,
-            maxWidth,
+            width: 340,
             text: 'CITIZEN OF (COUNTRY)',
-            width: '1/2',
             topPos: helperHeight,
-            leftPos: '1',
+            leftPos: 0,
             answer: student.dataValues.citizen_country,
         })
 
-        inputLine({
+        newinputLine({
             doc,
-            maxWidth,
-            text: 'MARITAL STATUS',
-            width: '1/2',
+            width: 100,
+            text: 'NATIVE LANGUAGE',
             topPos: helperHeight,
-            leftPos: '3',
+            leftPos: 350,
+            answer: student.dataValues.native_language,
+        })
+
+        newinputLine({
+            doc,
+            width: 120,
+            text: 'MARITAL STATUS',
+            topPos: helperHeight,
+            leftPos: 460,
             answer: student.dataValues.marital_status,
         })
 
-        helperHeight += 28
+        helperHeight += 36
 
-        // inputLine({
-        //     doc,
-        //     maxWidth,
-        //     text: 'PRESENTLY RESIDES AT',
-        //     width: '1/4',
-        //     topPos: helperHeight,
-        //     leftPos: '1',
-        //     answer: student.dataValues.home_country_address,
-        // })
-
-        // inputLine({
-        //     doc,
-        //     maxWidth,
-        //     text: 'CITY',
-        //     width: '1/4',
-        //     topPos: helperHeight,
-        //     leftPos: '2',
-        //     answer: student.dataValues.home_country_city,
-        // })
-
-        // inputLine({
-        //     doc,
-        //     maxWidth,
-        //     text: 'STATE',
-        //     width: '1/4',
-        //     topPos: helperHeight,
-        //     leftPos: '3',
-        //     answer: student.dataValues.home_country_state,
-        // })
-
-        // inputLine({
-        //     doc,
-        //     maxWidth,
-        //     text: 'COUNTRY',
-        //     width: '1/4',
-        //     topPos: helperHeight,
-        //     leftPos: '4',
-        //     answer: student.dataValues.home_country_country,
-        // })
-
-        // helperHeight += 30
-
-        if (enrollmentDependents.length > 0) {
-            headerLine({
-                doc,
-                maxWidth,
-                width: 350,
-                topPos: helperHeight,
-                text: `DEPENDENT INFORMATION (F-2 VISA - SPOUSE AND CHILDREN)`,
-            })
-
-            for (let dependent of enrollmentDependents) {
-                // console.log(dependent.dataValues)
-                if (dependent) {
-                    helperHeight += 28
-                    inputLine({
-                        doc,
-                        maxWidth,
-                        text: 'DEPENDENT FULL NAME',
-                        width: '1/4',
-                        topPos: helperHeight,
-                        leftPos: '1',
-                        answer: dependent.dataValues.name,
-                    })
-
-                    // inputLine({
-                    //     doc,
-                    //     maxWidth,
-                    //     text: 'DEPENDENT TYPE',
-                    //     width: '1/4',
-                    //     topPos: helperHeight,
-                    //     leftPos: '2',
-                    //     answer: dependent.dataValues.dept1_type,
-                    // })
-
-                    inputLine({
-                        doc,
-                        maxWidth,
-                        text: 'GENDER',
-                        width: '1/2',
-                        topPos: helperHeight,
-                        leftPos: '3',
-                        answer: dependent.dataValues.gender,
-                    })
-                }
-            }
-        }
-
-        helperHeight += 30
-
-        headerLine({
+        newheaderLine({
             doc,
             maxWidth,
-            width: 350,
+            width: 200,
             topPos: helperHeight,
-            text: `OATH OR AFFIRMATION OF SPONSOR`,
+            text: `Dependent Information`,
+            line: 2,
         })
 
-        helperHeight += 28
+        helperHeight += 36
 
-        doc.fillColor('#111')
-            .fontSize(8)
+        if (enrollmentDependents.length > 0) {
+            newinputLine({
+                doc,
+                width: 340,
+                text: 'LEGAL NAME (AS SHOWN ON THE PASSPORT)',
+                topPos: helperHeight,
+                leftPos: 0,
+                answer:
+                    enrollmentDependents.length > 0
+                        ? enrollmentDependents[0].dataValues.name
+                        : '',
+            })
+
+            newinputLine({
+                doc,
+                width: 100,
+                text: 'GENDER',
+                topPos: helperHeight,
+                leftPos: 350,
+                answer:
+                    enrollmentDependents.length > 0
+                        ? enrollmentDependents[0].dataValues.gender
+                        : '',
+            })
+
+            newinputLine({
+                doc,
+                width: 120,
+                text: 'DATE OF BIRTH',
+                topPos: helperHeight,
+                leftPos: 460,
+                answer: '', // Não temos no banco de dados
+            })
+
+            helperHeight += 36
+        }
+
+        doc.fillColor(orange)
+            .fontSize(12)
+            .font(myriadBold)
+            .text(`Oath or affirmation of Sponsor:`, 20, helperHeight + 12)
+
+        helperHeight += 18
+
+        doc.font(myriad)
+            .fillColor(blue)
+            .fontSize(10)
             .text(
                 `I certify under penalty of perjury under United States law that I know the contents of this affidavit signed by me and that the statements are true and correct. I am willing to maintain, support and assume all economic responsibility incurred by the person(s) named in item 2 as long as he/she studies in the United States. I guarantee that such person(s) will not become a public charge during his or her stay in the United States, or to guarantee that the above named person(s) will maintain his or her nonimmigrant status, if admitted temporarily, and will depart prior to the expiration of his or her authorized stay in the United States.`,
-                30,
+                20,
                 helperHeight + 12,
                 {
                     align: 'justify',
                 }
             )
 
-        helperHeight += 60
+        helperHeight += 100
 
-        signatureLine({
-            doc,
-            maxWidth,
-            text: 'SPONSOR`S SIGNATURE',
-            width: '1/2',
-            topPos: helperHeight,
-            leftPos: '1',
-            height: 40,
-        })
+        let lineWidth = 280
 
         const sponsorSignaturePath = resolve(
             directory,
@@ -2515,50 +1384,88 @@ export default async function newenrollment(doc = null, id = '') {
         )
 
         if (fs.existsSync(sponsorSignaturePath)) {
-            doc.image(sponsorSignaturePath, 130, helperHeight - 2, {
-                width: 82,
+            doc.image(sponsorSignaturePath, 250, helperHeight - 28, {
+                width: 100,
+                align: 'center',
             })
         }
 
-        signatureLine({
-            doc,
-            maxWidth,
-            text: 'DATE (MM/DD/YYYY)',
-            width: '1/2',
-            topPos: helperHeight,
-            leftPos: '3',
-            height: 40,
-        })
+        doc.moveTo(60, helperHeight)
+            .lineTo(lineWidth, helperHeight + 1)
+            .dash(2, { space: 2 })
+            .stroke(blue)
+            .undash()
 
-        doc.fontSize(10)
-            .fillColor('#111')
+        doc.fontSize(6)
+            .fillColor('#555')
+            .text('SPONSOR SIGNATURE', 60, helperHeight + 5, {
+                width: lineWidth - 60,
+                align: 'center',
+            })
+
+        doc.moveTo(40 + lineWidth, helperHeight)
+            .lineTo(lineWidth + lineWidth - 40, helperHeight + 1)
+            .dash(2, { space: 2 })
+            .stroke(blue)
+            .undash()
+
+        doc.fontSize(6)
+            .fillColor('#555')
+            .text('DATE (MM/DD/YYYY)', 40 + lineWidth, helperHeight + 5, {
+                width: lineWidth - 80,
+                align: 'center',
+            })
+
+        doc.fontSize(8)
+            .fillColor('#555')
             .text(
-                format(sponsor.dataValues.updated_at, 'MM/dd/yyyy'),
-                420,
-                helperHeight + 24
+                sponsor.dataValues.updated_at
+                    ? format(sponsor.dataValues.updated_at, 'MM/dd/yyyy')
+                    : '',
+                40 + lineWidth,
+                helperHeight - 12,
+                {
+                    width: lineWidth - 40,
+                    align: 'center',
+                }
             )
 
-        footer({
+        doc.fontSize(6)
+            .fillColor('#555')
+            .text('DATE (MM/DD/YYYY)', 20 + lineWidth * 2, helperHeight + 5, {
+                width: lineWidth - 30,
+                align: 'center',
+            })
+
+        newfooter({
             doc,
             maxWidth,
-            id,
-            page: 5,
+            page: 3,
             pages: 6 + enrollmentSponsor.length,
         })
     }
 
     doc.addPage()
 
-    header({
+    newheader({
         doc,
-        title1: 'CONFIDENTIAL FINANCIAL',
-        title2: 'STATEMENT',
+        title1: 'INTERNATIONAL STUDENT',
+        title2: 'Application Form',
         maxWidth,
         date: signature.dataValues.created_at,
         id,
+        filial,
     })
 
-    helperHeight = 70
+    helperHeight = 114
+
+    newheaderLine({
+        doc,
+        maxWidth,
+        width: maxWidth - 40,
+        topPos: helperHeight,
+        text: `CONFIDENTIAL FINANCIAL STATEMENT`,
+    })
 
     doc.fillColor('#111')
         .fontSize(8)
@@ -2707,9 +1614,9 @@ export default async function newenrollment(doc = null, id = '') {
 
         helperHeight += 12
 
-        doc.text(`I,`, 30, helperHeight + 12)
+        doc.fontSize(8).text(`I,`, 30, helperHeight + 12)
 
-        doc.text(`residing at`, 256, helperHeight + 12)
+        doc.fontSize(8).text(`residing at`, 256, helperHeight + 12)
 
         helperHeight += 20
 
