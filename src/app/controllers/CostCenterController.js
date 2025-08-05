@@ -337,11 +337,14 @@ class CostcentersController {
                 allow_use = false,
             } = req.body
 
-            const fatherExists = await Costcenter.findByPk(Father.id)
-            if (!fatherExists) {
-                return res.status(400).json({
-                    error: 'Father Account does not exist.',
-                })
+            let fatherExists = null
+            if (Father) {
+                fatherExists = await Costcenter.findByPk(Father.id)
+                if (!fatherExists) {
+                    return res.status(400).json({
+                        error: 'Father Account does not exist.',
+                    })
+                }
             }
 
             const costcenterExist = await Costcenter.findByPk(costcenter_id)
@@ -354,8 +357,8 @@ class CostcentersController {
 
             const costcenter = await costcenterExist.update(
                 {
-                    father_id: fatherExists.id,
-                    father_code: fatherExists.dataValues.code,
+                    father_id: fatherExists?.id,
+                    father_code: fatherExists?.dataValues.code,
                     name,
                     visibility,
                     profit_and_loss,
