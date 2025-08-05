@@ -1,6 +1,4 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog.js'
-import databaseConfig from '../../config/database.js'
 import Chartofaccount from '../models/Chartofaccount.js'
 import Merchant from '../models/Merchants.js'
 import {

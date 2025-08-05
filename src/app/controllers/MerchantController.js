@@ -328,6 +328,8 @@ class MerchantController {
                 bank_name,
                 bank_account,
                 bank_routing_number,
+                merchantxchartofaccounts = [],
+                merchantxcostcenters = [],
             } = req.body
 
             if (filial) {
@@ -399,11 +401,7 @@ class MerchantController {
                 }
             )
 
-            if (
-                req.body.merchantxchartofaccounts ||
-                (merchantExists.merchantxchartofaccounts?.length > 0 &&
-                    !req.body.merchantxchartofaccounts)
-            ) {
+            if (merchantxchartofaccounts.length > 0) {
                 await MerchantXChartOfAccounts.destroy({
                     where: {
                         merchant_id,
@@ -411,32 +409,24 @@ class MerchantController {
                     transaction: req.transaction,
                 })
 
-                if (req.body.merchantxchartofaccounts?.length > 0) {
-                    await Promise.all(
-                        req.body.merchantxchartofaccounts.map(async (item) => {
-                            await MerchantXChartOfAccounts.create(
-                                {
-                                    filial_id: merchantExists.filial_id,
-                                    merchant_id: merchantExists.id,
-                                    chartofaccount_id: item.id,
-                                    company_id: merchantExists.company_id,
+                for (let item of merchantxchartofaccounts) {
+                    await MerchantXChartOfAccounts.create(
+                        {
+                            filial_id: merchantExists.filial_id,
+                            merchant_id: merchantExists.id,
+                            chartofaccount_id: item.id,
+                            company_id: merchantExists.company_id,
 
-                                    created_by: req.userId,
-                                },
-                                {
-                                    transaction: req.transaction,
-                                }
-                            )
-                        })
+                            created_by: req.userId,
+                        },
+                        {
+                            transaction: req.transaction,
+                        }
                     )
                 }
             }
 
-            if (
-                req.body.merchantxcostcenters ||
-                (merchantExists.merchantxcostcenters?.length > 0 &&
-                    !req.body.merchantxcostcenters)
-            ) {
+            if (merchantxcostcenters.length > 0) {
                 await MerchantXCostCenter.destroy({
                     where: {
                         merchant_id,
@@ -444,23 +434,19 @@ class MerchantController {
                     transaction: req.transaction,
                 })
 
-                if (req.body.merchantxcostcenters?.length > 0) {
-                    await Promise.all(
-                        req.body.merchantxcostcenters.map(async (item) => {
-                            await MerchantXCostCenter.create(
-                                {
-                                    filial_id: merchantExists.filial_id,
-                                    merchant_id: merchantExists.id,
-                                    costcenter_id: item.id,
-                                    company_id: merchantExists.company_id,
+                for (let item of merchantxcostcenters) {
+                    await MerchantXCostCenter.create(
+                        {
+                            filial_id: merchantExists.filial_id,
+                            merchant_id: merchantExists.id,
+                            costcenter_id: item.id,
+                            company_id: merchantExists.company_id,
 
-                                    created_by: req.userId,
-                                },
-                                {
-                                    transaction: req.transaction,
-                                }
-                            )
-                        })
+                            created_by: req.userId,
+                        },
+                        {
+                            transaction: req.transaction,
+                        }
                     )
                 }
             }
