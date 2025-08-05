@@ -39,13 +39,13 @@ const myriad = resolve(
 const orange = '#ee5827'
 const blue = '#2a2773'
 export function newheader({
-    title1 = '',
-    title2 = '',
     doc = null,
-    maxWidth = 0,
-    filial = null,
+    title1 = 'INTERNATIONAL STUDENT',
+    title2 = 'Application Form',
+    filialName = '',
 }) {
     if (!doc) return
+    const maxWidth = doc.options.layout === 'landscape' ? 770 : 612
     doc.lineWidth(20)
 
     doc.font(myriadBold).fontSize(22).fillColor(blue).text(title1, 30, 20, {
@@ -88,7 +88,7 @@ export function newheader({
     doc.font(myriadSemiBold)
         .fontSize(10)
         .fillColor('#fff')
-        .text('CAMPUS:  ' + filial.name, 30, 94, {
+        .text('CAMPUS:  ' + filialName, 30, 94, {
             align: 'left',
         })
 

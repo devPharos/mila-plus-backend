@@ -255,9 +255,12 @@ export async function verifyAndCancelTextToPayTransaction(
         if (!textPaymentTransaction) {
             return true
         }
-        await emergepay.cancelTextToPayTransaction({
-            paymentPageId: textPaymentTransaction.dataValues.payment_page_id,
-        })
+        if (process.env.NODE_ENV === 'production') {
+            await emergepay.cancelTextToPayTransaction({
+                paymentPageId:
+                    textPaymentTransaction.dataValues.payment_page_id,
+            })
+        }
         await textPaymentTransaction.destroy().then(() => {
             return true
         })
