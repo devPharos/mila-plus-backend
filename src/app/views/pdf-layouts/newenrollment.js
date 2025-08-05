@@ -17,10 +17,43 @@ import { format, parseISO } from 'date-fns'
 import Enrollmentdependent from '../../models/Enrollmentdependent.js'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
-import { newheader } from './newdefault.js'
+import {
+    faixa,
+    newfooter,
+    newheader,
+    newheaderLine,
+    newinputLine,
+} from './newdefault.js'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
+
+const myriadCond = resolve(
+    directory,
+    '..',
+    'assets',
+    'fonts',
+    'myriad-pro',
+    'MYRIADPRO-COND.OTF'
+)
+const myriadSemiBold = resolve(
+    directory,
+    '..',
+    'assets',
+    'fonts',
+    'myriad-pro',
+    'MYRIADPRO-SEMIBOLD.OTF'
+)
+const myriadBold = resolve(
+    directory,
+    '..',
+    'assets',
+    'fonts',
+    'myriad-pro',
+    'MYRIADPRO-BOLD.OTF'
+)
+const orange = '#ee5827'
+const blue = '#2a2773'
 
 export const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -120,17 +153,28 @@ export default async function newenrollment(doc = null, id = '') {
         id,
     })
 
-    let helperHeight = 120
+    let helperHeight = 114
 
-    headerLine({
+    newheaderLine({
         doc,
         maxWidth,
-        width: 140,
+        width: maxWidth - 40,
         topPos: helperHeight,
-        text: `STUDENT INFORMATION:`,
+        text: `APPLICATION FORM`,
     })
 
-    helperHeight += 28
+    helperHeight += 38
+
+    newheaderLine({
+        doc,
+        maxWidth,
+        width: 180,
+        topPos: helperHeight,
+        text: `Student Information`,
+        line: 2,
+    })
+
+    helperHeight += 36
 
     let fullName = student.dataValues.name
     if (student.dataValues.middle_name) {
@@ -138,122 +182,122 @@ export default async function newenrollment(doc = null, id = '') {
     }
     fullName += ' ' + student.dataValues.last_name
 
-    inputLine({
+    // Line 1
+    newinputLine({
         doc,
-        maxWidth,
-        text: 'LEGAL NAME (AS SHOWN ON THE PASSPORT)',
-        width: '1/2',
+        width: 260,
         topPos: helperHeight,
-        leftPos: '1',
+        leftPos: 0,
+        text: 'LEGAL NAME (AS SHOWN ON THE PASSPORT)',
         answer: fullName,
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
-        text: 'GENDER:',
-        width: '1/4',
+        width: 80,
         topPos: helperHeight,
-        leftPos: '3',
+        leftPos: 270,
+        text: 'GENDER',
         answer: student.dataValues.gender,
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
-        text: 'DATE OF BIRTH:',
-        width: '1/4',
+        width: 100,
         topPos: helperHeight,
-        leftPos: '4',
+        leftPos: 360,
+        text: 'NATIVE LANGUAGE',
+        answer: student.dataValues.native_language,
+    })
+
+    newinputLine({
+        doc,
+        width: 100,
+        topPos: helperHeight,
+        leftPos: 470,
+        text: 'DATE OF BIRTH',
         answer: format(
             parseISO(student.dataValues.date_of_birth),
             'MM/dd/yyyy'
         ),
     })
+    // End Line 1
 
-    helperHeight += 28
+    helperHeight += 36
 
-    inputLine({
+    // Start Line 2
+
+    newinputLine({
         doc,
-        maxWidth,
+        width: 135,
         text: 'COUNTRY OF BIRTH',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '1',
+        leftPos: 0,
         answer: student.dataValues.birth_country,
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 135,
         text: 'COUNTRY OF CITIZEN',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '2',
+        leftPos: 145,
         answer: student.dataValues.citizen_country,
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
-        text: 'NATIVE LANGUAGE:',
-        width: '1/4',
-        topPos: helperHeight,
-        leftPos: '3',
-        answer: student.dataValues.native_language,
-    })
-
-    helperHeight += 28
-
-    inputLine({
-        doc,
-        maxWidth,
+        width: 135,
         text: 'CITY OF BIRTH',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '1',
+        leftPos: 290,
         answer: student.dataValues.birth_city,
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 135,
         text: 'STATE / PROVINCE OF BIRTH',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '2',
+        leftPos: 435,
         answer: student.dataValues.birth_state,
     })
+    // End Line 2
 
-    inputLine({
+    helperHeight += 36
+
+    // Start Line 3
+
+    newinputLine({
         doc,
-        maxWidth,
         text: 'WHERE YOU WISH YOUR ADMISSION CORRESPONDENCE TO BE MAILED',
-        width: '1/2',
+        width: maxWidth - 40,
         topPos: helperHeight,
-        leftPos: '3',
+        leftPos: 0,
         answer: enrollment.dataValues.admission_correspondence_address,
     })
 
-    helperHeight += 30
+    // End Line 3
 
-    inputLine({
+    helperHeight += 36
+
+    // Start Line 4
+
+    newinputLine({
         doc,
-        maxWidth,
+        width: 180,
         text: 'PASSPORT NUMBER',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '1',
+        leftPos: 0,
         answer: student.dataValues.passport_number,
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 190,
         text: 'PASSPORT EXPIRATION DATE',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '2',
+        leftPos: 190,
         answer: student.dataValues.passport_expiration_date
             ? format(
                   parseISO(student.dataValues.passport_expiration_date),
@@ -262,13 +306,12 @@ export default async function newenrollment(doc = null, id = '') {
             : '',
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 180,
         text: 'I-94 EXPIRATION DATE',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '3',
+        leftPos: 390,
         answer: enrollmentEmergency.dataValues.i94_expiration_date
             ? format(
                   parseISO(enrollmentEmergency.dataValues.i94_expiration_date),
@@ -277,503 +320,500 @@ export default async function newenrollment(doc = null, id = '') {
             : '',
     })
 
-    helperHeight += 30
+    // End Line 4
 
-    doc.font('Helvetica-Bold')
-        .text('ADDRESS IN THE USA (IF AVAILABLE)', 30, helperHeight)
-        .font('Helvetica')
+    helperHeight += 36
+
+    faixa({ doc, maxWidth, topPos: helperHeight })
 
     helperHeight += 12
 
-    inputLine({
+    // Start Line 5
+
+    helperHeight += 6
+    doc.fontSize(10)
+        .fillColor(orange)
+        .text('Address in the USA:', 20, helperHeight, {
+            width: 100,
+            align: 'center',
+        })
+    helperHeight += 12
+    doc.fillColor('#222').fontSize(8).text('(if available)', 20, helperHeight, {
+        width: 100,
+        align: 'center',
+    })
+
+    helperHeight -= 18
+
+    newinputLine({
         doc,
-        maxWidth,
+        width: 240,
         text: 'STREET',
-        width: '1/2',
         topPos: helperHeight,
-        leftPos: '1',
+        leftPos: 110,
         answer: student.dataValues.address,
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 120,
         text: 'CITY',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '3',
+        leftPos: 360,
         answer: student.dataValues.city,
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 80,
         text: 'STATE',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '4',
+        leftPos: 490,
         answer: student.dataValues.state,
     })
 
-    helperHeight += 28
+    // End Line 5
 
-    inputLine({
+    helperHeight += 36
+
+    // Start Line 6
+
+    newinputLine({
         doc,
-        maxWidth,
+        width: 100,
         text: 'ZIP CODE',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '1',
+        leftPos: 0,
         answer: student.dataValues.zip,
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 160,
         text: 'PHONE NUMBER IN THE USA',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '2',
+        leftPos: 110,
         answer: student.dataValues.phone,
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 300,
         text: 'PERSONAL E-MAIL ADDRESS',
-        width: '1/2',
         topPos: helperHeight,
-        leftPos: '3',
+        leftPos: 280,
         answer: student.dataValues.email,
     })
 
-    helperHeight += 30
+    // End line 6
 
-    doc.font('Helvetica-Bold')
-        .text('ADDRESS IN YOUR HOME COUNTRY (REQUIRED)', 30, helperHeight)
-        .font('Helvetica')
+    helperHeight += 36
 
-    helperHeight += 12
-
-    inputLine({
-        doc,
-        maxWidth,
-        text: 'STREET',
-        width: '1/2',
-        topPos: helperHeight,
-        leftPos: '1',
-        answer: student.dataValues.home_country_address,
-    })
-
-    inputLine({
-        doc,
-        maxWidth,
-        text: 'CITY',
-        width: '1/4',
-        topPos: helperHeight,
-        leftPos: '3',
-        answer: student.dataValues.home_country_city,
-    })
-
-    inputLine({
-        doc,
-        maxWidth,
-        text: 'STATE',
-        width: '1/4',
-        topPos: helperHeight,
-        leftPos: '4',
-        answer: student.dataValues.home_country_state,
-    })
-
-    helperHeight += 28
-
-    inputLine({
-        doc,
-        maxWidth,
-        text: 'ZIP CODE',
-        width: '1/4',
-        topPos: helperHeight,
-        leftPos: '1',
-        answer: student.dataValues.home_country_zip,
-    })
-
-    inputLine({
-        doc,
-        maxWidth,
-        text: 'PHONE NUMBER IN THE USA',
-        width: '1/4',
-        topPos: helperHeight,
-        leftPos: '2',
-        answer: student.dataValues.home_country_phone,
-    })
-
-    helperHeight += 30
-
-    doc.font('Helvetica-Bold')
-        .text('EMERGENCY CONTACT', 30, helperHeight)
-        .font('Helvetica')
+    faixa({ doc, maxWidth, topPos: helperHeight })
 
     helperHeight += 12
 
-    inputLine({
+    // Start Line 7
+
+    helperHeight += 6
+    doc.fontSize(10).fillColor(orange).text('Emergency', 20, helperHeight, {
+        width: 80,
+        align: 'left',
+    })
+    helperHeight += 9
+    doc.fillColor(orange).text('Contact:', 20, helperHeight, {
+        width: 80,
+        align: 'left',
+    })
+
+    helperHeight -= 15
+
+    newinputLine({
         doc,
-        maxWidth,
+        width: 300,
         text: 'NAME',
-        width: '1/2',
         topPos: helperHeight,
-        leftPos: '1',
+        leftPos: 65,
         answer: enrollmentEmergency.dataValues.name,
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 300,
         text: 'TYPE OF RELATIONSHIP',
-        width: '1/2',
         topPos: helperHeight,
-        leftPos: '3',
+        leftPos: 375,
         answer: enrollmentEmergency.dataValues.relationship_type,
     })
 
-    helperHeight += 28
+    // End line 7
 
-    inputLine({
+    helperHeight += 36
+
+    // Start Line 8
+
+    newinputLine({
         doc,
-        maxWidth,
+        width: 290,
         text: 'PHONE NUMBER',
-        width: '1/2',
         topPos: helperHeight,
-        leftPos: '1',
+        leftPos: 0,
         answer: enrollmentEmergency.dataValues.phone,
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 290,
         text: 'E-MAIL',
-        width: '1/2',
         topPos: helperHeight,
-        leftPos: '3',
+        leftPos: 300,
         answer: enrollmentEmergency.dataValues.email,
     })
 
-    helperHeight += 30
+    // End line 8
 
-    headerLine({
+    helperHeight += 36
+
+    // Start Line 9
+
+    newheaderLine({
         doc,
         maxWidth,
-        width: 182,
+        width: 250,
         topPos: helperHeight,
-        text: `INTENSIVE ENGLISH PROGRAM:`,
+        text: `Intensive English Program:`,
+        line: 2,
     })
 
-    helperHeight += 28
+    helperHeight += 36
 
-    // inputLine({
-    //     doc,
-    //     maxWidth,
-    //     text: 'PROGRAM YOU WANT TO STUDY',
-    //     width: '1/4',
-    //     topPos: helperHeight,
-    //     leftPos: '1',
-    //     answer: 'Intensive English Program',
-    // })
+    helperHeight += 9
+    doc.fontSize(10)
+        .fillColor(orange)
+        .text('Are you applying for:', 20, helperHeight, {
+            width: 100,
+            align: 'left',
+        })
 
-    // helperHeight += 30
+    helperHeight -= 9
 
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`ARE YOU APPLYING FOR:`, 30, helperHeight)
-        .font('Helvetica')
-
-    helperHeight += 12
-
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
-        text: 'INITIAL F-1 VISA:',
-        width: '1/4',
+        width: 110,
+        text: 'INITIAL F-1 VISA',
         topPos: helperHeight,
-        leftPos: '1',
-        answer: student.dataValues.processsubstatus_id === 1 ? 'X' : ' - ',
+        leftPos: 100,
+        answer: student.dataValues.processsubstatus_id === 1 ? 'X' : '',
+        image: resolve(directory, '..', 'assets', 'check.png'),
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
-        text: 'TRANSFER F-1 VISA:',
-        width: '1/4',
+        width: 110,
+        text: 'TRANSFER F-1 VISA',
         topPos: helperHeight,
-        leftPos: '2',
-        answer: student.dataValues.processsubstatus_id === 4 ? 'X' : ' - ',
+        leftPos: 220,
+        answer: student.dataValues.processsubstatus_id === 4 ? 'X' : '',
+        image: resolve(directory, '..', 'assets', 'check.png'),
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
-        text: 'CHANGE OF STATUS:',
-        width: '1/4',
+        width: 110,
+        text: 'CHANGE OF STATUS',
         topPos: helperHeight,
-        leftPos: '3',
-        answer: student.dataValues.processsubstatus_id === 2 ? 'X' : ' - ',
+        leftPos: 340,
+        answer: student.dataValues.processsubstatus_id === 2 ? 'X' : '',
+        image: resolve(directory, '..', 'assets', 'check.png'),
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
-        text: 'REINSTATEMENT:',
-        width: '1/4',
+        width: 110,
+        text: 'REINSTATEMENT',
         topPos: helperHeight,
-        leftPos: '4',
-        answer: student.dataValues.processsubstatus_id === 3 ? 'X' : ' - ',
+        leftPos: 460,
+        answer: student.dataValues.processsubstatus_id === 3 ? 'X' : '',
+        image: resolve(directory, '..', 'assets', 'check.png'),
     })
 
-    helperHeight += 30
+    // End line 9
 
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(`ARE YOU APPLYING WITH ANY DEPENDENTS (F-2):`, 30, helperHeight)
-        .font('Helvetica')
+    helperHeight += 36
 
-    helperHeight += 12
+    // Start line 10
 
-    doc.fillColor('#111')
-        .fontSize(8)
-        .font('Helvetica-Oblique')
+    doc.fontSize(10)
+        .fillColor(orange)
+        .text('Are you applying with any dependents (F-2):', 20, helperHeight, {
+            width: 250,
+            align: 'left',
+        })
+    doc.fontSize(10)
+        .fillColor('#555')
         .text(
-            `If yes, contact us. F-2 Registration Fee may be apply.`,
-            30,
-            helperHeight
+            ' If yes, contact us. F-2 Registration Fee may be apply.',
+            214,
+            helperHeight,
+            {
+                width: 250,
+                align: 'left',
+            }
         )
-        .font('Helvetica')
 
-    helperHeight += 12
+    helperHeight += 15
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
-        text: 'YES:',
-        width: '1/4',
+        width: 40,
+        text: 'YES',
         topPos: helperHeight,
-        leftPos: '1',
-        answer: enrollmentDependents.length >= 1 ? 'X' : ' - ',
+        leftPos: 0,
+        answer: enrollmentDependents.length >= 1 ? 'X' : '',
+        image: resolve(directory, '..', 'assets', 'check.png'),
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
-        text: 'NO:',
-        width: '1/4',
+        width: 40,
+        text: 'NO',
         topPos: helperHeight,
-        leftPos: '2',
-        answer: enrollmentDependents.length === 0 ? 'X' : ' - ',
+        leftPos: 50,
+        answer: enrollmentDependents.length === 0 ? 'X' : '',
+        image: resolve(directory, '..', 'assets', 'check.png'),
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 90,
         text: 'HOW MANY?',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '3',
-        answer: enrollmentDependents.length,
+        leftPos: 100,
+        answer: enrollmentDependents.length.toString(),
     })
 
-    helperHeight += 28
-
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 180,
         text: 'HOW MANY MONTHS DO YOU PLAN TO STUDY?',
-        width: '1/2',
         topPos: helperHeight,
-        leftPos: '1',
+        leftPos: 200,
         answer: enrollment.dataValues.plan_months + ' months.',
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 180,
         text: 'WHAT DATE DO YOU WISH TO BEGIN CLASSES?',
-        width: '1/2',
         topPos: helperHeight,
-        leftPos: '3',
+        leftPos: 390,
         answer: format(parseISO(enrollment.dataValues.plan_date), 'MM/dd/yyyy'),
     })
 
-    helperHeight += 30
+    helperHeight += 34
 
-    headerLine({
+    faixa({ doc, maxWidth, topPos: helperHeight, height: 82 })
+
+    helperHeight += 4
+
+    doc.rect(20, helperHeight, 120, 30).fill(blue)
+
+    doc.fillColor('#FFF')
+        .fontSize(16)
+        .text('Tuition', 30, helperHeight + 9)
+
+    doc.rect(140, helperHeight + 14, 10, 3).fill(blue)
+
+    newinputLine({
         doc,
-        maxWidth,
-        width: 162,
-        topPos: helperHeight,
-        text: `TUITION:`,
-    })
-
-    helperHeight += 28
-
-    inputLine({
-        doc,
-        maxWidth,
+        width: 120,
         text: 'NON-REFUNDABLE REGISTRATION FEE',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '1',
+        leftPos: 130,
         answer: filialPriceList.dataValues.registration_fee || (0).toString(),
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 110,
         text: 'NON-REFUNDABLE BOOK FEE',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '2',
+        leftPos: 260,
         answer: filialPriceList.dataValues.book || (0).toString(),
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 110,
         text: 'MONTHLY TUITION FEE',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '3',
+        leftPos: 380,
         answer: filialPriceList.dataValues.tuition || (0).toString(),
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
+        width: 130,
         text: 'DISCOUNT',
-        width: '1/4',
         topPos: helperHeight,
-        leftPos: '4',
+        leftPos: 500,
         answer: student.dataValues.total_discount || (0).toString(),
     })
 
-    helperHeight += 30
+    helperHeight += 38
 
-    headerLine({
+    doc.rect(20, helperHeight, 120, 30).fill(blue)
+
+    doc.fillColor('#FFF')
+        .fontSize(16)
+        .text('Class Schedule', 30, helperHeight + 9)
+
+    doc.rect(140, helperHeight + 14, 10, 3).fill(blue)
+
+    newinputLine({
         doc,
-        maxWidth,
-        width: 162,
+        width: 100,
+        text: '4 DAYS: MORNING',
         topPos: helperHeight,
-        text: `CLASS SCHEDULE:`,
-    })
-
-    helperHeight += 28
-
-    inputLine({
-        doc,
-        maxWidth,
-        text: '4 - DAYS - MORNING - 08:30 to 01:00',
-        width: '1/4',
-        topPos: helperHeight,
-        leftPos: '1',
+        leftPos: 130,
         answer:
             enrollment.dataValues.plan_schedule ===
             '4 days - Morning - 08:30 to 01:00'
                 ? 'X'
-                : ' - ',
+                : '',
+        image: resolve(directory, '..', 'assets', 'check.png'),
+        subLabel: '08:30 to 01:00',
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
-        text: '4 - DAYS - EVENING - 06:00 to 10:30',
-        width: '1/4',
+        width: 100,
+        text: '4 DAYS: EVENING',
         topPos: helperHeight,
-        leftPos: '2',
+        leftPos: 240,
         answer:
             enrollment.dataValues.plan_schedule ===
             '4 days - Evening - 06:00 to 10:30'
                 ? 'X'
-                : ' - ',
+                : '',
+        image: resolve(directory, '..', 'assets', 'check.png'),
+        subLabel: '06:00 to 10:30',
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
-        text: '2 DAYS - (WED - THU) - 08:30 to 18:00',
-        width: '1/4',
+        width: 100,
+        text: '2 DAYS (WED - THU)',
         topPos: helperHeight,
-        leftPos: '3',
+        leftPos: 350,
         answer:
             enrollment.dataValues.plan_schedule ===
             '2 days - Full Time (Wed - Thu) - 08:30 to 18:00'
                 ? 'X'
-                : ' - ',
+                : '',
+        image: resolve(directory, '..', 'assets', 'check.png'),
+        subLabel: '08:30 to 18:00',
     })
 
-    inputLine({
+    newinputLine({
         doc,
-        maxWidth,
-        text: '2 DAYS - (FRI - SAT) - 08:30 to 18:00',
-        width: '1/4',
+        width: 110,
+        text: '2 DAYS - (FRI - SAT)',
         topPos: helperHeight,
-        leftPos: '4',
+        leftPos: 460,
         answer:
             enrollment.dataValues.plan_schedule ===
             '2 days - Full Time (Fri - Sat) - 08:30 to 18:00'
                 ? 'X'
-                : ' - ',
+                : '',
+        image: resolve(directory, '..', 'assets', 'check.png'),
+        subLabel: '08:30 to 18:00',
     })
 
-    helperHeight += 28
+    helperHeight += 42
 
-    signatureLine({
-        doc,
-        maxWidth,
-        text: 'FULL NAME',
-        width: '1/4',
-        topPos: helperHeight,
-        leftPos: '1',
-        height: 40,
-    })
+    helperHeight += 26
+
+    let lineWidth = maxWidth / 3 - 10
+
+    doc.moveTo(20, helperHeight)
+        .lineTo(lineWidth, helperHeight + 1)
+        .dash(2, { space: 2 })
+        .stroke(blue)
+        .undash()
 
     doc.fontSize(8)
-        .fillColor('#111')
-        .text(fullName, 40, helperHeight + 28)
+        .fillColor('#555')
+        .text(fullName, 20, helperHeight - 12, {
+            width: lineWidth - 10,
+            align: 'center',
+        })
 
-    signatureLine({
-        doc,
-        maxWidth,
-        text: 'SIGNATURE',
-        width: '1/2',
-        topPos: helperHeight,
-        leftPos: '2',
-        height: 40,
-    })
+    doc.fontSize(6)
+        .fillColor('#555')
+        .text('FULL NAME', 20, helperHeight + 5, {
+            width: lineWidth - 10,
+            align: 'center',
+        })
 
     if (fs.existsSync(studentSignatureFile)) {
-        doc.image(studentSignatureFile, 260, helperHeight - 2, {
-            width: 82,
-        })
+        doc.image(
+            studentSignatureFile,
+            20 + lineWidth + 40,
+            helperHeight - 28,
+            {
+                width: 82,
+                align: 'center',
+            }
+        )
     }
 
-    signatureLine({
-        doc,
-        maxWidth,
-        text: 'DATE (MM/DD/YYYY)',
-        width: '1/4',
-        topPos: helperHeight,
-        leftPos: '4',
-        height: 40,
-    })
+    doc.moveTo(20 + lineWidth, helperHeight)
+        .lineTo(lineWidth * 2, helperHeight + 1)
+        .dash(2, { space: 2 })
+        .stroke(blue)
+        .undash()
+
+    doc.fontSize(6)
+        .fillColor('#555')
+        .text('SIGNATURE', 20 + lineWidth, helperHeight + 5, {
+            width: lineWidth - 20,
+            align: 'center',
+        })
+
+    doc.moveTo(20 + lineWidth * 2, helperHeight)
+        .lineTo(lineWidth * 3, helperHeight + 1)
+        .dash(2, { space: 2 })
+        .stroke(blue)
+        .undash()
 
     doc.fontSize(8)
-        .fillColor('#111')
+        .fillColor('#555')
         .text(
             format(signature.dataValues.created_at, 'MM/dd/yyyy'),
-            495,
-            helperHeight + 28
+            20 + lineWidth * 2,
+            helperHeight - 12,
+            {
+                width: lineWidth - 30,
+                align: 'center',
+            }
         )
 
-    footer({ doc, maxWidth, id, page: 1, pages: 6 + enrollmentSponsor.length })
+    doc.fontSize(6)
+        .fillColor('#555')
+        .text('DATE (MM/DD/YYYY)', 20 + lineWidth * 2, helperHeight + 5, {
+            width: lineWidth - 30,
+            align: 'center',
+        })
+
+    newfooter({
+        doc,
+        maxWidth,
+        helperHeight,
+        id,
+        page: 1,
+        pages: 6 + enrollmentSponsor.length,
+    })
 
     if (enrollmentDependents.length > 0) {
         doc.addPage()
