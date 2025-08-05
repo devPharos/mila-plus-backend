@@ -107,6 +107,14 @@ class Payee extends Model {
                         key: 'id',
                     },
                 },
+                costcenter_id: {
+                    type: Sequelize.INTEGER,
+                    allowNull: true,
+                    references: {
+                        model: 'costcenters',
+                        key: 'id',
+                    },
+                },
                 paymentcriteria_id: {
                     type: Sequelize.UUID,
                     allowNull: true,
@@ -214,6 +222,10 @@ class Payee extends Model {
         this.belongsTo(models.Milauser, {
             foreignKey: 'updated_by',
             as: 'updatedBy',
+        })
+        this.belongsTo(models.Costcenter, {
+            foreignKey: 'costcenter_id',
+            as: 'costCenter',
         })
     }
 }

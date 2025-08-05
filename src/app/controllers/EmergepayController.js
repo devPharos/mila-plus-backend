@@ -527,6 +527,7 @@ class EmergepayController {
                     const receivablesByInvoiceNumber = await Receivable.findAll(
                         {
                             where: {
+                                filial_id: findRec.dataValues.filial_id,
                                 invoice_number:
                                     findRec.dataValues.invoice_number,
                                 balance: {

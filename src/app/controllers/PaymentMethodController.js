@@ -164,6 +164,7 @@ class PaymentMethodController {
                 bankAccount,
                 type_of_payment,
                 payment_details,
+                notify_settlement,
             } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
@@ -191,6 +192,7 @@ class PaymentMethodController {
                     bankaccount_id: bankAccountExists.id,
                     type_of_payment,
                     payment_details,
+                    notify_settlement,
                     company_id: 1,
 
                     created_by: req.userId,
@@ -218,6 +220,7 @@ class PaymentMethodController {
                 bankAccount,
                 type_of_payment,
                 payment_details,
+                notify_settlement,
             } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
@@ -255,6 +258,7 @@ class PaymentMethodController {
                     bankaccount_id: bankAccountExists.id,
                     type_of_payment,
                     payment_details,
+                    notify_settlement,
                     company_id: 1,
                     updated_by: req.userId,
                 },

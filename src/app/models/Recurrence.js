@@ -49,6 +49,10 @@ class Recurrence extends Model {
                     type: Sequelize.INTEGER,
                     allowNull: false,
                 },
+                costcenter_id: {
+                    type: Sequelize.INTEGER,
+                    allowNull: true,
+                },
                 card_type: {
                     type: Sequelize.STRING,
                     allowNull: true,
@@ -126,6 +130,10 @@ class Recurrence extends Model {
         this.belongsTo(models.Chartofaccount, {
             foreignKey: 'chartofaccount_id',
             as: 'chartOfAccount',
+        })
+        this.belongsTo(models.Costcenter, {
+            foreignKey: 'costcenter_id',
+            as: 'costCenter',
         })
         this.belongsTo(models.PaymentCriteria, {
             foreignKey: 'paymentcriteria_id',

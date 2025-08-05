@@ -40,7 +40,7 @@ export async function SettlementMail({
         const paymentMethod = await PaymentMethod.findByPk(
             receivable.dataValues.paymentmethod_id
         )
-        if (!paymentMethod) {
+        if (!paymentMethod || !paymentMethod.dataValues.notify_settlement) {
             return false
         }
 

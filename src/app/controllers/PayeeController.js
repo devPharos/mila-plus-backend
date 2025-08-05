@@ -1,6 +1,4 @@
-import Sequelize, { Op } from 'sequelize'
-import MailLog from '../../Mails/MailLog.js'
-import databaseConfig from '../../config/database.js'
+import { Op } from 'sequelize'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import Payee from '../models/Payee.js'
@@ -24,6 +22,7 @@ import BankAccounts from '../models/BankAccount.js'
 import xl from 'excel4node'
 import fs from 'fs'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
+import Costcenter from '../models/Costcenter.js'
 
 class PayeeController {
     async index(req, res, next) {
@@ -127,6 +126,13 @@ class PayeeController {
                         attributes: ['id', 'name'],
                     },
                     {
+                        model: Costcenter,
+                        as: 'costCenter',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'name'],
+                    },
+                    {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
                         required: false,
@@ -206,6 +212,12 @@ class PayeeController {
                         where: { canceled_at: null },
                     },
                     {
+                        model: Costcenter,
+                        as: 'costCenter',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
                         required: false,
@@ -254,6 +266,7 @@ class PayeeController {
                 memo,
                 contract_number,
                 chartOfAccount,
+                costCenter = null,
                 merchant,
                 paymentMethod,
                 filial,
@@ -300,14 +313,27 @@ class PayeeController {
                 })
             }
 
-            const paymentMethodExists = await PaymentMethod.findByPk(
-                paymentMethod.id
-            )
+            let costCenterExists = null
+            if (costCenter.id) {
+                costCenterExists = await Costcenter.findByPk(costCenter.id)
+                if (!costCenterExists) {
+                    return res.status(400).json({
+                        error: 'Cost Center does not exist.',
+                    })
+                }
+            }
 
-            if (!paymentMethodExists) {
-                return res.status(400).json({
-                    error: 'Payment Method does not exist.',
-                })
+            let paymentMethodExists = null
+            if (paymentMethod.id) {
+                paymentMethodExists = await PaymentMethod.findByPk(
+                    paymentMethod.id
+                )
+
+                if (!paymentMethodExists) {
+                    return res.status(400).json({
+                        error: 'Payment Method does not exist.',
+                    })
+                }
             }
 
             const newPayee = await Payee.create(
@@ -337,10 +363,11 @@ class PayeeController {
                     type_detail,
                     entry_date: entry_date.replace(/-/g, ''),
                     due_date: due_date.replace(/-/g, ''),
-                    paymentmethod_id: paymentMethodExists.id,
+                    paymentmethod_id: paymentMethodExists?.id,
                     memo,
                     contract_number,
-                    chartofaccount_id: chartOfAccountExists.id,
+                    chartofaccount_id: chartOfAccountExists?.id,
+                    costcenter_id: costCenterExists?.id,
                     is_recurrence: false,
                     status: 'Pending',
                     status_date: format(new Date(), 'yyyyMMdd'),
@@ -371,44 +398,44 @@ class PayeeController {
             const {
                 merchant = null,
                 chartOfAccount = null,
+                costCenter = null,
                 paymentMethod = null,
-                filial,
+                filial = null,
                 invoice_number = null,
             } = req.body
 
-            const issuer = await Issuer.findOne({
-                where: {
-                    company_id: 1,
-                    filial_id: filialExists.id,
-                    merchant_id: merchant.id,
-                    canceled_at: null,
-                },
-            })
-
-            if (!issuer) {
-                return res.status(400).json({
-                    error: 'Issuer does not exist.',
-                })
+            let chartOfAccountExists = null
+            if (chartOfAccount.id) {
+                chartOfAccountExists = await ChartOfAccount.findByPk(
+                    chartOfAccount.id
+                )
+                if (!chartOfAccountExists) {
+                    return res.status(400).json({
+                        error: 'Chart of Account does not exist.',
+                    })
+                }
             }
 
-            const chartOfAccountExists = await ChartOfAccount.findByPk(
-                chartOfAccount.id
-            )
-
-            if (!chartOfAccountExists) {
-                return res.status(400).json({
-                    error: 'Chart of Account does not exist.',
-                })
+            let costCenterExists = null
+            if (costCenter) {
+                costCenterExists = await Costcenter.findByPk(costCenter.id)
+                if (!costCenterExists) {
+                    return res.status(400).json({
+                        error: 'Cost Center does not exist.',
+                    })
+                }
             }
 
-            const paymentMethodExists = await PaymentMethod.findByPk(
-                paymentMethod.id
-            )
-
-            if (!paymentMethodExists) {
-                return res.status(400).json({
-                    error: 'Payment Method does not exist.',
-                })
+            let paymentMethodExists = null
+            if (paymentMethod.id) {
+                paymentMethodExists = await PaymentMethod.findByPk(
+                    paymentMethod.id
+                )
+                if (!paymentMethodExists) {
+                    return res.status(400).json({
+                        error: 'Payment Method does not exist.',
+                    })
+                }
             }
 
             const payeeExists = await Payee.findByPk(payee_id, {
@@ -429,15 +456,33 @@ class PayeeController {
 
             let filialExists = null
             if (filial) {
-                filialExists = await Filial.findByPk(filial.id)?.dataValues?.id
-
-                if (!filialExists) {
-                    return res.status(400).json({
-                        error: 'Filial does not exist.',
-                    })
-                }
+                filialExists = await Filial.findByPk(filial.id)
             } else {
                 filialExists = payeeExists.dataValues.filial_id
+            }
+
+            if (!filialExists) {
+                return res.status(400).json({
+                    error: 'Filial does not exist.',
+                })
+            }
+
+            let issuerExists = null
+            if (merchant.id) {
+                issuerExists = await Issuer.findOne({
+                    where: {
+                        company_id: 1,
+                        filial_id: filial.id,
+                        merchant_id: merchant.id,
+                        canceled_at: null,
+                    },
+                })
+            }
+
+            if (!issuerExists) {
+                return res.status(400).json({
+                    error: 'Issuer does not exist.',
+                })
             }
 
             let { amount, fee, discount } = req.body
@@ -455,10 +500,11 @@ class PayeeController {
             await payeeExists.update(
                 {
                     ...req.body,
-                    filial_id: filialExists.id,
-                    chartofaccount_id: chartOfAccountExists.id,
-                    issuer_id: issuer.id,
-                    paymentmethod_id: paymentMethodExists.id,
+                    filial_id: filialExists?.id,
+                    chartofaccount_id: chartOfAccountExists?.id,
+                    costcenter_id: costCenterExists?.id,
+                    issuer_id: issuerExists?.id,
+                    paymentmethod_id: paymentMethodExists?.id,
                     total: parseFloat(
                         (
                             parseFloat(amount) +
@@ -1202,6 +1248,53 @@ class PayeeController {
                 }
             })
             return ret
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
+    }
+
+    async classify(req, res, next) {
+        try {
+            const { payee_id } = req.params
+            const { costCenter, chartOfAccount } = req.body
+            const payee = await Payee.findByPk(payee_id)
+            if (!payee) {
+                return res.status(400).json({
+                    error: 'Payee does not exist.',
+                })
+            }
+
+            let chartOfAccountExists = null
+            if (chartOfAccount.id) {
+                chartOfAccountExists = await ChartOfAccount.findByPk(
+                    chartOfAccount.id
+                )
+                if (!chartOfAccountExists) {
+                    return res.status(400).json({
+                        error: 'Chart of Account does not exist.',
+                    })
+                }
+            }
+
+            let costCenterExists = null
+            if (costCenter.id) {
+                costCenterExists = await Costcenter.findByPk(costCenter.id)
+                if (!costCenterExists) {
+                    return res.status(400).json({
+                        error: 'Cost Center does not exist.',
+                    })
+                }
+            }
+
+            await payee.update({
+                costcenter_id: costCenterExists?.id,
+                chartofaccount_id: chartOfAccountExists?.id,
+            })
+
+            await req.transaction.commit()
+
+            return res.json(payee)
         } catch (err) {
             err.transaction = req.transaction
             next(err)

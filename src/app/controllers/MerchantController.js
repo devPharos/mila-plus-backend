@@ -13,6 +13,8 @@ import {
     verifyFilialSearch,
 } from '../functions/index.js'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
+import MerchantXCostCenter from '../models/MerchantXCostCenter.js'
+import Costcenter from '../models/Costcenter.js'
 
 const { Op } = Sequelize
 
@@ -82,6 +84,24 @@ class MerchantController {
                         },
                     },
                     {
+                        model: MerchantXCostCenter,
+                        as: 'merchantxcostcenters',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                        include: [
+                            {
+                                model: Costcenter,
+                                as: 'costCenter',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
+                    },
+                    {
                         model: MerchantXChartOfAccounts,
                         as: 'merchantxchartofaccounts',
                         required: false,
@@ -146,6 +166,24 @@ class MerchantController {
                             {
                                 model: ChartOfAccounts,
                                 as: 'chartOfAccount',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                        ],
+                    },
+                    {
+                        model: MerchantXCostCenter,
+                        as: 'merchantxcostcenters',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                        include: [
+                            {
+                                model: Costcenter,
+                                as: 'costCenter',
                                 required: false,
                                 where: {
                                     canceled_at: null,
@@ -290,6 +328,8 @@ class MerchantController {
                 bank_name,
                 bank_account,
                 bank_routing_number,
+                merchantxchartofaccounts = [],
+                merchantxcostcenters = [],
             } = req.body
 
             if (filial) {
@@ -361,11 +401,7 @@ class MerchantController {
                 }
             )
 
-            if (
-                req.body.merchantxchartofaccounts ||
-                (merchantExists.merchantxchartofaccounts?.length > 0 &&
-                    !req.body.merchantxchartofaccounts)
-            ) {
+            if (merchantxchartofaccounts.length > 0) {
                 await MerchantXChartOfAccounts.destroy({
                     where: {
                         merchant_id,
@@ -373,23 +409,44 @@ class MerchantController {
                     transaction: req.transaction,
                 })
 
-                if (req.body.merchantxchartofaccounts?.length > 0) {
-                    await Promise.all(
-                        req.body.merchantxchartofaccounts.map(async (item) => {
-                            await MerchantXChartOfAccounts.create(
-                                {
-                                    filial_id: merchantExists.filial_id,
-                                    merchant_id: merchantExists.id,
-                                    chartofaccount_id: item.id,
-                                    company_id: merchantExists.company_id,
+                for (let item of merchantxchartofaccounts) {
+                    await MerchantXChartOfAccounts.create(
+                        {
+                            filial_id: merchantExists.filial_id,
+                            merchant_id: merchantExists.id,
+                            chartofaccount_id: item.id,
+                            company_id: merchantExists.company_id,
 
-                                    created_by: req.userId,
-                                },
-                                {
-                                    transaction: req.transaction,
-                                }
-                            )
-                        })
+                            created_by: req.userId,
+                        },
+                        {
+                            transaction: req.transaction,
+                        }
+                    )
+                }
+            }
+
+            if (merchantxcostcenters.length > 0) {
+                await MerchantXCostCenter.destroy({
+                    where: {
+                        merchant_id,
+                    },
+                    transaction: req.transaction,
+                })
+
+                for (let item of merchantxcostcenters) {
+                    await MerchantXCostCenter.create(
+                        {
+                            filial_id: merchantExists.filial_id,
+                            merchant_id: merchantExists.id,
+                            costcenter_id: item.id,
+                            company_id: merchantExists.company_id,
+
+                            created_by: req.userId,
+                        },
+                        {
+                            transaction: req.transaction,
+                        }
                     )
                 }
             }

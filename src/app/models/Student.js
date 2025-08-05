@@ -72,6 +72,7 @@ class Student extends Model {
                     type: Sequelize.UUID,
                 },
                 studentgroup_id: Sequelize.INTEGER,
+                partners_and_influencer_id: Sequelize.UUID,
                 classroom_id: Sequelize.UUID,
                 teacher_id: Sequelize.UUID,
                 start_date: Sequelize.STRING,
@@ -148,6 +149,10 @@ class Student extends Model {
         this.hasMany(models.Attendance, {
             foreignKey: 'student_id',
             as: 'attendances',
+        })
+        this.belongsTo(models.PartnersAndInfluencers, {
+            foreignKey: 'partners_and_influencer_id',
+            as: 'partners_and_influencers',
         })
     }
 }

@@ -16,7 +16,6 @@ import {
     addYears,
     differenceInDays,
     format,
-    lastDayOfMonth,
     parseISO,
     subDays,
     subMonths,
@@ -54,13 +53,13 @@ import {
     verifyFilialSearch,
 } from '../functions/index.js'
 import Chartofaccount from '../models/Chartofaccount.js'
-import { getDb } from '../../config/mongodb.js'
 
 import xl from 'excel4node'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
 import { SettlementMail } from '../views/mails/SettlementMail.js'
+import Costcenter from '../models/Costcenter.js'
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
@@ -1488,6 +1487,13 @@ class ReceivableController {
                         attributes: ['id', 'name'],
                     },
                     {
+                        model: Costcenter,
+                        as: 'costCenter',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'name'],
+                    },
+                    {
                         model: PaymentCriteria,
                         as: 'paymentCriteria',
                         required: false,
@@ -1574,6 +1580,12 @@ class ReceivableController {
                     {
                         model: ChartOfAccount,
                         as: 'chartOfAccount',
+                        required: false,
+                        where: { canceled_at: null },
+                    },
+                    {
+                        model: Costcenter,
+                        as: 'costCenter',
                         required: false,
                         where: { canceled_at: null },
                     },
@@ -1668,6 +1680,7 @@ class ReceivableController {
                 issuer,
                 paymentMethod,
                 chartOfAccount,
+                costCenter,
                 amount,
                 fee,
                 discount,
@@ -1687,29 +1700,48 @@ class ReceivableController {
                 })
             }
 
-            const issuerExists = await Issuer.findByPk(issuer.id)
-            if (!issuerExists) {
-                return res.status(400).json({
-                    error: 'Issuer does not exist.',
-                })
+            let issuerExists = null
+            if (issuer.id) {
+                issuerExists = await Issuer.findByPk(issuer.id)
+                if (!issuerExists) {
+                    return res.status(400).json({
+                        error: 'Issuer does not exist.',
+                    })
+                }
             }
 
-            const paymentMethodExists = await PaymentMethod.findByPk(
-                paymentMethod.id
-            )
-            if (!paymentMethodExists) {
-                return res.status(400).json({
-                    error: 'Payment Method does not exist.',
-                })
+            let paymentMethodExists = null
+            if (paymentMethod.id) {
+                paymentMethodExists = await PaymentMethod.findByPk(
+                    paymentMethod.id
+                )
+                if (!paymentMethodExists) {
+                    return res.status(400).json({
+                        error: 'Payment Method does not exist.',
+                    })
+                }
             }
 
-            const chartOfAccountExists = await Chartofaccount.findByPk(
-                chartOfAccount.id
-            )
-            if (!chartOfAccountExists) {
-                return res.status(400).json({
-                    error: 'Chart of Account does not exist.',
-                })
+            let chartOfAccountExists = null
+            if (chartOfAccount.id) {
+                chartOfAccountExists = await Chartofaccount.findByPk(
+                    chartOfAccount.id
+                )
+                if (!chartOfAccountExists) {
+                    return res.status(400).json({
+                        error: 'Chart of Account does not exist.',
+                    })
+                }
+            }
+
+            let costCenterExists = null
+            if (costCenter.id) {
+                costCenterExists = await Costcenter.findByPk(costCenter.id)
+                if (!costCenterExists) {
+                    return res.status(400).json({
+                        error: 'Cost Center does not exist.',
+                    })
+                }
             }
 
             const newReceivable = await Receivable.create(
@@ -1732,11 +1764,12 @@ class ReceivableController {
                     issuer_id: issuerExists.id,
                     entry_date: entry_date.replaceAll('-', ''),
                     due_date: due_date.replaceAll('-', ''),
-                    paymentmethod_id: paymentMethodExists.id,
+                    paymentmethod_id: paymentMethodExists?.id,
                     memo,
                     contract_number,
                     authorization_code,
-                    chartofaccount_id: chartOfAccountExists.id,
+                    chartofaccount_id: chartOfAccountExists?.id,
+                    costcenter_id: costCenterExists?.id,
                     is_recurrence: false,
                     status: 'Pending',
                     status_date: format(new Date(), 'yyyyMMdd'),
@@ -1880,6 +1913,7 @@ class ReceivableController {
                 issuer,
                 paymentMethod,
                 chartOfAccount,
+                costCenter,
                 amount = 0,
                 fee = 0,
                 discount = 0,
@@ -1899,13 +1933,16 @@ class ReceivableController {
                 })
             }
 
-            const paymentMethodExists = await PaymentMethod.findByPk(
-                paymentMethod.id
-            )
-            if (!paymentMethodExists) {
-                return res.status(400).json({
-                    error: 'Payment Method does not exist.',
-                })
+            let paymentMethodExists = null
+            if (paymentMethod.id) {
+                paymentMethodExists = await PaymentMethod.findByPk(
+                    paymentMethod.id
+                )
+                if (!paymentMethodExists) {
+                    return res.status(400).json({
+                        error: 'Payment Method does not exist.',
+                    })
+                }
             }
 
             const chartOfAccountExists = await Chartofaccount.findByPk(
@@ -1915,6 +1952,16 @@ class ReceivableController {
                 return res.status(400).json({
                     error: 'Chart of Account does not exist.',
                 })
+            }
+
+            let costCenterExists = null
+            if (costCenter.id) {
+                costCenterExists = await Costcenter.findByPk(costCenter.id)
+                if (!costCenterExists) {
+                    return res.status(400).json({
+                        error: 'Cost Center does not exist.',
+                    })
+                }
             }
 
             const receivableExists = await Receivable.findByPk(receivable_id, {
@@ -1945,6 +1992,7 @@ class ReceivableController {
                     issuer_id: issuerExists.id,
                     paymentmethod_id: paymentMethodExists.id,
                     chartofaccount_id: chartOfAccountExists.id,
+                    costcenter_id: costCenterExists?.id,
                     total:
                         parseFloat(amount) +
                         parseFloat(fee) -
@@ -2279,7 +2327,7 @@ class ReceivableController {
                 amount: settlementAmount,
                 settlement_date,
                 paymentmethod_id: paymentMethod.id,
-                settlement_memo,
+                memo: settlement_memo,
                 created_by: req.userId,
             })
 
@@ -2314,6 +2362,8 @@ class ReceivableController {
             }
 
             await req.transaction.commit()
+            await verifyAndCancelTextToPayTransaction(receivable_id)
+            await verifyAndCancelParcelowPaymentLink(receivable_id)
             return res.json(receivable)
         } catch (err) {
             err.transaction = req.transaction
@@ -2343,7 +2393,7 @@ class ReceivableController {
                 amount: parseFloat(settlement_amount),
                 settlement_date,
                 paymentmethod_id: paymentMethod.id,
-                settlement_memo,
+                memo: settlement_memo,
                 created_by: req.userId,
             })
 
@@ -2365,6 +2415,9 @@ class ReceivableController {
             }
 
             await req.transaction.commit()
+
+            await verifyAndCancelTextToPayTransaction(receivable_id)
+            await verifyAndCancelParcelowPaymentLink(receivable_id)
             return res.json(receivable)
         } catch (err) {
             err.transaction = req.transaction
@@ -2491,6 +2544,7 @@ class ReceivableController {
                         status: 'Pending',
                         status_date: format(new Date(), 'yyyyMMdd'),
                         chartofaccount_id: firstReceivable.chartofaccount_id,
+                        costcenter_id: firstReceivable.costcenter_id,
                         paymentcriteria_id: paymentCriteria.id,
                         notification_sent: false,
                         renegociation_from: renegociation.id,
@@ -3253,6 +3307,53 @@ class ReceivableController {
             // await receivable.update({
             //     notification_sent: true,
             // })
+            return res.json(receivable)
+        } catch (err) {
+            err.transaction = req.transaction
+            next(err)
+        }
+    }
+
+    async classify(req, res, next) {
+        try {
+            const { receivable_id } = req.params
+            const { costCenter, chartOfAccount } = req.body
+            const receivable = await Receivable.findByPk(receivable_id)
+            if (!receivable) {
+                return res.status(400).json({
+                    error: 'Receivable does not exist.',
+                })
+            }
+
+            let chartOfAccountExists = null
+            if (chartOfAccount.id) {
+                chartOfAccountExists = await ChartOfAccount.findByPk(
+                    chartOfAccount.id
+                )
+                if (!chartOfAccountExists) {
+                    return res.status(400).json({
+                        error: 'Chart of Account does not exist.',
+                    })
+                }
+            }
+
+            let costCenterExists = null
+            if (costCenter.id) {
+                costCenterExists = await Costcenter.findByPk(costCenter.id)
+                if (!costCenterExists) {
+                    return res.status(400).json({
+                        error: 'Cost Center does not exist.',
+                    })
+                }
+            }
+
+            await receivable.update({
+                costcenter_id: costCenterExists?.id,
+                chartofaccount_id: chartOfAccountExists?.id,
+            })
+
+            await req.transaction.commit()
+
             return res.json(receivable)
         } catch (err) {
             err.transaction = req.transaction

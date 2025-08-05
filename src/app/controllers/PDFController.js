@@ -1,6 +1,4 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog.js'
-import databaseConfig from '../../config/database.js'
 import { dirname, resolve } from 'path'
 
 import PDFDocument from 'pdfkit'
@@ -9,6 +7,7 @@ import transferEligibility from '../views/pdf-layouts/transfer-eligibility.js'
 import enrollment from '../views/pdf-layouts/enrollment.js'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
+import newenrollment from '../views/pdf-layouts/newenrollment.js'
 
 const { Op } = Sequelize
 const filename = fileURLToPath(import.meta.url)
@@ -51,7 +50,10 @@ class PDFController {
                 isValid = await transferEligibility(doc, id)
             } else if (layout === 'enrollment') {
                 isValid = await enrollment(doc, id)
+            } else if (layout === 'new-enrollment') {
+                isValid = await newenrollment(doc, id)
             }
+            console.log({ layout })
             if (!isValid) {
                 return res.status(400).json({ error: 'Invalid PDF' })
             }

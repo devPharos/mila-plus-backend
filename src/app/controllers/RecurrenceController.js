@@ -34,6 +34,7 @@ import Filial from '../models/Filial.js'
 import PaymentMethod from '../models/PaymentMethod.js'
 import Chartofaccount from '../models/Chartofaccount.js'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
+import Costcenter from '../models/Costcenter.js'
 
 export async function generateRecurrenceReceivables({
     recurrence = null,
@@ -443,6 +444,12 @@ class RecurrenceController {
                                         required: false,
                                         where: { canceled_at: null },
                                     },
+                                    {
+                                        model: Costcenter,
+                                        as: 'costCenter',
+                                        required: false,
+                                        where: { canceled_at: null },
+                                    },
                                 ],
                             },
                         ],
@@ -481,8 +488,13 @@ class RecurrenceController {
     }
     async store(req, res, next) {
         try {
-            const { filial, paymentMethod, paymentCriteria, chartOfAccount } =
-                req.body
+            const {
+                filial,
+                paymentMethod,
+                paymentCriteria,
+                chartOfAccount,
+                costCenter,
+            } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
             if (!filialExists) {
@@ -521,6 +533,16 @@ class RecurrenceController {
                 })
             }
 
+            let costCenterExists = null
+            if (costCenter.id) {
+                costCenterExists = await Costcenter.findByPk(costCenter.id)
+                if (!costCenterExists) {
+                    return res.status(400).json({
+                        error: 'Cost Center does not exist.',
+                    })
+                }
+            }
+
             const issuer = await createIssuerFromStudent({
                 student_id: req.body.student_id,
                 created_by: req.userId,
@@ -538,10 +560,11 @@ class RecurrenceController {
                 recurrence = await Recurrence.create(
                     {
                         company_id: 1,
-                        filial_id: filialExists.id,
-                        paymentmethod_id: paymentMethodExists.id,
-                        paymentcriteria_id: paymentCriteriaExists.id,
-                        chartofaccount_id: chartOfAccountExists.id,
+                        filial_id: filialExists?.id,
+                        paymentmethod_id: paymentMethodExists?.id,
+                        paymentcriteria_id: paymentCriteriaExists?.id,
+                        chartofaccount_id: chartOfAccountExists?.id,
+                        costcenter_id: costCenterExists?.id,
                         ...req.body,
                         amount: req.body.prices.total_tuition,
                         issuer_id: issuer.id,
@@ -558,9 +581,10 @@ class RecurrenceController {
                     {
                         filial_id: filialExists.id,
                         ...req.body,
-                        paymentmethod_id: paymentMethodExists.id,
-                        paymentcriteria_id: paymentCriteriaExists.id,
-                        chartofaccount_id: chartOfAccountExists.id,
+                        paymentmethod_id: paymentMethodExists?.id,
+                        paymentcriteria_id: paymentCriteriaExists?.id,
+                        chartofaccount_id: chartOfAccountExists?.id,
+                        costcenter_id: costCenterExists?.id,
                         amount: req.body.prices.total_tuition,
                         issuer_id: issuer.id,
                         updated_by: req.userId,

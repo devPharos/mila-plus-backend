@@ -44,6 +44,10 @@ class PaymentMethod extends Model {
                     type: Sequelize.STRING,
                     allowNull: true,
                 },
+                notify_settlement: {
+                    type: Sequelize.BOOLEAN,
+                    defaultValue: false,
+                },
                 created_at: {
                     type: Sequelize.DATE,
                     allowNull: false,

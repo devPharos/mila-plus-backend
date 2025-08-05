@@ -25,13 +25,20 @@ import Enrollmentsponsor from '../models/Enrollmentsponsor.js'
 import Receivable from '../models/Receivable.js'
 import Issuer from '../models/Issuer.js'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
+import PartnersAndInfluencers from '../models/PartnersAndInfluencers.js'
 
 const { Op } = Sequelize
 
 class ProspectController {
     async store(req, res, next) {
         try {
-            const { filial, agent, processtypes, processsubstatuses } = req.body
+            const {
+                filial,
+                agent,
+                processtypes,
+                processsubstatuses,
+                partners_and_influencers,
+            } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
             if (!filialExists) {
@@ -71,6 +78,19 @@ class ProspectController {
                 }
             }
 
+            let partnersAndInfluencersExists = null
+            if (partners_and_influencers) {
+                partnersAndInfluencersExists =
+                    await PartnersAndInfluencers.findByPk(
+                        partners_and_influencers.id
+                    )
+                if (!partnersAndInfluencersExists) {
+                    return res.status(400).json({
+                        error: 'Partner and Influencer does not exist.',
+                    })
+                }
+            }
+
             const newProspect = await Student.create(
                 {
                     ...req.body,
@@ -81,6 +101,12 @@ class ProspectController {
                         : {}),
                     ...(processsubstatuses.id
                         ? { processsubstatus_id: processsubstatuses.id }
+                        : {}),
+                    ...(partnersAndInfluencersExists
+                        ? {
+                              partners_and_influencer_id:
+                                  partnersAndInfluencersExists.id,
+                          }
                         : {}),
                     company_id: 1,
 
@@ -108,7 +134,13 @@ class ProspectController {
     async update(req, res, next) {
         try {
             const { prospect_id } = req.params
-            const { filial, agent, processtypes, processsubstatuses } = req.body
+            const {
+                filial,
+                agent,
+                processtypes,
+                processsubstatuses,
+                partners_and_influencers,
+            } = req.body
             const filialExists = await Filial.findByPk(filial.id)
             if (!filialExists) {
                 return res.status(400).json({
@@ -143,6 +175,19 @@ class ProspectController {
                 if (!processsubstatusExists) {
                     return res.status(400).json({
                         error: 'Process Sub Status does not exist.',
+                    })
+                }
+            }
+
+            let partnersAndInfluencersExists = null
+            if (partners_and_influencers) {
+                partnersAndInfluencersExists =
+                    await PartnersAndInfluencers.findByPk(
+                        partners_and_influencers.id
+                    )
+                if (!partnersAndInfluencersExists) {
+                    return res.status(400).json({
+                        error: 'Partner and Influencer does not exist.',
                     })
                 }
             }
@@ -181,6 +226,12 @@ class ProspectController {
                         ? { processsubstatus_id: processsubstatuses.id }
                         : {}),
                     ...(agent.id ? { agent_id: agent.id } : {}),
+                    ...(partnersAndInfluencersExists
+                        ? {
+                              partners_and_influencer_id:
+                                  partnersAndInfluencersExists.id,
+                          }
+                        : {}),
 
                     updated_by: req.userId,
                 },
@@ -238,6 +289,13 @@ class ProspectController {
                         required: false,
                         attributes: ['id', 'name'],
                         where: { canceled_at: null },
+                    },
+                    {
+                        model: PartnersAndInfluencers,
+                        as: 'partners_and_influencers',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'partners_name'],
                     },
                     {
                         model: Enrollment,
@@ -386,6 +444,12 @@ class ProspectController {
                     field: 'email',
                     type: 'string',
                 },
+                {
+                    model: PartnersAndInfluencers,
+                    field: 'partners_name',
+                    type: 'string',
+                    return: 'partners_and_influencer_id',
+                },
             ]
 
             const { count, rows } = await Student.findAndCountAll({
@@ -407,6 +471,15 @@ class ProspectController {
                         where: {
                             canceled_at: null,
                         },
+                    },
+                    {
+                        model: PartnersAndInfluencers,
+                        as: 'partners_and_influencers',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                        attributes: ['id', 'partners_name'],
                     },
                     {
                         model: Processtype,

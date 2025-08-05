@@ -45,6 +45,10 @@ class Payeerecurrence extends Model {
                     type: Sequelize.INTEGER,
                     allowNull: false,
                 },
+                costcenter_id: {
+                    type: Sequelize.INTEGER,
+                    allowNull: true,
+                },
                 paymentcriteria_id: {
                     type: Sequelize.UUID,
                     allowNull: false,
@@ -103,6 +107,10 @@ class Payeerecurrence extends Model {
         this.belongsTo(models.Chartofaccount, {
             foreignKey: 'chartofaccount_id',
             as: 'chartOfAccount',
+        })
+        this.belongsTo(models.Costcenter, {
+            foreignKey: 'costcenter_id',
+            as: 'costCenter',
         })
         this.belongsTo(models.PaymentCriteria, {
             foreignKey: 'paymentcriteria_id',

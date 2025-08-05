@@ -12,6 +12,7 @@ class Chartofaccount extends Model {
                 father_code: Sequelize.STRING,
                 profit_and_loss: Sequelize.BOOLEAN,
                 allow_use: Sequelize.BOOLEAN,
+                old_code: Sequelize.STRING,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
