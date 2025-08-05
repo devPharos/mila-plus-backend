@@ -338,7 +338,7 @@ class CostcentersController {
             } = req.body
 
             let fatherExists = null
-            if (Father) {
+            if (Father.id) {
                 fatherExists = await Costcenter.findByPk(Father.id)
                 if (!fatherExists) {
                     return res.status(400).json({
