@@ -266,7 +266,7 @@ class PayeeController {
                 memo,
                 contract_number,
                 chartOfAccount,
-                costCenter,
+                costCenter = null,
                 merchant,
                 paymentMethod,
                 filial,
@@ -313,21 +313,27 @@ class PayeeController {
                 })
             }
 
-            const costCenterExists = await Costcenter.findByPk(costCenter.id)
-            if (!costCenterExists) {
-                return res.status(400).json({
-                    error: 'Cost Center does not exist.',
-                })
+            let costCenterExists = null
+            if (costCenter.id) {
+                costCenterExists = await Costcenter.findByPk(costCenter.id)
+                if (!costCenterExists) {
+                    return res.status(400).json({
+                        error: 'Cost Center does not exist.',
+                    })
+                }
             }
 
-            const paymentMethodExists = await PaymentMethod.findByPk(
-                paymentMethod.id
-            )
+            let paymentMethodExists = null
+            if (paymentMethod.id) {
+                paymentMethodExists = await PaymentMethod.findByPk(
+                    paymentMethod.id
+                )
 
-            if (!paymentMethodExists) {
-                return res.status(400).json({
-                    error: 'Payment Method does not exist.',
-                })
+                if (!paymentMethodExists) {
+                    return res.status(400).json({
+                        error: 'Payment Method does not exist.',
+                    })
+                }
             }
 
             const newPayee = await Payee.create(
@@ -357,11 +363,11 @@ class PayeeController {
                     type_detail,
                     entry_date: entry_date.replace(/-/g, ''),
                     due_date: due_date.replace(/-/g, ''),
-                    paymentmethod_id: paymentMethodExists.id,
+                    paymentmethod_id: paymentMethodExists?.id,
                     memo,
                     contract_number,
-                    chartofaccount_id: chartOfAccountExists.id,
-                    costcenter_id: costCenterExists.id,
+                    chartofaccount_id: chartOfAccountExists?.id,
+                    costcenter_id: costCenterExists?.id,
                     is_recurrence: false,
                     status: 'Pending',
                     status_date: format(new Date(), 'yyyyMMdd'),
@@ -490,30 +496,6 @@ class PayeeController {
             if (!discount) {
                 discount = payeeExists.discount.toFixed(2)
             }
-
-            console.log({
-                ...req.body,
-                filial_id: filialExists?.id,
-                chartofaccount_id: chartOfAccountExists?.id,
-                costcenter_id: costCenterExists?.id,
-                issuer_id: issuerExists?.id,
-                paymentmethod_id: paymentMethodExists?.id,
-                total: parseFloat(
-                    (
-                        parseFloat(amount) +
-                        parseFloat(fee) -
-                        parseFloat(discount)
-                    ).toFixed(2)
-                ),
-                balance: parseFloat(
-                    (
-                        parseFloat(amount) +
-                        parseFloat(fee) -
-                        parseFloat(discount)
-                    ).toFixed(2)
-                ),
-                updated_by: req.userId,
-            })
 
             await payeeExists.update(
                 {

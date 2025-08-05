@@ -1,6 +1,4 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog.js'
-import databaseConfig from '../../config/database.js'
 import { dirname, resolve } from 'path'
 
 import PDFDocument from 'pdfkit'
