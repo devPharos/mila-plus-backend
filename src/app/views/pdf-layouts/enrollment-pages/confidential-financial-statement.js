@@ -449,6 +449,6 @@ export default async function pageConfidentialFinancialStatement({
         doc,
         maxWidth,
         page: 4,
-        pages: 6 + enrollmentSponsor.length,
+        pages: 4 + enrollmentSponsor.length,
     })
 }

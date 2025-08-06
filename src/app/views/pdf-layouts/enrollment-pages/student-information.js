@@ -741,6 +741,6 @@ export default async function pageStudentInformation({
         doc,
         maxWidth,
         page: 1,
-        pages: 6 + enrollmentSponsor.length,
+        pages: 4 + enrollmentSponsor.length,
     })
 }

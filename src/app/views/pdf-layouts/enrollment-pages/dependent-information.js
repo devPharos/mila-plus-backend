@@ -236,6 +236,6 @@ export default async function pageDependentInformation({
         doc,
         maxWidth,
         page: 2,
-        pages: 6 + enrollmentSponsor.length,
+        pages: 4 + enrollmentSponsor.length,
     })
 }

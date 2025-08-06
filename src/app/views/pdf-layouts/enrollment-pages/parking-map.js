@@ -258,6 +258,6 @@ export default async function pageParkingMap({
         doc,
         maxWidth,
         page: 5,
-        pages: 6 + enrollmentSponsor.length,
+        pages: 4 + enrollmentSponsor.length,
     })
 }
