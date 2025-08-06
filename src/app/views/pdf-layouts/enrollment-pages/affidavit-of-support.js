@@ -510,6 +510,6 @@ export default async function pageAffidavitOfSupport({
         doc,
         maxWidth,
         page: 3,
-        pages: 6 + enrollmentSponsor.length,
+        pages: 4 + enrollmentSponsor.length,
     })
 }

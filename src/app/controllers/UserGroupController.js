@@ -1,6 +1,4 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog.js'
-import databaseConfig from '../../config/database.js'
 import UserGroup from '../models/UserGroup.js'
 import Filialtype from '../models/Filialtype.js'
 import MenuHierarchyXGroups from '../models/MenuHierarchyXGroups.js'
@@ -63,7 +61,7 @@ export async function adjustUserGroups() {
 class UserGroupController {
     async store(req, res, next) {
         try {
-            const { filialtype_id, name, filial } = req.body
+            const { name, filial } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
             if (!filialExists) {
@@ -75,7 +73,7 @@ class UserGroupController {
             const userGroupExists = await UserGroup.findOne({
                 where: {
                     name,
-                    filialtype_id,
+                    filialtype_id: filialExists.dataValues.filialtype_id,
                     company_id: 1,
                     filial_id: filialExists.id,
                     canceled_at: null,
@@ -97,7 +95,7 @@ class UserGroupController {
                 {
                     company_id: 1,
                     filial_id: filialExists.id,
-                    filialtype_id,
+                    filialtype_id: filialExists.dataValues.filialtype_id,
                     name,
 
                     created_by: req.userId,
@@ -140,7 +138,7 @@ class UserGroupController {
     async update(req, res, next) {
         try {
             const { group_id } = req.params
-            const { name, filialtype_id, groupAccess, filial } = req.body
+            const { name, groupAccess, filial } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
             if (!filialExists) {
@@ -184,7 +182,7 @@ class UserGroupController {
                 {
                     filial_id: filialExists.id,
                     name,
-                    filialtype_id,
+                    filialtype_id: filialExists.dataValues.filialtype_id,
                     updated_by: req.userId,
                 },
                 {
@@ -322,7 +320,7 @@ class UserGroupController {
                 orderBy = defaultOrderBy.column,
                 orderASC = defaultOrderBy.asc,
                 search = '',
-                limit = 10,
+                limit = 50,
                 type = '',
                 page = 1,
             } = req.query
@@ -361,6 +359,7 @@ class UserGroupController {
                     },
                     {
                         model: Filialtype,
+                        required: false,
                         where: { canceled_at: null },
                     },
                     {
@@ -389,9 +388,9 @@ class UserGroupController {
                 order: searchOrder,
             })
 
-            if (req.cacheKey) {
-                handleCache({ cacheKey: req.cacheKey, rows, count })
-            }
+            // if (req.cacheKey) {
+            //     handleCache({ cacheKey: req.cacheKey, rows, count })
+            // }
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
