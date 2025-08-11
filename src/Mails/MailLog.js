@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import { mailer } from '../config/mailer.js'
+import databaseConfig from '../config/database.js'
 import MailLayout from './MailLayout.js'
 
 export default async function MailLog({
@@ -24,6 +25,13 @@ export default async function MailLog({
         <p><strong>Body:</strong> ${JSON.stringify(req.body)}</p>`
         : ``
     content += `<p><strong>Error:</strong> ${err}</p>`
+
+    if (
+        err.trim() ===
+        'SequelizeConnectionError: sorry, too many clients already'
+    ) {
+        databaseConfig.close()
+    }
     mailer
         .sendMail({
             from: `"MILA Plus" <${process.env.MAIL_FROM}>`,

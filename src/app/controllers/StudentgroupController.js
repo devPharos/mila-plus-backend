@@ -1339,6 +1339,25 @@ class StudentgroupController {
                 }
             }
 
+            if (
+                staffExists.id !== studentGroup.dataValues.staff_id ||
+                classroomExists.id !== studentGroup.dataValues.classroom_id
+            ) {
+                await Student.update(
+                    {
+                        teacher_id: staffExists.id,
+                        classroom_id: classroomExists.id,
+                    },
+                    {
+                        where: {
+                            studentgroup_id: studentGroup.id,
+                            canceled_at: null,
+                        },
+                        transaction: req.transaction,
+                    }
+                )
+            }
+
             await studentGroup.update(
                 {
                     ...req.body,
