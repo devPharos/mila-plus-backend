@@ -25,13 +25,6 @@ const errorHandler = (err, req, res, next) => {
         ? req.method.toLowerCase()
         : 'unknownFunction' // ou você pode tentar inferir de outra forma
 
-    // Exemplo mais robusto para className e functionName, se quiser ser mais preciso:
-    // Você pode passar essas informações do controller para o req antes de chamar 'next(err)'
-    // Ex: req.controllerName = 'AgentController'; req.actionName = 'update';
-    // Ou, se você padronizou o nome da função do controller, pode tentar extrair:
-    // const functionName = err.controllerFunctionName || 'unknownFunction'; // requires controller to set this
-    // const className = err.controllerClassName || 'unknownClass'; // requires controller to set this
-
     MailLog({ className, functionName, req, err })
 
     // Se o erro já tiver um status, usa ele, senão, 500
