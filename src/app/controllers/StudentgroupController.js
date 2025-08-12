@@ -77,19 +77,11 @@ export async function jobPutInClass() {
         })
 
         for (let pendingStudent of pendingStudents) {
-            await putInClass(
-                pendingStudent.student_id,
-                pendingStudent.group_id,
-                null,
-                t
-            )
+            await putInClass(pendingStudent.student_id, pendingStudent.group_id)
         }
-
-        await req.transaction.commit()
 
         return true
     } catch (err) {
-        await req.transaction.rollback()
         const className = 'StudentgroupController'
         const functionName = 'jobPutInClass'
         MailLog({ className, functionName, req: null, err })
@@ -100,63 +92,65 @@ export async function jobPutInClass() {
 export async function putInClass(
     student_id = null,
     studentgroup_id = null,
-    req = null,
-    t = null
+    req = null
 ) {
-    const student = await Student.findByPk(student_id)
-    const studentGroup = await Studentgroup.findByPk(studentgroup_id)
+    try {
+        const student = await Student.findByPk(student_id)
+        const studentGroup = await Studentgroup.findByPk(studentgroup_id)
 
-    if (!student || !studentGroup) {
+        if (!student || !studentGroup) {
+            return false
+        }
+
+        const date = format(new Date(), 'yyyy-MM-dd')
+        await removeStudentAttendances({
+            student_id: student.id,
+            studentgroup_id: student.dataValues.group_id,
+            from_date: date,
+            req,
+            reason: null,
+        })
+        await createStudentAttendances({
+            student_id: student.id,
+            studentgroup_id: studentGroup.id,
+            from_date: date,
+            req,
+        })
+
+        if (student.studentgroup_id != studentGroup.id) {
+            await student.update({
+                studentgroup_id: studentGroup.id,
+                classroom_id: studentGroup.dataValues.classroom_id,
+                teacher_id: studentGroup.dataValues.staff_id,
+                status: 'In Class',
+                updated_by: 2,
+            })
+
+            await StudentXGroup.update(
+                {
+                    status: 'Active',
+                    updated_by: 2,
+                },
+                {
+                    where: {
+                        student_id: student_id,
+                        group_id: studentgroup_id,
+                        status: 'Pending',
+                        start_date: {
+                            [Op.lte]: date,
+                        },
+                        canceled_at: null,
+                    },
+                    transaction: req.transaction || null,
+                }
+            )
+        }
+    } catch (err) {
+        const className = 'StudentgroupController'
+        const functionName = 'putInClass'
+        MailLog({ className, functionName, req: null, err })
         return false
     }
-
-    const date = format(new Date(), 'yyyy-MM-dd')
-    await removeStudentAttendances({
-        student_id: student.id,
-        studentgroup_id: student.dataValues.group_id,
-        from_date: date,
-        req,
-        reason: null,
-    })
-    await createStudentAttendances({
-        student_id: student.id,
-        studentgroup_id: studentGroup.id,
-        from_date: date,
-        req,
-        t: req.transaction,
-    })
-
-    await student.update(
-        {
-            studentgroup_id: studentGroup.id,
-            classroom_id: studentGroup.dataValues.classroom_id,
-            teacher_id: studentGroup.dataValues.staff_id,
-            status: 'In Class',
-            updated_by: 2,
-        },
-        {
-            transaction: req.transaction || null,
-        }
-    )
-
-    await StudentXGroup.update(
-        {
-            status: 'Active',
-            updated_by: 2,
-        },
-        {
-            where: {
-                student_id: student_id,
-                group_id: studentgroup_id,
-                status: 'Pending',
-                start_date: {
-                    [Op.lte]: date,
-                },
-                canceled_at: null,
-            },
-            transaction: req.transaction || null,
-        }
-    )
 
     return true
 }
@@ -222,22 +216,17 @@ export async function createStudentAttendances({
                     canceled_at: null,
                 },
             })
-            await Attendance.create(
-                {
-                    studentgroupclass_id: class_.id,
-                    student_id: student_id,
-                    shift,
-                    first_check: 'Absent',
-                    second_check: 'Absent',
-                    status: vacation ? 'V' : medicalExcuse ? 'S' : 'A',
-                    vacation_id: vacation?.id,
-                    medical_excuse_id: medicalExcuse?.id,
-                    created_by: req.userId || 2,
-                },
-                {
-                    transaction: req.transaction,
-                }
-            )
+            await Attendance.create({
+                studentgroupclass_id: class_.id,
+                student_id: student_id,
+                shift,
+                first_check: 'Absent',
+                second_check: 'Absent',
+                status: vacation ? 'V' : medicalExcuse ? 'S' : 'A',
+                vacation_id: vacation?.id,
+                medical_excuse_id: medicalExcuse?.id,
+                created_by: 2,
+            })
         }
     }
 }
@@ -246,10 +235,8 @@ export async function removeStudentAttendances({
     student_id = null,
     studentgroup_id = null,
     from_date = null,
-    req = { userId: 2 },
     reason = null,
 }) {
-    console.log({ student_id, studentgroup_id, from_date, req, reason })
     const student = await Student.findByPk(student_id)
     if (!student) {
         return false
@@ -267,7 +254,6 @@ export async function removeStudentAttendances({
             },
         },
     })
-    console.log('classes.length', classes.length)
 
     for (let class_ of classes) {
         const attendances = await Attendance.findAll({
@@ -277,18 +263,15 @@ export async function removeStudentAttendances({
                 canceled_at: null,
             },
         })
-        console.log('attendances.length', attendances.length)
         if (
             class_.date >
                 format(lastDayOfMonth(parseISO(from_date)), 'yyyy-MM-dd') ||
             reason === null
         ) {
-            console.log('after end of month')
             for (let attendance of attendances) {
                 await attendance.destroy()
             }
         } else {
-            console.log('in month')
             for (let attendance of attendances) {
                 await attendance.update({
                     status: reason,
