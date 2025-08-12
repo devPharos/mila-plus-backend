@@ -5,6 +5,7 @@ import Enrollmentsponsor from '../../models/Enrollmentsponsor.js'
 import Filial from '../../models/Filial.js'
 import Enrollmentdependent from '../../models/Enrollmentdependent.js'
 import fs from 'fs'
+import client from 'https'
 import { fileURLToPath } from 'url'
 import pageStudentInformation from './enrollment-pages/student-information.js'
 import pageDependentInformation from './enrollment-pages/dependent-information.js'
@@ -12,44 +13,10 @@ import pageAffidavitOfSupport from './enrollment-pages/affidavit-of-support.js'
 import pageConfidentialFinancialStatement from './enrollment-pages/confidential-financial-statement.js'
 import pageParkingMap from './enrollment-pages/parking-map.js'
 import pageSignatures from './enrollment-pages/signatures.js'
+import axios from 'axios'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
-
-const myriadCond = resolve(
-    directory,
-    '..',
-    'assets',
-    'fonts',
-    'myriad-pro',
-    'MYRIADPRO-COND.OTF'
-)
-const myriadSemiBold = resolve(
-    directory,
-    '..',
-    'assets',
-    'fonts',
-    'myriad-pro',
-    'MYRIADPRO-SEMIBOLD.OTF'
-)
-const myriadBold = resolve(
-    directory,
-    '..',
-    'assets',
-    'fonts',
-    'myriad-pro',
-    'MYRIADPRO-BOLD.OTF'
-)
-const myriad = resolve(
-    directory,
-    '..',
-    'assets',
-    'fonts',
-    'myriad-pro',
-    'MYRIADPRO-REGULAR.OTF'
-)
-const orange = '#ee5827'
-const blue = '#2a2773'
 
 export const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -68,7 +35,48 @@ export const formatter = new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 2, // Causes 2500.99 to be printed as $2,501
 })
 
+async function getORLTerms() {
+    const pathTerms = resolve(
+        directory,
+        '..',
+        '..',
+        '..',
+        '..',
+        'tmp',
+        'reporting',
+        'ORL.pdf'
+    )
+
+    try {
+        if (!fs.existsSync(pathTerms)) {
+            await new Promise((resolve, reject) => {
+                fetch(
+                    'https://firebasestorage.googleapis.com/v0/b/milaplus-pharosit.appspot.com/o/Terms%20and%20Conditions%2FORL.pdf?alt=media&token=4fed9eab-20fe-45cc-84eb-863364a83421',
+                    { method: 'GET' }
+                )
+                    .then(async (res) => {
+                        const arrayBuffer = await res.arrayBuffer()
+                        const buffer = Buffer.from(arrayBuffer)
+                        fs.writeFile(pathTerms, buffer, (err) => {
+                            if (err) {
+                                reject(err)
+                            } else {
+                                resolve()
+                            }
+                        })
+                    })
+                    .catch((err) => {
+                        reject(err)
+                    })
+            })
+        }
+    } catch (err) {
+        console.log(err)
+    }
+}
+
 export default async function newenrollment(doc = null, id = '') {
+    await getORLTerms()
     const enrollment = await Enrollment.findByPk(id)
 
     if (!enrollment) return false

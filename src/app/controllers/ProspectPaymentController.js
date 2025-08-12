@@ -18,7 +18,6 @@ import {
     createTuitionFeeReceivable,
 } from './ReceivableController.js'
 import PaymentMethod from '../models/PaymentMethod.js'
-import axios from 'axios'
 import Parcelowpaymentlink from '../models/Parcelowpaymentlink.js'
 import { parcelowAPI } from '../../config/parcelowAPI.js'
 
