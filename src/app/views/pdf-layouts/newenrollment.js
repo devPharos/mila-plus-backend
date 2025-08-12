@@ -14,6 +14,10 @@ import pageConfidentialFinancialStatement from './enrollment-pages/confidential-
 import pageParkingMap from './enrollment-pages/parking-map.js'
 import pageSignatures from './enrollment-pages/signatures.js'
 import axios from 'axios'
+import { getStorage, ref, getDownloadURL } from 'firebase/storage'
+import { app } from '../../../config/firebase.js'
+import File from '../../models/File.js'
+import { Op } from 'sequelize'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
@@ -35,7 +39,7 @@ export const formatter = new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 2, // Causes 2500.99 to be printed as $2,501
 })
 
-async function getORLTerms() {
+async function getORLTerms(alias = 'ORL') {
     const pathTerms = resolve(
         directory,
         '..',
@@ -44,30 +48,34 @@ async function getORLTerms() {
         '..',
         'tmp',
         'reporting',
-        'ORL.pdf'
+        `${alias}.pdf`
     )
 
     try {
         if (!fs.existsSync(pathTerms)) {
             await new Promise((resolve, reject) => {
-                fetch(
-                    'https://firebasestorage.googleapis.com/v0/b/milaplus-pharosit.appspot.com/o/Terms%20and%20Conditions%2FORL.pdf?alt=media&token=4fed9eab-20fe-45cc-84eb-863364a83421',
-                    { method: 'GET' }
+                const storage = getStorage(app)
+                const fileRef = ref(
+                    storage,
+                    'Terms and Conditions/' + alias + '.pdf'
                 )
-                    .then(async (res) => {
-                        const arrayBuffer = await res.arrayBuffer()
-                        const buffer = Buffer.from(arrayBuffer)
-                        fs.writeFile(pathTerms, buffer, (err) => {
-                            if (err) {
-                                reject(err)
-                            } else {
-                                resolve()
-                            }
+                getDownloadURL(fileRef).then(async (url) => {
+                    fetch(url, { method: 'GET' })
+                        .then(async (res) => {
+                            const arrayBuffer = await res.arrayBuffer()
+                            const buffer = Buffer.from(arrayBuffer)
+                            fs.writeFile(pathTerms, buffer, (err) => {
+                                if (err) {
+                                    reject(err)
+                                } else {
+                                    resolve()
+                                }
+                            })
                         })
-                    })
-                    .catch((err) => {
-                        reject(err)
-                    })
+                        .catch((err) => {
+                            reject(err)
+                        })
+                })
             })
         }
     } catch (err) {
@@ -75,25 +83,69 @@ async function getORLTerms() {
     }
 }
 
+async function getSignatures(id) {
+    const files = await File.findAll({
+        where: {
+            registry_uuidkey: id,
+            key: {
+                [Op.not]: null,
+            },
+            key: {
+                [Op.iLike]: '%.png',
+            },
+            canceled_at: null,
+        },
+    })
+
+    for (let file of files) {
+        const path = resolve(
+            directory,
+            '..',
+            '..',
+            '..',
+            '..',
+            'tmp',
+            'signatures',
+            `signature-${file.id}.png`
+        )
+        try {
+            if (!fs.existsSync(path)) {
+                await new Promise((resolve, reject) => {
+                    const storage = getStorage(app)
+                    const fileRef = ref(
+                        storage,
+                        'Enrollments/Signatures/' + file.dataValues.key
+                    )
+                    getDownloadURL(fileRef).then(async (url) => {
+                        fetch(url, { method: 'GET' })
+                            .then(async (res) => {
+                                const arrayBuffer = await res.arrayBuffer()
+                                const buffer = Buffer.from(arrayBuffer)
+                                fs.writeFile(path, buffer, (err) => {
+                                    if (err) {
+                                        reject(err)
+                                    } else {
+                                        resolve()
+                                    }
+                                })
+                            })
+                            .catch((err) => {
+                                console.log(err)
+                                reject(err)
+                            })
+                    })
+                })
+            }
+        } catch (err) {
+            console.log(err)
+        }
+    }
+}
+
 export default async function newenrollment(doc = null, id = '') {
-    await getORLTerms()
     const enrollment = await Enrollment.findByPk(id)
 
     if (!enrollment) return false
-
-    const enrollmentSponsor = await Enrollmentsponsor.findAll({
-        where: {
-            enrollment_id: enrollment.dataValues.id,
-            canceled_at: null,
-        },
-    })
-
-    const enrollmentDependents = await Enrollmentdependent.findAll({
-        where: {
-            enrollment_id: enrollment.dataValues.id,
-            canceled_at: null,
-        },
-    })
 
     const filial = await Filial.findByPk(enrollment.dataValues.filial_id)
 
@@ -102,6 +154,27 @@ export default async function newenrollment(doc = null, id = '') {
     const student = await Student.findByPk(enrollment.dataValues.student_id)
 
     if (!student) return false
+
+    await getORLTerms(filial.dataValues.alias)
+    await getSignatures(id)
+
+    const enrollmentSponsor = await Enrollmentsponsor.findAll({
+        where: {
+            enrollment_id: enrollment.dataValues.id,
+            canceled_at: null,
+        },
+    })
+
+    for (let sponsor of enrollmentSponsor) {
+        await getSignatures(sponsor.id)
+    }
+
+    const enrollmentDependents = await Enrollmentdependent.findAll({
+        where: {
+            enrollment_id: enrollment.dataValues.id,
+            canceled_at: null,
+        },
+    })
 
     // Student Information
 

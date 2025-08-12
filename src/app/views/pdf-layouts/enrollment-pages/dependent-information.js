@@ -40,7 +40,7 @@ export default async function pageDependentInformation({
         '..',
         'tmp',
         'signatures',
-        `signature-${enrollment.dataValues.id}.jpg`
+        `signature-${enrollment.dataValues.id}.png`
     )
 
     const enrollmentEmergency = await Enrollmentemergency.findOne({

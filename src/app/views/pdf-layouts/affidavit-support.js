@@ -54,7 +54,7 @@ export default async function affidavitSupport(doc = null, id = '') {
         '..',
         'tmp',
         'signatures',
-        `signature-${id}.jpg`
+        `signature-${id}.png`
     )
 
     doc.addPage()

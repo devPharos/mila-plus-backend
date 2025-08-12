@@ -44,7 +44,7 @@ export default async function pageStudentInformation({
         '..',
         'tmp',
         'signatures',
-        `signature-${enrollment.dataValues.id}.jpg`
+        `signature-${enrollment.dataValues.student_signature}.png`
     )
 
     const enrollmentEmergency = await Enrollmentemergency.findOne({

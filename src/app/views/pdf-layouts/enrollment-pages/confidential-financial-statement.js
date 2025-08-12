@@ -11,6 +11,8 @@ import Enrollmentdependent from '../../../models/Enrollmentdependent.js'
 import Enrollmentsponsor from '../../../models/Enrollmentsponsor.js'
 import { format, parseISO } from 'date-fns'
 import { formatter } from '../newenrollment.js'
+import { Op } from 'sequelize'
+import File from '../../../models/File.js'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
@@ -320,6 +322,19 @@ export default async function pageConfidentialFinancialStatement({
 
     let sponsor = enrollmentSponsor[0]
 
+    const sponsorSignatureFile = await File.findOne({
+        where: {
+            registry_uuidkey: sponsor.dataValues.id,
+            key: {
+                [Op.not]: null,
+            },
+            key: {
+                [Op.iLike]: '%.png',
+            },
+            canceled_at: null,
+        },
+    })
+
     const sponsorSignaturePath = resolve(
         directory,
         '..',
@@ -329,7 +344,7 @@ export default async function pageConfidentialFinancialStatement({
         '..',
         'tmp',
         'signatures',
-        `signature-${sponsor.dataValues.id}.jpg`
+        `signature-${sponsorSignatureFile.dataValues.id}.png`
     )
 
     if (fs.existsSync(sponsorSignaturePath)) {

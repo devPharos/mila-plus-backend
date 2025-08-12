@@ -1083,7 +1083,7 @@ class EnrollmentController {
                     '..',
                     'tmp',
                     'signatures',
-                    `signature-${enrollment.dataValues.id}.jpg`
+                    `signature-${enrollment.dataValues.id}.png`
                 )
 
                 const signatureFileLink =
@@ -1168,7 +1168,7 @@ class EnrollmentController {
                     '..',
                     'tmp',
                     'signatures',
-                    `signature-${sponsor_id}.jpg`
+                    `signature-${sponsor_id}.png`
                 )
 
                 const signatureFileLink =
@@ -1258,7 +1258,7 @@ class EnrollmentController {
                     '..',
                     'tmp',
                     'signatures',
-                    `signature-${enrollmenttransfers.dataValues.id}.jpg`
+                    `signature-${enrollmenttransfers.dataValues.id}.png`
                 )
 
                 const signatureFileLink =

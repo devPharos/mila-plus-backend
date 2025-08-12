@@ -99,7 +99,7 @@ export default async function pageSignatures({
         '..',
         'tmp',
         'signatures',
-        `signature-${enrollment.dataValues.id}.jpg`
+        `signature-${enrollment.dataValues.student_signature}.png`
     )
 
     let fullName = student.dataValues.name
