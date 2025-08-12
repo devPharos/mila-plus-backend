@@ -145,6 +145,48 @@ async function getSignatures(id) {
     }
 }
 
+async function getParkingSpotImage(key = null, alias = '') {
+    const path = resolve(
+        directory,
+        '..',
+        '..',
+        '..',
+        '..',
+        'tmp',
+        'branches',
+        'parking_spot_images',
+        `parking-spot-${alias}.png`
+    )
+    try {
+        if (!fs.existsSync(path)) {
+            await new Promise((resolve, reject) => {
+                const storage = getStorage(app)
+                const fileRef = ref(storage, 'Branches/Parking Spot/' + key)
+                getDownloadURL(fileRef).then(async (url) => {
+                    fetch(url, { method: 'GET' })
+                        .then(async (res) => {
+                            const arrayBuffer = await res.arrayBuffer()
+                            const buffer = Buffer.from(arrayBuffer)
+                            fs.writeFile(path, buffer, (err) => {
+                                if (err) {
+                                    reject(err)
+                                } else {
+                                    resolve()
+                                }
+                            })
+                        })
+                        .catch((err) => {
+                            console.log(err)
+                            reject(err)
+                        })
+                })
+            })
+        }
+    } catch (err) {
+        console.log(err)
+    }
+}
+
 export default async function newenrollment(doc = null, id = '') {
     const enrollment = await Enrollment.findByPk(id)
 
@@ -160,6 +202,17 @@ export default async function newenrollment(doc = null, id = '') {
 
     await getORLTerms(filial.dataValues.alias)
     await getSignatures(id)
+
+    const parking_spot = await File.findByPk(
+        filial.dataValues.parking_spot_image
+    )
+
+    if (parking_spot) {
+        await getParkingSpotImage(
+            parking_spot.dataValues.key,
+            filial.dataValues.alias
+        )
+    }
 
     const enrollmentSponsor = await Enrollmentsponsor.findAll({
         where: {
