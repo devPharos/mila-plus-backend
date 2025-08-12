@@ -259,7 +259,7 @@ export default async function pageConfidentialFinancialStatement({
 
     newinputLine({
         doc,
-        width: 220,
+        width: 180,
         text: 'SPONSOR`S FULL NAME ',
         topPos: helperHeight,
         leftPos: 10,
@@ -268,7 +268,7 @@ export default async function pageConfidentialFinancialStatement({
 
     doc.fontSize(8)
         .fillColor(blue)
-        .text(`residing at`, 254, helperHeight + 12)
+        .text(`residing at`, 214, helperHeight + 12)
 
     let sponsorAddress = enrollmentSponsor[0].dataValues.address
         ? enrollmentSponsor[0].dataValues.address +
@@ -282,10 +282,10 @@ export default async function pageConfidentialFinancialStatement({
 
     newinputLine({
         doc,
-        width: 300,
+        width: 340,
         text: 'ADDRESS',
         topPos: helperHeight,
-        leftPos: 280,
+        leftPos: 260,
         answer: sponsorAddress,
     })
 

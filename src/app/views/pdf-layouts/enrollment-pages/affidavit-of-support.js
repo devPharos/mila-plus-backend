@@ -163,7 +163,7 @@ export default async function pageAffidavitOfSupport({
 
     newinputLine({
         doc,
-        width: 220,
+        width: 190,
         text: 'STREET NUMBER AND NAME',
         topPos: helperHeight,
         leftPos: 50,
@@ -175,7 +175,7 @@ export default async function pageAffidavitOfSupport({
         width: 60,
         text: 'CITY',
         topPos: helperHeight,
-        leftPos: 280,
+        leftPos: 250,
         answer: sponsor.dataValues.city,
     })
 
@@ -184,25 +184,25 @@ export default async function pageAffidavitOfSupport({
         width: 60,
         text: 'STATE',
         topPos: helperHeight,
-        leftPos: 350,
+        leftPos: 320,
         answer: sponsor.dataValues.state,
     })
 
     newinputLine({
         doc,
-        width: 60,
+        width: 50,
         text: 'ZIP CODE',
         topPos: helperHeight,
-        leftPos: 420,
+        leftPos: 390,
         answer: sponsor.dataValues.zip_code,
     })
 
     newinputLine({
         doc,
-        width: 100,
+        width: 140,
         text: 'COUNTRY',
         topPos: helperHeight,
-        leftPos: 490,
+        leftPos: 450,
         answer: sponsor.dataValues.country,
     })
 
