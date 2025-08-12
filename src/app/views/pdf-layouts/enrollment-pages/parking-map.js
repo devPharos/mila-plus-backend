@@ -156,11 +156,7 @@ export default async function pageParkingMap({
             'tmp',
             'branches',
             'parking_spot_images',
-            `parking-spot-${parking_spot.dataValues.id}.${
-                parking_spot.dataValues.name.split('.')[
-                    parking_spot.dataValues.name.split('.').length - 1
-                ]
-            }`
+            `parking-spot-${filial.alias}.png`
         )
 
         if (fs.existsSync(parkingSpotImagePath)) {
