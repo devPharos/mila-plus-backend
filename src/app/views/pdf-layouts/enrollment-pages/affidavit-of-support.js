@@ -452,6 +452,9 @@ export default async function pageAffidavitOfSupport({
             key: {
                 [Op.iLike]: '%.png',
             },
+            registry_type: {
+                [Op.or]: ['Student Signature', 'Sponsor Signature'],
+            },
             canceled_at: null,
         },
     })
