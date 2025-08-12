@@ -252,13 +252,13 @@ export function newfooter({
         align: 'left',
     })
 
-    if (page && pages) {
-        doc.font(myriadSemiBold)
-            .fill(blue)
-            .fontSize(12)
-            .text(`Page ${page}/${pages}`, 30, 770, {
-                width: maxWidth - 55,
-                align: 'right',
-            })
-    }
+    // if (page && pages) {
+    //     doc.font(myriadSemiBold)
+    //         .fill(blue)
+    //         .fontSize(12)
+    //         .text(`Page ${page}/${pages}`, 30, 770, {
+    //             width: maxWidth - 55,
+    //             align: 'right',
+    //         })
+    // }
 }

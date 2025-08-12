@@ -447,14 +447,15 @@ export default async function pageAffidavitOfSupport({
         '..',
         '..',
         '..',
+        '..',
         'tmp',
         'signatures',
         `signature-${sponsor.dataValues.id}.jpg`
     )
 
     if (fs.existsSync(sponsorSignaturePath)) {
-        doc.image(sponsorSignaturePath, 250, helperHeight - 28, {
-            width: 100,
+        doc.image(sponsorSignaturePath, 130, helperHeight - 28, {
+            width: 82,
             align: 'center',
         })
     }
@@ -491,7 +492,7 @@ export default async function pageAffidavitOfSupport({
             sponsor.dataValues.updated_at
                 ? format(sponsor.dataValues.updated_at, 'MM/dd/yyyy')
                 : '',
-            40 + lineWidth,
+            20 + lineWidth,
             helperHeight - 12,
             {
                 width: lineWidth - 40,

@@ -95,6 +95,7 @@ export default async function pageParkingMap({
         '..',
         '..',
         '..',
+        '..',
         'tmp',
         'signatures',
         `signature-${enrollment.dataValues.id}.jpg`

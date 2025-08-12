@@ -41,6 +41,7 @@ export default async function pageStudentInformation({
         '..',
         '..',
         '..',
+        '..',
         'tmp',
         'signatures',
         `signature-${enrollment.dataValues.id}.jpg`

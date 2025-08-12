@@ -1,28 +1,17 @@
 import { dirname, resolve } from 'path'
 import Enrollment from '../../models/Enrollment.js'
-import File from '../../models/File.js'
 import Student from '../../models/Student.js'
-import Enrollmentemergency from '../../models/Enrollmentemergency.js'
 import Enrollmentsponsor from '../../models/Enrollmentsponsor.js'
-import { header, footer, signatureLine } from './default.js'
 import Filial from '../../models/Filial.js'
-import FilialPriceList from '../../models/FilialPriceList.js'
-import { format, parseISO } from 'date-fns'
 import Enrollmentdependent from '../../models/Enrollmentdependent.js'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
-import {
-    faixa,
-    newfooter,
-    newheader,
-    newheaderLine,
-    newinputLine,
-} from './newdefault.js'
 import pageStudentInformation from './enrollment-pages/student-information.js'
 import pageDependentInformation from './enrollment-pages/dependent-information.js'
 import pageAffidavitOfSupport from './enrollment-pages/affidavit-of-support.js'
 import pageConfidentialFinancialStatement from './enrollment-pages/confidential-financial-statement.js'
 import pageParkingMap from './enrollment-pages/parking-map.js'
+import pageSignatures from './enrollment-pages/signatures.js'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
@@ -136,6 +125,8 @@ export default async function newenrollment(doc = null, id = '') {
     })
 
     await pageParkingMap({ doc, enrollment, student, filial })
+
+    await pageSignatures({ doc, enrollment, student, filial })
 
     return true
 }
