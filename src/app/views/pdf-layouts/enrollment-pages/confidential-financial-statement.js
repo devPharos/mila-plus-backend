@@ -331,6 +331,9 @@ export default async function pageConfidentialFinancialStatement({
             key: {
                 [Op.iLike]: '%.png',
             },
+            registry_type: {
+                [Op.or]: ['Student Signature', 'Sponsor Signature'],
+            },
             canceled_at: null,
         },
     })
