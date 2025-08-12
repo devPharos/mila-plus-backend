@@ -20,12 +20,6 @@ class EnrollmentDependentontroller {
                 })
             }
 
-            // if (enrollment.form_step.includes('signature')) {
-            //   return res.status(400).json({
-            //     error: 'You cannot add a dependent to this enrollment.',
-            //   });
-            // }
-
             const dependent = await Enrollmentdependent.create(
                 {
                     enrollment_id,
@@ -37,24 +31,22 @@ class EnrollmentDependentontroller {
                 }
             )
 
-            await req.transaction
-                .commit()()
-                .then(async () => {
-                    const retDependent = await Enrollmentdependent.findByPk(
-                        dependent.dataValues.id,
-                        {
-                            include: [
-                                {
-                                    model: Enrollmentdependentdocument,
-                                    as: 'documents',
-                                    required: false,
-                                },
-                            ],
-                        }
-                    )
+            await req.transaction.commit()
 
-                    return res.json(retDependent)
-                })
+            const retDependent = await Enrollmentdependent.findByPk(
+                dependent.id,
+                {
+                    include: [
+                        {
+                            model: Enrollmentdependentdocument,
+                            as: 'documents',
+                            required: false,
+                        },
+                    ],
+                }
+            )
+
+            return res.json(retDependent)
         } catch (err) {
             err.transaction = req.transaction
             next(err)

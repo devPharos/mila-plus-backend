@@ -1,6 +1,4 @@
 import Sequelize from 'sequelize'
-import MailLog from '../../Mails/MailLog.js'
-import databaseConfig from '../../config/database.js'
 import Student from '../models/Student.js'
 import * as Yup from 'yup'
 import Enrollment from '../models/Enrollment.js'
@@ -20,12 +18,12 @@ import {
     verifyFieldInModel,
     verifyFilialSearch,
 } from '../functions/index.js'
-import { searchPromise } from '../functions/searchPromise.js'
 import Enrollmentsponsor from '../models/Enrollmentsponsor.js'
 import Receivable from '../models/Receivable.js'
 import Issuer from '../models/Issuer.js'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
 import PartnersAndInfluencers from '../models/PartnersAndInfluencers.js'
+import Enrollmenti20form from '../models/Enrollmenti20form.js'
 
 const { Op } = Sequelize
 
@@ -324,6 +322,14 @@ class ProspectController {
                             {
                                 model: Enrollmentsponsor,
                                 as: 'enrollmentsponsors',
+                                required: false,
+                                where: {
+                                    canceled_at: null,
+                                },
+                            },
+                            {
+                                model: Enrollmenti20form,
+                                as: 'i20form',
                                 required: false,
                                 where: {
                                     canceled_at: null,
