@@ -17,6 +17,7 @@ import Document from '../models/Document.js'
 import Enrollmentdependentdocument from '../models/Enrollmentdependentdocument.js'
 import { format, parseISO } from 'date-fns'
 import Studentprogram from '../models/Studentprogram.js'
+import Filial from '../models/Filial.js'
 
 const { Op } = Sequelize
 
@@ -43,14 +44,39 @@ class DSOController {
 
             const searchableFields = [
                 {
-                    field: 'type',
+                    model: Enrollment,
+                    field: 'application',
+                    type: 'string',
+                    return: 'enrollment_id',
+                },
+                {
+                    model: Student,
+                    field: 'name',
+                    type: 'string',
+                    return: 'student_id',
+                },
+                {
+                    model: Student,
+                    field: 'last_name',
+                    type: 'string',
+                    return: 'student_id',
+                },
+                {
+                    model: Student,
+                    field: 'registration_number',
+                    type: 'string',
+                    return: 'student_id',
+                },
+                {
+                    field: 'status',
                     type: 'string',
                 },
                 {
-                    field: 'subject',
-                    type: 'string',
+                    field: 'solicitation_date',
+                    type: 'date',
                 },
             ]
+
             const { count, rows } = await Enrollmenti20form.findAndCountAll({
                 include: [
                     {
@@ -66,7 +92,6 @@ class DSOController {
                                 as: 'students',
                                 required: true,
                                 where: {
-                                    category: 'Prospect',
                                     canceled_at: null,
                                 },
                                 attributes: [
@@ -75,6 +100,7 @@ class DSOController {
                                     'last_name',
                                     'registration_number',
                                     'gender',
+                                    'category',
                                     'status',
                                     'email',
                                 ],
@@ -89,9 +115,6 @@ class DSOController {
                     },
                 ],
                 where: {
-                    status: {
-                        [Op.or]: ['Pending', 'Confirmed'],
-                    },
                     canceled_at: null,
                     ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
@@ -240,6 +263,8 @@ class DSOController {
             const enrollmenti20form = await Enrollmenti20form.create(
                 {
                     enrollment_id,
+                    student_id: enrollment.dataValues.student_id,
+                    solicitation_date: format(new Date(), 'yyyy-MM-dd'),
                     status: 'Pending',
                     created_by: req.userId,
                 },
@@ -284,6 +309,13 @@ class DSOController {
                 })
             }
 
+            const enrollmenti20form = await Enrollmenti20form.findOne({
+                where: {
+                    enrollment_id: enrollment.id,
+                    canceled_at: null,
+                },
+            })
+
             if (new_program) {
                 const { registration_number, file_id, start_date, end_date } =
                     new_program
@@ -303,6 +335,17 @@ class DSOController {
                     },
                     { transaction: req.transaction }
                 )
+
+                if (enrollmenti20form) {
+                    await enrollmenti20form.update(
+                        {
+                            status: 'Concluded',
+                        },
+                        {
+                            transaction: req.transaction,
+                        }
+                    )
+                }
 
                 await Studentprogram.create(
                     {
@@ -395,7 +438,7 @@ class DSOController {
                 )
             }
 
-            if (dependentsData.length > 0) {
+            if (dependentsData?.length > 0) {
                 for (let dependent of dependentsData) {
                     const enrollmentDependent =
                         await Enrollmentdependent.findByPk(dependent.id)
@@ -412,7 +455,7 @@ class DSOController {
                 }
             }
 
-            if (sponsorsData.length > 0) {
+            if (sponsorsData?.length > 0) {
                 for (let sponsor of sponsorsData) {
                     const enrollmentSponsor = await Enrollmentsponsor.findByPk(
                         sponsor.id
@@ -430,17 +473,10 @@ class DSOController {
                 }
             }
 
-            const enrollmenti20form = await Enrollmenti20form.findOne({
-                where: {
-                    enrollment_id: enrollment.id,
-                    canceled_at: null,
-                },
-            })
-
             if (enrollmenti20form) {
                 await enrollmenti20form.update(
                     {
-                        status: 'Confirmed',
+                        status: 'Form Checked',
                     },
                     {
                         transaction: req.transaction,

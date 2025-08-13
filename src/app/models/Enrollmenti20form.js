@@ -16,10 +16,19 @@ class Enrollmenti20form extends Model {
                     references: { model: 'enrollments', key: 'id' },
                     onUpdate: 'CASCADE',
                 },
+                student_id: {
+                    type: Sequelize.UUID,
+                    references: { model: 'students', key: 'id' },
+                    onUpdate: 'CASCADE',
+                },
                 status: {
                     type: Sequelize.STRING,
                     allowNull: false,
                     defaultValue: 'Pending',
+                },
+                solicitation_date: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
                 },
                 created_at: {
                     allowNull: false,
