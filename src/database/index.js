@@ -81,6 +81,7 @@ import MedicalExcuseFiles from '../app/models/MedicalExcuseFiles.js'
 import Message from '../app/models/Message.js'
 import MessageXStudent from '../app/models/MessageXStudent.js'
 import PartnersAndInfluencers from '../app/models/PartnersAndInfluencers.js'
+import Enrollmenti20form from '../app/models/Enrollmenti20form.js'
 
 const models = [
     Processtype,
@@ -99,6 +100,7 @@ const models = [
     Emergepaytransaction,
     Enrollment,
     Enrollmentdocument,
+    Enrollmenti20form,
     Enrollmentdependent,
     Enrollmentdependentdocument,
     Enrollmentsponsor,

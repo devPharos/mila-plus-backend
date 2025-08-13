@@ -60,7 +60,7 @@ export default async function transferEligibility(doc = null, id = '') {
         '..',
         'tmp',
         'signatures',
-        `signature-${id}.jpg`
+        `signature-${id}.png`
     )
 
     const dsoSignatureFile = resolve(
@@ -71,7 +71,7 @@ export default async function transferEligibility(doc = null, id = '') {
         '..',
         'tmp',
         'signatures',
-        `signature-${enrollmentTransfer.dataValues.id}.jpg`
+        `signature-${enrollmentTransfer.dataValues.id}.png`
     )
 
     const maxWidth = doc.options.layout === 'landscape' ? 770 : 612

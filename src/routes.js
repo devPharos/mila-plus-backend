@@ -67,6 +67,7 @@ import PartnersAndInfluencersController from './app/controllers/PartnersAndInflu
 import StudentDashboardController from './app/controllers/StudentDashboardController.js'
 import CostCenterController from './app/controllers/CostCenterController.js'
 import MerchantXCostCenterController from './app/controllers/MerchantXCostCenterController.js'
+import DSOController from './app/controllers/DSOController.js'
 
 const routes = new Router()
 
@@ -312,6 +313,11 @@ routes.delete(
     '/students/transfer/:transfer_id',
     StudentController.deleteTransfer
 )
+
+routes.get('/i20pendings', DSOController.index)
+routes.get('/i20pendings/:enrollment_id', DSOController.show)
+routes.post('/enrollments/start-i20-process', DSOController.create)
+routes.put('/enrollments/:enrollment_id', DSOController.update)
 
 routes.get('/messages', MessageController.index)
 routes.get('/messages/:message_id', MessageController.show)

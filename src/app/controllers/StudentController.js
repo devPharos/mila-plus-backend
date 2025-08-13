@@ -336,7 +336,6 @@ class StudentController {
                                 required: false,
                                 where: {
                                     canceled_at: null,
-                                    student_id: student_id,
                                 },
                                 order: [['created_at', 'DESC']],
                             },
@@ -598,7 +597,10 @@ class StudentController {
                     group_id: studentgroupExists.id,
                     start_date: date,
                     end_date: null,
-                    status: 'Not started',
+                    status:
+                        date <= format(new Date(), 'yyyy-MM-dd')
+                            ? 'Active'
+                            : 'Not started',
 
                     created_by: req.userId,
                 },
@@ -606,17 +608,24 @@ class StudentController {
                     transaction: req.transaction,
                 }
             )
-
-            if (date <= format(new Date(), 'yyyy-MM-dd')) {
-                await putInClass(
-                    studentExists.id,
-                    studentgroupExists.id,
-                    req,
-                    req.transaction
-                )
-            }
+            await studentExists.update(
+                {
+                    studentgroup_id: studentgroupExists.id,
+                    classroom_id: studentgroupExists.dataValues.classroom_id,
+                    teacher_id: studentgroupExists.dataValues.staff_id,
+                    status: 'In Class',
+                    updated_by: req.userId,
+                },
+                {
+                    transaction: req.transaction,
+                }
+            )
 
             await req.transaction.commit()
+
+            // if (date <= format(new Date(), 'yyyy-MM-dd')) {
+            await putInClass(studentExists.id, studentgroupExists.id)
+            // }
 
             return res.status(200).json({
                 message: 'Student activated.',
@@ -742,24 +751,20 @@ class StudentController {
                         transaction: req.transaction,
                     }
                 )
+
+                await req.transaction.commit()
                 await removeStudentAttendances({
                     student_id: studentExists.id,
                     studentgroup_id: activeStudentGroup.dataValues.group_id,
                     from_date: date,
-                    req,
-                    t: req.transaction,
                     reason: 'T',
                 })
                 await createStudentAttendances({
                     student_id: studentExists.id,
                     studentgroup_id: studentgroupExists.id,
                     from_date: date,
-                    req,
-                    t: req.transaction,
                 })
             }
-
-            await req.transaction.commit()
 
             return res.json(studentExists)
         } catch (err) {

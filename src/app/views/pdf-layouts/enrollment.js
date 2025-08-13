@@ -103,7 +103,7 @@ export default async function enrollment(doc = null, id = '') {
         '..',
         'tmp',
         'signatures',
-        `signature-${enrollment.dataValues.id}.jpg`
+        `signature-${enrollment.dataValues.id}.png`
     )
 
     const maxWidth = doc.options.layout === 'landscape' ? 770 : 612
@@ -2465,7 +2465,7 @@ export default async function enrollment(doc = null, id = '') {
             '..',
             'tmp',
             'signatures',
-            `signature-${sponsor.dataValues.id}.jpg`
+            `signature-${sponsor.dataValues.id}.png`
         )
 
         if (fs.existsSync(sponsorSignaturePath)) {
@@ -2770,7 +2770,7 @@ export default async function enrollment(doc = null, id = '') {
                 '..',
                 'tmp',
                 'signatures',
-                `signature-${enrollmentSponsor[0].dataValues.id}.jpg`
+                `signature-${enrollmentSponsor[0].dataValues.id}.png`
             )
 
             if (fs.existsSync(sponsorSignaturePath)) {

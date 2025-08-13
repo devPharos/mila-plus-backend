@@ -1,4 +1,4 @@
-import { Op } from 'sequelize'
+import { literal, Op } from 'sequelize'
 import Student from '../models/Student.js'
 import Studentdiscount from '../models/Studentdiscount.js'
 import { isUUIDv4 } from '../controllers/ReceivableController.js'
@@ -136,21 +136,27 @@ export async function execFieldTypeSearch(field, search) {
             return {
                 [field.field]: {
                     [Op.or]: [
-                        {
-                            [field.field]: {
-                                [Op.like]: `%${date[0] + date[1]}`,
-                            },
-                        },
+                        literal(
+                            `REPLACE(${field.field}, '-', '') ILIKE '%${date[0]}${date[1]}%'`
+                        ),
+                        literal(
+                            `REPLACE(${field.field}, '-', '') ILIKE '%${date[0]}-${date[1]}%'`
+                        ),
                     ],
                 },
             }
         } else if (date.length === 3) {
             return {
-                [Op.or]: [
-                    {
-                        [field.field]: date[2] + date[0] + date[1],
-                    },
-                ],
+                [field.field]: {
+                    [Op.or]: [
+                        literal(
+                            `REPLACE(${field.field}, '-', '') ILIKE '%${date[2]}${date[0]}${date[1]}%'`
+                        ),
+                        literal(
+                            `REPLACE(${field.field}, '-', '') ILIKE '%${date[2]}-${date[0]}-${date[1]}%'`
+                        ),
+                    ],
+                },
             }
         }
     } else if (field.type === 'boolean') {
@@ -164,7 +170,7 @@ export async function execFieldTypeSearch(field, search) {
             ['id']: search,
         }
     }
-    return null
+    return {}
 }
 
 export async function generateSearchByModel(

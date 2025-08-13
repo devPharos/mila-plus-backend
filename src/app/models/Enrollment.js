@@ -83,6 +83,11 @@ class Enrollment extends Model {
             foreignKey: 'enrollment_id',
             as: 'enrollmenttransfers',
         })
+
+        this.hasOne(models.Enrollmenti20form, {
+            foreignKey: 'enrollment_id',
+            as: 'i20form',
+        })
     }
 }
 

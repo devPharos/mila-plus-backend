@@ -11,6 +11,8 @@ import Enrollmentdependent from '../../../models/Enrollmentdependent.js'
 import Enrollmentsponsor from '../../../models/Enrollmentsponsor.js'
 import { format, parseISO } from 'date-fns'
 import { formatter } from '../newenrollment.js'
+import { Op } from 'sequelize'
+import File from '../../../models/File.js'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
@@ -257,7 +259,7 @@ export default async function pageConfidentialFinancialStatement({
 
     newinputLine({
         doc,
-        width: 220,
+        width: 180,
         text: 'SPONSOR`S FULL NAME ',
         topPos: helperHeight,
         leftPos: 10,
@@ -266,7 +268,7 @@ export default async function pageConfidentialFinancialStatement({
 
     doc.fontSize(8)
         .fillColor(blue)
-        .text(`residing at`, 254, helperHeight + 12)
+        .text(`residing at`, 214, helperHeight + 12)
 
     let sponsorAddress = enrollmentSponsor[0].dataValues.address
         ? enrollmentSponsor[0].dataValues.address +
@@ -280,10 +282,10 @@ export default async function pageConfidentialFinancialStatement({
 
     newinputLine({
         doc,
-        width: 300,
+        width: 340,
         text: 'ADDRESS',
         topPos: helperHeight,
-        leftPos: 280,
+        leftPos: 260,
         answer: sponsorAddress,
     })
 
@@ -320,20 +322,37 @@ export default async function pageConfidentialFinancialStatement({
 
     let sponsor = enrollmentSponsor[0]
 
+    const sponsorSignatureFile = await File.findOne({
+        where: {
+            registry_uuidkey: sponsor.dataValues.id,
+            key: {
+                [Op.not]: null,
+            },
+            key: {
+                [Op.iLike]: '%.png',
+            },
+            registry_type: {
+                [Op.or]: ['Student Signature', 'Sponsor Signature'],
+            },
+            canceled_at: null,
+        },
+    })
+
     const sponsorSignaturePath = resolve(
         directory,
         '..',
         '..',
         '..',
         '..',
+        '..',
         'tmp',
         'signatures',
-        `signature-${sponsor.dataValues.id}.jpg`
+        `signature-${sponsorSignatureFile.dataValues.id}.png`
     )
 
     if (fs.existsSync(sponsorSignaturePath)) {
-        doc.image(sponsorSignaturePath, 250, helperHeight - 28, {
-            width: 100,
+        doc.image(sponsorSignaturePath, 130, helperHeight - 28, {
+            width: 82,
             align: 'center',
         })
     }
@@ -370,7 +389,7 @@ export default async function pageConfidentialFinancialStatement({
             sponsor.dataValues.updated_at
                 ? format(sponsor.dataValues.updated_at, 'MM/dd/yyyy')
                 : '',
-            40 + lineWidth,
+            20 + lineWidth,
             helperHeight - 12,
             {
                 width: lineWidth - 40,

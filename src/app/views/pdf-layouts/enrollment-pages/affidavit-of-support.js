@@ -10,6 +10,8 @@ import fs from 'fs'
 import Enrollmentdependent from '../../../models/Enrollmentdependent.js'
 import Enrollmentsponsor from '../../../models/Enrollmentsponsor.js'
 import { format, parseISO } from 'date-fns'
+import File from '../../../models/File.js'
+import { Op } from 'sequelize'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
@@ -161,7 +163,7 @@ export default async function pageAffidavitOfSupport({
 
     newinputLine({
         doc,
-        width: 220,
+        width: 190,
         text: 'STREET NUMBER AND NAME',
         topPos: helperHeight,
         leftPos: 50,
@@ -173,7 +175,7 @@ export default async function pageAffidavitOfSupport({
         width: 60,
         text: 'CITY',
         topPos: helperHeight,
-        leftPos: 280,
+        leftPos: 250,
         answer: sponsor.dataValues.city,
     })
 
@@ -182,25 +184,25 @@ export default async function pageAffidavitOfSupport({
         width: 60,
         text: 'STATE',
         topPos: helperHeight,
-        leftPos: 350,
+        leftPos: 320,
         answer: sponsor.dataValues.state,
     })
 
     newinputLine({
         doc,
-        width: 60,
+        width: 50,
         text: 'ZIP CODE',
         topPos: helperHeight,
-        leftPos: 420,
+        leftPos: 390,
         answer: sponsor.dataValues.zip_code,
     })
 
     newinputLine({
         doc,
-        width: 100,
+        width: 140,
         text: 'COUNTRY',
         topPos: helperHeight,
-        leftPos: 490,
+        leftPos: 450,
         answer: sponsor.dataValues.country,
     })
 
@@ -441,20 +443,37 @@ export default async function pageAffidavitOfSupport({
 
     let lineWidth = 280
 
+    const sponsorSignatureFile = await File.findOne({
+        where: {
+            registry_uuidkey: sponsor.dataValues.id,
+            key: {
+                [Op.not]: null,
+            },
+            key: {
+                [Op.iLike]: '%.png',
+            },
+            registry_type: {
+                [Op.or]: ['Student Signature', 'Sponsor Signature'],
+            },
+            canceled_at: null,
+        },
+    })
+
     const sponsorSignaturePath = resolve(
         directory,
         '..',
         '..',
         '..',
         '..',
+        '..',
         'tmp',
         'signatures',
-        `signature-${sponsor.dataValues.id}.jpg`
+        `signature-${sponsorSignatureFile.dataValues.id}.png`
     )
 
     if (fs.existsSync(sponsorSignaturePath)) {
-        doc.image(sponsorSignaturePath, 250, helperHeight - 28, {
-            width: 100,
+        doc.image(sponsorSignaturePath, 130, helperHeight - 28, {
+            width: 82,
             align: 'center',
         })
     }
@@ -491,7 +510,7 @@ export default async function pageAffidavitOfSupport({
             sponsor.dataValues.updated_at
                 ? format(sponsor.dataValues.updated_at, 'MM/dd/yyyy')
                 : '',
-            40 + lineWidth,
+            20 + lineWidth,
             helperHeight - 12,
             {
                 width: lineWidth - 40,

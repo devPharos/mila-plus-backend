@@ -1,66 +1,26 @@
 import { dirname, resolve } from 'path'
 import Enrollment from '../../models/Enrollment.js'
-import File from '../../models/File.js'
 import Student from '../../models/Student.js'
-import Enrollmentemergency from '../../models/Enrollmentemergency.js'
 import Enrollmentsponsor from '../../models/Enrollmentsponsor.js'
-import { header, footer, signatureLine } from './default.js'
 import Filial from '../../models/Filial.js'
-import FilialPriceList from '../../models/FilialPriceList.js'
-import { format, parseISO } from 'date-fns'
 import Enrollmentdependent from '../../models/Enrollmentdependent.js'
 import fs from 'fs'
+import client from 'https'
 import { fileURLToPath } from 'url'
-import {
-    faixa,
-    newfooter,
-    newheader,
-    newheaderLine,
-    newinputLine,
-} from './newdefault.js'
 import pageStudentInformation from './enrollment-pages/student-information.js'
 import pageDependentInformation from './enrollment-pages/dependent-information.js'
 import pageAffidavitOfSupport from './enrollment-pages/affidavit-of-support.js'
 import pageConfidentialFinancialStatement from './enrollment-pages/confidential-financial-statement.js'
 import pageParkingMap from './enrollment-pages/parking-map.js'
+import pageSignatures from './enrollment-pages/signatures.js'
+import axios from 'axios'
+import { getStorage, ref, getDownloadURL } from 'firebase/storage'
+import { app } from '../../../config/firebase.js'
+import File from '../../models/File.js'
+import { Op } from 'sequelize'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
-
-const myriadCond = resolve(
-    directory,
-    '..',
-    'assets',
-    'fonts',
-    'myriad-pro',
-    'MYRIADPRO-COND.OTF'
-)
-const myriadSemiBold = resolve(
-    directory,
-    '..',
-    'assets',
-    'fonts',
-    'myriad-pro',
-    'MYRIADPRO-SEMIBOLD.OTF'
-)
-const myriadBold = resolve(
-    directory,
-    '..',
-    'assets',
-    'fonts',
-    'myriad-pro',
-    'MYRIADPRO-BOLD.OTF'
-)
-const myriad = resolve(
-    directory,
-    '..',
-    'assets',
-    'fonts',
-    'myriad-pro',
-    'MYRIADPRO-REGULAR.OTF'
-)
-const orange = '#ee5827'
-const blue = '#2a2773'
 
 export const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -79,24 +39,158 @@ export const formatter = new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 2, // Causes 2500.99 to be printed as $2,501
 })
 
+async function getORLTerms(alias = 'ORL') {
+    const pathTerms = resolve(
+        directory,
+        '..',
+        '..',
+        '..',
+        '..',
+        'tmp',
+        'reporting',
+        `${alias}.pdf`
+    )
+
+    try {
+        if (!fs.existsSync(pathTerms)) {
+            await new Promise((resolve, reject) => {
+                const storage = getStorage(app)
+                const fileRef = ref(
+                    storage,
+                    'Terms and Conditions/' + alias + '.pdf'
+                )
+                getDownloadURL(fileRef).then(async (url) => {
+                    fetch(url, { method: 'GET' })
+                        .then(async (res) => {
+                            const arrayBuffer = await res.arrayBuffer()
+                            const buffer = Buffer.from(arrayBuffer)
+                            fs.writeFile(pathTerms, buffer, (err) => {
+                                if (err) {
+                                    reject(err)
+                                } else {
+                                    resolve()
+                                }
+                            })
+                        })
+                        .catch((err) => {
+                            reject(err)
+                        })
+                })
+            })
+        }
+    } catch (err) {
+        console.log(err)
+    }
+}
+
+async function getSignatures(id) {
+    const files = await File.findAll({
+        where: {
+            registry_uuidkey: id,
+            key: {
+                [Op.not]: null,
+            },
+            key: {
+                [Op.iLike]: '%.png',
+            },
+            registry_type: {
+                [Op.or]: ['Student Signature', 'Sponsor Signature'],
+            },
+            canceled_at: null,
+        },
+    })
+
+    for (let file of files) {
+        const path = resolve(
+            directory,
+            '..',
+            '..',
+            '..',
+            '..',
+            'tmp',
+            'signatures',
+            `signature-${file.id}.png`
+        )
+        try {
+            if (!fs.existsSync(path)) {
+                await new Promise((resolve, reject) => {
+                    const storage = getStorage(app)
+                    const fileRef = ref(
+                        storage,
+                        'Enrollments/Signatures/' + file.dataValues.key
+                    )
+                    getDownloadURL(fileRef).then(async (url) => {
+                        fetch(url, { method: 'GET' })
+                            .then(async (res) => {
+                                const arrayBuffer = await res.arrayBuffer()
+                                const buffer = Buffer.from(arrayBuffer)
+                                fs.writeFile(path, buffer, (err) => {
+                                    if (err) {
+                                        reject(err)
+                                    } else {
+                                        resolve()
+                                    }
+                                })
+                            })
+                            .catch((err) => {
+                                console.log(err)
+                                reject(err)
+                            })
+                    })
+                })
+            }
+        } catch (err) {
+            console.log(err)
+        }
+    }
+}
+
+async function getParkingSpotImage(key = null, alias = '') {
+    const path = resolve(
+        directory,
+        '..',
+        '..',
+        '..',
+        '..',
+        'tmp',
+        'branches',
+        'parking_spot_images',
+        `parking-spot-${alias}.png`
+    )
+    try {
+        if (!fs.existsSync(path)) {
+            await new Promise((resolve, reject) => {
+                const storage = getStorage(app)
+                const fileRef = ref(storage, 'Branches/Parking Spot/' + key)
+                getDownloadURL(fileRef).then(async (url) => {
+                    fetch(url, { method: 'GET' })
+                        .then(async (res) => {
+                            const arrayBuffer = await res.arrayBuffer()
+                            const buffer = Buffer.from(arrayBuffer)
+                            fs.writeFile(path, buffer, (err) => {
+                                if (err) {
+                                    reject(err)
+                                } else {
+                                    resolve()
+                                }
+                            })
+                        })
+                        .catch((err) => {
+                            console.log(err)
+                            reject(err)
+                        })
+                })
+            })
+        }
+    } catch (err) {
+        console.log(err)
+    }
+}
+
 export default async function newenrollment(doc = null, id = '') {
     const enrollment = await Enrollment.findByPk(id)
 
     if (!enrollment) return false
-
-    const enrollmentSponsor = await Enrollmentsponsor.findAll({
-        where: {
-            enrollment_id: enrollment.dataValues.id,
-            canceled_at: null,
-        },
-    })
-
-    const enrollmentDependents = await Enrollmentdependent.findAll({
-        where: {
-            enrollment_id: enrollment.dataValues.id,
-            canceled_at: null,
-        },
-    })
 
     const filial = await Filial.findByPk(enrollment.dataValues.filial_id)
 
@@ -105,6 +199,38 @@ export default async function newenrollment(doc = null, id = '') {
     const student = await Student.findByPk(enrollment.dataValues.student_id)
 
     if (!student) return false
+
+    await getORLTerms(filial.dataValues.alias)
+    await getSignatures(id)
+
+    const parking_spot = await File.findByPk(
+        filial.dataValues.parking_spot_image
+    )
+
+    if (parking_spot) {
+        await getParkingSpotImage(
+            parking_spot.dataValues.key,
+            filial.dataValues.alias
+        )
+    }
+
+    const enrollmentSponsor = await Enrollmentsponsor.findAll({
+        where: {
+            enrollment_id: enrollment.dataValues.id,
+            canceled_at: null,
+        },
+    })
+
+    for (let sponsor of enrollmentSponsor) {
+        await getSignatures(sponsor.id)
+    }
+
+    const enrollmentDependents = await Enrollmentdependent.findAll({
+        where: {
+            enrollment_id: enrollment.dataValues.id,
+            canceled_at: null,
+        },
+    })
 
     // Student Information
 
@@ -136,6 +262,8 @@ export default async function newenrollment(doc = null, id = '') {
     })
 
     await pageParkingMap({ doc, enrollment, student, filial })
+
+    await pageSignatures({ doc, enrollment, student, filial })
 
     return true
 }
