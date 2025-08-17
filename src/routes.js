@@ -68,6 +68,7 @@ import StudentDashboardController from './app/controllers/StudentDashboardContro
 import CostCenterController from './app/controllers/CostCenterController.js'
 import MerchantXCostCenterController from './app/controllers/MerchantXCostCenterController.js'
 import DSOController from './app/controllers/DSOController.js'
+import CampaignRegistrationController from './app/controllers/CampaignRegistrationController.js'
 
 const routes = new Router()
 
@@ -619,6 +620,7 @@ routes.post('/recurrence', RecurrenceController.store)
 routes.delete('/recurrence/:student_id', RecurrenceController.stopRecurrence)
 
 routes.get('/filialdiscounts', FilialDiscountListController.index)
+routes.get('/campaign_filialdiscounts', FilialDiscountListController.indexCampaignRegistration)
 routes.get('/files', FileController.index)
 
 // vacations
@@ -664,5 +666,10 @@ routes.get(
     '/student-dashboard/dashboard/:registration_number/:period',
     StudentDashboardController.getDashboard
 )
+
+routes.post('/campaign', CampaignRegistrationController.store)
+routes.get('/campaign', CampaignRegistrationController.index)
+routes.get('/campaign/:campaign_id', CampaignRegistrationController.show)
+routes.put('/campaign/:campaign_id', CampaignRegistrationController.update)
 
 export default routes
