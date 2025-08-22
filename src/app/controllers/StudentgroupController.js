@@ -1458,14 +1458,8 @@ class StudentgroupController {
                     attributes: ['start_date', 'end_date'],
                 })
                 for (let studentXGroup of studentXGroups) {
-                    const from_date = format(
-                        parseISO(studentXGroup.dataValues.start_date),
-                        'yyyy-MM-dd'
-                    )
-                    const to_date = format(
-                        parseISO(studentXGroup.dataValues.end_date),
-                        'yyyy-MM-dd'
-                    )
+                    const from_date = studentXGroup.dataValues.start_date
+                    const to_date = studentXGroup.dataValues.end_date
                     const classes = await Studentgroupclass.findAll({
                         where: {
                             studentgroup_id: studentgroup.id,
