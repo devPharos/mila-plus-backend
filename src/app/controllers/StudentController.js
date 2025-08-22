@@ -579,7 +579,7 @@ class StudentController {
 
             if (lockedClass) {
                 return res.status(400).json({
-                    error: 'This group has a locked attendance already on this period. The student cannot be transferred.',
+                    error: 'This group has a locked attendance already on this period. The student cannot be activated.',
                 })
             }
 
