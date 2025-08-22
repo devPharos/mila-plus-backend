@@ -160,8 +160,6 @@ export async function createStudentAttendances({
     studentgroup_id = null,
     from_date = null,
     to_date = null,
-    req = { userId: 2 },
-    t = null,
 }) {
     const student = await Student.findByPk(student_id)
     if (!student) {
@@ -186,6 +184,7 @@ export async function createStudentAttendances({
                       [Op.gte]: from_date,
                   },
         },
+        distinct: true,
         attributes: ['id', 'shift', 'date'],
         order: [['date', 'ASC']],
     })
@@ -1202,24 +1201,28 @@ class StudentgroupController {
                                 studentgroupclass_id: studentGroupClass.id,
                                 canceled_at: null,
                             },
+                            transaction: req.transaction,
                         })
                         await Grade.destroy({
                             where: {
                                 studentgroupclass_id: studentGroupClass.id,
                                 canceled_at: null,
                             },
+                            transaction: req.transaction,
                         })
                         await Studentgrouppaceguide.destroy({
                             where: {
                                 studentgroupclass_id: studentGroupClass.id,
                                 canceled_at: null,
                             },
+                            transaction: req.transaction,
                         })
                         await Studentgroupclass.destroy({
                             where: {
                                 id: studentGroupClass.id,
                                 canceled_at: null,
                             },
+                            transaction: req.transaction,
                         })
                     }
                 }
@@ -1455,22 +1458,110 @@ class StudentgroupController {
                     attributes: ['start_date', 'end_date'],
                 })
                 for (let studentXGroup of studentXGroups) {
-                    await createStudentAttendances({
-                        student_id: student.id,
-                        studentgroup_id: studentgroup.id,
-                        from_date: format(
-                            parseISO(studentXGroup.dataValues.start_date),
-                            'yyyy-MM-dd'
-                        ),
-                        to_date: studentXGroup.dataValues.end_date
-                            ? format(
-                                  parseISO(studentXGroup.dataValues.end_date),
-                                  'yyyy-MM-dd'
-                              )
-                            : null,
-                        req,
-                        t: req.transaction,
+                    const from_date = format(
+                        parseISO(studentXGroup.dataValues.start_date),
+                        'yyyy-MM-dd'
+                    )
+                    const to_date = format(
+                        parseISO(studentXGroup.dataValues.end_date),
+                        'yyyy-MM-dd'
+                    )
+                    const classes = await Studentgroupclass.findAll({
+                        where: {
+                            studentgroup_id: studentgroup.id,
+                            canceled_at: null,
+                            status: {
+                                [Op.ne]: 'Holiday',
+                            },
+                            date: to_date
+                                ? {
+                                      [Op.between]: [from_date, to_date],
+                                  }
+                                : {
+                                      [Op.gte]: from_date,
+                                  },
+                        },
+                        distinct: true,
+                        attributes: ['id', 'shift', 'date'],
+                        order: [['date', 'ASC']],
                     })
+
+                    for (let class_ of classes) {
+                        for (const shift of class_.shift.split('/')) {
+                            const vacation = await Vacation.findOne({
+                                where: {
+                                    student_id: student.id,
+                                    date_from: {
+                                        [Op.lte]: format(
+                                            parseISO(class_.date),
+                                            'yyyy-MM-dd'
+                                        ),
+                                    },
+                                    date_to: {
+                                        [Op.gte]: format(
+                                            parseISO(class_.date),
+                                            'yyyy-MM-dd'
+                                        ),
+                                    },
+                                    canceled_at: null,
+                                },
+                            })
+                            const medicalExcuse = await MedicalExcuse.findOne({
+                                where: {
+                                    student_id: student.id,
+                                    date_from: {
+                                        [Op.lte]: format(
+                                            parseISO(class_.date),
+                                            'yyyy-MM-dd'
+                                        ),
+                                    },
+                                    date_to: {
+                                        [Op.gte]: format(
+                                            parseISO(class_.date),
+                                            'yyyy-MM-dd'
+                                        ),
+                                    },
+                                    canceled_at: null,
+                                },
+                            })
+                            await Attendance.create(
+                                {
+                                    studentgroupclass_id: class_.id,
+                                    student_id: student.id,
+                                    shift,
+                                    first_check: 'Absent',
+                                    second_check: 'Absent',
+                                    status: vacation
+                                        ? 'V'
+                                        : medicalExcuse
+                                        ? 'S'
+                                        : 'A',
+                                    vacation_id: vacation?.id,
+                                    medical_excuse_id: medicalExcuse?.id,
+                                    created_by: 2,
+                                },
+                                {
+                                    transaction: req.transaction,
+                                }
+                            )
+                        }
+                    }
+                    // await createStudentAttendances({
+                    //     student_id: student.id,
+                    //     studentgroup_id: studentgroup.id,
+                    //     from_date: format(
+                    //         parseISO(studentXGroup.dataValues.start_date),
+                    //         'yyyy-MM-dd'
+                    //     ),
+                    //     to_date: studentXGroup.dataValues.end_date
+                    //         ? format(
+                    //               parseISO(studentXGroup.dataValues.end_date),
+                    //               'yyyy-MM-dd'
+                    //           )
+                    //         : null,
+                    //     req,
+                    //     t: req.transaction,
+                    // })
                 }
             }
 
