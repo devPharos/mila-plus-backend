@@ -151,10 +151,6 @@ class StaffController {
                     type: 'string',
                 },
                 {
-                    field: 'middle_name',
-                    type: 'string',
-                },
-                {
                     field: 'last_name',
                     type: 'string',
                 },
@@ -187,16 +183,9 @@ class StaffController {
                     ...(await generateSearchByFields(search, searchableFields)),
                     ...(type !== 'null'
                         ? {
-                              [Op.and]: [
-                                  {
-                                      employee_type: {
-                                          [Op.in]: type.split(','),
-                                      },
-                                  },
-                                  {
-                                      user_id: null,
-                                  },
-                              ],
+                              employee_type: {
+                                  [Op.in]: type.split(','),
+                              },
                           }
                         : {}),
                 },
