@@ -1024,7 +1024,7 @@ class StudentController {
             }
 
             const vacationFiles = await VacationFiles.findAll({
-                where: { vacation_id },
+                where: { vacation_id, canceled_at: null },
                 attributes: ['file_id'],
             })
 
@@ -1039,6 +1039,7 @@ class StudentController {
                     id: {
                         [Op.in]: fileIds,
                     },
+                    canceled_at: null,
                 },
             })
             for (let file of files) {

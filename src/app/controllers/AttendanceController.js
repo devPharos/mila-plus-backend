@@ -6,7 +6,10 @@ import Studentgroup from '../models/Studentgroup.js'
 
 const { Op } = Sequelize
 
-export async function calculateAttendanceStatus(attendance_id = null) {
+export async function calculateAttendanceStatus(
+    attendance_id = null,
+    req = null
+) {
     const attendance = await Attendance.findOne({
         where: {
             id: attendance_id,
@@ -177,6 +180,7 @@ export async function calculateAttendanceStatus(attendance_id = null) {
                 id: attendance_id,
                 canceled_at: null,
             },
+            transaction: req.transaction,
         }
     )
 
