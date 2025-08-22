@@ -1797,10 +1797,19 @@ class StudentgroupController {
 
             const students = await Student.findAll({
                 where: {
-                    studentgroup_id: studentgroup.id,
+                    // studentgroup_id: studentgroup.id,
                     canceled_at: null,
                 },
                 include: [
+                    {
+                        model: StudentXGroup,
+                        as: 'studentxgroups',
+                        required: true,
+                        where: {
+                            canceled_at: null,
+                            group_id: studentgroup_id,
+                        },
+                    },
                     {
                         model: Attendance,
                         as: 'attendances',
