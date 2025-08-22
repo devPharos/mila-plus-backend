@@ -564,6 +564,25 @@ class StudentController {
                 })
             }
 
+            const lockedClass = await Studentgroupclass.findOne({
+                where: {
+                    canceled_at: null,
+                    studentgroup_id: studentgroup.id,
+                    date: {
+                        [Op.gte]: date,
+                    },
+                    locked_at: {
+                        [Op.not]: null,
+                    },
+                },
+            })
+
+            if (lockedClass) {
+                return res.status(400).json({
+                    error: 'This group has a locked attendance already on this period. The student cannot be transferred.',
+                })
+            }
+
             const studentXGroupExists = await StudentXGroup.findOne({
                 where: {
                     student_id: studentExists.id,
