@@ -27,8 +27,9 @@ export default async function MailLog({
     content += `<p><strong>Error:</strong> ${err}</p>`
 
     if (
+        err &&
         err.trim() ===
-        'SequelizeConnectionError: sorry, too many clients already'
+            'SequelizeConnectionError: sorry, too many clients already'
     ) {
         databaseConfig.close()
     }
