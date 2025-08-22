@@ -178,7 +178,7 @@ class ProspectController {
             }
 
             let partnersAndInfluencersExists = null
-            if (partners_and_influencers) {
+            if (partners_and_influencers.id) {
                 partnersAndInfluencersExists =
                     await PartnersAndInfluencers.findByPk(
                         partners_and_influencers.id
