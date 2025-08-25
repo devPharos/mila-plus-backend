@@ -77,6 +77,9 @@ class StudentDashboardController {
                         required: false,
                         attributes: ['name', 'morning', 'afternoon', 'evening'],
                         where: {
+                            name: {
+                                [Op.ne]: 'CLASS_INITIAL',
+                            },
                             canceled_at: null,
                         },
                         include: [
@@ -106,6 +109,7 @@ class StudentDashboardController {
                         ],
                     },
                 ],
+                distinct: true,
             })
             if (!studentInstance) {
                 return res.status(400).json({
