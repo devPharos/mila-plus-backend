@@ -2322,7 +2322,6 @@ class StudentgroupController {
                         }
                     )
                     .font('Helvetica')
-
                 const students = await Student.findAll({
                     where: {
                         canceled_at: null,
@@ -2331,7 +2330,7 @@ class StudentgroupController {
                         {
                             model: StudentXGroup,
                             as: 'studentxgroups',
-                            required: false,
+                            required: true,
                             where: {
                                 canceled_at: null,
                                 group_id: studentgroup_id,
@@ -2349,7 +2348,7 @@ class StudentgroupController {
                         {
                             model: Processtype,
                             as: 'processtypes',
-                            required: false,
+                            required: true,
                             where: {
                                 canceled_at: null,
                             },
@@ -2386,6 +2385,7 @@ class StudentgroupController {
                         ['name', 'ASC'],
                         ['last_name', 'ASC'],
                     ],
+                    distinct: true,
                 })
 
                 top += 20
