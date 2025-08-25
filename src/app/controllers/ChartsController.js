@@ -48,7 +48,7 @@ class ChartsController {
 
             return res.status(200).json(results)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

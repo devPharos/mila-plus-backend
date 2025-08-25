@@ -15,7 +15,7 @@ class MenuHierarchyController {
                 return res.json(menus)
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -92,7 +92,7 @@ class MenuHierarchyController {
 
             return res.json(hierarchy)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -209,7 +209,7 @@ class MenuHierarchyController {
 
             return res.json({ hierarchy, groups })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

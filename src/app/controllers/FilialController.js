@@ -125,7 +125,7 @@ class FilialController {
 
             return res.json(filial)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -198,7 +198,7 @@ class FilialController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -229,7 +229,7 @@ class FilialController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -274,7 +274,7 @@ class FilialController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                     await UserGroupXUser.create(
@@ -285,7 +285,7 @@ class FilialController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                     const title = `Account created`
@@ -309,11 +309,11 @@ class FilialController {
                 }
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(newFilial)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -344,7 +344,7 @@ class FilialController {
 
                         updated_by: req.userId || 2,
                     },
-                    { transaction: req.transaction }
+                    { transaction: req?.transaction }
                 )
 
                 if (fileCreated) {
@@ -354,7 +354,7 @@ class FilialController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
 
@@ -381,7 +381,7 @@ class FilialController {
                         res.pipe(parkingSpotImageLink)
                     })
                 }
-                await req.transaction.commit()
+                await req?.transaction.commit()
                 return res.status(201).json(filialExist)
             }
 
@@ -394,7 +394,7 @@ class FilialController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -417,7 +417,7 @@ class FilialController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 }
@@ -433,7 +433,7 @@ class FilialController {
                             where: {
                                 id: updPrice.id,
                             },
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 }
@@ -456,7 +456,7 @@ class FilialController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 }
@@ -472,7 +472,7 @@ class FilialController {
                             where: {
                                 id: updDiscount.id,
                             },
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 }
@@ -508,7 +508,7 @@ class FilialController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                         .then(async (newUser) => {
@@ -518,7 +518,7 @@ class FilialController {
                                     updated_by: req.userId,
                                 },
                                 {
-                                    transaction: req.transaction,
+                                    transaction: req?.transaction,
                                 }
                             )
 
@@ -530,7 +530,7 @@ class FilialController {
                                     created_by: req.userId,
                                 },
                                 {
-                                    transaction: req.transaction,
+                                    transaction: req?.transaction,
                                 }
                             )
                             await UserGroupXUser.create(
@@ -542,7 +542,7 @@ class FilialController {
                                     created_by: req.userId,
                                 },
                                 {
-                                    transaction: req.transaction,
+                                    transaction: req?.transaction,
                                 }
                             )
                         })
@@ -571,7 +571,7 @@ class FilialController {
                         })
                         .catch((err) => {
                             console.log(err)
-                            req.transaction.rollback()
+                            req?.transaction.rollback()
                             return res.status(400).json({
                                 error: 'An error has ocourred.',
                             })
@@ -598,7 +598,7 @@ class FilialController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 }
@@ -633,10 +633,10 @@ class FilialController {
                 ],
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
             return res.json(filial)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

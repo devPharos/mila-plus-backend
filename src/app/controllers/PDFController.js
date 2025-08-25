@@ -170,7 +170,7 @@ class PDFController {
                 })
             }
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

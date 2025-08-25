@@ -35,7 +35,7 @@ class LevelController {
 
             return res.json(levels)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -98,7 +98,7 @@ class LevelController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -126,14 +126,14 @@ class LevelController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(newlevel)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -169,14 +169,14 @@ class LevelController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(level)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

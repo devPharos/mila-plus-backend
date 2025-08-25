@@ -26,7 +26,7 @@ class CompanyController {
 
             return res.json(companies)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

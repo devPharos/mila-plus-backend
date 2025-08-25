@@ -62,7 +62,7 @@ class BankController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -88,7 +88,7 @@ class BankController {
 
             return res.json(bank)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -106,14 +106,14 @@ class BankController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(201).json(new_bank)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -131,14 +131,14 @@ class BankController {
             await bankExists.update(
                 { ...req.body, updated_by: req.userId, updated_at: new Date() },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(bankExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -150,13 +150,13 @@ class BankController {
 
             await bank.destroy()
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res
                 .status(200)
                 .json({ message: 'Bank deleted successfully.' })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

@@ -33,7 +33,7 @@ class MerchantXCostCenterController {
 
             return res.json(merchantXCostCenter)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -74,7 +74,7 @@ class MerchantXCostCenterController {
 
             return res.json(merchantXCostCenter)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -92,14 +92,14 @@ class MerchantXCostCenterController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(newMerchantXCostCenter)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -124,14 +124,14 @@ class MerchantXCostCenterController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(merchantXCostCenterExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -150,15 +150,15 @@ class MerchantXCostCenterController {
             }
 
             await merchantXCostCenterExists.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json({
                 message: 'Merchant X Cost Center deleted successfully.',
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

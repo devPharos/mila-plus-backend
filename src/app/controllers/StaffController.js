@@ -38,14 +38,14 @@ class StaffController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(new_staff)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -84,7 +84,7 @@ class StaffController {
 
                             updated_by: req.userId,
                         },
-                        { transaction: req.transaction }
+                        { transaction: req?.transaction }
                     )
 
                     if (fileCreated) {
@@ -96,9 +96,9 @@ class StaffController {
                                 document_id: files.document_id,
                                 created_by: req.userId,
                             },
-                            { transaction: req.transaction }
+                            { transaction: req?.transaction }
                         )
-                        await req.transaction.commit()
+                        await req?.transaction.commit()
                     }
                 }
 
@@ -112,14 +112,14 @@ class StaffController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(staffExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -201,7 +201,7 @@ class StaffController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -244,7 +244,7 @@ class StaffController {
 
             return res.json(staff)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -271,20 +271,20 @@ class StaffController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             } else {
                 await staff.destroy({
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 })
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(staff)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -302,14 +302,14 @@ class StaffController {
             await staffExists.update(
                 { ...req.body, updated_by: 2, updated_at: new Date() },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(staffExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -340,7 +340,7 @@ class StaffController {
                 ok: 'ok',
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

@@ -52,7 +52,7 @@ class ChartOfAccountsController {
 
             return res.json(chartofaccounts)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -101,7 +101,7 @@ class ChartOfAccountsController {
 
             return res.json(chartofaccounts)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -269,7 +269,7 @@ class ChartOfAccountsController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -340,15 +340,15 @@ class ChartOfAccountsController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(newChartofaccount)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -392,15 +392,15 @@ class ChartOfAccountsController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(chartofaccount)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

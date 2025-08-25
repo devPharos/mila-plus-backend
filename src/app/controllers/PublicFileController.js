@@ -21,7 +21,7 @@ class PublicFileController {
             )}/${name}`
             return res.download(path)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

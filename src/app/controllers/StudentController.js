@@ -93,10 +93,10 @@ class StudentController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             handleStudentDiscounts({
                 student_id: newStudent.id,
@@ -105,7 +105,7 @@ class StudentController {
 
             return res.json(newStudent)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -166,7 +166,7 @@ class StudentController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -175,11 +175,11 @@ class StudentController {
                 prices: req.body.prices,
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(studentExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -276,7 +276,7 @@ class StudentController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -393,7 +393,7 @@ class StudentController {
 
             return res.json(student)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -439,7 +439,7 @@ class StudentController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -469,11 +469,11 @@ class StudentController {
                             canceled_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                     await receivable.destroy({
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     })
                 }
 
@@ -488,7 +488,7 @@ class StudentController {
                             issuer_id: issuer.id,
                             canceled_at: null,
                         },
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
@@ -503,7 +503,7 @@ class StudentController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -520,7 +520,7 @@ class StudentController {
                         end_date: null,
                         canceled_at: null,
                     },
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
             await removeStudentAttendances({
@@ -533,11 +533,11 @@ class StudentController {
                 reason: reason === 'Terminated' ? 'F' : 'C',
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(student)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -624,7 +624,7 @@ class StudentController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
             await studentExists.update(
@@ -636,11 +636,11 @@ class StudentController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             // if (date <= format(new Date(), 'yyyy-MM-dd')) {
             await putInClass(studentExists.id, studentgroupExists.id)
@@ -650,7 +650,7 @@ class StudentController {
                 message: 'Student activated.',
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -730,7 +730,7 @@ class StudentController {
             if (activeStudentGroup) {
                 if (activeStudentGroup.dataValues.start_date === date) {
                     await activeStudentGroup.destroy({
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     })
                 } else {
                     await activeStudentGroup.update(
@@ -743,7 +743,7 @@ class StudentController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 }
@@ -762,7 +762,7 @@ class StudentController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -777,7 +777,7 @@ class StudentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
                 await studentXGroup.update(
@@ -786,11 +786,11 @@ class StudentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
 
-                await req.transaction.commit()
+                await req?.transaction.commit()
                 await removeStudentAttendances({
                     student_id: studentExists.id,
                     studentgroup_id: activeStudentGroup.dataValues.group_id,
@@ -806,7 +806,7 @@ class StudentController {
 
             return res.json(studentExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -818,14 +818,14 @@ class StudentController {
             const transfer = await StudentXGroup.findByPk(transfer_id)
 
             await transfer.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(transfer)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -857,7 +857,7 @@ class StudentController {
 
             return res.json(student)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -902,12 +902,12 @@ class StudentController {
                     note,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
             if (!newVacation) {
-                await req.transaction.rollback()
+                await req?.transaction.rollback()
                 return res.status(400).json({
                     error: 'Vacation not found.',
                 })
@@ -926,7 +926,7 @@ class StudentController {
 
                         updated_by: req.userId || 2,
                     },
-                    { transaction: req.transaction }
+                    { transaction: req?.transaction }
                 )
 
                 await VacationFiles.create(
@@ -936,7 +936,7 @@ class StudentController {
                         created_by: req.userId || 2,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
@@ -971,7 +971,7 @@ class StudentController {
             })
 
             if (!attendances.length) {
-                await req.transaction.rollback()
+                await req?.transaction.rollback()
                 return res.status(400).json({
                     error: 'Attendance not found in this period.',
                 })
@@ -986,12 +986,12 @@ class StudentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             const vacations = await Vacation.findAll({
                 where: { student_id, canceled_at: null },
@@ -1006,7 +1006,7 @@ class StudentController {
 
             return res.status(200).json(vacations)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1031,7 +1031,7 @@ class StudentController {
             const fileIds = vacationFiles.map((vf) => vf.file_id)
 
             await vacation.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
             const files = await File.findAll({
@@ -1044,7 +1044,7 @@ class StudentController {
             })
             for (let file of files) {
                 await file.destroy({
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 })
             }
 
@@ -1086,17 +1086,17 @@ class StudentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
                 await calculateAttendanceStatus(attendance.id, req)
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(vacation)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1121,7 +1121,7 @@ class StudentController {
 
             return res.status(200).json(vacationList)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1166,7 +1166,7 @@ class StudentController {
                     note,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -1181,7 +1181,7 @@ class StudentController {
                         registry_type: 'Student Medical Excuse',
                         created_by: req.userId || 2,
                     },
-                    { transaction: req.transaction }
+                    { transaction: req?.transaction }
                 )
 
                 await MedicalExcuseFiles.create(
@@ -1191,7 +1191,7 @@ class StudentController {
                         created_by: req.userId || 2,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
@@ -1217,7 +1217,7 @@ class StudentController {
             })
 
             if (!attendances.length) {
-                await req.transaction.rollback()
+                await req?.transaction.rollback()
                 return res.status(400).json({
                     error: 'Attendance not found in this period.',
                 })
@@ -1232,12 +1232,12 @@ class StudentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             const medicalExcuse = await MedicalExcuse.findAll({
                 where: { student_id, canceled_at: null },
@@ -1252,7 +1252,7 @@ class StudentController {
 
             return res.status(200).json(medicalExcuse)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1279,7 +1279,7 @@ class StudentController {
             const fileIds = medicalExcusesFiles.map((vf) => vf.file_id)
 
             await medicalexcuse.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
             const files = await File.findAll({
@@ -1291,7 +1291,7 @@ class StudentController {
             })
             for (let file of files) {
                 await file.destroy({
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 })
             }
 
@@ -1334,17 +1334,17 @@ class StudentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
                 await calculateAttendanceStatus(attendance.id, req)
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(medicalExcusesFiles)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1377,7 +1377,7 @@ class StudentController {
 
             return res.status(200).json(meList)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1522,7 +1522,7 @@ class StudentController {
                 return res.json({ path, name })
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1653,7 +1653,7 @@ class StudentController {
                 return res.json({ path, name })
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

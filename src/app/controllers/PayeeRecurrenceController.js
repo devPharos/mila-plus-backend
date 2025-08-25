@@ -273,7 +273,7 @@ class PayeeRecurrenceController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -344,7 +344,7 @@ class PayeeRecurrenceController {
 
             return res.json(payeeRecurrence)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -456,11 +456,11 @@ class PayeeRecurrenceController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             generateRecurrencePayees({
                 recurrence: newPayeeRecurrence,
@@ -469,7 +469,7 @@ class PayeeRecurrenceController {
 
             return res.json(newPayeeRecurrence)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -586,11 +586,11 @@ class PayeeRecurrenceController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             generateRecurrencePayees({
                 recurrence: payeeRecurrence,
@@ -599,7 +599,7 @@ class PayeeRecurrenceController {
 
             return res.status(200).json(payeeRecurrence)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

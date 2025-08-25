@@ -19,14 +19,14 @@ class EnrollmenttransferController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(new_enrollment)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -60,7 +60,7 @@ class EnrollmenttransferController {
 
                     updated_by: req.userId || 2,
                 },
-                { transaction: req.transaction }
+                { transaction: req?.transaction }
             )
 
             if (signatureFile) {
@@ -71,7 +71,7 @@ class EnrollmenttransferController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 )
@@ -105,7 +105,7 @@ class EnrollmenttransferController {
                                 id: enrollment_id,
                                 canceled_at: null,
                             },
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 )
@@ -121,18 +121,18 @@ class EnrollmenttransferController {
                             ...nextTimeline,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 )
             }
 
             Promise.all(promises).then(async () => {
-                await req.transaction.commit()
+                await req?.transaction.commit()
                 return res.status(200).json(transfer)
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

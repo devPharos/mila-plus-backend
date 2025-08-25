@@ -82,7 +82,7 @@ class BankAccountController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -118,7 +118,7 @@ class BankAccountController {
 
             return res.json(bankAccount)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -149,14 +149,14 @@ class BankAccountController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(201).json(new_bankAccount)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -198,14 +198,14 @@ class BankAccountController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(bankAccountExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -222,16 +222,16 @@ class BankAccountController {
             }
 
             await bankAccount.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res
                 .status(200)
                 .json({ message: 'Bank Account deleted successfully.' })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

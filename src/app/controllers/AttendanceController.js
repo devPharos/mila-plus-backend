@@ -180,7 +180,7 @@ export async function calculateAttendanceStatus(
                 id: attendance_id,
                 canceled_at: null,
             },
-            transaction: req.transaction,
+            transaction: req?.transaction,
         }
     )
 
@@ -238,7 +238,7 @@ class AttendanceController {
 
             return res.json({ student, attendances })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -294,16 +294,16 @@ class AttendanceController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(student)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

@@ -113,7 +113,7 @@ class SessionController {
             //   expiresIn: authConfig.expiresInRefresh,
             // });
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json({
                 user: userData,
@@ -121,7 +121,7 @@ class SessionController {
                 // refreshToken: refreshToken
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

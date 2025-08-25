@@ -67,7 +67,7 @@ class PaymentCriteriaController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -97,7 +97,7 @@ class PaymentCriteriaController {
 
             return res.json(criteria)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -139,14 +139,14 @@ class PaymentCriteriaController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(newCriteria)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -199,14 +199,14 @@ class PaymentCriteriaController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(criteriaExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -226,15 +226,15 @@ class PaymentCriteriaController {
             }
 
             await criteriaExists.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res
                 .status(200)
                 .json({ message: 'Payment criteria deleted successfully.' })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

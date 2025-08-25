@@ -389,7 +389,7 @@ class RecurrenceController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -482,7 +482,7 @@ class RecurrenceController {
 
             return res.json(recurrences)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -572,10 +572,10 @@ class RecurrenceController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
-                await req.transaction.commit()
+                await req?.transaction.commit()
             } else {
                 await recurrence.update(
                     {
@@ -590,10 +590,10 @@ class RecurrenceController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
-                await req.transaction.commit()
+                await req?.transaction.commit()
             }
 
             await handleStudentDiscounts({
@@ -604,7 +604,7 @@ class RecurrenceController {
             generateRecurrenceReceivables({ recurrence, clearAll: true })
             return res.json(recurrence)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -653,15 +653,15 @@ class RecurrenceController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(recurrence)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -717,20 +717,20 @@ class RecurrenceController {
             })
 
             await recurrence.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
             for (let receivable of receivables) {
                 await verifyAndCancelParcelowPaymentLink(receivable.id)
                 await verifyAndCancelTextToPayTransaction(receivable.id)
                 await receivable.destroy({
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 })
             }
-            await req.transaction.commit()
+            await req?.transaction.commit()
             return res.json(recurrence)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -774,7 +774,7 @@ class RecurrenceController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

@@ -77,7 +77,7 @@ class GradeController {
 
             return res.json({ student, attendances })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -112,16 +112,16 @@ class GradeController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(student)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

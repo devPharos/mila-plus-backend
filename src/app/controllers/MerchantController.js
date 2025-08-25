@@ -137,7 +137,7 @@ class MerchantController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -196,7 +196,7 @@ class MerchantController {
 
             return res.json(merchant)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -248,7 +248,7 @@ class MerchantController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -279,7 +279,7 @@ class MerchantController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             } else {
@@ -296,15 +296,15 @@ class MerchantController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(new_merchant)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -397,7 +397,7 @@ class MerchantController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -406,7 +406,7 @@ class MerchantController {
                     where: {
                         merchant_id,
                     },
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 })
 
                 for (let item of merchantxchartofaccounts) {
@@ -420,7 +420,7 @@ class MerchantController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 }
@@ -431,7 +431,7 @@ class MerchantController {
                     where: {
                         merchant_id,
                     },
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 })
 
                 for (let item of merchantxcostcenters) {
@@ -445,17 +445,17 @@ class MerchantController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 }
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(merchantExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -473,15 +473,15 @@ class MerchantController {
             }
 
             await merchantExists.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res
                 .status(200)
                 .json({ message: 'Merchant deleted successfully.' })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

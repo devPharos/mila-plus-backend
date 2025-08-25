@@ -52,7 +52,7 @@ class MilaUserController {
                     password,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -65,13 +65,13 @@ class MilaUserController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
 
             Promise.all(promises).then(async () => {
-                await req.transaction.commit()
+                await req?.transaction.commit()
 
                 const title = `Account created`
                 const content = `<p>Dear ${name},</p>
@@ -96,7 +96,7 @@ class MilaUserController {
             const { id } = newUser
             return res.json({ id, name, email })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -142,7 +142,7 @@ class MilaUserController {
                     password,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -154,7 +154,7 @@ class MilaUserController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -170,7 +170,7 @@ class MilaUserController {
                                 created_by: req.userId,
                             },
                             {
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         )
                         addedFilials.push(filial.id)
@@ -178,7 +178,7 @@ class MilaUserController {
                 }
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             const title = `Account created`
             const content = `<p>Dear ${name},</p>
@@ -203,7 +203,7 @@ class MilaUserController {
 
             return res.json({ id, email, name })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -301,7 +301,7 @@ class MilaUserController {
             await userExists.update(
                 { ...req.body, updated_by: req.userId },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -318,7 +318,7 @@ class MilaUserController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             } else {
@@ -335,7 +335,7 @@ class MilaUserController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 }
@@ -370,7 +370,7 @@ class MilaUserController {
             })
 
             await userGroupXUser.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
             await UserGroupXUser.create(
@@ -381,7 +381,7 @@ class MilaUserController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -393,7 +393,7 @@ class MilaUserController {
             })
 
             await userXFilial.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
             const addedFilials = []
@@ -410,13 +410,13 @@ class MilaUserController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
                 addedFilials.push(filial.id)
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json({
                 name: userExists.name,
@@ -425,7 +425,7 @@ class MilaUserController {
                 avatar,
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -516,7 +516,7 @@ class MilaUserController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -547,7 +547,7 @@ class MilaUserController {
 
             return res.json(user)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -609,7 +609,7 @@ class MilaUserController {
 
             return res.json(userExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -649,7 +649,7 @@ class MilaUserController {
 
             return res.status(200).json({ ok: 'sucesso' })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -684,7 +684,7 @@ class MilaUserController {
                     ),
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -700,14 +700,14 @@ class MilaUserController {
                 html: MailLayout({ title, content, filial: '' }),
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json({
                 message: 'Password reset email sent',
                 token,
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -755,18 +755,18 @@ class MilaUserController {
                     password_reset_expire: null,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json({
                 message: 'Password reseted!',
                 token,
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -799,7 +799,7 @@ class MilaUserController {
 
             return res.json(user)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

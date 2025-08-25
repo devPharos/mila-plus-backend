@@ -36,7 +36,7 @@ class MerchantXChartOfAccountController {
 
             return res.json(merchantXChartOfAccounts)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -78,7 +78,7 @@ class MerchantXChartOfAccountController {
 
             return res.json(merchantXChartOfAccount)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -97,14 +97,14 @@ class MerchantXChartOfAccountController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(newMerchantXChartOfAccount)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -131,14 +131,14 @@ class MerchantXChartOfAccountController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(merchantXChartOfAccountExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -159,15 +159,15 @@ class MerchantXChartOfAccountController {
             }
 
             await merchantXChartOfAccountExists.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json({
                 message: 'Merchant X Chart Of Account deleted successfully.',
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

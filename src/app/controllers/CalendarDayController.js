@@ -29,14 +29,14 @@ class CalendarDayController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(new_calendar)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -71,14 +71,14 @@ class CalendarDayController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(calendarDayExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -113,7 +113,7 @@ class CalendarDayController {
 
             return res.json(calendarDays)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -143,7 +143,7 @@ class CalendarDayController {
 
             return res.json(calendarDay)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -170,20 +170,20 @@ class CalendarDayController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             } else {
                 await calendarDay.destroy({
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 })
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(calendarDay)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

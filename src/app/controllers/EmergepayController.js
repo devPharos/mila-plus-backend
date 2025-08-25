@@ -387,9 +387,9 @@ class EmergepayController {
                         error: err,
                     })
                 })
-            await req.transaction.commit()
+            await req?.transaction.commit()
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -428,14 +428,14 @@ class EmergepayController {
                         subject: `MILA Plus - Payment Link`,
                         html: `<p>Payment ID: ${paymentPageId}<br/>Payment Link: ${paymentPageUrl}<br/>External Transaction ID: ${fileUuid}</p>`,
                     })
-                    await req.transaction.commit()
+                    await req?.transaction.commit()
                 })
                 .catch((err) => {
-                    err.transaction = req.transaction
+                    err.transaction = req?.transaction
                     next(err)
                 })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -556,13 +556,13 @@ class EmergepayController {
                         )
                     }
                 }
-                await req.transaction.commit()
+                await req?.transaction.commit()
                 res.sendStatus(200)
                 return
             }
-            await req.transaction.commit()
+            await req?.transaction.commit()
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
         res.sendStatus(200)
@@ -635,11 +635,11 @@ class EmergepayController {
                         created_by: 2,
                     })
                 })
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.sendStatus(200)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

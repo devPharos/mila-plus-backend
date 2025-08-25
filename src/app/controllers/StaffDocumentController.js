@@ -32,7 +32,7 @@ class StaffDocumentController {
 
                         updated_by: req.userId || 2,
                     },
-                    { transaction: req.transaction }
+                    { transaction: req?.transaction }
                 )
 
                 if (fileCreated) {
@@ -44,19 +44,19 @@ class StaffDocumentController {
                             document_id: files.document_id,
                             created_by: req.userId || 2,
                         },
-                        { transaction: req.transaction }
+                        { transaction: req?.transaction }
                     )
                 }
-                await req.transaction.commit()
+                await req?.transaction.commit()
                 return res.status(201).json(staffExists)
             }
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(400).json({
                 error: 'No files were provided.',
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -75,19 +75,19 @@ class StaffDocumentController {
             }
 
             await document.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
             const file = await File.findByPk(document.file_id)
             await file.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(document)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

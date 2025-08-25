@@ -27,11 +27,11 @@ class EnrollmentDependentontroller {
                     created_by: req.userId || 2,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             const retDependent = await Enrollmentdependent.findByPk(
                 dependent.id,
@@ -48,7 +48,7 @@ class EnrollmentDependentontroller {
 
             return res.json(retDependent)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -77,14 +77,14 @@ class EnrollmentDependentontroller {
             // }
 
             await enrollmentdependent.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(enrollmentdependent)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
