@@ -643,7 +643,7 @@ class StudentController {
             await req?.transaction.commit()
 
             // if (date <= format(new Date(), 'yyyy-MM-dd')) {
-            await putInClass(studentExists.id, studentgroupExists.id)
+            await putInClass(studentExists.id, studentgroupExists.id, date)
             // }
 
             return res.status(200).json({

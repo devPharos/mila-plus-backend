@@ -92,6 +92,7 @@ export async function jobPutInClass() {
 export async function putInClass(
     student_id = null,
     studentgroup_id = null,
+    date = null,
     req = null
 ) {
     try {
@@ -102,7 +103,9 @@ export async function putInClass(
             return false
         }
 
-        const date = format(new Date(), 'yyyy-MM-dd')
+        if (!date) {
+            date = format(new Date(), 'yyyy-MM-dd')
+        }
         await removeStudentAttendances({
             student_id: student.id,
             studentgroup_id: student.dataValues.group_id,
@@ -1353,7 +1356,9 @@ class StudentgroupController {
                     classroom_id: classroomExists.id,
                     workload_id: workloadExists.id,
                     staff_id: staffExists.id,
-                    end_date,
+                    end_date: end_date
+                        ? end_date
+                        : studentGroup.dataValues.end_date,
                     updated_by: req.userId,
                 },
                 {
