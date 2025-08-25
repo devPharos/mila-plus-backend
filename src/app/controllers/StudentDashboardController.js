@@ -233,7 +233,7 @@ class StudentDashboardController {
                     {
                         model: Studentgroup,
                         as: 'group',
-                        required: false,
+                        required: true,
                         attributes: [
                             ['id', 'groupId'],
                             'name',
@@ -248,7 +248,7 @@ class StudentDashboardController {
                             {
                                 model: Staff,
                                 as: 'staff',
-                                required: false,
+                                required: true,
                                 attributes: ['name', 'email'],
                                 where: {
                                     canceled_at: null,
@@ -257,7 +257,7 @@ class StudentDashboardController {
                             {
                                 model: Level,
                                 as: 'level',
-                                required: false,
+                                required: true,
                                 attributes: ['name'],
                                 where: {
                                     canceled_at: null,
@@ -266,7 +266,7 @@ class StudentDashboardController {
                             {
                                 model: Workload,
                                 as: 'workload',
-                                required: false,
+                                required: true,
                                 attributes: ['name'],
                                 where: {
                                     canceled_at: null,
