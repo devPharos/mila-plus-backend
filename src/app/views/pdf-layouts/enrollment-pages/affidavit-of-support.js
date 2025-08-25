@@ -468,7 +468,7 @@ export default async function pageAffidavitOfSupport({
         '..',
         'tmp',
         'signatures',
-        `signature-${sponsorSignatureFile.dataValues.id}.png`
+        `signature-${sponsorSignatureFile?.dataValue?.id}.png`
     )
 
     if (fs.existsSync(sponsorSignaturePath)) {
