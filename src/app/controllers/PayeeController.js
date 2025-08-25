@@ -187,7 +187,7 @@ class PayeeController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -248,7 +248,7 @@ class PayeeController {
 
             return res.json(payee)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -375,15 +375,15 @@ class PayeeController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(newPayee)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -522,15 +522,15 @@ class PayeeController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(payeeExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -555,15 +555,15 @@ class PayeeController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(payeeExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -633,7 +633,7 @@ class PayeeController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
 
@@ -652,18 +652,18 @@ class PayeeController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 }
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
             return res
                 .status(200)
                 .json({ message: 'Payee settlement successful.' })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -689,13 +689,13 @@ class PayeeController {
             }
 
             await payeeExists.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json({ message: 'Payee has been deleted.' })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1232,7 +1232,7 @@ class PayeeController {
                 .style(styleTotal)
 
             let ret = null
-            await req.transaction.commit()
+            await req?.transaction.commit()
             wb.write(path, async (err, stats) => {
                 if (err) {
                     ret = res.status(400).json({ err, stats })
@@ -1249,7 +1249,7 @@ class PayeeController {
             })
             return ret
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1292,11 +1292,11 @@ class PayeeController {
                 chartofaccount_id: chartOfAccountExists?.id,
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(payee)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

@@ -135,7 +135,7 @@ class PayeeSettlementController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -204,7 +204,7 @@ class PayeeSettlementController {
 
             return res.json(receivable)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -228,7 +228,7 @@ class PayeeSettlementController {
             }
 
             await settlement.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
             await payee.update(
                 {
@@ -244,15 +244,15 @@ class PayeeSettlementController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
             return res.status(200).json({
                 message: 'Settlement deleted successfully.',
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

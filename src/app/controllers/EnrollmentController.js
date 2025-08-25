@@ -119,7 +119,7 @@ class EnrollmentController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 ).then(async (enrollment) => {
                     await Enrollmenttimeline.create(
@@ -137,7 +137,7 @@ class EnrollmentController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     ).then(async () => {
                         if (newProspect.processsubstatus_id === 4) {
@@ -150,7 +150,7 @@ class EnrollmentController {
                                         created_by: req.userId,
                                     },
                                     {
-                                        transaction: req.transaction,
+                                        transaction: req?.transaction,
                                     }
                                 )
                             )
@@ -167,14 +167,14 @@ class EnrollmentController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(new_enrollment)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -194,14 +194,14 @@ class EnrollmentController {
             await enrollmentExists.update(
                 { ...req.body, updated_by: req.userId, updated_at: new Date() },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(enrollmentExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -374,7 +374,7 @@ class EnrollmentController {
                                 created_by: 2,
                             },
                             {
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         )
                     )
@@ -394,7 +394,7 @@ class EnrollmentController {
                                 where: {
                                     id: existingEmergency.id,
                                 },
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         )
                     )
@@ -437,7 +437,7 @@ class EnrollmentController {
                 if (existingSponsors) {
                     for (let sponsor of existingSponsors) {
                         await sponsor.destroy({
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         })
                     }
                 }
@@ -453,7 +453,7 @@ class EnrollmentController {
                             created_by: 2,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 }
@@ -482,7 +482,7 @@ class EnrollmentController {
                                 updated_by: 2,
                             },
                             {
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         )
                     )
@@ -496,7 +496,7 @@ class EnrollmentController {
                                 created_by: 2,
                             },
                             {
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         )
                     )
@@ -520,7 +520,7 @@ class EnrollmentController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 )
@@ -538,7 +538,7 @@ class EnrollmentController {
                         ...nextTimeline,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
@@ -553,7 +553,7 @@ class EnrollmentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             )
@@ -597,11 +597,11 @@ class EnrollmentController {
                         }),
                     })
                 }
-                await req.transaction.commit()
+                await req?.transaction.commit()
                 return res.status(200).json(enrollmentExists)
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -718,7 +718,7 @@ class EnrollmentController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -901,7 +901,7 @@ class EnrollmentController {
 
             return res.json(enrollments)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -970,7 +970,7 @@ class EnrollmentController {
 
             return res.json(enrollments)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -990,7 +990,7 @@ class EnrollmentController {
 
             return res.json(enrollments)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1017,20 +1017,20 @@ class EnrollmentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             } else {
                 await enrollment.destroy({
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 })
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(enrollment)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1062,7 +1062,7 @@ class EnrollmentController {
 
                     updated_by: req.userId || 2,
                 },
-                { transaction: req.transaction }
+                { transaction: req?.transaction }
             )
 
             if (signatureFile) {
@@ -1072,7 +1072,7 @@ class EnrollmentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
 
@@ -1093,11 +1093,11 @@ class EnrollmentController {
                     res.pipe(signatureFileLink)
                 })
             }
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(enrollment)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1129,7 +1129,7 @@ class EnrollmentController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -1147,7 +1147,7 @@ class EnrollmentController {
 
                     updated_by: req.userId || 2,
                 },
-                { transaction: req.transaction }
+                { transaction: req?.transaction }
             )
 
             if (signatureFile) {
@@ -1157,7 +1157,7 @@ class EnrollmentController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
 
@@ -1178,11 +1178,11 @@ class EnrollmentController {
                     res.pipe(signatureFileLink)
                 })
             }
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(sponsor)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1227,7 +1227,7 @@ class EnrollmentController {
 
                     updated_by: req.userId || 2,
                 },
-                { transaction: req.transaction }
+                { transaction: req?.transaction }
             )
 
             if (signatureFile) {
@@ -1247,7 +1247,7 @@ class EnrollmentController {
                             enrollment_id: enrollment_id,
                             canceled_at: null,
                         },
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
 
@@ -1268,11 +1268,11 @@ class EnrollmentController {
                     res.pipe(signatureFileLink)
                 })
             }
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(enrollment)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1319,7 +1319,7 @@ class EnrollmentController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     ).then(async (enrollment) => {
                         await Enrollmenttimeline.create(
@@ -1341,7 +1341,7 @@ class EnrollmentController {
                                 created_by: req.userId,
                             },
                             {
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         ).then(async () => {
                             await Enrollmenttransfer.create(
@@ -1352,7 +1352,7 @@ class EnrollmentController {
                                     created_by: req.userId,
                                 },
                                 {
-                                    transaction: req.transaction,
+                                    transaction: req?.transaction,
                                 }
                             ).then(async () => {
                                 const title = `Transfer Eligibility Form - Student`
@@ -1383,7 +1383,7 @@ class EnrollmentController {
                 )
 
                 Promise.all(promises).then(async () => {
-                    await req.transaction.commit()
+                    await req?.transaction.commit()
 
                     const enrollment = await Enrollment.findOne({
                         where: {
@@ -1424,7 +1424,7 @@ class EnrollmentController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     ).then(async (enrollment) => {
                         await Enrollmenttimeline.create(
@@ -1446,14 +1446,14 @@ class EnrollmentController {
                                 created_by: req.userId,
                             },
                             {
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         )
                     })
                 )
 
                 Promise.all(promises).then(async () => {
-                    await req.transaction.commit()
+                    await req?.transaction.commit()
 
                     const enrollment = await Enrollment.findOne({
                         where: {
@@ -1494,7 +1494,7 @@ class EnrollmentController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     ).then(async (enrollment) => {
                         await Enrollmenttimeline.create(
@@ -1516,7 +1516,7 @@ class EnrollmentController {
                                 created_by: req.userId,
                             },
                             {
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         ).then(async () => {
                             const title = `Placement Test Form - Student`
@@ -1546,7 +1546,7 @@ class EnrollmentController {
                 )
 
                 Promise.all(promises).then(async () => {
-                    await req.transaction.commit()
+                    await req?.transaction.commit()
 
                     const enrollment = await Enrollment.findOne({
                         where: {
@@ -1561,7 +1561,7 @@ class EnrollmentController {
 
             // return res.json({ status: 'ok' });
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1580,7 +1580,7 @@ class EnrollmentController {
             }
             return res.json({ ok: true })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

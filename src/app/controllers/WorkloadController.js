@@ -51,7 +51,7 @@ class WorkloadController {
 
             return res.json(workloads)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -161,7 +161,7 @@ class WorkloadController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -204,7 +204,7 @@ class WorkloadController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
 
@@ -223,7 +223,7 @@ class WorkloadController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
             if (myFile) {
@@ -232,15 +232,15 @@ class WorkloadController {
                         registry_uuidkey: workload.id,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(workload)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -293,7 +293,7 @@ class WorkloadController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
                 delete req.body.file_id
@@ -311,7 +311,7 @@ class WorkloadController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -328,7 +328,7 @@ class WorkloadController {
                 })
                 for (let pace of paces) {
                     await pace.destroy({
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     })
                 }
             }
@@ -351,11 +351,11 @@ class WorkloadController {
                 }
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(workload)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

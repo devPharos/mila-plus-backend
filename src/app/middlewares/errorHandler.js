@@ -4,8 +4,8 @@ import MailLog from '../../Mails/MailLog.js'
 const errorHandler = (err, req, res, next) => {
     // Verifica se a transação foi passada no objeto req (se você decidir fazer isso)
     // ou se o erro já possui um método rollback
-    if (req.transaction) {
-        req.transaction.rollback().catch((rollbackErr) => {
+    if (req?.transaction) {
+        req?.transaction.rollback().catch((rollbackErr) => {
             console.error('Erro ao fazer rollback da transação:', rollbackErr)
         })
     } else if (err.transaction) {

@@ -142,7 +142,7 @@ class SettlementController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -203,7 +203,7 @@ class SettlementController {
 
             return res.json(payee)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -253,7 +253,7 @@ class SettlementController {
             }
 
             await settlement.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
             const discounts = await Receivablediscounts.findAll({
                 where: {
@@ -274,7 +274,7 @@ class SettlementController {
                     total_discount += discount.dataValues.value
                 }
                 await discount.destroy({
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 })
             }
             if (settlement.dataValues.amount === 0) {
@@ -309,15 +309,15 @@ class SettlementController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
             return res.status(200).json({
                 message: 'Settlement deleted successfully.',
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

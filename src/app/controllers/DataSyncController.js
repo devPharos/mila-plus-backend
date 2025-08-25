@@ -359,10 +359,10 @@ class DataSyncController {
                         }
 
                         await Student.create(data, {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         })
                     }
-                    await req.transaction.commit()
+                    await req?.transaction.commit()
                     res.status(200).json({
                         message: 'Students imported successfully!',
                     })
@@ -486,7 +486,7 @@ class DataSyncController {
                 })
             }
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

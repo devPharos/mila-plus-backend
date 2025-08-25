@@ -136,7 +136,7 @@ class PartnersAndInfluencersController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -168,7 +168,7 @@ class PartnersAndInfluencersController {
 
             return res.json(agent)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -195,14 +195,14 @@ class PartnersAndInfluencersController {
                     created_by: req.userId,
                     filial_id: req.body.filial.id,
                 },
-                { transaction: req.transaction }
+                { transaction: req?.transaction }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(partnersAndInfluencersExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

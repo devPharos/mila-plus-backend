@@ -131,11 +131,11 @@ class ProspectPaymentController {
                             ? registrationFee.invoice_number
                             : used_invoice,
                         paymentmethod_id,
-                        t: req.transaction,
+                        t: req?.transaction,
                     })
                 }
 
-                await req.transaction.commit()
+                await req?.transaction.commit()
                 return res.json({
                     issuer: issuerExists,
                     registrationFee,
@@ -143,7 +143,7 @@ class ProspectPaymentController {
                 })
             }, 3000)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -237,7 +237,7 @@ class ProspectPaymentController {
                         })
                     })
                     .catch((err) => {
-                        req.transaction.rollback()
+                        req?.transaction.rollback()
                         const className = 'EmergepayController'
                         const functionName = 'textToPay'
                         MailLog({ className, functionName, req, err })
@@ -322,7 +322,7 @@ class ProspectPaymentController {
                             })
                     })
                     .catch((err) => {
-                        req.transaction.rollback()
+                        req?.transaction.rollback()
                         const className = 'ParcelowController'
                         const functionName = 'ParcelowPaymentLink'
                         MailLog({ className, functionName, req, err })
@@ -345,7 +345,7 @@ class ProspectPaymentController {
                 })
             }
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
 
@@ -565,7 +565,7 @@ class ProspectPaymentController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
 
@@ -588,10 +588,10 @@ class ProspectPaymentController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
-                    await req.transaction.commit()
+                    await req?.transaction.commit()
 
                     return res.json({ status: 'ok' })
                 })

@@ -34,7 +34,7 @@ class EnrollmentdocumentController {
 
                         updated_by: req.userId || 2,
                     },
-                    { transaction: req.transaction }
+                    { transaction: req?.transaction }
                 )
                 if (fileCreated) {
                     await Enrollmentdocument.create(
@@ -44,10 +44,10 @@ class EnrollmentdocumentController {
                             document_id: files.document_id,
                             created_by: req.userId || 2,
                         },
-                        { transaction: req.transaction }
+                        { transaction: req?.transaction }
                     )
                 }
-                await req.transaction.commit()
+                await req?.transaction.commit()
                 return res.status(201).json(enrollmentExists)
             }
 
@@ -55,7 +55,7 @@ class EnrollmentdocumentController {
                 error: 'No files were provided.',
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -85,7 +85,7 @@ class EnrollmentdocumentController {
 
                         updated_by: req.userId || 2,
                     },
-                    { transaction: req.transaction }
+                    { transaction: req?.transaction }
                 )
                 if (fileCreated) {
                     await Enrollmentdependentdocument.create(
@@ -96,19 +96,19 @@ class EnrollmentdocumentController {
                             document_id: files.document_id,
                             created_by: req.userId || 2,
                         },
-                        { transaction: req.transaction }
+                        { transaction: req?.transaction }
                     )
                 }
-                await req.transaction.commit()
+                await req?.transaction.commit()
                 return res.status(201).json(enrollmentExists)
             }
-            req.transaction.rollback()
+            req?.transaction.rollback()
 
             return res.status(400).json({
                 error: 'No files were provided.',
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -130,14 +130,14 @@ class EnrollmentdocumentController {
             await enrollmentDocumentExists.update(
                 { ...req.body, updated_by: req.userId, updated_at: new Date() },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(enrollmentDocumentExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -152,7 +152,7 @@ class EnrollmentdocumentController {
 
             return res.json(enrollmentDocuments)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -172,7 +172,7 @@ class EnrollmentdocumentController {
 
             return res.json(enrollmentDocuments)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -192,7 +192,7 @@ class EnrollmentdocumentController {
 
             return res.json(enrollmentDocuments)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -214,19 +214,19 @@ class EnrollmentdocumentController {
             }
 
             await document.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
             const file = await File.findByPk(document.file_id)
             await file.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(document)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -248,19 +248,19 @@ class EnrollmentdocumentController {
             }
 
             await document.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
             const file = await File.findByPk(document.file_id)
             await file.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(document)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

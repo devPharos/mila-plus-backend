@@ -181,7 +181,7 @@ class AbsenseControlController {
             )
             return res.json({ student, attendances, totals })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -362,7 +362,7 @@ class AbsenseControlController {
             }
 
             let ret = null
-            await req.transaction.commit()
+            await req?.transaction.commit()
             wb.write(path, async (err, stats) => {
                 if (err) {
                     ret = res.status(400).json({ err, stats })
@@ -380,7 +380,7 @@ class AbsenseControlController {
 
             return ret
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

@@ -47,11 +47,11 @@ class EnrollmentsponsorController {
                     created_by: req.userId || 2,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit().then(async () => {
+            await req?.transaction.commit().then(async () => {
                 const retSponsor = await Enrollmentsponsor.findByPk(
                     sponsor.dataValues.id,
                     {
@@ -68,7 +68,7 @@ class EnrollmentsponsorController {
                 return res.json(retSponsor)
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -103,14 +103,14 @@ class EnrollmentsponsorController {
             }
 
             await enrollmentsponsor.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(enrollmentsponsor)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -173,7 +173,7 @@ class EnrollmentsponsorController {
                         id: sponsor_id,
                         canceled_at: null,
                     },
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -236,7 +236,7 @@ class EnrollmentsponsorController {
                         ...nextTimeline,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
@@ -244,7 +244,7 @@ class EnrollmentsponsorController {
             const filial = await Filial.findByPk(enrollmentExists.filial_id)
 
             Promise.all(promises).then(async () => {
-                await req.transaction.commit()
+                await req?.transaction.commit()
                 if (notifyAgent) {
                     const title = `Enrollment Process - Agent`
                     const content = `<p>Dear ${enrollmentExists.agents.name},</p>
@@ -265,7 +265,7 @@ class EnrollmentsponsorController {
                 return res.status(200).json(enrollmentExists)
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -390,7 +390,7 @@ class EnrollmentsponsorController {
 
             return res.json(enrollments)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

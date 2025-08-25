@@ -58,7 +58,7 @@ class PayeeInstallmentController {
 
             return res.json(installments)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -101,7 +101,7 @@ class PayeeInstallmentController {
 
             return res.json(installment)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -187,11 +187,11 @@ class PayeeInstallmentController {
                 oldStatusDate = new Date(newStatusDate)
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(installmentsItens)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -211,14 +211,14 @@ class PayeeInstallmentController {
             await installmentExists.update(
                 { ...req.body, updated_by: req.userId, updated_at: new Date() },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(installmentExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -402,7 +402,7 @@ class PayeeInstallmentController {
 
         for (const installment of canceledInstallments) {
             await installment.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
         }
     }

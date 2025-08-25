@@ -45,7 +45,7 @@ class StudentProgramController {
 
                     updated_by: req.userId || 2,
                 },
-                { transaction: req.transaction }
+                { transaction: req?.transaction }
             )
 
             const studentprogram = await Studentprogram.create(
@@ -57,7 +57,7 @@ class StudentProgramController {
                     end_date,
                     created_by: req.userId || 2,
                 },
-                { transaction: req.transaction }
+                { transaction: req?.transaction }
             )
 
             if (!studentExists.dataValues.start_date) {
@@ -66,11 +66,11 @@ class StudentProgramController {
                         start_date: start_date,
                         updated_by: req.userId || 2,
                     },
-                    { transaction: req.transaction }
+                    { transaction: req?.transaction }
                 )
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             const studentProgram = await Studentprogram.findByPk(
                 studentprogram.id,
@@ -88,7 +88,7 @@ class StudentProgramController {
 
             return res.status(201).json(studentProgram)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

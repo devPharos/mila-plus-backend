@@ -39,7 +39,7 @@ class StudentDashboardController {
             }
             return res.json({ studentId: student.id })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -178,7 +178,7 @@ class StudentDashboardController {
 
             return res.json(student)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -467,7 +467,7 @@ class StudentDashboardController {
 
             return res.json({ groups, periods, frequency })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

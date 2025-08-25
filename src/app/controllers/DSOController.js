@@ -127,7 +127,7 @@ class DSOController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -243,7 +243,7 @@ class DSOController {
 
             return res.json(enrollment)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -269,15 +269,15 @@ class DSOController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(enrollmenti20form)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -333,7 +333,7 @@ class DSOController {
                         created_by: req.userId,
                         updated_by: req.userId,
                     },
-                    { transaction: req.transaction }
+                    { transaction: req?.transaction }
                 )
 
                 if (enrollmenti20form) {
@@ -342,7 +342,7 @@ class DSOController {
                             status: 'Concluded',
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 }
@@ -356,7 +356,7 @@ class DSOController {
                         end_date,
                         created_by: req.userId,
                     },
-                    { transaction: req.transaction }
+                    { transaction: req?.transaction }
                 )
 
                 await student.update(
@@ -367,10 +367,10 @@ class DSOController {
                         status: 'Waiting',
                         updated_by: req.userId,
                     },
-                    { transaction: req.transaction }
+                    { transaction: req?.transaction }
                 )
 
-                await req.transaction.commit()
+                await req?.transaction.commit()
 
                 return res.status(200).json(student)
             }
@@ -384,7 +384,7 @@ class DSOController {
             await enrollment.update(
                 { ...enrollmentData, plan_date },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -420,7 +420,7 @@ class DSOController {
                     i94_expiration_date,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -433,7 +433,7 @@ class DSOController {
                 await enrollmentEmergency.update(
                     { ...emergencyData },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
@@ -448,7 +448,7 @@ class DSOController {
                         await enrollmentDependent.update(
                             { ...dependent },
                             {
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         )
                     }
@@ -466,7 +466,7 @@ class DSOController {
                         await enrollmentSponsor.update(
                             { ...sponsor },
                             {
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         )
                     }
@@ -479,16 +479,16 @@ class DSOController {
                         status: 'Form Checked',
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(student)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

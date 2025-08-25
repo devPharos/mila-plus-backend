@@ -141,7 +141,7 @@ export async function putInClass(
                         },
                         canceled_at: null,
                     },
-                    transaction: req.transaction || null,
+                    transaction: req?.transaction || null,
                 }
             )
         }
@@ -544,7 +544,7 @@ class StudentgroupController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -744,7 +744,7 @@ class StudentgroupController {
 
             return res.json(studentGroup)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -986,7 +986,7 @@ class StudentgroupController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             ).then(async (studentGroup) => {
                 for (let {
@@ -1008,7 +1008,7 @@ class StudentgroupController {
                             created_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     ).then(async (studentGroupClass) => {
                         if (paceGuides) {
@@ -1023,18 +1023,18 @@ class StudentgroupController {
                                         created_by: req.userId,
                                     },
                                     {
-                                        transaction: req.transaction,
+                                        transaction: req?.transaction,
                                     }
                                 )
                             }
                         }
                     })
                 }
-                await req.transaction.commit()
+                await req?.transaction.commit()
                 return res.status(201).json(studentGroup)
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1201,28 +1201,28 @@ class StudentgroupController {
                                 studentgroupclass_id: studentGroupClass.id,
                                 canceled_at: null,
                             },
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         })
                         await Grade.destroy({
                             where: {
                                 studentgroupclass_id: studentGroupClass.id,
                                 canceled_at: null,
                             },
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         })
                         await Studentgrouppaceguide.destroy({
                             where: {
                                 studentgroupclass_id: studentGroupClass.id,
                                 canceled_at: null,
                             },
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         })
                         await Studentgroupclass.destroy({
                             where: {
                                 id: studentGroupClass.id,
                                 canceled_at: null,
                             },
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         })
                     }
                 }
@@ -1339,7 +1339,7 @@ class StudentgroupController {
                             studentgroup_id: studentGroup.id,
                             canceled_at: null,
                         },
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
@@ -1357,7 +1357,7 @@ class StudentgroupController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -1380,7 +1380,7 @@ class StudentgroupController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
                 if (paceGuides) {
@@ -1395,18 +1395,18 @@ class StudentgroupController {
                                 created_by: req.userId,
                             },
                             {
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         )
                     }
                 }
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(studentGroup)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1434,7 +1434,7 @@ class StudentgroupController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -1535,7 +1535,7 @@ class StudentgroupController {
                                     created_by: 2,
                                 },
                                 {
-                                    transaction: req.transaction,
+                                    transaction: req?.transaction,
                                 }
                             )
                         }
@@ -1554,16 +1554,16 @@ class StudentgroupController {
                     //           )
                     //         : null,
                     //     req,
-                    //     t: req.transaction,
+                    //     t: req?.transaction,
                     // })
                 }
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(studentgroup)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1628,7 +1628,7 @@ class StudentgroupController {
                             },
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                 }
@@ -1640,15 +1640,15 @@ class StudentgroupController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(studentgroup)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1871,7 +1871,7 @@ class StudentgroupController {
                 studentGroupProgress,
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1908,7 +1908,7 @@ class StudentgroupController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -1965,7 +1965,7 @@ class StudentgroupController {
                                     updated_by: req.userId,
                                 },
                                 {
-                                    transaction: req.transaction,
+                                    transaction: req?.transaction,
                                 }
                             )
                             attendancesIds.push(attendanceExists.id)
@@ -1980,7 +1980,7 @@ class StudentgroupController {
                                     created_by: req.userId,
                                 },
                                 {
-                                    transaction: req.transaction,
+                                    transaction: req?.transaction,
                                 }
                             )
                             attendancesIds.push(attendance.id)
@@ -2013,12 +2013,12 @@ class StudentgroupController {
                         updated_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             for (let attendanceId of attendancesIds) {
                 calculateAttendanceStatus(attendanceId)
@@ -2026,7 +2026,7 @@ class StudentgroupController {
 
             return res.status(200).json(studentgroup)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -2067,7 +2067,7 @@ class StudentgroupController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                     continue
@@ -2082,16 +2082,16 @@ class StudentgroupController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(studentgroup)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -2824,7 +2824,7 @@ class StudentgroupController {
                 )
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

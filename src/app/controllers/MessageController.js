@@ -79,7 +79,7 @@ class MessageController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -151,7 +151,7 @@ class MessageController {
 
             return res.json(message)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -201,7 +201,7 @@ class MessageController {
 
             return res.json(students)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -238,7 +238,7 @@ class MessageController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -279,7 +279,7 @@ class MessageController {
                                 created_by: req.userId,
                             },
                             {
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         )
                     }
@@ -319,11 +319,11 @@ class MessageController {
                 }
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(message)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

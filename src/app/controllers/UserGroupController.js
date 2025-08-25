@@ -101,7 +101,7 @@ class UserGroupController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
             const menus = await MenuHierarchy.findAll({
@@ -123,14 +123,14 @@ class UserGroupController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
-            await req.transaction.commit()
+            await req?.transaction.commit()
             return res.json(group)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -186,7 +186,7 @@ class UserGroupController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -218,7 +218,7 @@ class UserGroupController {
                             updated_by: req.userId,
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
                     if (view === 'Yes') {
@@ -238,7 +238,7 @@ class UserGroupController {
                                     updated_by: req.userId,
                                 },
                                 {
-                                    transaction: req.transaction,
+                                    transaction: req?.transaction,
                                 }
                             )
                         }
@@ -265,7 +265,7 @@ class UserGroupController {
                                             updated_by: req.userId,
                                         },
                                         {
-                                            transaction: req.transaction,
+                                            transaction: req?.transaction,
                                         }
                                     )
                                 }
@@ -294,7 +294,7 @@ class UserGroupController {
                                             updated_by: req.userId,
                                         },
                                         {
-                                            transaction: req.transaction,
+                                            transaction: req?.transaction,
                                         }
                                     )
                                 }
@@ -304,11 +304,11 @@ class UserGroupController {
                 }
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(userGroupExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -394,7 +394,7 @@ class UserGroupController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -440,7 +440,7 @@ class UserGroupController {
 
             return res.json(userGroup)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -486,14 +486,14 @@ class UserGroupController {
             }
 
             await userGroup.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(userGroup)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

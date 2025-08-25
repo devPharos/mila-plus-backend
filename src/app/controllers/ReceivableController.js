@@ -1376,7 +1376,7 @@ class ReceivableController {
 
             return res.json(receivables)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1559,7 +1559,7 @@ class ReceivableController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1668,7 +1668,7 @@ class ReceivableController {
 
             return res.json(receivable)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1776,11 +1776,11 @@ class ReceivableController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             // const db = getDb()
             // const notificationCollection = db.collection('notifications')
@@ -1798,7 +1798,7 @@ class ReceivableController {
 
             return res.json(newReceivable)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -1878,7 +1878,7 @@ class ReceivableController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
             await receivableExists.update(
@@ -1890,17 +1890,17 @@ class ReceivableController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
             const settlement = await Settlement.findByPk(settlements[0].id)
             await settlement.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
-            await req.transaction.commit()
+            await req?.transaction.commit()
             return res.json(receivableExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -2004,15 +2004,15 @@ class ReceivableController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json(receivableExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -2042,15 +2042,15 @@ class ReceivableController {
             }
 
             await receivableExists.destroy({
-                transaction: req.transaction,
+                transaction: req?.transaction,
             })
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res
                 .status(200)
                 .json({ message: 'Receivable deleted successfully.' })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -2124,7 +2124,7 @@ class ReceivableController {
                             manual_discount: manual_discount.toFixed(2),
                         },
                         {
-                            transaction: req.transaction,
+                            transaction: req?.transaction,
                         }
                     )
 
@@ -2147,7 +2147,7 @@ class ReceivableController {
                                 created_by: 2,
                             },
                             {
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         )
                     }
@@ -2159,7 +2159,7 @@ class ReceivableController {
                             settlement_date,
                             paymentmethod_id: paymentMethod.id,
                             settlement_memo,
-                            t: req.transaction,
+                            t: req?.transaction,
                         },
                         req
                     )
@@ -2223,7 +2223,7 @@ class ReceivableController {
                                 created_by: 2,
                             },
                             {
-                                transaction: req.transaction,
+                                transaction: req?.transaction,
                             }
                         )
                     }
@@ -2247,13 +2247,13 @@ class ReceivableController {
                 }
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json({
                 message: 'Settlements created successfully.',
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -2296,10 +2296,10 @@ class ReceivableController {
                 total: amount + fee - discountAmount,
                 balance: amount + fee - discountAmount - settledAmount,
             })
-            await req.transaction.commit()
+            await req?.transaction.commit()
             return res.json(receivable)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -2361,12 +2361,12 @@ class ReceivableController {
                 })
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
             await verifyAndCancelTextToPayTransaction(receivable_id)
             await verifyAndCancelParcelowPaymentLink(receivable_id)
             return res.json(receivable)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -2414,13 +2414,13 @@ class ReceivableController {
                 })
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             await verifyAndCancelTextToPayTransaction(receivable_id)
             await verifyAndCancelParcelowPaymentLink(receivable_id)
             return res.json(receivable)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -2462,7 +2462,7 @@ class ReceivableController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -2477,7 +2477,7 @@ class ReceivableController {
                         renegociation_to: renegociation.id,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
                 await verifyAndCancelParcelowPaymentLink(receivable.id)
@@ -2552,7 +2552,7 @@ class ReceivableController {
                         created_by: req.userId,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 ).then(async (receivable) => {
                     if (installment === 0) {
@@ -2561,7 +2561,7 @@ class ReceivableController {
                 })
             }
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             setTimeout(() => {
                 if (send_invoice && firstGeneratedReceivable) {
@@ -2573,7 +2573,7 @@ class ReceivableController {
 
             return res.json(renegociation)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -2599,7 +2599,7 @@ class ReceivableController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
             const difference = receivableExists.dataValues.fee - fee
@@ -2612,13 +2612,13 @@ class ReceivableController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
-            await req.transaction.commit()
+            await req?.transaction.commit()
             return res.json(receivableExists)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -2655,7 +2655,7 @@ class ReceivableController {
 
             return res.json(receivableBefore)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -3218,7 +3218,7 @@ class ReceivableController {
                 .style(styleTotal)
 
             let ret = null
-            await req.transaction.commit()
+            await req?.transaction.commit()
             wb.write(path, async (err, stats) => {
                 if (err) {
                     ret = res.status(400).json({ err, stats })
@@ -3236,7 +3236,7 @@ class ReceivableController {
 
             return ret
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -3309,7 +3309,7 @@ class ReceivableController {
             // })
             return res.json(receivable)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -3352,11 +3352,11 @@ class ReceivableController {
                 chartofaccount_id: chartOfAccountExists?.id,
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.json(receivable)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }

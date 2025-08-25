@@ -111,11 +111,11 @@ class ProspectController {
                     created_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             handleStudentDiscounts({
                 student_id: newProspect.id,
@@ -124,7 +124,7 @@ class ProspectController {
 
             return res.json(newProspect)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -234,7 +234,7 @@ class ProspectController {
                     updated_by: req.userId,
                 },
                 {
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
@@ -250,11 +250,11 @@ class ProspectController {
                     where: {
                         student_id: prospectExists.id,
                     },
-                    transaction: req.transaction,
+                    transaction: req?.transaction,
                 }
             )
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             if (req.body.prices) {
                 handleStudentDiscounts({
@@ -265,7 +265,7 @@ class ProspectController {
 
             return res.json(changedProspect)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -407,7 +407,7 @@ class ProspectController {
 
             return res.json(prospect)
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -530,7 +530,7 @@ class ProspectController {
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
@@ -682,7 +682,7 @@ class ProspectController {
                         ...nextTimeline,
                     },
                     {
-                        transaction: req.transaction,
+                        transaction: req?.transaction,
                     }
                 )
             }
@@ -699,13 +699,13 @@ class ProspectController {
                 html: MailLayout({ title, content, filial: filial.name }),
             })
 
-            await req.transaction.commit()
+            await req?.transaction.commit()
 
             return res.status(200).json({
                 ok: 'ok',
             })
         } catch (err) {
-            err.transaction = req.transaction
+            err.transaction = req?.transaction
             next(err)
         }
     }
