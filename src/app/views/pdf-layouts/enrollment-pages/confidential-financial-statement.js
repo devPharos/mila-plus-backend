@@ -347,7 +347,7 @@ export default async function pageConfidentialFinancialStatement({
         '..',
         'tmp',
         'signatures',
-        `signature-${sponsorSignatureFile.dataValues.id}.png`
+        `signature-${sponsorSignatureFile?.dataValues?.id}.png`
     )
 
     if (fs.existsSync(sponsorSignaturePath)) {
