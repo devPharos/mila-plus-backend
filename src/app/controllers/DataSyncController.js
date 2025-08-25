@@ -16,6 +16,11 @@ import { parseISO } from 'date-fns'
 
 const { Op } = Sequelize
 import fs from 'fs'
+import MedicalExcuse from '../models/MedicalExcuse.js'
+import Vacation from '../models/Vacation.js'
+import Attendance from '../models/Attendance.js'
+import Studentgroupclass from '../models/Studentgroupclass.js'
+import { mailer } from '../../config/mailer.js'
 
 function capitalizeFirstLetter(val) {
     let vals = String(val).split(' ')
@@ -479,6 +484,225 @@ class DataSyncController {
                 })
                 return res.status(200).json({
                     message: 'Data imported successfully.',
+                })
+            } else if (importType === 'Medical Excuses & Vacations') {
+                const problems = []
+                fs.readFile(file?.path, 'utf8', async (err, data) => {
+                    const lines = data.replaceAll('"', '').split('\n')
+                    const head = lines[0].split(',')
+
+                    for (let line of lines.filter((_, index) => index !== 0)) {
+                        const values = line.split(',')
+
+                        const registration_number = values[head.indexOf('Id')]
+
+                        if (!registration_number) {
+                            continue
+                        }
+                        const studentExists = await Student.findOne({
+                            where: {
+                                registration_number,
+                                canceled_at: null,
+                            },
+                        })
+
+                        if (!studentExists) {
+                            problems.push({
+                                registration_number,
+                                reason: 'Student not found.',
+                            })
+                            continue
+                        }
+                        let start_date = values[head.indexOf('Start Date')]
+                        start_date = start_date.split('/')
+                        start_date =
+                            start_date[2] +
+                            '-' +
+                            start_date[0].padStart(2, '0') +
+                            '-' +
+                            start_date[1].padStart(2, '0')
+
+                        let end_date = values[head.indexOf('End Date')]
+                        end_date = end_date.split('/')
+                        end_date =
+                            end_date[2] +
+                            '-' +
+                            end_date[0].padStart(2, '0') +
+                            '-' +
+                            end_date[1].padStart(2, '0')
+
+                        const note = values[head.indexOf('Comments')]
+                        const typeColumn = values[head.indexOf('Type\r')]
+
+                        // console.log({ start_date, end_date, note, typeColumn })
+
+                        if (typeColumn?.trim() === 'Medical Excuse') {
+                            const medicalExcuseExists =
+                                await MedicalExcuse.findOne({
+                                    where: {
+                                        student_id: studentExists.id,
+                                        date_from: start_date,
+                                        date_to: end_date,
+                                        canceled_at: null,
+                                    },
+                                })
+                            if (!medicalExcuseExists) {
+                                const attendances = await Attendance.findAll({
+                                    include: [
+                                        {
+                                            model: Studentgroupclass,
+                                            as: 'studentgroupclasses',
+                                            required: true,
+                                            where: {
+                                                canceled_at: null,
+                                                date: {
+                                                    [Op.between]: [
+                                                        start_date,
+                                                        end_date,
+                                                    ],
+                                                },
+                                            },
+                                        },
+                                    ],
+                                    where: {
+                                        student_id: studentExists.id,
+                                        canceled_at: null,
+                                    },
+                                })
+
+                                if (!attendances) {
+                                    problems.push({
+                                        registration_number,
+                                        reason: 'Attendances not found.',
+                                    })
+                                } else {
+                                    const medicalExcuse =
+                                        await MedicalExcuse.create({
+                                            student_id: studentExists.id,
+                                            date_from: start_date,
+                                            date_to: end_date,
+                                            note,
+                                            created_by: 2,
+                                        })
+                                    for (let attendance of attendances) {
+                                        await attendance.update({
+                                            status: 'S',
+                                            medical_excuse_id: medicalExcuse.id,
+
+                                            updated_by: req.userId,
+                                        })
+                                    }
+                                }
+                            } else {
+                                problems.push({
+                                    registration_number,
+                                    reason: 'Medical Excuse already exists.',
+                                })
+                            }
+                        } else if (typeColumn?.trim() === 'Vacation') {
+                            const vacationExists = await Vacation.findOne({
+                                where: {
+                                    student_id: studentExists.id,
+                                    date_from: {
+                                        [Op.iLike]: `%${
+                                            values[head.indexOf('Start Date')]
+                                        }%`,
+                                    },
+                                    date_to: {
+                                        [Op.iLike]: `%${
+                                            values[head.indexOf('End Date')]
+                                        }%`,
+                                    },
+                                    canceled_at: null,
+                                },
+                            })
+
+                            if (vacationExists) {
+                                problems.push({
+                                    registration_number,
+                                    reason: 'Vacation already exists.',
+                                })
+                            } else {
+                                const attendances = await Attendance.findAll({
+                                    include: [
+                                        {
+                                            model: Studentgroupclass,
+                                            as: 'studentgroupclasses',
+                                            required: true,
+                                            where: {
+                                                canceled_at: null,
+                                                date: {
+                                                    [Op.between]: [
+                                                        start_date,
+                                                        end_date,
+                                                    ],
+                                                },
+                                            },
+                                        },
+                                    ],
+                                    where: {
+                                        student_id: studentExists.id,
+                                        canceled_at: null,
+                                    },
+                                })
+
+                                if (!attendances) {
+                                    problems.push({
+                                        registration_number,
+                                        reason: 'Attendances not found.',
+                                    })
+                                } else {
+                                    const vacation = await Vacation.create({
+                                        student_id: studentExists.id,
+                                        date_from: start_date,
+                                        date_to: end_date,
+                                        created_by: 2,
+                                    })
+                                    for (let attendance of attendances) {
+                                        await attendance.update({
+                                            status: 'V',
+                                            vacation_id: vacation.id,
+
+                                            updated_by: 2,
+                                        })
+                                    }
+                                }
+                            }
+                            // console.log('Type not M.E.')
+                        }
+                    }
+
+                    if (problems.length > 0) {
+                        const problemsToHtml = problems.map((problem) => {
+                            return `<li>${problem.registration_number} - ${problem.reason}</li>`
+                        })
+                        let problemsHtml = ''
+                        if (problems.length > 0) {
+                            problemsHtml = `<ul>${problemsToHtml.join('')}</ul>`
+                        }
+                        await mailer
+                            .sendMail({
+                                from:
+                                    '"MILA Plus" <' +
+                                    process.env.MAIL_FROM +
+                                    '>',
+                                to: 'it.admin@milaorlandousa.com',
+                                // to: 'denis@pharosit.com.br',
+                                subject: `MILA Plus - Data Sync - ${importType}`,
+                                html: `<p>Dear ${process.env.MAIL_FROM},</p>
+                        <p>The following problems were found during the import of ${importType}:</p>
+                        ${problemsHtml}`,
+                            })
+                            .then(async () => {
+                                console.log('Mail sent!')
+                            })
+                            .catch((err) => {
+                                console.log(err)
+                            })
+                    }
+                    return res.status(200).json({
+                        message: 'Data imported successfully.',
+                    })
                 })
             } else {
                 return res.status(400).json({
