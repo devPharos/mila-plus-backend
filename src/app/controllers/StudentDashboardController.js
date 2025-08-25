@@ -274,6 +274,9 @@ class StudentDashboardController {
                             },
                         ],
                         where: {
+                            name: {
+                                [Op.ne]: 'CLASS_INITIAL',
+                            },
                             canceled_at: null,
                         },
                     },
