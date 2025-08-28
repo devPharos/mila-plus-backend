@@ -63,7 +63,7 @@ class StudentDashboardController {
                     {
                         model: Studentprogram,
                         as: 'programs',
-                        required: false,
+                        required: true,
                         attributes: ['start_date', 'end_date'],
                         where: {
                             canceled_at: null,
@@ -74,7 +74,7 @@ class StudentDashboardController {
                     {
                         model: Studentgroup,
                         as: 'studentgroup',
-                        required: false,
+                        required: true,
                         attributes: ['name', 'morning', 'afternoon', 'evening'],
                         where: {
                             name: {
@@ -86,12 +86,13 @@ class StudentDashboardController {
                             {
                                 model: Staff,
                                 as: 'staff',
-                                required: false,
+                                required: true,
+                                attributes: ['name', 'email'],
                             },
                             {
                                 model: Level,
                                 as: 'level',
-                                required: false,
+                                required: true,
                                 attributes: ['name'],
                                 where: {
                                     canceled_at: null,
@@ -120,7 +121,7 @@ class StudentDashboardController {
             // Converta a instância do Sequelize para um objeto simples
             const student = studentInstance.get({ plain: true })
 
-            if (student.studentgroup) {
+            if (student?.studentgroup) {
                 student.currentGroup = student.studentgroup
                 delete student.studentgroup
             }
