@@ -348,7 +348,12 @@ class StudentDashboardController {
                         model: Attendance,
                         as: 'attendances',
                         required: true,
-                        attributes: ['id', 'status'],
+                        attributes: [
+                            'id',
+                            'status',
+                            'first_check',
+                            'second_check',
+                        ],
                         where: {
                             canceled_at: null,
                             student_id: student.id,
@@ -416,6 +421,13 @@ class StudentDashboardController {
                     _class.presenceStatus = 'Vacation'
                 if (_class.presenceStatus === 'S')
                     _class.presenceStatus = 'Sick'
+
+                if (
+                    _class.attendances[0]?.first_check === 'Late' ||
+                    _class.attendances[0]?.second_check === 'Late'
+                ) {
+                    _class.presenceStatus = 'Late / ' + _class.presenceStatus
+                }
 
                 _class.groupId = _class.studentgroup_id
                 _class.classDate = _class.date
