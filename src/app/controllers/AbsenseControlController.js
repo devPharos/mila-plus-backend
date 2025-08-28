@@ -78,7 +78,6 @@ export async function getAbsenceStatus(
                     },
                     canceled_at: null,
                 },
-                attributes: [],
                 include: [
                     {
                         model: Studentgroup,
@@ -114,20 +113,20 @@ export async function getAbsenceStatus(
 
     for (let attendance of attendances) {
         if (attendance.first_check === 'Late') {
-            latesCount++
+            ++latesCount
             if (latesCount === 3) {
                 totals.totalAbsenses += 0.5
                 latesCount = 0
             }
         }
         if (attendance.second_check === 'Late') {
-            latesCount++
+            ++latesCount
             if (latesCount === 3) {
                 totals.totalAbsenses += 0.5
                 latesCount = 0
             }
         }
-        const group = attendance.studentgroupclasses.studentgroup
+        const group = attendance?.studentgroupclasses?.studentgroup
         if (!totals.groups.find((g) => g.group.id === group.id)) {
             totals.groups.push({
                 attendances: 0,
