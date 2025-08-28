@@ -55,6 +55,7 @@ export async function getAbsenceStatus(
         ? studentGroupClass.dataValues?.shift?.split('/')
         : []
 
+    const loadTime = new Date().getTime()
     const attendances = await Attendance.findAll({
         where: {
             student_id,
@@ -86,6 +87,7 @@ export async function getAbsenceStatus(
         ],
         distinct: true,
     })
+    console.log('Attendances loaded in', new Date().getTime() - loadTime)
 
     let totals = {
         attendances: attendances.length,
