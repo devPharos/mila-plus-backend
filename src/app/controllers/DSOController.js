@@ -317,8 +317,13 @@ class DSOController {
             })
 
             if (new_program) {
-                const { registration_number, file_id, start_date, end_date } =
-                    new_program
+                const {
+                    registration_number,
+                    nsevis,
+                    file_id,
+                    start_date,
+                    end_date,
+                } = new_program
 
                 const fileCreated = await File.create(
                     {
@@ -363,6 +368,7 @@ class DSOController {
                     {
                         start_date: start_date,
                         registration_number,
+                        nsevis,
                         category: 'Student',
                         status: 'Waiting',
                         updated_by: req.userId,
