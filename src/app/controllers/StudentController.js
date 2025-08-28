@@ -802,6 +802,8 @@ class StudentController {
                     studentgroup_id: studentgroupExists.id,
                     from_date: date,
                 })
+            } else {
+                await req?.transaction.commit()
             }
 
             return res.json(studentExists)
