@@ -293,7 +293,7 @@ export async function loadGroupProrgess(studentgroup_id = null) {
 
     if (
         studentGroup.dataValues.content_percentage > 0 &&
-        studentGroup.dataValues.updated_at.substring(0, 10) ===
+        format(studentGroup.dataValues.updated_at, 'yyyy-MM-dd') ===
             format(new Date(), 'yyyy-MM-dd')
     ) {
         progress.content = studentGroup.dataValues.content_percentage
