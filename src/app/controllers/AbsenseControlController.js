@@ -3,15 +3,11 @@ import Attendance from '../models/Attendance.js'
 import Student from '../models/Student.js'
 import Studentgroup from '../models/Studentgroup.js'
 import Studentgroupclass from '../models/Studentgroupclass.js'
-import Vacation from '../models/Vacation.js'
-import MedicalExcuse from '../models/MedicalExcuse.js'
-import StudentXGroup from '../models/StudentXGroup.js'
 import { dirname, resolve } from 'path'
 import xl from 'excel4node'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { format, parseISO } from 'date-fns'
-import { alignment } from 'excel4node/distribution/lib/types/index.js'
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
@@ -59,6 +55,7 @@ export async function getAbsenceStatus(
         ? studentGroupClass.dataValues?.shift?.split('/')
         : []
 
+    const loadTime = new Date().getTime()
     const attendances = await Attendance.findAll({
         where: {
             student_id,
@@ -78,17 +75,7 @@ export async function getAbsenceStatus(
                     },
                     canceled_at: null,
                 },
-                include: [
-                    {
-                        model: Studentgroup,
-                        as: 'studentgroup',
-                        required: true,
-                        where: {
-                            canceled_at: null,
-                        },
-                        attributes: ['id', 'name', 'start_date', 'end_date'],
-                    },
-                ],
+                attributes: ['id', 'studentgroup_id'],
             },
         ],
         attributes: [
@@ -100,6 +87,7 @@ export async function getAbsenceStatus(
         ],
         distinct: true,
     })
+    console.log('Attendances loaded in', new Date().getTime() - loadTime)
 
     let totals = {
         attendances: attendances.length,
@@ -112,13 +100,13 @@ export async function getAbsenceStatus(
     let latesCount = 0
 
     for (let attendance of attendances) {
-        const group = attendance?.studentgroupclasses?.studentgroup
+        const group_id = attendance.studentgroupclasses.studentgroup_id
         if (attendance.first_check === 'Late') {
             ++latesCount
             if (latesCount === 3) {
                 totals.totalAbsenses += 0.5
                 totals.groups.find(
-                    (g) => g.group.id === group.id
+                    (g) => g.group.id === group_id
                 ).totalAbsenses += 0.5
                 latesCount = 0
             }
@@ -128,12 +116,12 @@ export async function getAbsenceStatus(
             if (latesCount === 3) {
                 totals.totalAbsenses += 0.5
                 totals.groups.find(
-                    (g) => g.group.id === group.id
+                    (g) => g.group.id === group_id
                 ).totalAbsenses += 0.5
                 latesCount = 0
             }
         }
-        if (!totals.groups.find((g) => g.group.id === group.id)) {
+        if (!totals.groups.find((g) => g.group.id === group_id)) {
             totals.groups.push({
                 attendances: 0,
                 attendancePeriods: 0,
@@ -143,12 +131,12 @@ export async function getAbsenceStatus(
             })
         }
 
-        totals.groups.find((g) => g.group.id === group.id).attendances++
-        totals.groups.find((g) => g.group.id === group.id).attendancePeriods +=
+        totals.groups.find((g) => g.group.id === group_id).attendances++
+        totals.groups.find((g) => g.group.id === group_id).attendancePeriods +=
             shifts.length
 
         if (attendance.status === 'A') {
-            totals.groups.find((g) => g.group.id === group.id).totalAbsenses++
+            totals.groups.find((g) => g.group.id === group_id).totalAbsenses++
             totals.totalAbsenses++
             console.log('Total Absenses - Absent', totals.totalAbsenses)
         }
