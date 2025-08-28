@@ -467,10 +467,15 @@ class StudentDashboardController {
 
             // Adiciona o total de faltas a cada período
             for (const p of periods) {
+                const loadTime = new Date().getTime()
                 const groupStatus = await getAbsenceStatus(
                     student.id,
                     `${p.period}-01`,
                     `${p.period}-31`
+                )
+                console.log(
+                    'Absence Status loaded in',
+                    new Date().getTime() - loadTime
                 )
 
                 const groupTotals = groupStatus.totals.groups.find(
