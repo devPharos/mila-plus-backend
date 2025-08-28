@@ -603,16 +603,8 @@ class DataSyncController {
                             const vacationExists = await Vacation.findOne({
                                 where: {
                                     student_id: studentExists.id,
-                                    date_from: {
-                                        [Op.iLike]: `%${
-                                            values[head.indexOf('Start Date')]
-                                        }%`,
-                                    },
-                                    date_to: {
-                                        [Op.iLike]: `%${
-                                            values[head.indexOf('End Date')]
-                                        }%`,
-                                    },
+                                    date_from: start_date,
+                                    date_to: end_date,
                                     canceled_at: null,
                                 },
                             })

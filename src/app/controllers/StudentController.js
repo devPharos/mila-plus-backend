@@ -895,6 +895,21 @@ class StudentController {
                 })
             }
 
+            const vacationExists = await Vacation.findOne({
+                where: {
+                    student_id,
+                    date_from,
+                    date_to,
+                    canceled_at: null,
+                },
+            })
+
+            if (vacationExists) {
+                return res.status(400).json({
+                    error: 'Vacation already exists.',
+                })
+            }
+
             const newVacation = await Vacation.create(
                 {
                     date_from,
@@ -1156,6 +1171,21 @@ class StudentController {
             if (!student) {
                 return res.status(400).json({
                     error: 'Student not found.',
+                })
+            }
+
+            const medicalExcuseExists = await MedicalExcuse.findOne({
+                where: {
+                    student_id,
+                    date_from,
+                    date_to,
+                    canceled_at: null,
+                },
+            })
+
+            if (medicalExcuseExists) {
+                return res.status(400).json({
+                    error: 'Medical Excuse already exists.',
                 })
             }
 
