@@ -28,22 +28,13 @@ export async function getAbsenceStatus(
             'last_name',
             'registration_number',
             'start_date',
+            'studentgroup_id',
         ],
     })
 
     const studentGroupClass = await Studentgroupclass.findOne({
-        include: [
-            {
-                model: Attendance,
-                as: 'attendances',
-                required: true,
-                where: {
-                    student_id,
-                    canceled_at: null,
-                },
-            },
-        ],
         where: {
+            studentgroup_id: student.dataValues.studentgroup_id,
             date: {
                 [Op.between]: [from_date, until_date],
             },
