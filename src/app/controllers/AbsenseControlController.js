@@ -112,25 +112,27 @@ export async function getAbsenceStatus(
     let latesCount = 0
 
     for (let attendance of attendances) {
+        const group = attendance?.studentgroupclasses?.studentgroup
         if (attendance.first_check === 'Late') {
             ++latesCount
-            console.log('Late', latesCount)
             if (latesCount === 3) {
                 totals.totalAbsenses += 0.5
-                console.log('Total Absenses - Late', totals.totalAbsenses)
+                totals.groups.find(
+                    (g) => g.group.id === group.id
+                ).totalAbsenses += 0.5
                 latesCount = 0
             }
         }
         if (attendance.second_check === 'Late') {
             ++latesCount
-            console.log('Late', latesCount)
             if (latesCount === 3) {
                 totals.totalAbsenses += 0.5
-                console.log('Total Absenses - Late', totals.totalAbsenses)
+                totals.groups.find(
+                    (g) => g.group.id === group.id
+                ).totalAbsenses += 0.5
                 latesCount = 0
             }
         }
-        const group = attendance?.studentgroupclasses?.studentgroup
         if (!totals.groups.find((g) => g.group.id === group.id)) {
             totals.groups.push({
                 attendances: 0,

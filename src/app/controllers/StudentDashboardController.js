@@ -335,6 +335,7 @@ class StudentDashboardController {
                 }
             }
 
+            const loadTime = new Date().getTime()
             const classesInstances = await Studentgroupclass.findAll({
                 where: periodWhereClause,
                 attributes: [
@@ -403,6 +404,7 @@ class StudentDashboardController {
                 ],
                 order: [['date', 'ASC']],
             })
+            console.log('Classes loaded in', new Date().getTime() - loadTime)
 
             const periodsMap = {}
 
