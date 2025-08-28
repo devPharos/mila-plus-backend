@@ -457,6 +457,12 @@ class StudentgroupController {
                     field: 'status',
                     type: 'string',
                 },
+                {
+                    model: Staff,
+                    field: 'name',
+                    type: 'string',
+                    return: 'staff_id',
+                },
             ]
             const { count, rows } = await Studentgroup.findAndCountAll({
                 include: [
