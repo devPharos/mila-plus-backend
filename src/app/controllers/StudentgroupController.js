@@ -288,6 +288,19 @@ export async function loadGroupProrgess(studentgroup_id = null) {
         content: 0,
         class: 0,
     }
+
+    const studentGroup = await Studentgroup.findByPk(studentgroup_id)
+
+    if (
+        studentGroup.dataValues.content_percentage > 0 &&
+        studentGroup.dataValues.updated_at.substring(0, 10) ===
+            format(new Date(), 'yyyy-MM-dd')
+    ) {
+        progress.content = studentGroup.dataValues.content_percentage
+        progress.class = studentGroup.dataValues.class_percentage
+        return { content: progress.content, class: progress.class }
+    }
+
     const studentGroupClasses = await Studentgroupclass.findAll({
         where: {
             studentgroup_id,
@@ -332,6 +345,12 @@ export async function loadGroupProrgess(studentgroup_id = null) {
                 studentGroupPaceguides.length) *
             100
         ).toFixed(0) || 0
+
+    await studentGroup.update({
+        content_percentage: progress.content,
+        class_percentage: progress.class,
+        updated_at: new Date(),
+    })
     return { content: progress.content, class: progress.class }
 }
 
