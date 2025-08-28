@@ -10,6 +10,7 @@ import {
 import { handleCache } from '../middlewares/indexCacheHandler.js'
 import Costcenter from '../models/Costcenter.js'
 import MerchantXCostCenter from '../models/MerchantXCostCenter.js'
+import Filial from '../models/Filial.js'
 const { Op } = Sequelize
 
 class CostcentersController {
@@ -124,6 +125,17 @@ class CostcentersController {
 
             const merchantSearch = await verifyMerchantSearch(search)
 
+            const filial = await Filial.findByPk(req.headers.filial)
+
+            const holdingOnlyFilter =
+                filial.dataValues.alias !== 'HOL'
+                    ? {
+                          visibility: {
+                              [Op.ne]: 'Holding Only',
+                          },
+                      }
+                    : null
+
             if (merchantSearch) {
                 const merchantExists = await Merchant.findByPk(
                     merchantSearch.merchant_id,
@@ -135,6 +147,7 @@ class CostcentersController {
                                 required: false,
                                 where: {
                                     canceled_at: null,
+                                    ...holdingOnlyFilter,
                                 },
                                 include: [
                                     {
@@ -144,22 +157,36 @@ class CostcentersController {
                                         where: {
                                             canceled_at: null,
                                             allow_use: true,
+                                            ...holdingOnlyFilter,
                                         },
                                         include: [
                                             {
                                                 model: Costcenter,
                                                 as: 'Father',
                                                 required: false,
+                                                where: {
+                                                    canceled_at: null,
+                                                    ...holdingOnlyFilter,
+                                                },
                                                 include: [
                                                     {
                                                         model: Costcenter,
                                                         as: 'Father',
                                                         required: false,
+                                                        where: {
+                                                            canceled_at: null,
+                                                            ...holdingOnlyFilter,
+                                                        },
                                                         include: [
                                                             {
                                                                 model: Costcenter,
                                                                 as: 'Father',
                                                                 required: false,
+                                                                where: {
+                                                                    canceled_at:
+                                                                        null,
+                                                                    ...holdingOnlyFilter,
+                                                                },
                                                             },
                                                         ],
                                                     },
@@ -199,31 +226,41 @@ class CostcentersController {
                 },
             ]
 
-            let typeSearches = null
-
             const { count, rows } = await Costcenter.findAndCountAll({
                 where: {
                     canceled_at: null,
                     company_id: 1,
-                    ...filialSearch,
                     ...(await generateSearchByFields(search, searchableFields)),
-                    ...typeSearches,
+                    ...holdingOnlyFilter,
+                    ...filialSearch,
                 },
                 include: [
                     {
                         model: Costcenter,
                         as: 'Father',
                         required: false,
+                        where: {
+                            canceled_at: null,
+                            ...holdingOnlyFilter,
+                        },
                         include: [
                             {
                                 model: Costcenter,
                                 as: 'Father',
                                 required: false,
+                                where: {
+                                    canceled_at: null,
+                                    ...holdingOnlyFilter,
+                                },
                                 include: [
                                     {
                                         model: Costcenter,
                                         as: 'Father',
                                         required: false,
+                                        where: {
+                                            canceled_at: null,
+                                            ...holdingOnlyFilter,
+                                        },
                                     },
                                 ],
                             },
@@ -236,9 +273,9 @@ class CostcentersController {
                 order: searchOrder,
             })
 
-            if (req.cacheKey) {
-                handleCache({ cacheKey: req.cacheKey, rows, count })
-            }
+            // if (req.cacheKey) {
+            //     handleCache({ cacheKey: req.cacheKey, rows, count })
+            // }
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
@@ -257,17 +294,25 @@ class CostcentersController {
                 allow_use = false,
             } = req.body
 
-            const fatherExists = await Costcenter.findByPk(Father.id)
-            if (!fatherExists) {
-                return res.status(400).json({
-                    error: 'Father Account does not exist.',
-                })
+            let fatherExists = null
+            if (Father.id) {
+                fatherExists = await Costcenter.findByPk(Father.id)
+                if (!fatherExists) {
+                    return res.status(400).json({
+                        error: 'Father Account does not exist.',
+                    })
+                }
             }
+
+            const fatherCode = fatherExists
+                ? fatherExists.dataValues.code
+                : null
+            const fatherId = fatherExists ? fatherExists.dataValues.id : null
 
             const costcenterExist = await Costcenter.findOne({
                 where: {
                     company_id: 1,
-                    father_code: fatherExists.dataValues.code,
+                    father_code: fatherCode,
                     name: req.body.name,
                     canceled_at: null,
                 },
@@ -281,31 +326,40 @@ class CostcentersController {
 
             const lastCodeFromFather = await Costcenter.findOne({
                 where: {
-                    father_code: fatherExists.dataValues.code,
+                    father_code: fatherCode,
                     canceled_at: null,
                 },
                 order: [['code', 'desc']],
                 attributes: ['code'],
             })
 
-            let nextCode = fatherExists.code + '.001'
+            let nextCode = null
+            if (fatherExists) {
+                nextCode = fatherExists.code + '.001'
+            }
+            const codeLength = fatherExists ? 3 : 2
             if (lastCodeFromFather) {
                 const substrCode = lastCodeFromFather.dataValues.code.substring(
-                    lastCodeFromFather.dataValues.code.length - 3
+                    lastCodeFromFather.dataValues.code.length - codeLength
                 )
                 const numberCode = Number(substrCode) + 1
-                const padStartCode = numberCode.toString().padStart(3, '0')
+                const padStartCode = numberCode
+                    .toString()
+                    .padStart(codeLength, '0')
 
-                nextCode = fatherExists.code + '.' + padStartCode
-                // nextCode = (Number(lastCodeFromFather.dataValues.code) + 1).toString();
+                if (fatherExists) {
+                    nextCode = fatherExists.code + '.' + padStartCode
+                } else {
+                    nextCode = padStartCode
+                }
             }
 
             const newCostcenter = await Costcenter.create(
                 {
                     company_id: 1,
                     code: nextCode,
-                    father_id: fatherExists.id,
-                    father_code: fatherExists.dataValues.code,
+                    father_id: fatherId,
+                    father_code: fatherCode,
                     name,
                     visibility,
                     profit_and_loss,
