@@ -257,6 +257,8 @@ class AttendanceController {
                 })
             }
 
+            const attendancesIds = []
+
             for (let attendance of attendances) {
                 const attendanceExists = await Attendance.findByPk(
                     attendance.id
@@ -297,9 +299,14 @@ class AttendanceController {
                         transaction: req?.transaction,
                     }
                 )
+                attendancesIds.push(attendance.id)
             }
 
             await req?.transaction.commit()
+
+            for (let attendanceId of attendancesIds) {
+                calculateAttendanceStatus(attendanceId)
+            }
 
             return res.json(student)
         } catch (err) {
