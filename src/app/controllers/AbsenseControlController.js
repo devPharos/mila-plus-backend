@@ -122,6 +122,7 @@ export async function getAbsenceStatus(
             }
         }
         if (!totals.groups.find((g) => g.group.id === group_id)) {
+            const group = await Studentgroup.findById(group_id)
             totals.groups.push({
                 attendances: 0,
                 attendancePeriods: 0,
