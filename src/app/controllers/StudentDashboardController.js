@@ -473,10 +473,6 @@ class StudentDashboardController {
                     `${p.period}-01`,
                     `${p.period}-31`
                 )
-                console.log(
-                    'Absence Status loaded in',
-                    new Date().getTime() - loadTime
-                )
 
                 const groupTotals = groupStatus.totals.groups.find(
                     (g) => g.group.id === p.groupId
@@ -489,6 +485,14 @@ class StudentDashboardController {
                     period: p.period,
                     totalAbsences: groupTotals?.totalAbsenses || 0,
                     percFrequency: groupTotals?.frequency || 0,
+                })
+            }
+
+            if (periods.length === 0) {
+                frequency.push({
+                    period: thisPeriod,
+                    totalAbsences: 0,
+                    percFrequency: 0,
                 })
             }
 
