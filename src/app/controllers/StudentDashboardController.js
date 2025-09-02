@@ -494,6 +494,12 @@ class StudentDashboardController {
                     totalAbsences: 0,
                     percFrequency: 0,
                 })
+                periods.push({
+                    period: thisPeriod,
+                    classes: [],
+                    groupId: groups[groups.length - 1].groupId,
+                    totalAbsences: 0,
+                })
             }
 
             return res.json({ groups, periods, frequency })
