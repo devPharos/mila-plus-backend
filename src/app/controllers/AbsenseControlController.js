@@ -57,6 +57,14 @@ export async function getAbsenceStatus(
                 model: Studentgroupclass,
                 as: 'studentgroupclasses',
                 required: true,
+                include: [
+                    {
+                        model: Studentgroup,
+                        as: 'studentgroup',
+                        required: true,
+                        attributes: ['id', 'name', 'status'],
+                    },
+                ],
                 where: {
                     locked_at: {
                         [Op.not]: null,
@@ -66,7 +74,7 @@ export async function getAbsenceStatus(
                     },
                     canceled_at: null,
                 },
-                attributes: ['id', 'studentgroup_id'],
+                attributes: ['id', 'studentgroup_id', 'date'],
             },
         ],
         attributes: [
@@ -75,6 +83,8 @@ export async function getAbsenceStatus(
             'medical_excuse_id',
             'first_check',
             'second_check',
+            'shift',
+            'dso_note',
         ],
         distinct: true,
     })
