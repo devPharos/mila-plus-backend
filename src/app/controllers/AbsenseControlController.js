@@ -78,6 +78,7 @@ export async function getAbsenceStatus(
             },
         ],
         attributes: [
+            'id',
             'status',
             'vacation_id',
             'medical_excuse_id',
