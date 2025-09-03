@@ -88,7 +88,6 @@ export async function getAbsenceStatus(
         ],
         distinct: true,
     })
-    console.log('Attendances loaded in', new Date().getTime() - loadTime)
 
     let totals = {
         attendances: attendances.length,
@@ -140,7 +139,6 @@ export async function getAbsenceStatus(
         if (attendance.status === 'A') {
             totals.groups.find((g) => g.group.id === group_id).totalAbsenses++
             totals.totalAbsenses++
-            console.log('Total Absenses - Absent', totals.totalAbsenses)
         }
     }
 
