@@ -3100,9 +3100,6 @@ class StudentgroupController {
                             required: true,
                             where: {
                                 date: {
-                                    [Op.gte]: snapshot_date,
-                                },
-                                date: {
                                     [Op.lte]: snapshot_date,
                                 },
                                 locked_at: null,
@@ -3110,6 +3107,7 @@ class StudentgroupController {
                             },
                         },
                     ],
+                    distinct: true,
                 })
 
                 const vacation = await Vacation.findOne({
