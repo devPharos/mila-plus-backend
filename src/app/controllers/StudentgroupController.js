@@ -3105,6 +3105,7 @@ class StudentgroupController {
                                 date: {
                                     [Op.lte]: snapshot_date,
                                 },
+                                locked_at: null,
                                 canceled_at: null,
                             },
                         },
@@ -3138,12 +3139,9 @@ class StudentgroupController {
                         canceled_at: null,
                     },
                 })
-
+                status = 'NEW STUDENT'
                 if (attendance) {
-                    status = 'NEW STUDENT'
-                    if (attendance.studentgroupclasses.locked_at) {
-                        status = 'CONTINIUM ATTENDANCE'
-                    }
+                    status = 'CONTINIUM ATTENDANCE'
                 }
                 if (vacation) {
                     status = 'VACATION'
