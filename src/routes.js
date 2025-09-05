@@ -372,8 +372,13 @@ routes.put('/attendances/:student_id', AttendanceController.update)
 
 routes.get('/absenseControl/:student_id', AbsenseControlController.show)
 routes.post(
-    '/absenceControl/studentsUnderLimit',
+    '/reports/studentsUnderLimit',
     AbsenseControlController.studentsUnderLimit
+)
+
+routes.post(
+    '/reports/classSchedule',
+    StudentgroupController.classScheduleReport
 )
 
 routes.get('/grades/:student_id', GradeController.list)
