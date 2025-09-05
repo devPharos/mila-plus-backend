@@ -247,6 +247,12 @@ class AttendanceController {
         try {
             const { student_id } = req.params
             const { attendances } = req.body
+
+            if (!attendances) {
+                return res.status(400).json({
+                    error: 'Attendance not received.',
+                })
+            }
             const student = await Student.findByPk(student_id, {
                 where: { canceled_at: null },
             })
