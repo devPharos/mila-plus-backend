@@ -3043,17 +3043,18 @@ class StudentgroupController {
             let row = 2
             for (let student of students) {
                 const enrollment = await Enrollment.findOne({
+                    attributes: ['created_at'],
                     where: {
                         student_id: student.id,
                         canceled_at: null,
                     },
                     order: [['created_at', 'DESC']],
                 })
-                if (enrollment) {
-                    ws2.cell(row, 1).string(
-                        format(parseISO(enrollment.created_at), 'MM/dd/yyyy')
-                    )
-                }
+                ws2.cell(row, 1).string(
+                    enrollment?.created_at
+                        ? format(enrollment.created_at, 'MM/dd/yyyy')
+                        : ''
+                )
 
                 const studentGroup = await Studentgroup.findOne({
                     where: {
