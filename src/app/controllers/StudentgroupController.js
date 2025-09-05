@@ -2093,7 +2093,7 @@ class StudentgroupController {
                 if (gradeExists) {
                     await gradeExists.update(
                         {
-                            score: student.score,
+                            score: student.score || 0,
                             discarded: student.discarded === 'true',
                             updated_by: req.userId,
                         },
@@ -2108,7 +2108,7 @@ class StudentgroupController {
                         studentgroupclass_id: studentgroupclass_id,
                         student_id: student.id,
                         studentgrouppaceguide_id: grades.id,
-                        score: student.score,
+                        score: student.score || 0,
                         discarded: student.discarded === 'true',
                         created_by: req.userId,
                     },

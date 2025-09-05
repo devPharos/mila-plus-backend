@@ -795,12 +795,14 @@ class StudentController {
                 )
 
                 await req?.transaction.commit()
-                await removeStudentAttendances({
-                    student_id: studentExists.id,
-                    studentgroup_id: activeStudentGroup?.dataValues?.group_id,
-                    from_date: date,
-                    reason: 'T',
-                })
+                if (activeStudentGroup) {
+                    await removeStudentAttendances({
+                        student_id: studentExists.id,
+                        studentgroup_id: activeStudentGroup.dataValues.group_id,
+                        from_date: date,
+                        reason: 'T',
+                    })
+                }
                 await createStudentAttendances({
                     student_id: studentExists.id,
                     studentgroup_id: studentgroupExists.id,
