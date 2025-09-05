@@ -797,7 +797,7 @@ class StudentController {
                 await req?.transaction.commit()
                 await removeStudentAttendances({
                     student_id: studentExists.id,
-                    studentgroup_id: activeStudentGroup.dataValues.group_id,
+                    studentgroup_id: activeStudentGroup?.dataValues?.group_id,
                     from_date: date,
                     reason: 'T',
                 })
