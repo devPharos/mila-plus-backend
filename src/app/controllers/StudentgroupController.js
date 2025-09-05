@@ -3150,8 +3150,8 @@ class StudentgroupController {
                     status = 'SICK'
                 }
 
-                ws2.cell(row, 2).string(studentGroup.level.name)
-                ws2.cell(row, 3).string(studentGroup.name)
+                ws2.cell(row, 2).string(studentGroup?.level?.name || '')
+                ws2.cell(row, 3).string(studentGroup?.name || '')
                 ws2.cell(row, 4).string(
                     studentGroup?.start_date
                         ? format(
@@ -3181,8 +3181,8 @@ class StudentgroupController {
                     }
                     shift += 'Evening'
                 }
-                ws2.cell(row, 6).string(shift)
-                ws2.cell(row, 7).string(studentGroup.staff.name)
+                ws2.cell(row, 6).string(shift || '')
+                ws2.cell(row, 7).string(studentGroup?.staff?.name || '')
                 ws2.cell(row, 8).string(
                     student?.studentxgroups[0]?.start_date
                         ? format(
@@ -3191,13 +3191,15 @@ class StudentgroupController {
                           )
                         : ''
                 )
-                ws2.cell(row, 9).string(student.registration_number)
-                ws2.cell(row, 10).string(student.name + ' ' + student.last_name)
-                ws2.cell(row, 11).string(student.processtypes.name)
-                ws2.cell(row, 12).string(student.phone)
-                ws2.cell(row, 13).string(student.email)
+                ws2.cell(row, 9).string(student?.registration_number || '')
+                ws2.cell(row, 10).string(
+                    student?.name + ' ' + student?.last_name
+                )
+                ws2.cell(row, 11).string(student?.processtypes?.name || '')
+                ws2.cell(row, 12).string(student.phone || '')
+                ws2.cell(row, 13).string(student.email || '')
                 ws2.cell(row, 14).string('')
-                ws2.cell(row, 15).string(status)
+                ws2.cell(row, 15).string(status || '')
                 ws2
                 row++
             }
