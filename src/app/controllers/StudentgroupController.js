@@ -138,13 +138,14 @@ export async function putInClass(
                     where: {
                         student_id: student_id,
                         group_id: studentgroup_id,
-                        status: 'Pending',
+                        status: {
+                            [Op.in]: ['Not started', 'Transferred'],
+                        },
                         start_date: {
                             [Op.lte]: date,
                         },
                         canceled_at: null,
                     },
-                    transaction: req?.transaction || null,
                 }
             )
         }
@@ -430,7 +431,7 @@ export async function adjustStudentXGroups() {
                 group_id: 1,
                 start_date,
                 end_date: null,
-                status: 'Pending',
+                status: 'Not started',
                 created_by: 2,
             })
             await putInClass(student.id, 1, 1)
