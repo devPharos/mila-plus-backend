@@ -46,7 +46,6 @@ export async function getAbsenceStatus(
         ? studentGroupClass.dataValues?.shift?.split('/')
         : []
 
-    const loadTime = new Date().getTime()
     const attendances = await Attendance.findAll({
         where: {
             student_id,
@@ -239,8 +238,8 @@ class AbsenseControlController {
             ws.row(1).filter()
             ws.row(1).freeze()
 
-            ws.cell(2, 1).string('Year').style(styleBold)
-            ws.cell(3, 1).string('Month').style(styleBold)
+            ws.cell(2, 1).string('From Date').style(styleBold)
+            ws.cell(3, 1).string('Until Date').style(styleBold)
 
             ws.column(1).width = 15
             ws.column(2).width = 15
@@ -278,6 +277,7 @@ class AbsenseControlController {
                         where: {
                             canceled_at: null,
                         },
+                        attributes: [],
                         include: [
                             {
                                 model: Studentgroupclass,
@@ -294,13 +294,7 @@ class AbsenseControlController {
                         ],
                     },
                 ],
-                attributes: [
-                    'id',
-                    'name',
-                    'last_name',
-                    'email',
-                    'registration_number',
-                ],
+                attributes: ['id'],
                 order: [
                     ['name', 'ASC'],
                     ['last_name', 'ASC'],

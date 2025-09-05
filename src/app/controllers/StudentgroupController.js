@@ -45,6 +45,8 @@ import { calculateAttendanceStatus } from './AttendanceController.js'
 import { getAbsenceStatus } from './AbsenseControlController.js'
 import Recurrence from '../models/Recurrence.js'
 import Issuer from '../models/Issuer.js'
+import Enrollment from '../models/Enrollment.js'
+import xl from 'excel4node'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
@@ -138,13 +140,14 @@ export async function putInClass(
                     where: {
                         student_id: student_id,
                         group_id: studentgroup_id,
-                        status: 'Pending',
+                        status: {
+                            [Op.in]: ['Not started', 'Transferred'],
+                        },
                         start_date: {
                             [Op.lte]: date,
                         },
                         canceled_at: null,
                     },
-                    transaction: req?.transaction || null,
                 }
             )
         }
@@ -218,17 +221,34 @@ export async function createStudentAttendances({
                     canceled_at: null,
                 },
             })
-            await Attendance.create({
-                studentgroupclass_id: class_.id,
-                student_id: student_id,
-                shift,
-                first_check: 'Absent',
-                second_check: 'Absent',
-                status: vacation ? 'V' : medicalExcuse ? 'S' : 'A',
-                vacation_id: vacation?.id,
-                medical_excuse_id: medicalExcuse?.id,
-                created_by: 2,
+            const attendanceExists = await Attendance.findOne({
+                where: {
+                    student_id: student_id,
+                    studentgroupclass_id: class_.id,
+                    canceled_at: null,
+                },
             })
+            if (!attendanceExists) {
+                await Attendance.create({
+                    studentgroupclass_id: class_.id,
+                    student_id: student_id,
+                    shift,
+                    first_check: 'Absent',
+                    second_check: 'Absent',
+                    status: vacation ? 'V' : medicalExcuse ? 'S' : 'A',
+                    vacation_id: vacation?.id,
+                    medical_excuse_id: medicalExcuse?.id,
+                    created_by: 2,
+                })
+            } else {
+                await attendanceExists.update({
+                    first_check: 'Absent',
+                    second_check: 'Absent',
+                    status: vacation ? 'V' : medicalExcuse ? 'S' : 'A',
+                    vacation_id: vacation?.id,
+                    medical_excuse_id: medicalExcuse?.id,
+                })
+            }
         }
     }
 }
@@ -430,7 +450,7 @@ export async function adjustStudentXGroups() {
                 group_id: 1,
                 start_date,
                 end_date: null,
-                status: 'Pending',
+                status: 'Not started',
                 created_by: 2,
             })
             await putInClass(student.id, 1, 1)
@@ -1490,102 +1510,94 @@ class StudentgroupController {
                 for (let studentXGroup of studentXGroups) {
                     const from_date = studentXGroup.dataValues.start_date
                     const to_date = studentXGroup.dataValues.end_date
-                    const classes = await Studentgroupclass.findAll({
-                        where: {
-                            studentgroup_id: studentgroup.id,
-                            canceled_at: null,
-                            status: {
-                                [Op.ne]: 'Holiday',
-                            },
-                            date: to_date
-                                ? {
-                                      [Op.between]: [from_date, to_date],
-                                  }
-                                : {
-                                      [Op.gte]: from_date,
-                                  },
-                        },
-                        distinct: true,
-                        attributes: ['id', 'shift', 'date'],
-                        order: [['date', 'ASC']],
-                    })
-
-                    for (let class_ of classes) {
-                        for (const shift of class_.shift.split('/')) {
-                            const vacation = await Vacation.findOne({
-                                where: {
-                                    student_id: student.id,
-                                    date_from: {
-                                        [Op.lte]: format(
-                                            parseISO(class_.date),
-                                            'yyyy-MM-dd'
-                                        ),
-                                    },
-                                    date_to: {
-                                        [Op.gte]: format(
-                                            parseISO(class_.date),
-                                            'yyyy-MM-dd'
-                                        ),
-                                    },
-                                    canceled_at: null,
-                                },
-                            })
-                            const medicalExcuse = await MedicalExcuse.findOne({
-                                where: {
-                                    student_id: student.id,
-                                    date_from: {
-                                        [Op.lte]: format(
-                                            parseISO(class_.date),
-                                            'yyyy-MM-dd'
-                                        ),
-                                    },
-                                    date_to: {
-                                        [Op.gte]: format(
-                                            parseISO(class_.date),
-                                            'yyyy-MM-dd'
-                                        ),
-                                    },
-                                    canceled_at: null,
-                                },
-                            })
-                            await Attendance.create(
-                                {
-                                    studentgroupclass_id: class_.id,
-                                    student_id: student.id,
-                                    shift,
-                                    first_check: 'Absent',
-                                    second_check: 'Absent',
-                                    status: vacation
-                                        ? 'V'
-                                        : medicalExcuse
-                                        ? 'S'
-                                        : 'A',
-                                    vacation_id: vacation?.id,
-                                    medical_excuse_id: medicalExcuse?.id,
-                                    created_by: 2,
-                                },
-                                {
-                                    transaction: req?.transaction,
-                                }
-                            )
-                        }
-                    }
-                    // await createStudentAttendances({
-                    //     student_id: student.id,
-                    //     studentgroup_id: studentgroup.id,
-                    //     from_date: format(
-                    //         parseISO(studentXGroup.dataValues.start_date),
-                    //         'yyyy-MM-dd'
-                    //     ),
-                    //     to_date: studentXGroup.dataValues.end_date
-                    //         ? format(
-                    //               parseISO(studentXGroup.dataValues.end_date),
-                    //               'yyyy-MM-dd'
-                    //           )
-                    //         : null,
-                    //     req,
-                    //     t: req?.transaction,
+                    // const classes = await Studentgroupclass.findAll({
+                    //     where: {
+                    //         studentgroup_id: studentgroup.id,
+                    //         canceled_at: null,
+                    //         status: {
+                    //             [Op.ne]: 'Holiday',
+                    //         },
+                    //         date: to_date
+                    //             ? {
+                    //                   [Op.between]: [from_date, to_date],
+                    //               }
+                    //             : {
+                    //                   [Op.gte]: from_date,
+                    //               },
+                    //     },
+                    //     distinct: true,
+                    //     attributes: ['id', 'shift', 'date'],
+                    //     order: [['date', 'ASC']],
                     // })
+
+                    // for (let class_ of classes) {
+                    //     for (const shift of class_.shift.split('/')) {
+                    //         const vacation = await Vacation.findOne({
+                    //             where: {
+                    //                 student_id: student.id,
+                    //                 date_from: {
+                    //                     [Op.lte]: format(
+                    //                         parseISO(class_.date),
+                    //                         'yyyy-MM-dd'
+                    //                     ),
+                    //                 },
+                    //                 date_to: {
+                    //                     [Op.gte]: format(
+                    //                         parseISO(class_.date),
+                    //                         'yyyy-MM-dd'
+                    //                     ),
+                    //                 },
+                    //                 canceled_at: null,
+                    //             },
+                    //         })
+                    //         const medicalExcuse = await MedicalExcuse.findOne({
+                    //             where: {
+                    //                 student_id: student.id,
+                    //                 date_from: {
+                    //                     [Op.lte]: format(
+                    //                         parseISO(class_.date),
+                    //                         'yyyy-MM-dd'
+                    //                     ),
+                    //                 },
+                    //                 date_to: {
+                    //                     [Op.gte]: format(
+                    //                         parseISO(class_.date),
+                    //                         'yyyy-MM-dd'
+                    //                     ),
+                    //                 },
+                    //                 canceled_at: null,
+                    //             },
+                    //         })
+                    //         await Attendance.create(
+                    //             {
+                    //                 studentgroupclass_id: class_.id,
+                    //                 student_id: student.id,
+                    //                 shift,
+                    //                 first_check: 'Absent',
+                    //                 second_check: 'Absent',
+                    //                 status: vacation
+                    //                     ? 'V'
+                    //                     : medicalExcuse
+                    //                     ? 'S'
+                    //                     : 'A',
+                    //                 vacation_id: vacation?.id,
+                    //                 medical_excuse_id: medicalExcuse?.id,
+                    //                 created_by: 2,
+                    //             },
+                    //             {
+                    //                 transaction: req?.transaction,
+                    //             }
+                    //         )
+                    //     }
+                    // }
+                    await createStudentAttendances({
+                        student_id: student.id,
+                        studentgroup_id: studentgroup.id,
+                        from_date: format(parseISO(from_date), 'yyyy-MM-dd'),
+                        to_date: to_date
+                            ? format(parseISO(to_date), 'yyyy-MM-dd')
+                            : null,
+                    })
                 }
             }
 
@@ -2000,20 +2012,23 @@ class StudentgroupController {
                             )
                             attendancesIds.push(attendanceExists.id)
                         } else {
-                            const attendance = await Attendance.create(
-                                {
-                                    studentgroupclass_id: studentgroupclass.id,
-                                    student_id: student.id,
-                                    shift: shift.shift,
-                                    first_check: firstCheck,
-                                    second_check: secondCheck,
-                                    created_by: req.userId,
-                                },
-                                {
-                                    transaction: req?.transaction,
-                                }
-                            )
-                            attendancesIds.push(attendance.id)
+                            return res.status(400).json({
+                                error: 'Attendance not found.',
+                            })
+                            // const attendance = await Attendance.create(
+                            //     {
+                            //         studentgroupclass_id: studentgroupclass.id,
+                            //         student_id: student.id,
+                            //         shift: shift.shift,
+                            //         first_check: firstCheck,
+                            //         second_check: secondCheck,
+                            //         created_by: req.userId,
+                            //     },
+                            //     {
+                            //         transaction: req?.transaction,
+                            //     }
+                            // )
+                            // attendancesIds.push(attendance.id)
                         }
                     }
                 }
@@ -2092,7 +2107,7 @@ class StudentgroupController {
                 if (gradeExists) {
                     await gradeExists.update(
                         {
-                            score: student.score,
+                            score: student.score || 0,
                             discarded: student.discarded === 'true',
                             updated_by: req.userId,
                         },
@@ -2107,7 +2122,7 @@ class StudentgroupController {
                         studentgroupclass_id: studentgroupclass_id,
                         student_id: student.id,
                         studentgrouppaceguide_id: grades.id,
-                        score: student.score,
+                        score: student.score || 0,
                         discarded: student.discarded === 'true',
                         created_by: req.userId,
                     },
@@ -2853,6 +2868,358 @@ class StudentgroupController {
                     name
                 )
             })
+        } catch (err) {
+            err.transaction = req?.transaction
+            next(err)
+        }
+    }
+
+    async classScheduleReport(req, res, next) {
+        try {
+            const { snapshot_date = format(new Date(), 'yyyy-MM-dd') } =
+                req.body
+            const name = `class_schedule_${Date.now()}`
+            const path = `${resolve(
+                directory,
+                '..',
+                '..',
+                '..',
+                'public',
+                'uploads'
+            )}/${name}`
+            const wb = new xl.Workbook()
+            // Add Worksheets to the workbook
+            var ws = wb.addWorksheet('Params')
+            var ws2 = wb.addWorksheet('Class Schedule')
+
+            // Create a reusable style
+            var styleBold = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                    bold: true,
+                },
+            })
+
+            var styleTotal = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                },
+            })
+
+            var styleOver80 = wb.createStyle({
+                font: {
+                    color: '#ff0000',
+                    size: 12,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                },
+            })
+
+            var styleHeading = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 14,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+            })
+
+            ws.cell(1, 1).string('Params').style(styleHeading)
+            ws.cell(1, 2).string('Values').style(styleHeading)
+
+            ws.row(1).filter()
+            ws.row(1).freeze()
+
+            ws.cell(2, 1).string('Snapshot Date').style(styleBold)
+
+            ws.column(1).width = 15
+            ws.column(2).width = 15
+
+            ws.cell(2, 2).string(format(parseISO(snapshot_date), 'MM/dd/yyyy'))
+
+            ws2.cell(1, 1).string('Enrollment').style(styleBold)
+            ws2.cell(1, 2).string('Level').style(styleBold)
+            ws2.cell(1, 3).string('Group').style(styleBold)
+            ws2.cell(1, 4).string('Start Date').style(styleBold)
+            ws2.cell(1, 5).string('End Date').style(styleBold)
+            ws2.cell(1, 6).string('Schedule').style(styleBold)
+            ws2.cell(1, 7).string('Teacher').style(styleBold)
+            ws2.cell(1, 8).string('Start Date in Group').style(styleBold)
+            ws2.cell(1, 9).string('Student ID').style(styleBold)
+            ws2.cell(1, 10).string('Student').style(styleBold)
+            ws2.cell(1, 11).string('Type').style(styleBold)
+            ws2.cell(1, 12).string('Telephone').style(styleBold)
+            ws2.cell(1, 13).string('E-mail').style(styleBold)
+            ws2.cell(1, 14).string('Commercial').style(styleBold)
+            ws2.cell(1, 15).string('Status').style(styleBold)
+
+            ws2.row(1).filter()
+            ws2.row(1).freeze()
+
+            ws2.column(1).width = 15
+            ws2.column(2).width = 30
+            ws2.column(3).width = 40
+            ws2.column(4).width = 12
+            ws2.column(5).width = 12
+            ws2.column(6).width = 18
+
+            ws2.column(7).width = 25
+            ws2.column(8).width = 20
+            ws2.column(9).width = 13
+            ws2.column(10).width = 40
+
+            ws2.column(11).width = 8
+            ws2.column(12).width = 16
+            ws2.column(13).width = 30
+            ws2.column(14).width = 15
+            ws2.column(15).width = 23
+
+            const students = await Student.findAll({
+                where: {
+                    company_id: 1,
+                    canceled_at: null,
+                },
+                include: [
+                    {
+                        model: Processtype,
+                        as: 'processtypes',
+                        required: true,
+                        attributes: ['name'],
+                    },
+                    {
+                        model: StudentXGroup,
+                        as: 'studentxgroups',
+                        required: true,
+                        attributes: [
+                            'id',
+                            'group_id',
+                            'start_date',
+                            'end_date',
+                        ],
+                        where: {
+                            canceled_at: null,
+                            start_date: {
+                                [Op.lte]: snapshot_date,
+                            },
+                            end_date: {
+                                [Op.or]: [
+                                    {
+                                        [Op.gte]: snapshot_date,
+                                    },
+                                    {
+                                        [Op.is]: null,
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                ],
+                attributes: [
+                    'id',
+                    'name',
+                    'last_name',
+                    'phone',
+                    'email',
+                    'registration_number',
+                ],
+                order: [
+                    ['name', 'ASC'],
+                    ['last_name', 'ASC'],
+                ],
+                distinct: true,
+            })
+
+            let row = 2
+            for (let student of students) {
+                const enrollment = await Enrollment.findOne({
+                    attributes: ['created_at'],
+                    where: {
+                        student_id: student.id,
+                        canceled_at: null,
+                    },
+                    order: [['created_at', 'DESC']],
+                })
+                ws2.cell(row, 1).string(
+                    enrollment?.created_at
+                        ? format(enrollment.created_at, 'MM/dd/yyyy')
+                        : ''
+                )
+
+                const studentGroup = await Studentgroup.findOne({
+                    where: {
+                        id: student.studentxgroups[0].group_id,
+                        canceled_at: null,
+                    },
+                    attributes: [
+                        'name',
+                        'start_date',
+                        'end_date',
+                        'morning',
+                        'afternoon',
+                        'evening',
+                    ],
+                    include: [
+                        {
+                            model: Level,
+                            as: 'level',
+                            required: true,
+                            attributes: ['name'],
+                        },
+                        {
+                            model: Staff,
+                            as: 'staff',
+                            required: true,
+                            attributes: ['name'],
+                        },
+                    ],
+                })
+
+                let status = 'NONE'
+                const attendance = await Attendance.findOne({
+                    attributes: ['status'],
+                    where: {
+                        student_id: student.id,
+                        canceled_at: null,
+                    },
+                    include: [
+                        {
+                            model: Studentgroupclass,
+                            as: 'studentgroupclasses',
+                            attributes: ['date', 'shift', 'locked_at'],
+                            required: true,
+                            where: {
+                                date: {
+                                    [Op.lte]: snapshot_date,
+                                },
+                                locked_at: null,
+                                canceled_at: null,
+                            },
+                        },
+                    ],
+                    distinct: true,
+                })
+
+                const vacation = await Vacation.findOne({
+                    attributes: ['id'],
+                    where: {
+                        date_from: {
+                            [Op.lte]: snapshot_date,
+                        },
+                        date_to: {
+                            [Op.gte]: snapshot_date,
+                        },
+                        student_id: student.id,
+                        canceled_at: null,
+                    },
+                })
+
+                const medical_excuse = await MedicalExcuse.findOne({
+                    attributes: ['id'],
+                    where: {
+                        date_from: {
+                            [Op.lte]: snapshot_date,
+                        },
+                        date_to: {
+                            [Op.gte]: snapshot_date,
+                        },
+                        student_id: student.id,
+                        canceled_at: null,
+                    },
+                })
+                status = 'NEW STUDENT'
+                if (attendance) {
+                    status = 'CONTINIUM ATTENDANCE'
+                }
+                if (vacation) {
+                    status = 'VACATION'
+                }
+                if (medical_excuse) {
+                    status = 'SICK'
+                }
+
+                ws2.cell(row, 2).string(studentGroup?.level?.name || '')
+                ws2.cell(row, 3).string(studentGroup?.name || '')
+                ws2.cell(row, 4).string(
+                    studentGroup?.start_date
+                        ? format(
+                              parseISO(studentGroup.start_date),
+                              'MM/dd/yyyy'
+                          )
+                        : ''
+                )
+                ws2.cell(row, 5).string(
+                    studentGroup?.end_date
+                        ? format(parseISO(studentGroup.end_date), 'MM/dd/yyyy')
+                        : ''
+                )
+                let shift = ''
+                if (studentGroup.morning) {
+                    shift = 'Morning'
+                }
+                if (studentGroup.afternoon) {
+                    if (shift) {
+                        shift += '/'
+                    }
+                    shift += 'Afternoon'
+                }
+                if (studentGroup.evening) {
+                    if (shift) {
+                        shift += '/'
+                    }
+                    shift += 'Evening'
+                }
+                ws2.cell(row, 6).string(shift || '')
+                ws2.cell(row, 7).string(studentGroup?.staff?.name || '')
+                ws2.cell(row, 8).string(
+                    student?.studentxgroups[0]?.start_date
+                        ? format(
+                              parseISO(student.studentxgroups[0].start_date),
+                              'MM/dd/yyyy'
+                          )
+                        : ''
+                )
+                ws2.cell(row, 9).string(student?.registration_number || '')
+                ws2.cell(row, 10).string(
+                    student?.name + ' ' + student?.last_name
+                )
+                ws2.cell(row, 11).string(student?.processtypes?.name || '')
+                ws2.cell(row, 12).string(student.phone || '')
+                ws2.cell(row, 13).string(student.email || '')
+                ws2.cell(row, 14).string('')
+                ws2.cell(row, 15).string(status || '')
+                ws2
+                row++
+            }
+
+            let ret = null
+            await req?.transaction.commit()
+            wb.write(path, async (err, stats) => {
+                if (err) {
+                    ret = res.status(400).json({ err, stats })
+                } else {
+                    setTimeout(() => {
+                        fs.unlink(path, (err) => {
+                            if (err) {
+                                console.log(err)
+                            }
+                        })
+                    }, 10000)
+                    return res.json({ path, name })
+                }
+            })
+
+            return ret
         } catch (err) {
             err.transaction = req?.transaction
             next(err)

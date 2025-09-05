@@ -224,6 +224,12 @@ class StudentDashboardController {
                 attributes: ['id'],
             })
 
+            if (!student) {
+                return res.status(400).json({
+                    error: 'Student not found.',
+                })
+            }
+
             const groupInstances = await StudentXGroup.findAll({
                 where: {
                     student_id: student.id,
@@ -404,7 +410,6 @@ class StudentDashboardController {
                 ],
                 order: [['date', 'ASC']],
             })
-            console.log('Classes loaded in', new Date().getTime() - loadTime)
 
             const periodsMap = {}
 

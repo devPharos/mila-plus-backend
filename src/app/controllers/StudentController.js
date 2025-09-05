@@ -627,24 +627,28 @@ class StudentController {
                     transaction: req?.transaction,
                 }
             )
-            await studentExists.update(
-                {
-                    studentgroup_id: studentgroupExists.id,
-                    classroom_id: studentgroupExists.dataValues.classroom_id,
-                    teacher_id: studentgroupExists.dataValues.staff_id,
-                    status: 'In Class',
-                    updated_by: req.userId,
-                },
-                {
-                    transaction: req?.transaction,
-                }
-            )
 
-            await req?.transaction.commit()
+            if (date <= format(new Date(), 'yyyy-MM-dd')) {
+                await studentExists.update(
+                    {
+                        studentgroup_id: studentgroupExists.id,
+                        classroom_id:
+                            studentgroupExists.dataValues.classroom_id,
+                        teacher_id: studentgroupExists.dataValues.staff_id,
+                        status: 'In Class',
+                        updated_by: req.userId,
+                    },
+                    {
+                        transaction: req?.transaction,
+                    }
+                )
 
-            // if (date <= format(new Date(), 'yyyy-MM-dd')) {
-            await putInClass(studentExists.id, studentgroupExists.id, date)
-            // }
+                await req?.transaction.commit()
+
+                await putInClass(studentExists.id, studentgroupExists.id, date)
+            } else {
+                await req?.transaction.commit()
+            }
 
             return res.status(200).json({
                 message: 'Student activated.',
@@ -791,12 +795,14 @@ class StudentController {
                 )
 
                 await req?.transaction.commit()
-                await removeStudentAttendances({
-                    student_id: studentExists.id,
-                    studentgroup_id: activeStudentGroup.dataValues.group_id,
-                    from_date: date,
-                    reason: 'T',
-                })
+                if (activeStudentGroup) {
+                    await removeStudentAttendances({
+                        student_id: studentExists.id,
+                        studentgroup_id: activeStudentGroup.dataValues.group_id,
+                        from_date: date,
+                        reason: 'T',
+                    })
+                }
                 await createStudentAttendances({
                     student_id: studentExists.id,
                     studentgroup_id: studentgroupExists.id,
