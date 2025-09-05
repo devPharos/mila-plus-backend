@@ -404,7 +404,6 @@ class StudentDashboardController {
                 ],
                 order: [['date', 'ASC']],
             })
-            console.log('Classes loaded in', new Date().getTime() - loadTime)
 
             const periodsMap = {}
 
