@@ -123,9 +123,10 @@ class App {
                 },
             })
             for (let student of students) {
+                console.log('Removing attendances', student)
                 const toRemove = await StudentXGroup.findOne({
                     where: {
-                        student_id: student.id,
+                        student_id: student.dataValues.student_id,
                         end_date: '2025-09-06',
                         canceled_at: null,
                     },
@@ -133,7 +134,7 @@ class App {
                 if (toRemove) {
                     console.log(toRemove.dataValues.group_id)
                     await removeStudentAttendances({
-                        student_id: student.id,
+                        student_id: student.dataValues.student_id,
                         studentgroup_id: toRemove.dataValues.group_id,
                         from_date: '2025-09-07',
                         reason: null,
