@@ -101,6 +101,7 @@ export async function getAbsenceStatus(
 
     for (let attendance of attendances) {
         const group_id = attendance.studentgroupclasses.studentgroup_id
+        const isLocked = attendance.studentgroupclasses.locked_at
 
         if (!totals.groups.find((g) => g.group.id === group_id)) {
             const group = await Studentgroup.findByPk(group_id)
@@ -113,7 +114,6 @@ export async function getAbsenceStatus(
             })
         }
 
-        const isLocked = attendance.studentgroupclasses.locked_at
         if (isLocked) {
             if (attendance.status === 'A') {
                 totals.groups.find((g) => g.group.id === group_id)
