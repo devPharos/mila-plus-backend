@@ -68,6 +68,7 @@ import StudentDashboardController from './app/controllers/StudentDashboardContro
 import CostCenterController from './app/controllers/CostCenterController.js'
 import MerchantXCostCenterController from './app/controllers/MerchantXCostCenterController.js'
 import DSOController from './app/controllers/DSOController.js'
+import ReportController from './app/controllers/ReportController.js'
 
 const routes = new Router()
 
@@ -380,6 +381,8 @@ routes.post(
     '/reports/classSchedule',
     StudentgroupController.classScheduleReport
 )
+
+routes.get('/reports/receivables', ReportController.receivables)
 
 routes.get('/grades/:student_id', GradeController.list)
 routes.put('/grades/:student_id', GradeController.update)

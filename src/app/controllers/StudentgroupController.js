@@ -1,6 +1,7 @@
 import Sequelize from 'sequelize'
 import MailLog from '../../Mails/MailLog.js'
 import Studentgroup from '../models/Studentgroup.js'
+import databaseConfig from '../../config/database.js'
 import {
     generateSearchByFields,
     generateSearchOrder,
@@ -79,7 +80,14 @@ export async function jobPutInClass() {
         })
 
         for (let pendingStudent of pendingStudents) {
+            console.log(
+                'Transferring student: ',
+                pendingStudent.dataValues.student.name +
+                    ' ' +
+                    pendingStudent.dataValues.student.last_name
+            )
             await putInClass(pendingStudent.student_id, pendingStudent.group_id)
+            console.log('Student transferred')
         }
 
         return true
@@ -94,9 +102,10 @@ export async function jobPutInClass() {
 export async function putInClass(
     student_id = null,
     studentgroup_id = null,
-    date = null,
-    req = null
+    date = null
 ) {
+    const connection = new Sequelize(databaseConfig)
+    const t = await connection.transaction()
     try {
         const student = await Student.findByPk(student_id)
         const studentGroup = await Studentgroup.findByPk(studentgroup_id)
@@ -112,24 +121,29 @@ export async function putInClass(
             student_id: student.id,
             studentgroup_id: student.dataValues.group_id,
             from_date: date,
-            req,
             reason: null,
+            t,
         })
         await createStudentAttendances({
             student_id: student.id,
             studentgroup_id: studentGroup.id,
             from_date: date,
-            req,
+            t,
         })
 
         if (student.studentgroup_id != studentGroup.id) {
-            await student.update({
-                studentgroup_id: studentGroup.id,
-                classroom_id: studentGroup.dataValues.classroom_id,
-                teacher_id: studentGroup.dataValues.staff_id,
-                status: 'In Class',
-                updated_by: 2,
-            })
+            await student.update(
+                {
+                    studentgroup_id: studentGroup.id,
+                    classroom_id: studentGroup.dataValues.classroom_id,
+                    teacher_id: studentGroup.dataValues.staff_id,
+                    status: 'In Class',
+                    updated_by: 2,
+                },
+                {
+                    transaction: t,
+                }
+            )
 
             await StudentXGroup.update(
                 {
@@ -148,10 +162,13 @@ export async function putInClass(
                         },
                         canceled_at: null,
                     },
+                    transaction: t,
                 }
             )
         }
+        t.commit()
     } catch (err) {
+        t.rollback()
         const className = 'StudentgroupController'
         const functionName = 'putInClass'
         MailLog({ className, functionName, req: null, err })
@@ -258,6 +275,7 @@ export async function removeStudentAttendances({
     studentgroup_id = null,
     from_date = null,
     reason = null,
+    t = null,
 }) {
     const student = await Student.findByPk(student_id)
     if (!student) {
@@ -291,13 +309,20 @@ export async function removeStudentAttendances({
             reason === null
         ) {
             for (let attendance of attendances) {
-                await attendance.destroy()
+                await attendance.destroy({
+                    transaction: t,
+                })
             }
         } else {
             for (let attendance of attendances) {
-                await attendance.update({
-                    status: reason,
-                })
+                await attendance.update(
+                    {
+                        status: reason,
+                    },
+                    {
+                        transaction: t,
+                    }
+                )
             }
         }
     }
