@@ -3212,7 +3212,7 @@ class StudentgroupController {
             }
 
             let ret = null
-            await req?.transaction.commit()
+            // await req?.transaction.commit()
             wb.write(path, async (err, stats) => {
                 if (err) {
                     ret = res.status(400).json({ err, stats })
