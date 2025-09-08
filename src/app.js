@@ -130,12 +130,15 @@ class App {
                         canceled_at: null,
                     },
                 })
-                await removeStudentAttendances({
-                    student_id: student.id,
-                    studentgroup_id: toRemove.dataValues.group_id,
-                    from_date: student.dataValues.start_date,
-                    reason: null,
-                })
+                if (toRemove) {
+                    console.log(toRemove.dataValues.group_id)
+                    await removeStudentAttendances({
+                        student_id: student.id,
+                        studentgroup_id: toRemove.dataValues.group_id,
+                        from_date: '2025-09-07',
+                        reason: null,
+                    })
+                }
             }
         } else {
             console.log('❌ Schedule jobs not started in development!')
