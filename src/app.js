@@ -114,33 +114,6 @@ class App {
 
             schedule.scheduleJob('0 15 5 * *', jobPutInClass)
             console.log('✅ Schedule jobs started!')
-            jobPutInClass()
-
-            // const students = await StudentXGroup.findAll({
-            //     where: {
-            //         start_date: '2025-09-07',
-            //         canceled_at: null,
-            //     },
-            // })
-            // for (let student of students) {
-            //     console.log('Removing attendances', student)
-            //     const toRemove = await StudentXGroup.findOne({
-            //         where: {
-            //             student_id: student.dataValues.student_id,
-            //             end_date: '2025-09-06',
-            //             canceled_at: null,
-            //         },
-            //     })
-            //     if (toRemove) {
-            //         console.log(toRemove.dataValues.group_id)
-            //         await removeStudentAttendances({
-            //             student_id: student.dataValues.student_id,
-            //             studentgroup_id: toRemove.dataValues.group_id,
-            //             from_date: '2025-09-07',
-            //             reason: null,
-            //         })
-            //     }
-            // }
         } else {
             console.log('❌ Schedule jobs not started in development!')
         }
