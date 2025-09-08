@@ -116,11 +116,11 @@ class ReportController {
                             {
                                 [Op.iLike]: `01.%`,
                             },
-                            {
-                                [Op.length]: {
-                                    [Op.lte]: 10,
-                                },
-                            },
+                            Sequelize.where(
+                                Sequelize.fn('length', Sequelize.col('code')),
+                                '<=',
+                                10
+                            ),
                         ],
                     },
                     canceled_at: null,
