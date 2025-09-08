@@ -127,7 +127,9 @@ class ReportController {
                 parseISO(period_from)
             )
 
-            diffInMonths += 1
+            if (diffInMonths < 3) {
+                diffInMonths += 1
+            }
 
             if (
                 getMonth(parseISO(period_to)) !==
