@@ -9,12 +9,12 @@ module.exports = {
                     name: 'Reports',
                 },
                 {
-                    father_id: 97,
+                    father_id: 98,
                     alias: 'report-financial',
                     name: 'Report Financial',
                 },
                 {
-                    father_id: 98,
+                    father_id: 99,
                     alias: 'report-financial-receivables',
                     name: 'Report Financial Receivables',
                 },
