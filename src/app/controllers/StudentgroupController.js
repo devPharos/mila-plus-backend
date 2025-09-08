@@ -80,14 +80,14 @@ export async function jobPutInClass() {
         })
 
         for (let pendingStudent of pendingStudents) {
-            console.log(
-                'Transferring student: ',
-                pendingStudent.dataValues.student.name +
-                    ' ' +
-                    pendingStudent.dataValues.student.last_name
+            const reason =
+                pendingStudent.dataValues.status === 'Transferred' ? 'T' : null
+            await putInClass(
+                pendingStudent.student_id,
+                pendingStudent.group_id,
+                null,
+                reason
             )
-            await putInClass(pendingStudent.student_id, pendingStudent.group_id)
-            console.log('Student transferred')
         }
 
         return true
@@ -102,7 +102,8 @@ export async function jobPutInClass() {
 export async function putInClass(
     student_id = null,
     studentgroup_id = null,
-    date = null
+    date = null,
+    reason = null
 ) {
     try {
         const student = await Student.findByPk(student_id)
@@ -119,7 +120,7 @@ export async function putInClass(
             student_id: student.id,
             studentgroup_id: student.dataValues.group_id,
             from_date: date,
-            reason: null,
+            reason,
         })
         await createStudentAttendances({
             student_id: student.id,
