@@ -112,7 +112,16 @@ class ReportController {
             const chartOfAccounts = await Chartofaccount.findAll({
                 where: {
                     code: {
-                        [Op.iLike]: `01.%`,
+                        [Op.and]: [
+                            {
+                                [Op.iLike]: `01.%`,
+                            },
+                            {
+                                [Op.length]: {
+                                    [Op.lte]: 10,
+                                },
+                            },
+                        ],
                     },
                     canceled_at: null,
                 },
@@ -127,7 +136,7 @@ class ReportController {
             const byChartOfAccount = []
 
             for (let chartofaccount of chartOfAccounts) {
-                const fatherInArray = byChartOfAccount.find(
+                let fatherInArray = byChartOfAccount.find(
                     (c) => c.code === chartofaccount.dataValues.father_code
                 )
 
