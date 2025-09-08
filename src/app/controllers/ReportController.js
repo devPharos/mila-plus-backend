@@ -2,7 +2,15 @@ import Receivable from '../models/Receivable.js'
 import Chartofaccount from '../models/Chartofaccount.js'
 import Costcenter from '../models/Costcenter.js'
 import { Op, Sequelize } from 'sequelize'
-import { addMonths, differenceInMonths, format, parseISO } from 'date-fns'
+import {
+    addMonths,
+    differenceInMonths,
+    format,
+    getMonth,
+    lastDayOfMonth,
+    parseISO,
+} from 'date-fns'
+import Settlement from '../models/Settlement.js'
 
 class ReportController {
     async receivables(req, res, next) {
@@ -12,36 +20,54 @@ class ReportController {
             period_by,
         }) {
             const periodFilter =
-                period_by === 'Due Date' ? 'due_date' : 'accrual_date'
+                period_by === 'Due Date'
+                    ? 'due_date'
+                    : period_by === 'Settlement Date'
+                    ? 'settlement_date'
+                    : 'accrual_date'
+
             const findPeriod = {
                 [periodFilter]: {
-                    [Op.iLike]: `${period.period}%`,
+                    [Op.between]: [
+                        period.from.replaceAll('-', ''),
+                        period.to.replaceAll('-', ''),
+                    ],
                 },
             }
-            const reportData = await Receivable.findAll({
-                include: [
-                    {
-                        model: Chartofaccount,
-                        as: 'chartOfAccount',
-                        required: true,
-                        where: {
-                            canceled_at: null,
-                            code: {
-                                [Op.iLike]: `${chartOfAccountCode}%`,
-                            },
-                        },
-                        attributes: ['code', 'father_code', 'name'],
-                    },
-                    {
-                        model: Costcenter,
-                        as: 'costCenter',
-                        required: false,
-                        where: { canceled_at: null },
-                        attributes: ['code', 'father_code', 'name'],
-                    },
-                ],
+
+            const includes = []
+            includes.push({
+                model: Chartofaccount,
+                as: 'chartOfAccount',
+                required: true,
                 where: {
-                    ...findPeriod,
+                    canceled_at: null,
+                    code: {
+                        [Op.iLike]: `${chartOfAccountCode}%`,
+                    },
+                },
+                attributes: ['code', 'father_code', 'name'],
+            })
+            includes.push({
+                model: Costcenter,
+                as: 'costCenter',
+                required: false,
+                where: { canceled_at: null },
+                attributes: ['code', 'father_code', 'name'],
+            })
+            if (period_by === 'Settlement Date') {
+                includes.push({
+                    model: Settlement,
+                    as: 'settlements',
+                    required: true,
+                    where: { canceled_at: null, ...findPeriod },
+                })
+            }
+
+            const reportData = await Receivable.findAll({
+                include: includes,
+                where: {
+                    ...(period_by !== 'Settlement Date' && findPeriod),
                     canceled_at: null,
                 },
                 attributes: ['invoice_number', 'amount', 'total', 'status'],
@@ -60,6 +86,10 @@ class ReportController {
                             : acc
                     }, 0) * 100
                 ) / 100
+
+            if (total > 0) {
+                // console.log(period, chartOfAccountCode, total)
+            }
             return total
         }
 
@@ -92,18 +122,45 @@ class ReportController {
                 return res.status(400).json({ error: 'Invalid period.' })
             }
 
-            const diffInMonths = differenceInMonths(
+            let diffInMonths = differenceInMonths(
                 parseISO(period_to),
                 parseISO(period_from)
             )
 
+            diffInMonths += 1
+
+            if (
+                getMonth(parseISO(period_to)) !==
+                getMonth(parseISO(period_from))
+            ) {
+                diffInMonths += 1
+            }
+
             const periods = []
-            for (let i = 0; i < diffInMonths + 1; i++) {
+            for (let i = 0; i < diffInMonths; i++) {
+                const from =
+                    i === 0
+                        ? period_from
+                        : format(
+                              addMonths(parseISO(period_from), i),
+                              'yyyy-MM-01'
+                          )
+                const to =
+                    i === diffInMonths - 1
+                        ? period_to
+                        : format(
+                              lastDayOfMonth(
+                                  addMonths(parseISO(period_from), i)
+                              ),
+                              'yyyy-MM-dd'
+                          )
                 periods.push({
                     period: format(
                         addMonths(parseISO(period_from), i),
                         'yyyy-MM'
                     ),
+                    from,
+                    to,
                     total: 0,
                     chartOfAccounts: [],
                 })
@@ -151,7 +208,9 @@ class ReportController {
                     byChartOfAccount[byChartOfAccount.length - 1].periods =
                         await getPeriodValues(
                             byChartOfAccount[byChartOfAccount.length - 1],
-                            period_by
+                            period_by,
+                            period_from,
+                            period_to
                         )
 
                     byChartOfAccount[byChartOfAccount.length - 1].total =
@@ -162,15 +221,18 @@ class ReportController {
                         }, 0)
                 } else {
                     const father = fatherInArray.children
+                    // console.log(father)
                     father.push({
                         ...chartofaccount.dataValues,
                         total: 0,
-                        periods,
+                        periods: JSON.parse(JSON.stringify(periods)),
                         children: [],
                     })
                     father[father.length - 1].periods = await getPeriodValues(
                         father[father.length - 1],
-                        period_by
+                        period_by,
+                        period_from,
+                        period_to
                     )
 
                     father[father.length - 1].total = father[
