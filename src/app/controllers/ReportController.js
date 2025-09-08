@@ -1,6 +1,6 @@
-import Chartofaccount from '../models/Chartofaccount'
-import Costcenter from '../models/Costcenter'
-import Receivable from '../models/Receivable'
+// import Chartofaccount from '../models/Chartofaccount'
+// import Costcenter from '../models/Costcenter'
+// import Receivable from '../models/Receivable'
 
 class ReportController {
     // async receivables(req, res, next) {
