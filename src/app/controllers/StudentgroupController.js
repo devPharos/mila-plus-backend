@@ -104,8 +104,6 @@ export async function putInClass(
     studentgroup_id = null,
     date = null
 ) {
-    const connection = new Sequelize(databaseConfig)
-    const t = await connection.transaction()
     try {
         const student = await Student.findByPk(student_id)
         const studentGroup = await Studentgroup.findByPk(studentgroup_id)
@@ -122,28 +120,21 @@ export async function putInClass(
             studentgroup_id: student.dataValues.group_id,
             from_date: date,
             reason: null,
-            t,
         })
         await createStudentAttendances({
             student_id: student.id,
             studentgroup_id: studentGroup.id,
             from_date: date,
-            t,
         })
 
         if (student.studentgroup_id != studentGroup.id) {
-            await student.update(
-                {
-                    studentgroup_id: studentGroup.id,
-                    classroom_id: studentGroup.dataValues.classroom_id,
-                    teacher_id: studentGroup.dataValues.staff_id,
-                    status: 'In Class',
-                    updated_by: 2,
-                },
-                {
-                    transaction: t,
-                }
-            )
+            await student.update({
+                studentgroup_id: studentGroup.id,
+                classroom_id: studentGroup.dataValues.classroom_id,
+                teacher_id: studentGroup.dataValues.staff_id,
+                status: 'In Class',
+                updated_by: 2,
+            })
 
             await StudentXGroup.update(
                 {
@@ -162,13 +153,10 @@ export async function putInClass(
                         },
                         canceled_at: null,
                     },
-                    transaction: t,
                 }
             )
         }
-        t.commit()
     } catch (err) {
-        t.rollback()
         const className = 'StudentgroupController'
         const functionName = 'putInClass'
         MailLog({ className, functionName, req: null, err })
@@ -275,7 +263,6 @@ export async function removeStudentAttendances({
     studentgroup_id = null,
     from_date = null,
     reason = null,
-    t = null,
 }) {
     const student = await Student.findByPk(student_id)
     if (!student) {
@@ -309,20 +296,13 @@ export async function removeStudentAttendances({
             reason === null
         ) {
             for (let attendance of attendances) {
-                await attendance.destroy({
-                    transaction: t,
-                })
+                await attendance.destroy()
             }
         } else {
             for (let attendance of attendances) {
-                await attendance.update(
-                    {
-                        status: reason,
-                    },
-                    {
-                        transaction: t,
-                    }
-                )
+                await attendance.update({
+                    status: reason,
+                })
             }
         }
     }
