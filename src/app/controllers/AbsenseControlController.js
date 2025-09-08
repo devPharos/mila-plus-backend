@@ -7,7 +7,7 @@ import { dirname, resolve } from 'path'
 import xl from 'excel4node'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
-import { format, parseISO } from 'date-fns'
+import { format, lastDayOfMonth, parseISO } from 'date-fns'
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
@@ -179,8 +179,12 @@ class AbsenseControlController {
 
     async studentsUnderLimit(req, res, next) {
         try {
-            const { from_date = '2025-06-01', until_date = '2025-06-30' } =
-                req.body
+            const { period = format(new Date(), 'yyyy-MM') } = req.body
+            const from_date = format(parseISO(period + '-01'), 'yyyy-MM-dd')
+            const until_date = format(
+                lastDayOfMonth(parseISO(from_date)),
+                'yyyy-MM-dd'
+            )
             const name = `absence_control_${Date.now()}`
             const path = `${resolve(
                 directory,
