@@ -342,7 +342,9 @@ class AbsenseControlController {
             }
 
             let ret = null
-            await req?.transaction.commit()
+            if (req) {
+                await req?.transaction.commit()
+            }
             wb.write(path, async (err, stats) => {
                 if (err) {
                     ret = res.status(400).json({ err, stats })
@@ -360,7 +362,9 @@ class AbsenseControlController {
 
             return ret
         } catch (err) {
-            err.transaction = req?.transaction
+            if (req) {
+                err.transaction = req?.transaction
+            }
             next(err)
         }
     }
