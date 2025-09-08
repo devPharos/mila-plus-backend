@@ -56,6 +56,8 @@ const { Op } = Sequelize
 
 export async function jobPutInClass() {
     try {
+        const findDate = format(new Date(), 'yyyy-MM-dd')
+        console.log('jobPutInClass', findDate)
         const pendingStudents = await StudentXGroup.findAll({
             where: {
                 start_date: {
@@ -78,6 +80,7 @@ export async function jobPutInClass() {
             ],
             attributes: ['student_id', 'group_id'],
         })
+        console.log('Results:', pendingStudents.length)
 
         for (let pendingStudent of pendingStudents) {
             const reason =
