@@ -1,7 +1,7 @@
 import Receivable from '../models/Receivable.js'
 import Chartofaccount from '../models/Chartofaccount.js'
 import Costcenter from '../models/Costcenter.js'
-import { Op } from 'sequelize'
+import { Op, Sequelize } from 'sequelize'
 import { addMonths, differenceInMonths, format, parseISO } from 'date-fns'
 
 class ReportController {
