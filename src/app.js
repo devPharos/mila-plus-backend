@@ -112,7 +112,7 @@ class App {
             schedule.scheduleJob(`0 45 4 * * *`, sendAfterDueDateInvoices)
             schedule.scheduleJob('0 0 5 * * *', calculateFeesRecurrenceJob)
 
-            schedule.scheduleJob('0 0 4 * *', jobPutInClass)
+            schedule.scheduleJob('0 15 5 * *', jobPutInClass)
             console.log('✅ Schedule jobs started!')
             // jobPutInClass()
 
