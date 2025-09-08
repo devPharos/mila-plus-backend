@@ -16,12 +16,14 @@ import { mailer } from './config/mailer.js'
 import {
     adjustStudentXGroups,
     jobPutInClass,
+    removeStudentAttendances,
 } from './app/controllers/StudentgroupController.js'
 import { connectToMongo } from './config/mongodb.js'
 import transactionHandler from './app/middlewares/transactionHandler.js'
 import errorHandler from './app/middlewares/errorHandler.js'
 import indexCacheHandler from './app/middlewares/indexCacheHandler.js'
 import { adjustUserGroups } from './app/controllers/UserGroupController.js'
+import StudentXGroup from './app/models/StudentXGroup.js'
 
 class App {
     constructor() {
@@ -112,7 +114,29 @@ class App {
 
             schedule.scheduleJob('0 0 4 * *', jobPutInClass)
             console.log('✅ Schedule jobs started!')
-            jobPutInClass()
+            // jobPutInClass()
+
+            const students = await StudentXGroup.findAll({
+                where: {
+                    start_date: '2025-09-07',
+                    canceled_at: null,
+                },
+            })
+            for (let student of students) {
+                const toRemove = await StudentXGroup.findOne({
+                    where: {
+                        student_id: student.id,
+                        end_date: '2025-09-06',
+                        canceled_at: null,
+                    },
+                })
+                await removeStudentAttendances({
+                    student_id: student.id,
+                    studentgroup_id: toRemove.dataValues.group_id,
+                    from_date: student.dataValues.start_date,
+                    reason: null,
+                })
+            }
         } else {
             console.log('❌ Schedule jobs not started in development!')
         }
