@@ -112,6 +112,7 @@ class App {
 
             schedule.scheduleJob('0 0 4 * *', jobPutInClass)
             console.log('✅ Schedule jobs started!')
+            jobPutInClass()
         } else {
             console.log('❌ Schedule jobs not started in development!')
         }

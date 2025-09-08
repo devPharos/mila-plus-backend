@@ -382,7 +382,7 @@ routes.post(
     StudentgroupController.classScheduleReport
 )
 
-routes.get('/reports/receivables', ReportController.receivables)
+// routes.get('/reports/receivables', ReportController.receivables)
 
 routes.get('/grades/:student_id', GradeController.list)
 routes.put('/grades/:student_id', GradeController.update)
