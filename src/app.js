@@ -114,7 +114,7 @@ class App {
 
             schedule.scheduleJob('0 15 5 * *', jobPutInClass)
             console.log('✅ Schedule jobs started!')
-            // jobPutInClass()
+            jobPutInClass()
 
             // const students = await StudentXGroup.findAll({
             //     where: {
