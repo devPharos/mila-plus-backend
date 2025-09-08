@@ -65,15 +65,15 @@ export async function getAbsenceStatus(
                     },
                 ],
                 where: {
-                    locked_at: {
-                        [Op.not]: null,
-                    },
+                    // locked_at: {
+                    //     [Op.not]: null,
+                    // },
                     date: {
                         [Op.between]: [from_date, until_date],
                     },
                     canceled_at: null,
                 },
-                attributes: ['id', 'studentgroup_id', 'date'],
+                attributes: ['id', 'studentgroup_id', 'date', 'locked_at'],
             },
         ],
         attributes: [
@@ -101,26 +101,8 @@ export async function getAbsenceStatus(
 
     for (let attendance of attendances) {
         const group_id = attendance.studentgroupclasses.studentgroup_id
-        if (attendance.first_check === 'Late') {
-            ++latesCount
-            if (latesCount === 3) {
-                totals.totalAbsenses += 0.5
-                totals.groups.find(
-                    (g) => g.group.id === group_id
-                ).totalAbsenses += 0.5
-                latesCount = 0
-            }
-        }
-        if (attendance.second_check === 'Late') {
-            ++latesCount
-            if (latesCount === 3) {
-                totals.totalAbsenses += 0.5
-                totals.groups.find(
-                    (g) => g.group.id === group_id
-                ).totalAbsenses += 0.5
-                latesCount = 0
-            }
-        }
+        const isLocked = attendance.studentgroupclasses.locked_at
+
         if (!totals.groups.find((g) => g.group.id === group_id)) {
             const group = await Studentgroup.findByPk(group_id)
             totals.groups.push({
@@ -132,14 +114,38 @@ export async function getAbsenceStatus(
             })
         }
 
+        if (isLocked) {
+            if (attendance.status === 'A') {
+                totals.groups.find((g) => g.group.id === group_id)
+                    .totalAbsenses++
+                totals.totalAbsenses++
+            } else {
+                if (attendance.first_check === 'Late') {
+                    ++latesCount
+                    if (latesCount === 3) {
+                        totals.totalAbsenses += 0.5
+                        totals.groups.find(
+                            (g) => g.group.id === group_id
+                        ).totalAbsenses += 0.5
+                        latesCount = 0
+                    }
+                }
+                if (attendance.second_check === 'Late') {
+                    ++latesCount
+                    if (latesCount === 3) {
+                        totals.totalAbsenses += 0.5
+                        totals.groups.find(
+                            (g) => g.group.id === group_id
+                        ).totalAbsenses += 0.5
+                        latesCount = 0
+                    }
+                }
+            }
+        }
+
         totals.groups.find((g) => g.group.id === group_id).attendances++
         totals.groups.find((g) => g.group.id === group_id).attendancePeriods +=
             shifts.length
-
-        if (attendance.status === 'A') {
-            totals.groups.find((g) => g.group.id === group_id).totalAbsenses++
-            totals.totalAbsenses++
-        }
     }
 
     for (let group of totals.groups) {
