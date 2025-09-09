@@ -119,9 +119,6 @@ export async function getAbsenceStatus(
 
         if (isLocked) {
             if (attendance.medical_excuse_id || attendance.vacation_id) {
-                totals.groups.find((g) => g.group.id === group_id)
-                    .totalAbsenses++
-                totals.totalAbsenses++
             } else if (attendance.status === 'A') {
                 totals.groups.find((g) => g.group.id === group_id)
                     .totalAbsenses++
