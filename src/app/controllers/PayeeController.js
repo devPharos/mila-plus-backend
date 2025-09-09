@@ -336,6 +336,25 @@ class PayeeController {
                 }
             }
 
+            if (invoice_number) {
+                const payeeExists = await Payee.findOne({
+                    where: {
+                        company_id: 1,
+                        filial_id: filialExists.id,
+                        issuer_id: issuer.id,
+                        invoice_number,
+                        type,
+                        type_detail,
+                        canceled_at: null,
+                    },
+                })
+                if (payeeExists) {
+                    return res.status(400).json({
+                        error: 'Payee already exists for this issuer and this invoice number.',
+                    })
+                }
+            }
+
             const newPayee = await Payee.create(
                 {
                     company_id: 1,
