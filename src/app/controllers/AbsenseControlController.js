@@ -50,6 +50,9 @@ export async function getAbsenceStatus(
         where: {
             student_id,
             canceled_at: null,
+            status: {
+                [Op.ne]: 'T',
+            },
         },
         include: [
             {
@@ -91,7 +94,7 @@ export async function getAbsenceStatus(
 
     let totals = {
         attendances: attendances.length,
-        attendancesPeriods: attendances.length * shifts.length,
+        attendancesPeriods: attendances.length * 1,
         groups: [],
         totalAbsenses: 0,
         frequency: 0,
@@ -115,7 +118,11 @@ export async function getAbsenceStatus(
         }
 
         if (isLocked) {
-            if (attendance.status === 'A') {
+            if (attendance.medical_excuse_id || attendance.vacation_id) {
+                totals.groups.find((g) => g.group.id === group_id)
+                    .totalAbsenses++
+                totals.totalAbsenses++
+            } else if (attendance.status === 'A') {
                 totals.groups.find((g) => g.group.id === group_id)
                     .totalAbsenses++
                 totals.totalAbsenses++
@@ -140,12 +147,22 @@ export async function getAbsenceStatus(
                         latesCount = 0
                     }
                 }
+                if (
+                    attendance.first_check === 'Absent' ||
+                    attendance.second_check === 'Absent'
+                ) {
+                    totals.groups.find(
+                        (g) => g.group.id === group_id
+                    ).totalAbsenses += 0.5
+                    totals.totalAbsenses += 0.5
+                }
             }
         }
 
         totals.groups.find((g) => g.group.id === group_id).attendances++
-        totals.groups.find((g) => g.group.id === group_id).attendancePeriods +=
-            shifts.length
+        totals.groups.find(
+            (g) => g.group.id === group_id
+        ).attendancePeriods += 1
     }
 
     for (let group of totals.groups) {
