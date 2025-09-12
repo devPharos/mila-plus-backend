@@ -2514,8 +2514,9 @@ class StudentgroupController {
                     for (let student of students) {
                         studentIndex++
                         if (
-                            (page === 1 && studentIndex % 22 === 0) ||
-                            (page > 1 && studentIndex % 27 === 0)
+                            (page === 1 && studentIndex === 22) ||
+                            (page > 1 &&
+                                (studentIndex === 47 || studentIndex === 69))
                         ) {
                             page++
                             doc.addPage()
