@@ -8,6 +8,7 @@ import xl from 'excel4node'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { format, lastDayOfMonth, parseISO } from 'date-fns'
+import Processtype from '../models/Processtype.js'
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
