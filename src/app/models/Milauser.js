@@ -14,6 +14,7 @@ class Milauser extends Model {
                 password_reset_expire: Sequelize.DATE,
                 avatar_id: Sequelize.UUID,
                 force_password_change: Sequelize.BOOLEAN,
+                active: Sequelize.BOOLEAN,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,

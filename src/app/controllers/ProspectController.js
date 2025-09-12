@@ -76,15 +76,14 @@ class ProspectController {
                 }
             }
 
-            let partnersAndInfluencersExists = null
-            if (partners_and_influencers) {
-                partnersAndInfluencersExists =
+            if (partners_and_influencers.id) {
+                const partners_and_influencersExists =
                     await PartnersAndInfluencers.findByPk(
                         partners_and_influencers.id
                     )
-                if (!partnersAndInfluencersExists) {
+                if (!partners_and_influencersExists) {
                     return res.status(400).json({
-                        error: 'Partner and Influencer does not exist.',
+                        error: 'Partner does not exist.',
                     })
                 }
             }
@@ -100,10 +99,10 @@ class ProspectController {
                     ...(processsubstatuses.id
                         ? { processsubstatus_id: processsubstatuses.id }
                         : {}),
-                    ...(partnersAndInfluencersExists
+                    ...(partners_and_influencers.id
                         ? {
                               partners_and_influencer_id:
-                                  partnersAndInfluencersExists.id,
+                                  partners_and_influencers.id,
                           }
                         : {}),
                     company_id: 1,
@@ -177,15 +176,14 @@ class ProspectController {
                 }
             }
 
-            let partnersAndInfluencersExists = null
             if (partners_and_influencers.id) {
-                partnersAndInfluencersExists =
+                const partners_and_influencersExists =
                     await PartnersAndInfluencers.findByPk(
                         partners_and_influencers.id
                     )
-                if (!partnersAndInfluencersExists) {
+                if (!partners_and_influencersExists) {
                     return res.status(400).json({
-                        error: 'Partner and Influencer does not exist.',
+                        error: 'Partner does not exist.',
                     })
                 }
             }
@@ -214,8 +212,8 @@ class ProspectController {
 
             const changedProspect = await prospectExists.update(
                 {
-                    ...req.body,
                     ...prospectExists.dataValues,
+                    ...req.body,
                     filial_id: filialExists.id,
                     ...(processtypes.id
                         ? { processtype_id: processtypes.id }
@@ -224,10 +222,10 @@ class ProspectController {
                         ? { processsubstatus_id: processsubstatuses.id }
                         : {}),
                     ...(agent.id ? { agent_id: agent.id } : {}),
-                    ...(partnersAndInfluencersExists
+                    ...(partners_and_influencers.id
                         ? {
                               partners_and_influencer_id:
-                                  partnersAndInfluencersExists.id,
+                                  partners_and_influencers.id,
                           }
                         : {}),
 
