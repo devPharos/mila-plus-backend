@@ -273,10 +273,12 @@ class AbsenseControlController {
 
             ws2.cell(1, 1).string('ID').style(styleBold)
             ws2.cell(1, 2).string('Student Name').style(styleBold)
-            ws2.cell(1, 3).string('E-mail').style(styleBold)
-            ws2.cell(1, 4).string('Group Name').style(styleBold)
-            ws2.cell(1, 5).string('Absence Qty').style(styleBold)
-            ws2.cell(1, 6).string('% Frequency').style(styleBold)
+            ws2.cell(1, 3).string('Type').style(styleBold)
+            ws2.cell(1, 4).string('Status').style(styleBold)
+            ws2.cell(1, 5).string('E-mail').style(styleBold)
+            ws2.cell(1, 6).string('Group Name').style(styleBold)
+            ws2.cell(1, 7).string('Absence Qty').style(styleBold)
+            ws2.cell(1, 8).string('% Frequency').style(styleBold)
 
             ws2.row(1).filter()
             ws2.row(1).freeze()
@@ -317,8 +319,14 @@ class AbsenseControlController {
                             },
                         ],
                     },
+                    {
+                        model: Processtype,
+                        as: 'processtypes',
+                        required: false,
+                        attributes: ['id', 'name'],
+                    },
                 ],
-                attributes: ['id'],
+                attributes: ['id', 'name', 'last_name', 'status'],
                 order: [
                     ['name', 'ASC'],
                     ['last_name', 'ASC'],
@@ -341,6 +349,10 @@ class AbsenseControlController {
                     ws2.cell(row, col).string(
                         student.name + ' ' + student.last_name
                     )
+                    col++
+                    ws2.cell(row, col).string(student.processtypes.name || '')
+                    col++
+                    ws2.cell(row, col).string(student.status || '')
                     col++
                     ws2.cell(row, col).string(student.email || '')
                     col++
