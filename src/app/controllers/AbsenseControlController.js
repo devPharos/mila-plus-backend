@@ -351,7 +351,7 @@ class AbsenseControlController {
                         student.name + ' ' + student.last_name
                     )
                     col++
-                    ws2.cell(row, col).string(student.processtypes.name || '')
+                    ws2.cell(row, col).string(student.processtypes?.name || '')
                     col++
                     ws2.cell(row, col).string(student.status || '')
                     col++
