@@ -2765,6 +2765,7 @@ class StudentgroupController {
                                     required: true,
                                     where: {
                                         canceled_at: null,
+                                        studentgroup_id: studentGroup.id,
                                         date: format(
                                             addDays(parseISO(from_date), day),
                                             'yyyy-MM-dd'
