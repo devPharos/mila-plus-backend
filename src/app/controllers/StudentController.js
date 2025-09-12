@@ -1512,8 +1512,16 @@ class StudentController {
             ws.column(col).width = 40
             col++
 
-            ws.cell(3, col).string(dateColumnTitle).style(styleBold)
-            ws.column(col).width = 15
+            ws.cell(3, col).string('Start date').style(styleBold)
+            ws.column(col).width = 40
+            col++
+
+            ws.cell(3, col).string('End date').style(styleBold)
+            ws.column(col).width = 40
+            // col++
+
+            // ws.cell(3, col).string(dateColumnTitle).style(styleBold)
+            // ws.column(col).width = 15
 
             ws.row(3).freeze()
 
@@ -1527,16 +1535,18 @@ class StudentController {
                 )
                 ws.cell(row, dataCol++).string(student.name || '')
                 ws.cell(row, dataCol++).string(student.email || '')
+                ws.cell(row, dataCol++).date(parseISO(vacation.date_from || ''))
+                ws.cell(row, dataCol++).date(parseISO(vacation.date_to || ''))
 
-                const dateValue = vacation[reportTypeColumn]
+                // const dateValue = vacation[reportTypeColumn]
 
-                if (dateValue) {
-                    ws.cell(row, dataCol++)
-                        .date(parseISO(dateValue))
-                        .style({ numberFormat: 'mm/dd/yyyy' })
-                } else {
-                    ws.cell(row, dataCol++).string('')
-                }
+                // if (dateValue) {
+                //     ws.cell(row, dataCol++)
+                //         .date(parseISO(dateValue))
+                //         .style({ numberFormat: 'mm/dd/yyyy' })
+                // } else {
+                //     ws.cell(row, dataCol++).string('')
+                // }
             })
 
             wb.write(path, (err) => {
