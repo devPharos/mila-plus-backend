@@ -989,6 +989,9 @@ class StudentController {
                 ],
                 where: {
                     student_id,
+                    status: {
+                        [Op.notIn]: ['T', 'F', 'C'],
+                    },
                     canceled_at: null,
                 },
             })
@@ -1250,6 +1253,9 @@ class StudentController {
                 ],
                 where: {
                     student_id,
+                    status: {
+                        [Op.notIn]: ['T', 'F', 'C'],
+                    },
                     canceled_at: null,
                 },
             })
