@@ -1,6 +1,8 @@
 import Sequelize from 'sequelize'
 import Student from '../models/Student.js'
 import Filial from '../models/Filial.js'
+import Agent from '../models/Agent.js'
+import PartnersAndInfluencers from '../models/PartnersAndInfluencers.js'
 import Studentinactivation from '../models/Studentinactivation.js'
 import {
     generateSearchByFields,
@@ -46,7 +48,13 @@ const directory = dirname(filename)
 class StudentController {
     async store(req, res, next) {
         try {
-            const { filial, processtypes, processsubstatuses } = req.body
+            const {
+                filial,
+                processtypes,
+                processsubstatuses,
+                agent,
+                partners_and_influencers,
+            } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
             if (!filialExists) {
@@ -78,6 +86,27 @@ class StudentController {
                 }
             }
 
+            if (agent.id) {
+                const agentExists = await Agent.findByPk(agent.id)
+                if (!agentExists) {
+                    return res.status(400).json({
+                        error: 'Agent does not exist.',
+                    })
+                }
+            }
+
+            if (partners_and_influencers.id) {
+                const partners_and_influencersExists =
+                    await PartnersAndInfluencers.findByPk(
+                        partners_and_influencers.id
+                    )
+                if (!partners_and_influencersExists) {
+                    return res.status(400).json({
+                        error: 'Partner does not exist.',
+                    })
+                }
+            }
+
             const newStudent = await Student.create(
                 {
                     ...req.body,
@@ -87,6 +116,13 @@ class StudentController {
                         : {}),
                     ...(processsubstatuses.id
                         ? { processsubstatus_id: processsubstatuses.id }
+                        : {}),
+                    ...(agent.id ? { agent_id: agent.id } : {}),
+                    ...(partners_and_influencers.id
+                        ? {
+                              partners_and_influencer_id:
+                                  partners_and_influencers.id,
+                          }
                         : {}),
                     company_id: 1,
 
@@ -114,7 +150,13 @@ class StudentController {
         try {
             const { student_id } = req.params
 
-            const { filial, processtypes, processsubstatuses } = req.body
+            const {
+                filial,
+                processtypes,
+                processsubstatuses,
+                agent,
+                partners_and_influencers,
+            } = req.body
 
             const filialExists = await Filial.findByPk(filial.id)
             if (!filialExists) {
@@ -145,6 +187,27 @@ class StudentController {
                 }
             }
 
+            if (agent.id) {
+                const agentExists = await Agent.findByPk(agent.id)
+                if (!agentExists) {
+                    return res.status(400).json({
+                        error: 'Agent does not exist.',
+                    })
+                }
+            }
+
+            if (partners_and_influencers.id) {
+                const partners_and_influencersExists =
+                    await PartnersAndInfluencers.findByPk(
+                        partners_and_influencers.id
+                    )
+                if (!partners_and_influencersExists) {
+                    return res.status(400).json({
+                        error: 'Partner does not exist.',
+                    })
+                }
+            }
+
             const studentExists = await Student.findByPk(student_id)
 
             if (!studentExists) {
@@ -162,6 +225,13 @@ class StudentController {
                         : {}),
                     ...(processsubstatuses.id
                         ? { processsubstatus_id: processsubstatuses.id }
+                        : {}),
+                    ...(agent.id ? { agent_id: agent.id } : {}),
+                    ...(partners_and_influencers.id
+                        ? {
+                              partners_and_influencer_id:
+                                  partners_and_influencers.id,
+                          }
                         : {}),
                     updated_by: req.userId,
                 },
@@ -311,6 +381,16 @@ class StudentController {
                         ],
                     },
                     {
+                        model: Studentinactivation,
+                        as: 'inactivation',
+                        required: false,
+                        attributes: ['date'],
+                        where: {
+                            student_id,
+                            canceled_at: null,
+                        },
+                    },
+                    {
                         model: Processtype,
                         as: 'processtypes',
                         required: false,
@@ -335,6 +415,7 @@ class StudentController {
                                 as: 'studentxgroups',
                                 required: false,
                                 where: {
+                                    student_id,
                                     canceled_at: null,
                                 },
                                 order: [['created_at', 'DESC']],
@@ -368,6 +449,7 @@ class StudentController {
                         as: 'studentxgroups',
                         required: false,
                         where: {
+                            student_id,
                             canceled_at: null,
                             status: {
                                 [Op.in]: ['Not started', 'Transferred'],
@@ -381,6 +463,20 @@ class StudentController {
                                 where: { canceled_at: null },
                             },
                         ],
+                    },
+                    {
+                        model: Agent,
+                        as: 'agent',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'name'],
+                    },
+                    {
+                        model: PartnersAndInfluencers,
+                        as: 'partners_and_influencers',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'partners_name'],
                     },
                 ],
             })

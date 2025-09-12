@@ -23,6 +23,8 @@ class Agent extends Model {
                 company_zip: Sequelize.STRING,
                 company_phone_number: Sequelize.STRING,
                 company_ein: Sequelize.STRING,
+                active: Sequelize.BOOLEAN,
+                old_name: Sequelize.STRING,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
