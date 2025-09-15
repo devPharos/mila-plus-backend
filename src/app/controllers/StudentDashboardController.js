@@ -451,12 +451,6 @@ class StudentDashboardController {
                     _class.weekDate = _class.weekday
                     _class.program = _class.paceguides || []
 
-                    delete _class.studentgroup_id
-                    delete _class.date
-                    delete _class.weekday
-                    delete _class.paceguides
-                    delete _class.attendances
-
                     // Define a chave de agrupamento (ex: '2025-07')
                     const periodKey = _class.classDate?.substring(0, 7)
 
@@ -473,6 +467,12 @@ class StudentDashboardController {
                     // Adiciona a aula ao array de classes do período correspondente
                     periodsMap[periodKey].classes.push(_class)
                 }
+
+                delete _class.studentgroup_id
+                delete _class.date
+                delete _class.weekday
+                delete _class.paceguides
+                delete _class.attendances
             }
 
             // Converte o objeto de volta para um array, que é o formato esperado
