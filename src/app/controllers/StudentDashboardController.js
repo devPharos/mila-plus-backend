@@ -450,18 +450,18 @@ class StudentDashboardController {
                     _class.classDate = _class.date
                     _class.weekDate = _class.weekday
                     _class.program = _class.paceguides || []
+                }
 
-                    // Define a chave de agrupamento (ex: '2025-07')
-                    const periodKey = _class.classDate?.substring(0, 7)
+                // Define a chave de agrupamento (ex: '2025-07')
+                const periodKey = _class.classDate?.substring(0, 7)
 
-                    // Se o período ainda não existe no nosso mapa, cria a estrutura dele
-                    if (!periodsMap[periodKey]) {
-                        periodsMap[periodKey] = {
-                            period: periodKey,
-                            classes: [],
-                            groupId: _class.groupId, // Assume que o groupId é o mesmo para o período
-                            totalAbsences: 0, // Inicia com 0
-                        }
+                // Se o período ainda não existe no nosso mapa, cria a estrutura dele
+                if (!periodsMap[periodKey]) {
+                    periodsMap[periodKey] = {
+                        period: periodKey,
+                        classes: [],
+                        groupId: _class.groupId, // Assume que o groupId é o mesmo para o período
+                        totalAbsences: 0, // Inicia com 0
                     }
                 }
 
