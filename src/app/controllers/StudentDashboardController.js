@@ -463,10 +463,10 @@ class StudentDashboardController {
                             totalAbsences: 0, // Inicia com 0
                         }
                     }
-
-                    // Adiciona a aula ao array de classes do período correspondente
-                    periodsMap[periodKey].classes.push(_class)
                 }
+
+                // Adiciona a aula ao array de classes do período correspondente
+                periodsMap[periodKey].classes.push(_class)
 
                 delete _class.studentgroup_id
                 delete _class.date
