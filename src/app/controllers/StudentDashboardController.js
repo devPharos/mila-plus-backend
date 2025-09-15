@@ -363,6 +363,9 @@ class StudentDashboardController {
                             'second_check',
                         ],
                         where: {
+                            status: {
+                                [Op.notIn]: ['T', 'C', 'F'],
+                            },
                             canceled_at: null,
                             student_id: student.id,
                         },
