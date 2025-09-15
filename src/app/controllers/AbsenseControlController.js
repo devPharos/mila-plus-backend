@@ -72,6 +72,9 @@ export async function getAbsenceStatus(
                     // locked_at: {
                     //     [Op.not]: null,
                     // },
+                    status: {
+                        [Op.ne]: 'Holiday',
+                    },
                     date: {
                         [Op.between]: [from_date, until_date],
                     },
