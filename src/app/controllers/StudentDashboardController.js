@@ -426,17 +426,17 @@ class StudentDashboardController {
                     if (_class.presenceStatus !== '') {
                         _class.presenceStatus += '/'
                     }
-                    _class.presenceStatus += attendance?.status || 'N/A'
-                    if (_class.presenceStatus === 'A')
-                        _class.presenceStatus = 'Absent'
-                    if (_class.presenceStatus === '.')
-                        _class.presenceStatus = 'Present'
-                    if (_class.presenceStatus === 'P')
-                        _class.presenceStatus = 'Half Present'
-                    if (_class.presenceStatus === 'V')
-                        _class.presenceStatus = 'Vacation'
-                    if (_class.presenceStatus === 'S')
-                        _class.presenceStatus = 'Sick'
+                    // _class.presenceStatus += attendance?.status || 'N/A'
+                    if (attendance?.status === 'A')
+                        _class.presenceStatus += 'Absent'
+                    if (attendance?.status === '.')
+                        _class.presenceStatus += 'Present'
+                    if (attendance?.status === 'P')
+                        _class.presenceStatus += 'Half Present'
+                    if (attendance?.status === 'V')
+                        _class.presenceStatus += 'Vacation'
+                    if (attendance?.status === 'S')
+                        _class.presenceStatus += 'Sick'
 
                     // if (
                     //     attendance?.first_check === 'Late' ||
