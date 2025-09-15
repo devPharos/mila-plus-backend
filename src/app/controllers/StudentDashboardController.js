@@ -458,7 +458,7 @@ class StudentDashboardController {
                     delete _class.attendances
 
                     // Define a chave de agrupamento (ex: '2025-07')
-                    const periodKey = _class.classDate.substring(0, 7)
+                    const periodKey = _class.classDate?.substring(0, 7)
 
                     // Se o período ainda não existe no nosso mapa, cria a estrutura dele
                     if (!periodsMap[periodKey]) {
