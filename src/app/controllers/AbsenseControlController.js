@@ -301,29 +301,6 @@ class AbsenseControlController {
                 },
                 include: [
                     {
-                        model: Attendance,
-                        as: 'attendances',
-                        required: true,
-                        where: {
-                            canceled_at: null,
-                        },
-                        attributes: [],
-                        include: [
-                            {
-                                model: Studentgroupclass,
-                                as: 'studentgroupclasses',
-                                required: true,
-                                where: {
-                                    date: {
-                                        [Op.between]: [from_date, until_date],
-                                    },
-                                    canceled_at: null,
-                                },
-                                attributes: [],
-                            },
-                        ],
-                    },
-                    {
                         model: Processtype,
                         as: 'processtypes',
                         required: false,
