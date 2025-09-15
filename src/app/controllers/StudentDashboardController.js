@@ -512,7 +512,7 @@ class StudentDashboardController {
                 periods.push({
                     period: thisPeriod,
                     classes: [],
-                    groupId: groups[groups.length - 1].groupId,
+                    groupId: groups[groups.length - 1]?.groupId || null,
                     totalAbsences: 0,
                 })
             }
