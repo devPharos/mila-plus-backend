@@ -341,7 +341,6 @@ class StudentDashboardController {
                 }
             }
 
-            const loadTime = new Date().getTime()
             const classesInstances = await Studentgroupclass.findAll({
                 where: periodWhereClause,
                 attributes: [
@@ -420,52 +419,60 @@ class StudentDashboardController {
             for (const classInstance of classesInstances) {
                 const _class = classInstance.get({ plain: true })
 
-                // Mantém a transformação de dados que você já tinha
-                _class.presenceStatus = _class.attendances[0]?.status || 'N/A'
-                if (_class.presenceStatus === 'A')
-                    _class.presenceStatus = 'Absent'
-                if (_class.presenceStatus === '.')
-                    _class.presenceStatus = 'Present'
-                if (_class.presenceStatus === 'P')
-                    _class.presenceStatus = 'Half Present'
-                if (_class.presenceStatus === 'V')
-                    _class.presenceStatus = 'Vacation'
-                if (_class.presenceStatus === 'S')
-                    _class.presenceStatus = 'Sick'
+                _class.presenceStatus = ''
 
-                if (
-                    _class.attendances[0]?.first_check === 'Late' ||
-                    _class.attendances[0]?.second_check === 'Late'
-                ) {
-                    _class.presenceStatus = 'Late / ' + _class.presenceStatus
-                }
-
-                _class.groupId = _class.studentgroup_id
-                _class.classDate = _class.date
-                _class.weekDate = _class.weekday
-                _class.program = _class.paceguides || []
-
-                delete _class.studentgroup_id
-                delete _class.date
-                delete _class.weekday
-                delete _class.paceguides
-                delete _class.attendances
-
-                // Define a chave de agrupamento (ex: '2025-07')
-                const periodKey = _class.classDate.substring(0, 7)
-
-                // Se o período ainda não existe no nosso mapa, cria a estrutura dele
-                if (!periodsMap[periodKey]) {
-                    periodsMap[periodKey] = {
-                        period: periodKey,
-                        classes: [],
-                        groupId: _class.groupId, // Assume que o groupId é o mesmo para o período
-                        totalAbsences: 0, // Inicia com 0
+                for (const attendance of _class.attendances) {
+                    // Mantém a transformação de dados que você já tinha
+                    if (_class.presenceStatus !== '') {
+                        _class.presenceStatus += '/'
                     }
-                }
+                    _class.presenceStatus += attendance?.status || 'N/A'
+                    if (_class.presenceStatus === 'A')
+                        _class.presenceStatus = 'Absent'
+                    if (_class.presenceStatus === '.')
+                        _class.presenceStatus = 'Present'
+                    if (_class.presenceStatus === 'P')
+                        _class.presenceStatus = 'Half Present'
+                    if (_class.presenceStatus === 'V')
+                        _class.presenceStatus = 'Vacation'
+                    if (_class.presenceStatus === 'S')
+                        _class.presenceStatus = 'Sick'
 
-                // Adiciona a aula ao array de classes do período correspondente
-                periodsMap[periodKey].classes.push(_class)
+                    // if (
+                    //     attendance?.first_check === 'Late' ||
+                    //     attendance?.second_check === 'Late'
+                    // ) {
+                    //     _class.presenceStatus =
+                    //         'Late / ' + _class.presenceStatus
+                    // }
+
+                    _class.groupId = _class.studentgroup_id
+                    _class.classDate = _class.date
+                    _class.weekDate = _class.weekday
+                    _class.program = _class.paceguides || []
+
+                    delete _class.studentgroup_id
+                    delete _class.date
+                    delete _class.weekday
+                    delete _class.paceguides
+                    delete _class.attendances
+
+                    // Define a chave de agrupamento (ex: '2025-07')
+                    const periodKey = _class.classDate.substring(0, 7)
+
+                    // Se o período ainda não existe no nosso mapa, cria a estrutura dele
+                    if (!periodsMap[periodKey]) {
+                        periodsMap[periodKey] = {
+                            period: periodKey,
+                            classes: [],
+                            groupId: _class.groupId, // Assume que o groupId é o mesmo para o período
+                            totalAbsences: 0, // Inicia com 0
+                        }
+                    }
+
+                    // Adiciona a aula ao array de classes do período correspondente
+                    periodsMap[periodKey].classes.push(_class)
+                }
             }
 
             // Converte o objeto de volta para um array, que é o formato esperado
