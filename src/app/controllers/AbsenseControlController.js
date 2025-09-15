@@ -330,7 +330,14 @@ class AbsenseControlController {
                         attributes: ['id', 'name'],
                     },
                 ],
-                attributes: ['id', 'name', 'last_name', 'status'],
+                attributes: [
+                    'id',
+                    'name',
+                    'last_name',
+                    'registration_number',
+                    'email',
+                    'status',
+                ],
                 order: [
                     ['name', 'ASC'],
                     ['last_name', 'ASC'],
@@ -342,23 +349,25 @@ class AbsenseControlController {
             let col = 1
             for (let studentFind of students) {
                 col = 1
-                const { student, totals } = await getAbsenceStatus(
+                const { totals } = await getAbsenceStatus(
                     studentFind.id,
                     from_date,
                     until_date
                 )
                 if (totals.totalAbsenses > 0) {
-                    ws2.cell(row, col).string(student.registration_number)
+                    ws2.cell(row, col).string(studentFind.registration_number)
                     col++
                     ws2.cell(row, col).string(
-                        student.name + ' ' + student.last_name
+                        studentFind.name + ' ' + studentFind.last_name
                     )
                     col++
-                    ws2.cell(row, col).string(student.processtypes?.name || '')
+                    ws2.cell(row, col).string(
+                        studentFind.processtypes?.name || ''
+                    )
                     col++
-                    ws2.cell(row, col).string(student.status || '')
+                    ws2.cell(row, col).string(studentFind.status || '')
                     col++
-                    ws2.cell(row, col).string(student.email || '')
+                    ws2.cell(row, col).string(studentFind.email || '')
                     col++
 
                     let groupNames = ''
