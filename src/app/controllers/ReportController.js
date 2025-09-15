@@ -11,6 +11,7 @@ import {
     parseISO,
 } from 'date-fns'
 import Settlement from '../models/Settlement.js'
+import { verifyFilialSearch } from '../functions/index.js'
 
 class ReportController {
     async receivables(req, res, next) {
@@ -18,6 +19,7 @@ class ReportController {
             chartOfAccountCode,
             period,
             period_by,
+            req,
         }) {
             const periodFilter =
                 period_by === 'Due Date'
@@ -36,12 +38,19 @@ class ReportController {
             }
 
             const includes = []
+            const visibility = ['All']
+            if (req?.user?.id === 1) {
+                visibility.push('Holding Only')
+            }
             includes.push({
                 model: Chartofaccount,
                 as: 'chartOfAccount',
                 required: true,
                 where: {
                     canceled_at: null,
+                    visibility: {
+                        [Op.in]: visibility,
+                    },
                     code: {
                         [Op.iLike]: `${chartOfAccountCode}%`,
                     },
@@ -52,7 +61,12 @@ class ReportController {
                 model: Costcenter,
                 as: 'costCenter',
                 required: false,
-                where: { canceled_at: null },
+                where: {
+                    canceled_at: null,
+                    visibility: {
+                        [Op.in]: visibility,
+                    },
+                },
                 attributes: ['code', 'father_code', 'name'],
             })
             if (period_by === 'Settlement Date') {
@@ -64,9 +78,12 @@ class ReportController {
                 })
             }
 
+            const filialSearch = verifyFilialSearch(Receivable, req)
+
             const reportData = await Receivable.findAll({
                 include: includes,
                 where: {
+                    ...filialSearch,
                     ...(period_by !== 'Settlement Date' && findPeriod),
                     canceled_at: null,
                 },
@@ -93,12 +110,13 @@ class ReportController {
             return total
         }
 
-        async function getPeriodValues(chartOfAccount, period_by) {
+        async function getPeriodValues(chartOfAccount, period_by, req) {
             for (let period of chartOfAccount.periods) {
                 period.total = await getValueByPeriod({
                     chartOfAccountCode: chartOfAccount.code,
                     period,
                     period_by,
+                    req,
                 })
             }
             return chartOfAccount.periods
@@ -211,8 +229,7 @@ class ReportController {
                         await getPeriodValues(
                             byChartOfAccount[byChartOfAccount.length - 1],
                             period_by,
-                            period_from,
-                            period_to
+                            req
                         )
 
                     byChartOfAccount[byChartOfAccount.length - 1].total =
@@ -233,8 +250,7 @@ class ReportController {
                     father[father.length - 1].periods = await getPeriodValues(
                         father[father.length - 1],
                         period_by,
-                        period_from,
-                        period_to
+                        req
                     )
 
                     father[father.length - 1].total = father[

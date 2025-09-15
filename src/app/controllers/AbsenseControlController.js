@@ -294,7 +294,6 @@ class AbsenseControlController {
             ws2.column(5).width = 15
             ws2.column(6).width = 15
 
-            const before1 = new Date().getTime()
             const students = await Student.findAll({
                 where: {
                     company_id: 1,
@@ -345,23 +344,16 @@ class AbsenseControlController {
                 ],
                 distinct: true,
             })
-            const after1 = new Date().getTime()
-            const timeStamp = after1 - before1
-            console.log(timeStamp)
 
             let row = 2
             let col = 1
             for (let studentFind of students) {
                 col = 1
-                const before2 = new Date().getTime()
                 const { totals } = await getAbsenceStatus(
                     studentFind.id,
                     from_date,
                     until_date
                 )
-                const after2 = new Date().getTime()
-                const timeStamp = after2 - before2
-                console.log(timeStamp)
                 if (totals.totalAbsenses > 0) {
                     ws2.cell(row, col).string(studentFind.registration_number)
                     col++
