@@ -1069,7 +1069,7 @@ class StudentgroupController {
                             weekday: weekDays[dayOfWeek],
                             shift,
                             notes: memo,
-                            status: 'Pending',
+                            status: memo ? 'Holiday' : 'Pending',
                             created_by: req.userId,
                         },
                         {
