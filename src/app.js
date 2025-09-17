@@ -112,8 +112,15 @@ class App {
             schedule.scheduleJob(`0 45 4 * * *`, sendAfterDueDateInvoices)
             schedule.scheduleJob('0 0 5 * * *', calculateFeesRecurrenceJob)
 
-            schedule.scheduleJob('0 0 15 * * *', jobPutInClass)
+            schedule.scheduleJob('0 15 5 * * *', jobPutInClass)
             console.log('✅ Schedule jobs started!')
+
+            await removeStudentAttendances({
+                student_id: 'b0984209-cd75-45db-b9f3-bd8bb6fed04b',
+                studentgroup_id: 4,
+                from_date: '2025-09-14',
+                reason: 'T',
+            })
         } else {
             console.log('❌ Schedule jobs not started in development!')
         }
