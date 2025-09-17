@@ -24,6 +24,8 @@ import errorHandler from './app/middlewares/errorHandler.js'
 import indexCacheHandler from './app/middlewares/indexCacheHandler.js'
 import { adjustUserGroups } from './app/controllers/UserGroupController.js'
 import StudentXGroup from './app/models/StudentXGroup.js'
+import { Op } from 'sequelize'
+import { addDays, format, parseISO } from 'date-fns'
 
 class App {
     constructor() {
@@ -115,12 +117,27 @@ class App {
             schedule.scheduleJob('0 15 5 * * *', jobPutInClass)
             console.log('✅ Schedule jobs started!')
 
-            await removeStudentAttendances({
-                student_id: 'b0984209-cd75-45db-b9f3-bd8bb6fed04b',
-                studentgroup_id: 4,
-                from_date: '2025-09-14',
-                reason: 'T',
+            const transfers = await StudentXGroup.findAll({
+                where: {
+                    end_date: {
+                        [Op.gte]: '2025-09-10',
+                    },
+                    status: 'Active',
+                    canceled_at: null,
+                },
             })
+
+            for (let transfer of transfers) {
+                await removeStudentAttendances({
+                    student_id: transfer.dataValues.student_id,
+                    studentgroup_id: transfer.dataValues.group_id,
+                    from_date: format(
+                        addDays(parseISO(transfer.dataValues.end_date), 1),
+                        'yyyy-MM-dd'
+                    ),
+                    reason: 'T',
+                })
+            }
         } else {
             console.log('❌ Schedule jobs not started in development!')
         }
