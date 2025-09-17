@@ -290,6 +290,9 @@ export async function removeStudentAttendances({
     for (let class_ of classes) {
         const attendances = await Attendance.findAll({
             where: {
+                status: {
+                    [Op.notIn]: ['T', 'F', 'C'],
+                },
                 studentgroupclass_id: class_.id,
                 student_id: student_id,
                 canceled_at: null,
