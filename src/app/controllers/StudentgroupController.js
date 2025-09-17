@@ -271,10 +271,12 @@ export async function removeStudentAttendances({
 }) {
     const student = await Student.findByPk(student_id)
     if (!student) {
+        console.log('a')
         return false
     }
     const studentgroup = await Studentgroup.findByPk(studentgroup_id)
     if (!studentgroup) {
+        console.log('b')
         return false
     }
     const classes = await Studentgroupclass.findAll({
@@ -301,19 +303,27 @@ export async function removeStudentAttendances({
             reason === null
         ) {
             for (let attendance of attendances) {
-                await attendance.destroy({
-                    transaction: req?.transaction,
-                })
+                console.log('c')
+                await attendance.destroy(
+                    req
+                        ? {
+                              transaction: req?.transaction,
+                          }
+                        : {}
+                )
             }
         } else {
             for (let attendance of attendances) {
+                console.log('d')
                 await attendance.update(
                     {
                         status: reason,
                     },
-                    {
-                        transaction: req?.transaction,
-                    }
+                    req
+                        ? {
+                              transaction: req?.transaction,
+                          }
+                        : {}
                 )
             }
         }
