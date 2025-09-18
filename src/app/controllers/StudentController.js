@@ -1092,12 +1092,12 @@ class StudentController {
                 },
             })
 
-            if (!attendances.length) {
-                await req?.transaction.rollback()
-                return res.status(400).json({
-                    error: 'Attendance not found in this period.',
-                })
-            }
+            // if (!attendances.length) {
+            //     await req?.transaction.rollback()
+            //     return res.status(400).json({
+            //         error: 'Attendance not found in this period.',
+            //     })
+            // }
 
             for (let attendance of attendances) {
                 await attendance.update(
@@ -1356,12 +1356,12 @@ class StudentController {
                 },
             })
 
-            if (!attendances.length) {
-                await req?.transaction.rollback()
-                return res.status(400).json({
-                    error: 'Attendance not found in this period.',
-                })
-            }
+            // if (!attendances.length) {
+            //     await req?.transaction.rollback()
+            //     return res.status(400).json({
+            //         error: 'Attendance not found in this period.',
+            //     })
+            // }
 
             for (let attendance of attendances) {
                 await attendance.update(

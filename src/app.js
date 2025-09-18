@@ -116,6 +116,28 @@ class App {
 
             schedule.scheduleJob('0 15 5 * * *', jobPutInClass)
             console.log('✅ Schedule jobs started!')
+
+            // const transfers = await StudentXGroup.findAll({
+            //     where: {
+            //         end_date: {
+            //             [Op.gte]: '2025-09-10',
+            //         },
+            //         status: 'Active',
+            //         canceled_at: null,
+            //     },
+            // })
+
+            // for (let transfer of transfers) {
+            //     await removeStudentAttendances({
+            //         student_id: transfer.dataValues.student_id,
+            //         studentgroup_id: transfer.dataValues.group_id,
+            //         from_date: format(
+            //             addDays(parseISO(transfer.dataValues.end_date), 1),
+            //             'yyyy-MM-dd'
+            //         ),
+            //         reason: 'T',
+            //     })
+            // }
         } else {
             console.log('❌ Schedule jobs not started in development!')
         }
