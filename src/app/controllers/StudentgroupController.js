@@ -2531,7 +2531,7 @@ class StudentgroupController {
                     // let page = 1
                     for (let student of students) {
                         studentIndex++
-                        if (studentIndex === 22) {
+                        if (studentIndex === 24) {
                             continue
                         }
                         classIndex++
@@ -2693,7 +2693,7 @@ class StudentgroupController {
 
                 let page = 1
                 for (let student of students) {
-                    if (studentIndex === 22) {
+                    if (studentIndex === 24) {
                         doc.addPage()
 
                         header(doc)
