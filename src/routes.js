@@ -214,6 +214,7 @@ routes.delete(
 )
 
 routes.get('/users', MilaUserController.index)
+routes.patch('/users/me', MilaUserController.updateMe)
 routes.get('/users/:user_id', MilaUserController.show)
 
 routes.get('/prospects/:prospect_id', ProspectController.show)
