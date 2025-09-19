@@ -234,6 +234,7 @@ export async function createStudentAttendances({
                 where: {
                     student_id: student_id,
                     studentgroupclass_id: class_.id,
+                    shift,
                     canceled_at: null,
                 },
             })
