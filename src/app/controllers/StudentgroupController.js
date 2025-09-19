@@ -2697,6 +2697,7 @@ class StudentgroupController {
                 let studentIndex = 1
                 doc.fontSize(6).font('Helvetica-Bold')
 
+                let page = 1
                 for (let student of students) {
                     studentIndex++
                     if (
