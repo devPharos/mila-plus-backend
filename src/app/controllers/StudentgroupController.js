@@ -3017,6 +3017,9 @@ class StudentgroupController {
             const students = await Student.findAll({
                 where: {
                     company_id: 1,
+                    status: {
+                        [Op.in]: ['In Class'],
+                    },
                     canceled_at: null,
                 },
                 include: [
