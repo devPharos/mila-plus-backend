@@ -2528,17 +2528,11 @@ class StudentgroupController {
 
                     let classIndex = 0
                     let studentIndex = 0
-                    let page = 1
+                    // let page = 1
                     for (let student of students) {
                         studentIndex++
-                        if (
-                            (page === 1 && studentIndex === 20) ||
-                            (page > 1 &&
-                                (studentIndex === 40 || studentIndex === 60))
-                        ) {
-                            page++
-                            doc.addPage()
-                            top = 80
+                        if (studentIndex === 24) {
+                            continue
                         }
                         classIndex++
                         doc.rect(
