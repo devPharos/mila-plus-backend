@@ -38,7 +38,7 @@ import File from '../models/File.js'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
 import { dirname, resolve } from 'path'
 
-import PDFDocument, { addPage } from 'pdfkit'
+import PDFDocument from 'pdfkit'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import Processtype from '../models/Processtype.js'
