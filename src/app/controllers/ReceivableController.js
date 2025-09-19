@@ -2358,6 +2358,7 @@ class ReceivableController {
                 SettlementMail({
                     receivable_id: receivable_id,
                     amount: settlementAmount,
+                    paymentmethod_id: paymentMethod.id,
                 })
             }
 
@@ -2411,6 +2412,7 @@ class ReceivableController {
                 SettlementMail({
                     receivable_id: receivable_id,
                     amount: parseFloat(settlement_amount),
+                    paymentmethod_id: paymentMethod.id,
                 })
             }
 
