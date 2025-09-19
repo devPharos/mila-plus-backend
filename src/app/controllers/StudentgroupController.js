@@ -2535,20 +2535,20 @@ class StudentgroupController {
                             continue
                         }
                         classIndex++
-                        doc.rect(
-                            maxWidth * 0.35 + 20 + i * dayWidth,
-                            top + dayWidth * 2 + classIndex * 20,
-                            dayWidth,
-                            20
-                        )
-                            .fillAndStroke(
-                                ['Sa', 'Su'].includes(formattedDate) ||
-                                    !hasClass
-                                    ? '#D3D3D3'
-                                    : '#fff',
-                                '#868686'
-                            )
-                            .stroke()
+                        // doc.rect(
+                        //     maxWidth * 0.35 + 20 + i * dayWidth,
+                        //     top + dayWidth * 2 + classIndex * 20,
+                        //     dayWidth,
+                        //     20
+                        // )
+                        //     .fillAndStroke(
+                        //         ['Sa', 'Su'].includes(formattedDate) ||
+                        //             !hasClass
+                        //             ? '#D3D3D3'
+                        //             : '#fff',
+                        //         '#868686'
+                        //     )
+                        //     .stroke()
                     }
                 }
 
