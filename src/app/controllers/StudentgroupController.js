@@ -2532,9 +2532,9 @@ class StudentgroupController {
                     for (let student of students) {
                         studentIndex++
                         if (
-                            (page === 1 && studentIndex === 22) ||
+                            (page === 1 && studentIndex === 20) ||
                             (page > 1 &&
-                                (studentIndex === 47 || studentIndex === 69))
+                                (studentIndex === 40 || studentIndex === 60))
                         ) {
                             page++
                             doc.addPage()
@@ -2698,6 +2698,16 @@ class StudentgroupController {
                 doc.fontSize(6).font('Helvetica-Bold')
 
                 for (let student of students) {
+                    studentIndex++
+                    if (
+                        (page === 1 && studentIndex === 20) ||
+                        (page > 1 &&
+                            (studentIndex === 40 || studentIndex === 60))
+                    ) {
+                        page++
+                        doc.addPage()
+                        top = 80
+                    }
                     let absensesCount = 0
                     top += 20
                     doc.rect(20, top, 15, height)
