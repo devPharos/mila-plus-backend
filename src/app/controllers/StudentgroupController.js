@@ -2693,7 +2693,6 @@ class StudentgroupController {
 
                 let page = 1
                 for (let student of students) {
-                    studentIndex++
                     if (studentIndex === 22) {
                         doc.addPage()
 
