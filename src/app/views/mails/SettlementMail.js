@@ -13,6 +13,7 @@ export async function SettlementMail({
     receivable_id = null,
     amount = 0,
     retry = 0,
+    paymentmethod_id = null,
 }) {
     try {
         let paymentInfoHTML = ''
@@ -38,7 +39,9 @@ export async function SettlementMail({
             receivable.dataValues.paymentcriteria_id
         )
         const paymentMethod = await PaymentMethod.findByPk(
-            receivable.dataValues.paymentmethod_id
+            paymentmethod_id
+                ? paymentmethod_id
+                : receivable.dataValues.paymentmethod_id
         )
         if (!paymentMethod || !paymentMethod.dataValues.notify_settlement) {
             return false
@@ -326,6 +329,7 @@ export async function SettlementMail({
                     receivable_id,
                     amount,
                     retry: retry + 1,
+                    paymentmethod_id,
                 })
             }, 5000)
         }

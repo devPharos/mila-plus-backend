@@ -155,6 +155,7 @@ export async function settlement(
         SettlementMail({
             receivable_id: receivable.id,
             amount: amountPaidBalance,
+            paymentmethod_id,
         })
 
         if (amountPaidBalance <= 0) {
