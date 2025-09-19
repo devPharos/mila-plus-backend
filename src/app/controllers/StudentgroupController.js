@@ -38,7 +38,7 @@ import File from '../models/File.js'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
 import { dirname, resolve } from 'path'
 
-import PDFDocument from 'pdfkit'
+import PDFDocument, { addPage } from 'pdfkit'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import Processtype from '../models/Processtype.js'
@@ -2531,7 +2531,7 @@ class StudentgroupController {
                     // let page = 1
                     for (let student of students) {
                         studentIndex++
-                        if (studentIndex === 24) {
+                        if (studentIndex === 22) {
                             continue
                         }
                         classIndex++
@@ -2693,7 +2693,15 @@ class StudentgroupController {
 
                 let page = 1
                 for (let student of students) {
-                    // studentIndex++
+                    studentIndex++
+                    if (studentIndex === 22) {
+                        doc.addPage()
+
+                        header(doc)
+
+                        top = 80
+                        height = 20
+                    }
                     // if (
                     //     (page === 1 && studentIndex === 20) ||
                     //     (page > 1 &&
