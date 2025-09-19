@@ -2697,6 +2697,7 @@ class StudentgroupController {
                         doc.addPage()
 
                         header(doc)
+                        studentIndex = 0
 
                         top = 80
                         height = 20
