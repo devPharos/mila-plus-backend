@@ -2693,11 +2693,14 @@ class StudentgroupController {
 
                 let page = 1
                 for (let student of students) {
-                    if (studentIndex === 24) {
+                    if (
+                        studentIndex === 22 ||
+                        studentIndex === 44 ||
+                        studentIndex === 66
+                    ) {
                         doc.addPage()
 
                         header(doc)
-                        studentIndex = 0
 
                         top = 80
                         height = 20
