@@ -1,13 +1,5 @@
 import Sequelize from 'sequelize'
 import { v4 as uuidv4 } from 'uuid'
-import MailLog from '../../Mails/MailLog.js'
-import databaseConfig from '../../config/database.js'
-import Milauser from '../models/Milauser.js'
-import Filial from '../models/Filial.js'
-import UserGroupXUser from '../models/UserGroupXUser.js'
-import UserGroup from '../models/UserGroup.js'
-import UserXFilial from '../models/UserXFilial.js'
-import Staff from '../models/Staff.js'
 import { mailer } from '../../config/mailer.js'
 import MailLayout from '../../Mails/MailLayout.js'
 import {
@@ -19,6 +11,12 @@ import {
     verifyFilialSearch,
 } from '../functions/index.js'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
+import Filial from '../models/Filial.js'
+import Milauser from '../models/Milauser.js'
+import Staff from '../models/Staff.js'
+import UserGroup from '../models/UserGroup.js'
+import UserGroupXUser from '../models/UserGroupXUser.js'
+import UserXFilial from '../models/UserXFilial.js'
 
 const { Op } = Sequelize
 
@@ -423,6 +421,54 @@ class MilaUserController {
                 email: userExists.email,
                 id: userExists.id,
                 avatar,
+            })
+        } catch (err) {
+            err.transaction = req?.transaction
+            next(err)
+        }
+    }
+
+    async updateMe(req, res, next) {
+        const { userId } = req;
+        const { email, name, password } = req.body;
+
+        try {
+            const userExists = await Milauser.findByPk(userId);
+
+            if (!userExists) {
+                return res.status(400).json({ error: 'user-does-not-exist' })
+            }
+
+            const emailExists = await Milauser.findOne({
+                where: {
+                    email,
+                    canceled_at: null,
+                    id: { [Op.not]: userId },
+                },
+            })
+
+            if (emailExists) {
+                return res.status(400).json({
+                    error: 'email-already-used',
+                })
+            }
+
+            let infoToUpdate = {
+                name,
+                email,
+                updated_by: userId
+            }
+
+            if (password) {
+                infoToUpdate = {...infoToUpdate, password}
+            }
+
+            await userExists.update({ ...infoToUpdate });
+
+            return res.status(200).json({
+                name: userExists.name,
+                email: userExists.email,
+                id: userExists.id
             })
         } catch (err) {
             err.transaction = req?.transaction
