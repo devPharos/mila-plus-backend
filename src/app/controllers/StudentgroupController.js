@@ -2693,16 +2693,16 @@ class StudentgroupController {
 
                 let page = 1
                 for (let student of students) {
-                    studentIndex++
-                    if (
-                        (page === 1 && studentIndex === 20) ||
-                        (page > 1 &&
-                            (studentIndex === 40 || studentIndex === 60))
-                    ) {
-                        page++
-                        doc.addPage()
-                        top = 80
-                    }
+                    // studentIndex++
+                    // if (
+                    //     (page === 1 && studentIndex === 20) ||
+                    //     (page > 1 &&
+                    //         (studentIndex === 40 || studentIndex === 60))
+                    // ) {
+                    //     page++
+                    //     doc.addPage()
+                    //     top = 80
+                    // }
                     let absensesCount = 0
                     top += 20
                     doc.rect(20, top, 15, height)
