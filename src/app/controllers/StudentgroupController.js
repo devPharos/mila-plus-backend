@@ -2203,6 +2203,25 @@ class StudentgroupController {
                 parseISO(from_date)
             )
 
+            const days = []
+            for (let i = 0; i < numberOfDays; i++) {
+                const hasClass = await Studentgroupclass.findOne({
+                    attributes: ['status'],
+                    where: {
+                        studentgroup_id,
+                        date: format(
+                            addDays(parseISO(from_date), i),
+                            'yyyy-MM-dd'
+                        ),
+                        canceled_at: null,
+                    },
+                })
+                days.push({
+                    hasClass: hasClass ? true : false,
+                    status: hasClass ? hasClass.dataValues.status : '',
+                })
+            }
+
             doc.rect(20, top, maxWidth, height).strokeColor('#868686').stroke()
 
             const statusLegend = [
@@ -2340,16 +2359,7 @@ class StudentgroupController {
             top += 20
             height = dayWidth
             for (let i = 0; i < numberOfDays; i++) {
-                const hasClass = await Studentgroupclass.findOne({
-                    where: {
-                        studentgroup_id,
-                        date: format(
-                            addDays(parseISO(from_date), i),
-                            'yyyy-MM-dd'
-                        ),
-                        canceled_at: null,
-                    },
-                })
+                const hasClass = days[i].hasClass
                 const formattedDate = format(
                     addDays(parseISO(from_date), i),
                     'EEEEEE'
@@ -2364,7 +2374,7 @@ class StudentgroupController {
                     .fillAndStroke(
                         ['Sa', 'Su'].includes(formattedDate) ||
                             !hasClass ||
-                            hasClass.dataValues.status === 'Holiday'
+                            days[i].status === 'Holiday'
                             ? '#D3D3D3'
                             : '#fff',
                         '#868686'
@@ -2380,7 +2390,7 @@ class StudentgroupController {
                     .fillAndStroke(
                         ['Sa', 'Su'].includes(formattedDate) ||
                             !hasClass ||
-                            hasClass.dataValues.status === 'Holiday'
+                            days[i].status === 'Holiday'
                             ? '#D3D3D3'
                             : '#fff',
                         '#868686'
@@ -2681,228 +2691,209 @@ class StudentgroupController {
 
                 let studentIndex = 1
                 let height = 20
-                for (let i = 0; i < 4; i++) {
-                    for (let student of students) {
-                        if (
-                            studentIndex === 23 ||
-                            studentIndex === 45 ||
-                            studentIndex === 67
-                        ) {
-                            doc.addPage()
+                for (let student of students) {
+                    if (
+                        studentIndex === 23 ||
+                        studentIndex === 45 ||
+                        studentIndex === 67
+                    ) {
+                        doc.addPage()
 
-                            top = await header(
-                                doc,
-                                shift,
-                                studentgroup_id,
-                                from_date,
-                                to_date
-                            )
-                        }
-                        // if (
-                        //     (page === 1 && studentIndex === 20) ||
-                        //     (page > 1 &&
-                        //         (studentIndex === 40 || studentIndex === 60))
-                        // ) {
-                        //     page++
-                        //     doc.addPage()
-
-                        // }
-                        let absensesCount = 0
-                        top += 20
-                        doc.rect(20, top, 15, height)
-                            .strokeColor('#868686')
-                            .stroke()
-                        doc.rect(35, top, maxWidth * 0.25 - 15, height)
-                            .strokeColor('#868686')
-                            .stroke()
-
-                        doc.rect(
-                            20 + maxWidth * 0.25,
-                            top,
-                            maxWidth * 0.1,
-                            height
-                        )
-                            .strokeColor('#868686')
-                            .stroke()
-
-                        doc.rect(
-                            20 + maxWidth * 0.95,
-                            top,
-                            maxWidth * 0.05,
-                            height
-                        )
-                            .strokeColor('#868686')
-                            .stroke()
-
-                        doc.font('Helvetica').text(
-                            `${studentIndex++}`,
-                            20,
-                            top + 7,
-                            {
-                                width: 15,
-                                align: 'center',
-                            }
-                        )
-
-                        const name = student.name
-                        const lastName = student.last_name
-
-                        let fullName = name + ' ' + lastName
-                        if (fullName.length > 40) {
-                            fullName = fullName.substring(0, 40) + '...'
-                        }
-                        doc.text(
-                            `${(
-                                fullName +
-                                ' - ' +
-                                student.processtypes.name
-                            ).toUpperCase()}`,
-                            38,
-                            top + 7,
-                            {
-                                width: maxWidth * 0.25 - 12,
-                                align: 'left',
-                            }
-                        )
-
-                        let studentStartDate =
-                            student.studentxgroups[0]?.dataValues?.start_date
-                        if (studentStartDate) {
-                            studentStartDate =
-                                'SD: ' +
-                                format(
-                                    parseISO(studentStartDate),
-                                    'MMMM do, yyyy'
-                                )
-                        } else {
-                            studentStartDate = 'SD: '
-                        }
-                        doc.text(
-                            `${studentStartDate}`,
-                            25 + maxWidth * 0.25,
-                            top + 7,
-                            {
-                                width: maxWidth * 0.1 - 5,
-                                align: 'left',
-                            }
-                        )
-                        const absenceStatus = await getAbsenceStatus(
-                            student.id,
+                        top = await header(
+                            doc,
+                            shift,
+                            studentgroup_id,
                             from_date,
                             to_date
                         )
+                    }
+                    // if (
+                    //     (page === 1 && studentIndex === 20) ||
+                    //     (page > 1 &&
+                    //         (studentIndex === 40 || studentIndex === 60))
+                    // ) {
+                    //     page++
+                    //     doc.addPage()
 
-                        for (let day = 0; day < numberOfDays; day++) {
-                            const attendance = await Attendance.findOne({
-                                where: {
-                                    student_id: student.id,
-                                    shift,
-                                    canceled_at: null,
-                                },
-                                include: [
-                                    {
-                                        model: Studentgroupclass,
-                                        as: 'studentgroupclasses',
-                                        required: true,
-                                        where: {
-                                            canceled_at: null,
-                                            studentgroup_id: studentGroup.id,
-                                            date: format(
-                                                addDays(
-                                                    parseISO(from_date),
-                                                    day
-                                                ),
-                                                'yyyy-MM-dd'
-                                            ),
-                                        },
-                                    },
-                                ],
-                            })
+                    // }
+                    let absensesCount = 0
+                    top += 20
+                    doc.rect(20, top, 15, height)
+                        .strokeColor('#868686')
+                        .stroke()
+                    doc.rect(35, top, maxWidth * 0.25 - 15, height)
+                        .strokeColor('#868686')
+                        .stroke()
 
-                            if (
-                                attendance &&
-                                attendance.dataValues.studentgroupclasses
-                                    .locked_at
-                            ) {
-                                let status = attendance.dataValues.status
-                                if (
-                                    !attendance.dataValues.studentgroupclasses
-                                        .locked_at
-                                ) {
-                                    status = 'A'
-                                }
+                    doc.rect(20 + maxWidth * 0.25, top, maxWidth * 0.1, height)
+                        .strokeColor('#868686')
+                        .stroke()
 
-                                let color = getColor(status)
+                    doc.rect(20 + maxWidth * 0.95, top, maxWidth * 0.05, height)
+                        .strokeColor('#868686')
+                        .stroke()
 
-                                if (status === 'A') {
-                                    absensesCount += 1
-                                } else if (status === 'P') {
-                                    absensesCount += 0.5
-                                }
-
-                                doc.rect(
-                                    maxWidth * 0.35 + 20 + day * dayWidth,
-                                    top,
-                                    dayWidth,
-                                    height
-                                )
-                                    .fillAndStroke(color, '#868686')
-                                    .stroke()
-                                    .fill('#222')
-                                    .fontSize(8)
-                                    .text(
-                                        `${status}`,
-                                        maxWidth * 0.35 + 20 + day * dayWidth,
-                                        top + 7,
-                                        {
-                                            width: dayWidth,
-                                            align: 'center',
-                                        }
-                                    )
-                                    .fontSize(6)
-                            } else {
-                                doc.rect(
-                                    maxWidth * 0.35 + 20 + day * dayWidth,
-                                    top,
-                                    dayWidth,
-                                    height
-                                )
-                                    .fillAndStroke('#D3D3D3', '#868686')
-                                    .stroke()
-                                    .fill('#222')
-                                    .fontSize(6)
-                            }
+                    doc.font('Helvetica').text(
+                        `${studentIndex++}`,
+                        20,
+                        top + 7,
+                        {
+                            width: 15,
+                            align: 'center',
                         }
+                    )
+
+                    const name = student.name
+                    const lastName = student.last_name
+
+                    let fullName = name + ' ' + lastName
+                    if (fullName.length > 40) {
+                        fullName = fullName.substring(0, 40) + '...'
+                    }
+                    doc.text(
+                        `${(
+                            fullName +
+                            ' - ' +
+                            student.processtypes.name
+                        ).toUpperCase()}`,
+                        38,
+                        top + 7,
+                        {
+                            width: maxWidth * 0.25 - 12,
+                            align: 'left',
+                        }
+                    )
+
+                    let studentStartDate =
+                        student.studentxgroups[0]?.dataValues?.start_date
+                    if (studentStartDate) {
+                        studentStartDate =
+                            'SD: ' +
+                            format(parseISO(studentStartDate), 'MMMM do, yyyy')
+                    } else {
+                        studentStartDate = 'SD: '
+                    }
+                    doc.text(
+                        `${studentStartDate}`,
+                        25 + maxWidth * 0.25,
+                        top + 7,
+                        {
+                            width: maxWidth * 0.1 - 5,
+                            align: 'left',
+                        }
+                    )
+                    const absenceStatus = await getAbsenceStatus(
+                        student.id,
+                        from_date,
+                        to_date
+                    )
+
+                    for (let day = 0; day < numberOfDays; day++) {
+                        const attendance = await Attendance.findOne({
+                            where: {
+                                student_id: student.id,
+                                shift,
+                                canceled_at: null,
+                            },
+                            include: [
+                                {
+                                    model: Studentgroupclass,
+                                    as: 'studentgroupclasses',
+                                    required: true,
+                                    where: {
+                                        canceled_at: null,
+                                        studentgroup_id: studentGroup.id,
+                                        date: format(
+                                            addDays(parseISO(from_date), day),
+                                            'yyyy-MM-dd'
+                                        ),
+                                    },
+                                },
+                            ],
+                        })
 
                         if (
-                            absenceStatus.totals.totalAbsenses > 0 &&
-                            absenceStatus.totals.frequency < 80
+                            attendance &&
+                            attendance.dataValues.studentgroupclasses.locked_at
                         ) {
-                            doc.fontSize(6)
-                                .fillColor('#ff0000')
+                            let status = attendance.dataValues.status
+                            if (
+                                !attendance.dataValues.studentgroupclasses
+                                    .locked_at
+                            ) {
+                                status = 'A'
+                            }
+
+                            let color = getColor(status)
+
+                            if (status === 'A') {
+                                absensesCount += 1
+                            } else if (status === 'P') {
+                                absensesCount += 0.5
+                            }
+
+                            doc.rect(
+                                maxWidth * 0.35 + 20 + day * dayWidth,
+                                top,
+                                dayWidth,
+                                height
+                            )
+                                .fillAndStroke(color, '#868686')
+                                .stroke()
+                                .fill('#222')
+                                .fontSize(8)
                                 .text(
-                                    absensesCount.toFixed(2),
-                                    maxWidth * 0.95 + 20,
-                                    top + 6,
+                                    `${status}`,
+                                    maxWidth * 0.35 + 20 + day * dayWidth,
+                                    top + 7,
                                     {
-                                        width: maxWidth * 0.05,
+                                        width: dayWidth,
                                         align: 'center',
                                     }
                                 )
-                                .fillColor('#222222')
+                                .fontSize(6)
                         } else {
-                            doc.fontSize(6)
-                                .fillColor('#222')
-                                .text(
-                                    absensesCount.toFixed(2),
-                                    maxWidth * 0.95 + 20,
-                                    top + 6,
-                                    {
-                                        width: maxWidth * 0.05,
-                                        align: 'center',
-                                    }
-                                )
+                            doc.rect(
+                                maxWidth * 0.35 + 20 + day * dayWidth,
+                                top,
+                                dayWidth,
+                                height
+                            )
+                                .fillAndStroke('#D3D3D3', '#868686')
+                                .stroke()
+                                .fill('#222')
+                                .fontSize(6)
                         }
+                    }
+
+                    if (
+                        absenceStatus.totals.totalAbsenses > 0 &&
+                        absenceStatus.totals.frequency < 80
+                    ) {
+                        doc.fontSize(6)
+                            .fillColor('#ff0000')
+                            .text(
+                                absensesCount.toFixed(2),
+                                maxWidth * 0.95 + 20,
+                                top + 6,
+                                {
+                                    width: maxWidth * 0.05,
+                                    align: 'center',
+                                }
+                            )
+                            .fillColor('#222222')
+                    } else {
+                        doc.fontSize(6)
+                            .fillColor('#222')
+                            .text(
+                                absensesCount.toFixed(2),
+                                maxWidth * 0.95 + 20,
+                                top + 6,
+                                {
+                                    width: maxWidth * 0.05,
+                                    align: 'center',
+                                }
+                            )
                     }
                 }
             }
