@@ -52,6 +52,10 @@ class Milauser extends Model {
             foreignKey: 'user_id',
             as: 'staff',
         })
+        this.belongsTo(models.File, {
+            foreignKey: 'avatar_id',
+            as: 'avatar',
+        });
     }
 
     checkPassword(password) {
