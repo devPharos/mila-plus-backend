@@ -1,5 +1,7 @@
+import { ref, uploadBytes } from 'firebase/storage'
 import Sequelize from 'sequelize'
 import { v4 as uuidv4 } from 'uuid'
+import { storage } from '../../config/firebase.js'
 import { mailer } from '../../config/mailer.js'
 import MailLayout from '../../Mails/MailLayout.js'
 import {
@@ -11,6 +13,7 @@ import {
     verifyFilialSearch,
 } from '../functions/index.js'
 import { handleCache } from '../middlewares/indexCacheHandler.js'
+import File from '../models/File.js'
 import Filial from '../models/Filial.js'
 import Milauser from '../models/Milauser.js'
 import Staff from '../models/Staff.js'
@@ -431,9 +434,10 @@ class MilaUserController {
     async updateMe(req, res, next) {
         const { userId } = req;
         const { email, name, password } = req.body;
+        const avatarFile = req.file;
 
         try {
-            const userExists = await Milauser.findByPk(userId);
+            const userExists = await Milauser.findByPk(userId, { include: [{ model: File, as: 'avatar' }] });
 
             if (!userExists) {
                 return res.status(400).json({ error: 'user-does-not-exist' })
@@ -460,7 +464,27 @@ class MilaUserController {
             }
 
             if (password) {
-                infoToUpdate = {...infoToUpdate, password}
+                infoToUpdate = { ...infoToUpdate, password }
+            }
+
+            if (avatarFile) {
+                const fileId = uuidv4();
+                const fileKey = `avatars/${fileId}.png`;
+
+                await File.create({
+                    id: fileId,
+                    key: fileKey,
+                    name: avatarFile.originalname,
+                    size: avatarFile.size,
+                    company_id: userExists.company_id,
+                    created_by: userId,
+                    created_at: new Date()
+                });
+
+                const fileRef = ref(storage, fileKey);
+                await uploadBytes(fileRef, avatarFile.buffer);
+
+                infoToUpdate.avatar_id = fileId;
             }
 
             await userExists.update({ ...infoToUpdate });
@@ -468,7 +492,8 @@ class MilaUserController {
             return res.status(200).json({
                 name: userExists.name,
                 email: userExists.email,
-                id: userExists.id
+                id: userExists.id,
+                avatar: { key: userExists.avatar.key }
             })
         } catch (err) {
             err.transaction = req?.transaction
