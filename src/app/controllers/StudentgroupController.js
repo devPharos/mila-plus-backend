@@ -535,7 +535,7 @@ class StudentgroupController {
                     {
                         model: Filial,
                         as: 'filial',
-                        required: false,
+                        required: true,
                         where: {
                             canceled_at: null,
                         },
@@ -544,14 +544,7 @@ class StudentgroupController {
                         model: Level,
                         as: 'level',
                         required: false,
-                        where: {
-                            canceled_at: null,
-                        },
-                    },
-                    {
-                        model: Languagemode,
-                        as: 'languagemode',
-                        required: false,
+                        attributes: ['name'],
                         where: {
                             canceled_at: null,
                         },
@@ -560,6 +553,7 @@ class StudentgroupController {
                         model: Classroom,
                         as: 'classroom',
                         required: false,
+                        attributes: ['class_number'],
                         where: {
                             canceled_at: null,
                         },
@@ -568,6 +562,7 @@ class StudentgroupController {
                         model: Workload,
                         as: 'workload',
                         required: false,
+                        attributes: ['name'],
                         where: {
                             canceled_at: null,
                         },
@@ -575,6 +570,7 @@ class StudentgroupController {
                     {
                         model: Staff,
                         as: 'staff',
+                        attributes: ['name'],
                         required: teacherSearch ? true : false,
                         where: {
                             ...teacherSearch,
@@ -585,6 +581,7 @@ class StudentgroupController {
                         model: Student,
                         as: 'students',
                         required: false,
+                        attributes: ['id'],
                         where: {
                             canceled_at: null,
                         },
@@ -592,6 +589,7 @@ class StudentgroupController {
                     {
                         model: Studentgroupclass,
                         as: 'classes',
+                        attributes: ['id'],
                         required: false,
                         where: {
                             locked_at: {
@@ -600,6 +598,14 @@ class StudentgroupController {
                             canceled_at: null,
                         },
                     },
+                ],
+                attributes: [
+                    'id',
+                    'name',
+                    'status',
+                    'start_date',
+                    'end_date',
+                    'canceled_at',
                 ],
                 where: {
                     canceled_at: null,
