@@ -2185,11 +2185,23 @@ class StudentgroupController {
         function getColor(status) {
             return colorMap[status] || '#FFF'
         }
-        function header(doc) {
+        async function header(doc, shift, studentgroup_id, from_date, to_date) {
             const maxWidth = doc.options.layout === 'landscape' ? 750 : 612
-            const top = 50
             const boxWidth = 20
-            const height = 20
+            let top = 50
+            let height = 20
+
+            const studentGroup = await Studentgroup.findByPk(studentgroup_id)
+
+            const teacher = await Staff.findByPk(
+                studentGroup.dataValues.staff_id
+            )
+
+            // dates between from_date and to_date
+            const numberOfDays = differenceInCalendarDays(
+                parseISO(to_date),
+                parseISO(from_date)
+            )
 
             doc.rect(20, top, maxWidth, height).strokeColor('#868686').stroke()
 
@@ -2241,16 +2253,307 @@ class StudentgroupController {
                     )
                 left += equalWidth
             })
+
+            top = 80
+            height = 20
+
+            const dayWidth = (maxWidth * 0.6) / numberOfDays
+
+            doc.rect(20, top, maxWidth * 0.35, height)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.rect(20, top + 20, maxWidth * 0.35, dayWidth * 2)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.rect(maxWidth * 0.35 + 20, top, maxWidth * 0.6, height)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.rect(
+                maxWidth * 0.95 + 20,
+                top,
+                maxWidth * 0.05,
+                height + dayWidth
+            )
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.rect(
+                maxWidth * 0.95 + 20,
+                top + 20 + dayWidth,
+                maxWidth * 0.05,
+                dayWidth
+            )
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.fillColor('#222')
+                .fontSize(9)
+                .font('Helvetica-Bold')
+                .text(
+                    format(parseISO(from_date), 'MMMM').toUpperCase(),
+                    20,
+                    top + 7,
+                    {
+                        width: maxWidth * 0.35,
+                        align: 'center',
+                    }
+                )
+
+            doc.fillColor('#222')
+                .fontSize(8)
+                .font('Helvetica-Oblique')
+                .text(`STUDENT'S NAME (PRINT NAME)`, 20, top + 20 + 13, {
+                    width: maxWidth * 0.35,
+                    align: 'center',
+                })
+                .font('Helvetica-Bold')
+
+            doc.text(
+                `ATTENDANCE MONTHLY REPORT`,
+                maxWidth * 0.35 + 20,
+                top + 7,
+                {
+                    width: maxWidth * 0.65 - 20,
+                    align: 'center',
+                }
+            )
+            doc.text(
+                format(parseISO(from_date), 'yyyy'),
+                maxWidth * 0.95 + 20,
+                top + 16,
+                {
+                    width: maxWidth * 0.05,
+                    align: 'center',
+                }
+            )
+
+            doc.fontSize(6)
+                .text(`TOTAL`, maxWidth * 0.95 + 20, top + 20 + dayWidth + 6, {
+                    width: maxWidth * 0.05,
+                    align: 'center',
+                })
+                .font('Helvetica')
+
+            top += 20
+            height = dayWidth
+            for (let i = 0; i < numberOfDays; i++) {
+                const hasClass = await Studentgroupclass.findOne({
+                    where: {
+                        studentgroup_id,
+                        date: format(
+                            addDays(parseISO(from_date), i),
+                            'yyyy-MM-dd'
+                        ),
+                        canceled_at: null,
+                    },
+                })
+                const formattedDate = format(
+                    addDays(parseISO(from_date), i),
+                    'EEEEEE'
+                )
+                doc.rect(
+                    maxWidth * 0.35 + 20 + i * dayWidth,
+                    top,
+                    dayWidth,
+                    height
+                )
+                    .font('Helvetica-Bold')
+                    .fillAndStroke(
+                        ['Sa', 'Su'].includes(formattedDate) ||
+                            !hasClass ||
+                            hasClass.dataValues.status === 'Holiday'
+                            ? '#D3D3D3'
+                            : '#fff',
+                        '#868686'
+                    )
+                    .stroke()
+
+                doc.rect(
+                    maxWidth * 0.35 + 20 + i * dayWidth,
+                    top + dayWidth,
+                    dayWidth,
+                    height
+                )
+                    .fillAndStroke(
+                        ['Sa', 'Su'].includes(formattedDate) ||
+                            !hasClass ||
+                            hasClass.dataValues.status === 'Holiday'
+                            ? '#D3D3D3'
+                            : '#fff',
+                        '#868686'
+                    )
+                    .stroke()
+
+                doc.fontSize(6)
+                    .fillColor('#222')
+                    .text(
+                        `${formattedDate}`,
+                        maxWidth * 0.35 + 20 + i * dayWidth,
+                        top + 5,
+                        {
+                            width: dayWidth,
+                            align: 'center',
+                        }
+                    )
+                    .text(
+                        (i + 1).toString(),
+                        maxWidth * 0.35 + 20 + i * dayWidth,
+                        top + 5 + dayWidth,
+                        {
+                            width: dayWidth,
+                            align: 'center',
+                        }
+                    )
+            }
+
+            top += dayWidth * 2
+            height = 20
+            doc.rect(20, top, maxWidth * 0.25, height)
+                .strokeColor('#868686')
+                .stroke()
+            doc.rect(20 + maxWidth * 0.25, top, maxWidth * 0.1, height)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.fillColor('#222')
+                .fontSize(8)
+                .font('Helvetica-Bold')
+                .text(shift.toUpperCase(), 20, top + 7, {
+                    width: maxWidth * 0.25,
+                    align: 'center',
+                })
+                .fontSize(6)
+                .text(`COMM`, maxWidth * 0.25, top + 9, {
+                    width: maxWidth * 0.15,
+                    align: 'center',
+                })
+
+            doc.rect(20 + maxWidth * 0.35, top, maxWidth * 0.05, height)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.fillColor('#222')
+                .font('Helvetica-Bold')
+                .text(`GROUP:`, 20 + maxWidth * 0.35, top + 9, {
+                    width: maxWidth * 0.05,
+                    align: 'center',
+                })
+
+            doc.rect(20 + maxWidth * 0.4, top, maxWidth * 0.15, height)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.fillColor('#222')
+                .font('Helvetica')
+                .text(
+                    studentGroup.dataValues.name.toUpperCase(),
+                    20 + maxWidth * 0.4,
+                    top + 9,
+                    {
+                        width: maxWidth * 0.15,
+                        align: 'center',
+                    }
+                )
+
+            doc.rect(20 + maxWidth * 0.55, top, maxWidth * 0.06, height)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.fillColor('#222')
+                .font('Helvetica-Bold')
+                .text(`TEACHER:`, 20 + maxWidth * 0.55, top + 9, {
+                    width: maxWidth * 0.06,
+                    align: 'center',
+                })
+
+            doc.rect(20 + maxWidth * 0.61, top, maxWidth * 0.15, height)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.fillColor('#222')
+                .font('Helvetica')
+                .text(
+                    teacher.dataValues.name.toUpperCase(),
+                    20 + maxWidth * 0.61,
+                    top + 9,
+                    {
+                        width: maxWidth * 0.15,
+                        align: 'center',
+                    }
+                )
+
+            doc.rect(20 + maxWidth * 0.76, top, maxWidth * 0.03, height)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.fillColor('#222')
+                .font('Helvetica-Bold')
+                .text(`SD:`, 20 + maxWidth * 0.76, top + 9, {
+                    width: maxWidth * 0.03,
+                    align: 'center',
+                })
+
+            doc.rect(20 + maxWidth * 0.79, top, maxWidth * 0.09, height)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.fillColor('#222')
+                .font('Helvetica')
+                .text(
+                    format(
+                        parseISO(studentGroup.dataValues.start_date),
+                        'MMMM do, yyyy'
+                    ),
+                    20 + maxWidth * 0.79,
+                    top + 9,
+                    {
+                        width: maxWidth * 0.09,
+                        align: 'center',
+                    }
+                )
+
+            doc.rect(20 + maxWidth * 0.88, top, maxWidth * 0.03, height)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.fillColor('#222')
+                .font('Helvetica-Bold')
+                .text(`ED:`, 20 + maxWidth * 0.88, top + 9, {
+                    width: maxWidth * 0.03,
+                    align: 'center',
+                })
+
+            doc.rect(20 + maxWidth * 0.91, top, maxWidth * 0.09, height)
+                .strokeColor('#868686')
+                .stroke()
+
+            doc.fillColor('#222')
+                .font('Helvetica')
+                .text(
+                    format(
+                        parseISO(studentGroup.dataValues.end_date),
+                        'MMMM do, yyyy'
+                    ),
+                    20 + maxWidth * 0.91,
+                    top + 9,
+                    {
+                        width: maxWidth * 0.09,
+                        align: 'center',
+                    }
+                )
+
+            doc.fontSize(6).font('Helvetica-Bold')
+
+            return top
         }
         try {
             const { studentgroup_id } = req.params
             const { from_date, to_date } = req.query
 
             const studentGroup = await Studentgroup.findByPk(studentgroup_id)
-
-            const teacher = await Staff.findByPk(
-                studentGroup.dataValues.staff_id
-            )
 
             const initialClass = await Studentgroupclass.findOne({
                 where: {
@@ -2297,98 +2600,9 @@ class StudentgroupController {
 
             const maxWidth = doc.options.layout === 'landscape' ? 750 : 612
 
+            const dayWidth = (maxWidth * 0.6) / numberOfDays
+
             for (let shift of shifts) {
-                doc.addPage()
-
-                header(doc)
-
-                let top = 80
-                let height = 20
-
-                const dayWidth = (maxWidth * 0.6) / numberOfDays
-
-                doc.rect(20, top, maxWidth * 0.35, height)
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.rect(20, top + 20, maxWidth * 0.35, dayWidth * 2)
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.rect(maxWidth * 0.35 + 20, top, maxWidth * 0.6, height)
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.rect(
-                    maxWidth * 0.95 + 20,
-                    top,
-                    maxWidth * 0.05,
-                    height + dayWidth
-                )
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.rect(
-                    maxWidth * 0.95 + 20,
-                    top + 20 + dayWidth,
-                    maxWidth * 0.05,
-                    dayWidth
-                )
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.fillColor('#222')
-                    .fontSize(9)
-                    .font('Helvetica-Bold')
-                    .text(
-                        format(parseISO(from_date), 'MMMM').toUpperCase(),
-                        20,
-                        top + 7,
-                        {
-                            width: maxWidth * 0.35,
-                            align: 'center',
-                        }
-                    )
-
-                doc.fillColor('#222')
-                    .fontSize(8)
-                    .font('Helvetica-Oblique')
-                    .text(`STUDENT'S NAME (PRINT NAME)`, 20, top + 20 + 13, {
-                        width: maxWidth * 0.35,
-                        align: 'center',
-                    })
-                    .font('Helvetica-Bold')
-
-                doc.text(
-                    `ATTENDANCE MONTHLY REPORT`,
-                    maxWidth * 0.35 + 20,
-                    top + 7,
-                    {
-                        width: maxWidth * 0.65 - 20,
-                        align: 'center',
-                    }
-                )
-                doc.text(
-                    format(parseISO(from_date), 'yyyy'),
-                    maxWidth * 0.95 + 20,
-                    top + 16,
-                    {
-                        width: maxWidth * 0.05,
-                        align: 'center',
-                    }
-                )
-
-                doc.fontSize(6)
-                    .text(
-                        `TOTAL`,
-                        maxWidth * 0.95 + 20,
-                        top + 20 + dayWidth + 6,
-                        {
-                            width: maxWidth * 0.05,
-                            align: 'center',
-                        }
-                    )
-                    .font('Helvetica')
                 const students = await Student.findAll({
                     where: {
                         canceled_at: null,
@@ -2455,443 +2669,240 @@ class StudentgroupController {
                     distinct: true,
                 })
 
-                top += 20
-                height = dayWidth
-                for (let i = 0; i < numberOfDays; i++) {
-                    const hasClass = await Studentgroupclass.findOne({
-                        where: {
-                            studentgroup_id,
-                            date: format(
-                                addDays(parseISO(from_date), i),
-                                'yyyy-MM-dd'
-                            ),
-                            canceled_at: null,
-                        },
-                    })
-                    const formattedDate = format(
-                        addDays(parseISO(from_date), i),
-                        'EEEEEE'
-                    )
-                    doc.rect(
-                        maxWidth * 0.35 + 20 + i * dayWidth,
-                        top,
-                        dayWidth,
-                        height
-                    )
-                        .font('Helvetica-Bold')
-                        .fillAndStroke(
-                            ['Sa', 'Su'].includes(formattedDate) ||
-                                !hasClass ||
-                                hasClass.dataValues.status === 'Holiday'
-                                ? '#D3D3D3'
-                                : '#fff',
-                            '#868686'
-                        )
-                        .stroke()
+                doc.addPage()
 
-                    doc.rect(
-                        maxWidth * 0.35 + 20 + i * dayWidth,
-                        top + dayWidth,
-                        dayWidth,
-                        height
-                    )
-                        .fillAndStroke(
-                            ['Sa', 'Su'].includes(formattedDate) ||
-                                !hasClass ||
-                                hasClass.dataValues.status === 'Holiday'
-                                ? '#D3D3D3'
-                                : '#fff',
-                            '#868686'
-                        )
-                        .stroke()
-
-                    doc.fontSize(6)
-                        .fillColor('#222')
-                        .text(
-                            `${formattedDate}`,
-                            maxWidth * 0.35 + 20 + i * dayWidth,
-                            top + 5,
-                            {
-                                width: dayWidth,
-                                align: 'center',
-                            }
-                        )
-                        .text(
-                            (i + 1).toString(),
-                            maxWidth * 0.35 + 20 + i * dayWidth,
-                            top + 5 + dayWidth,
-                            {
-                                width: dayWidth,
-                                align: 'center',
-                            }
-                        )
-
-                    let classIndex = 0
-                    let studentIndex = 0
-                    // let page = 1
-                    for (let student of students) {
-                        studentIndex++
-                        if (studentIndex === 22) {
-                            continue
-                        }
-                        classIndex++
-                        doc.rect(
-                            maxWidth * 0.35 + 20 + i * dayWidth,
-                            top + dayWidth * 2 + classIndex * 20,
-                            dayWidth,
-                            20
-                        )
-                            .fillAndStroke(
-                                ['Sa', 'Su'].includes(formattedDate) ||
-                                    !hasClass
-                                    ? '#D3D3D3'
-                                    : '#fff',
-                                '#868686'
-                            )
-                            .stroke()
-                    }
-                }
-
-                top += dayWidth * 2
-                height = 20
-                doc.rect(20, top, maxWidth * 0.25, height)
-                    .strokeColor('#868686')
-                    .stroke()
-                doc.rect(20 + maxWidth * 0.25, top, maxWidth * 0.1, height)
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.fillColor('#222')
-                    .fontSize(8)
-                    .font('Helvetica-Bold')
-                    .text(shift.toUpperCase(), 20, top + 7, {
-                        width: maxWidth * 0.25,
-                        align: 'center',
-                    })
-                    .fontSize(6)
-                    .text(`COMM`, maxWidth * 0.25, top + 9, {
-                        width: maxWidth * 0.15,
-                        align: 'center',
-                    })
-
-                doc.rect(20 + maxWidth * 0.35, top, maxWidth * 0.05, height)
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.fillColor('#222')
-                    .font('Helvetica-Bold')
-                    .text(`GROUP:`, 20 + maxWidth * 0.35, top + 9, {
-                        width: maxWidth * 0.05,
-                        align: 'center',
-                    })
-
-                doc.rect(20 + maxWidth * 0.4, top, maxWidth * 0.15, height)
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.fillColor('#222')
-                    .font('Helvetica')
-                    .text(
-                        studentGroup.dataValues.name.toUpperCase(),
-                        20 + maxWidth * 0.4,
-                        top + 9,
-                        {
-                            width: maxWidth * 0.15,
-                            align: 'center',
-                        }
-                    )
-
-                doc.rect(20 + maxWidth * 0.55, top, maxWidth * 0.06, height)
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.fillColor('#222')
-                    .font('Helvetica-Bold')
-                    .text(`TEACHER:`, 20 + maxWidth * 0.55, top + 9, {
-                        width: maxWidth * 0.06,
-                        align: 'center',
-                    })
-
-                doc.rect(20 + maxWidth * 0.61, top, maxWidth * 0.15, height)
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.fillColor('#222')
-                    .font('Helvetica')
-                    .text(
-                        teacher.dataValues.name.toUpperCase(),
-                        20 + maxWidth * 0.61,
-                        top + 9,
-                        {
-                            width: maxWidth * 0.15,
-                            align: 'center',
-                        }
-                    )
-
-                doc.rect(20 + maxWidth * 0.76, top, maxWidth * 0.03, height)
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.fillColor('#222')
-                    .font('Helvetica-Bold')
-                    .text(`SD:`, 20 + maxWidth * 0.76, top + 9, {
-                        width: maxWidth * 0.03,
-                        align: 'center',
-                    })
-
-                doc.rect(20 + maxWidth * 0.79, top, maxWidth * 0.09, height)
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.fillColor('#222')
-                    .font('Helvetica')
-                    .text(
-                        format(
-                            parseISO(studentGroup.dataValues.start_date),
-                            'MMMM do, yyyy'
-                        ),
-                        20 + maxWidth * 0.79,
-                        top + 9,
-                        {
-                            width: maxWidth * 0.09,
-                            align: 'center',
-                        }
-                    )
-
-                doc.rect(20 + maxWidth * 0.88, top, maxWidth * 0.03, height)
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.fillColor('#222')
-                    .font('Helvetica-Bold')
-                    .text(`ED:`, 20 + maxWidth * 0.88, top + 9, {
-                        width: maxWidth * 0.03,
-                        align: 'center',
-                    })
-
-                doc.rect(20 + maxWidth * 0.91, top, maxWidth * 0.09, height)
-                    .strokeColor('#868686')
-                    .stroke()
-
-                doc.fillColor('#222')
-                    .font('Helvetica')
-                    .text(
-                        format(
-                            parseISO(studentGroup.dataValues.end_date),
-                            'MMMM do, yyyy'
-                        ),
-                        20 + maxWidth * 0.91,
-                        top + 9,
-                        {
-                            width: maxWidth * 0.09,
-                            align: 'center',
-                        }
-                    )
+                let top = await header(
+                    doc,
+                    shift,
+                    studentgroup_id,
+                    from_date,
+                    to_date
+                )
 
                 let studentIndex = 1
-                doc.fontSize(6).font('Helvetica-Bold')
-
-                let page = 1
-                for (let student of students) {
-                    if (
-                        studentIndex === 22 ||
-                        studentIndex === 44 ||
-                        studentIndex === 66
-                    ) {
-                        doc.addPage()
-
-                        // header(doc)
-
-                        top = 0
-                        height = 20
-                    }
-                    // if (
-                    //     (page === 1 && studentIndex === 20) ||
-                    //     (page > 1 &&
-                    //         (studentIndex === 40 || studentIndex === 60))
-                    // ) {
-                    //     page++
-                    //     doc.addPage()
-                    //     top = 80
-                    // }
-                    let absensesCount = 0
-                    top += 20
-                    doc.rect(20, top, 15, height)
-                        .strokeColor('#868686')
-                        .stroke()
-                    doc.rect(35, top, maxWidth * 0.25 - 15, height)
-                        .strokeColor('#868686')
-                        .stroke()
-
-                    doc.rect(20 + maxWidth * 0.25, top, maxWidth * 0.1, height)
-                        .strokeColor('#868686')
-                        .stroke()
-
-                    doc.rect(20 + maxWidth * 0.95, top, maxWidth * 0.05, height)
-                        .strokeColor('#868686')
-                        .stroke()
-
-                    doc.font('Helvetica').text(
-                        `${studentIndex++}`,
-                        20,
-                        top + 7,
-                        {
-                            width: 15,
-                            align: 'center',
-                        }
-                    )
-
-                    const name = student.name
-                    const lastName = student.last_name
-
-                    let fullName = name + ' ' + lastName
-                    if (fullName.length > 40) {
-                        fullName = fullName.substring(0, 40) + '...'
-                    }
-                    doc.text(
-                        `${(
-                            fullName +
-                            ' - ' +
-                            student.processtypes.name
-                        ).toUpperCase()}`,
-                        38,
-                        top + 7,
-                        {
-                            width: maxWidth * 0.25 - 12,
-                            align: 'left',
-                        }
-                    )
-
-                    let studentStartDate =
-                        student.studentxgroups[0]?.dataValues?.start_date
-                    if (studentStartDate) {
-                        studentStartDate =
-                            'SD: ' +
-                            format(parseISO(studentStartDate), 'MMMM do, yyyy')
-                    } else {
-                        studentStartDate = 'SD: '
-                    }
-                    doc.text(
-                        `${studentStartDate}`,
-                        25 + maxWidth * 0.25,
-                        top + 7,
-                        {
-                            width: maxWidth * 0.1 - 5,
-                            align: 'left',
-                        }
-                    )
-                    const absenceStatus = await getAbsenceStatus(
-                        student.id,
-                        from_date,
-                        to_date
-                    )
-
-                    for (let day = 0; day < numberOfDays; day++) {
-                        const attendance = await Attendance.findOne({
-                            where: {
-                                student_id: student.id,
-                                shift,
-                                canceled_at: null,
-                            },
-                            include: [
-                                {
-                                    model: Studentgroupclass,
-                                    as: 'studentgroupclasses',
-                                    required: true,
-                                    where: {
-                                        canceled_at: null,
-                                        studentgroup_id: studentGroup.id,
-                                        date: format(
-                                            addDays(parseISO(from_date), day),
-                                            'yyyy-MM-dd'
-                                        ),
-                                    },
-                                },
-                            ],
-                        })
-
+                let height = 20
+                for (let i = 0; i < 4; i++) {
+                    for (let student of students) {
                         if (
-                            attendance &&
-                            attendance.dataValues.studentgroupclasses.locked_at
+                            studentIndex === 23 ||
+                            studentIndex === 45 ||
+                            studentIndex === 67
                         ) {
-                            let status = attendance.dataValues.status
+                            doc.addPage()
+
+                            top = await header(
+                                doc,
+                                shift,
+                                studentgroup_id,
+                                from_date,
+                                to_date
+                            )
+                        }
+                        // if (
+                        //     (page === 1 && studentIndex === 20) ||
+                        //     (page > 1 &&
+                        //         (studentIndex === 40 || studentIndex === 60))
+                        // ) {
+                        //     page++
+                        //     doc.addPage()
+
+                        // }
+                        let absensesCount = 0
+                        top += 20
+                        doc.rect(20, top, 15, height)
+                            .strokeColor('#868686')
+                            .stroke()
+                        doc.rect(35, top, maxWidth * 0.25 - 15, height)
+                            .strokeColor('#868686')
+                            .stroke()
+
+                        doc.rect(
+                            20 + maxWidth * 0.25,
+                            top,
+                            maxWidth * 0.1,
+                            height
+                        )
+                            .strokeColor('#868686')
+                            .stroke()
+
+                        doc.rect(
+                            20 + maxWidth * 0.95,
+                            top,
+                            maxWidth * 0.05,
+                            height
+                        )
+                            .strokeColor('#868686')
+                            .stroke()
+
+                        doc.font('Helvetica').text(
+                            `${studentIndex++}`,
+                            20,
+                            top + 7,
+                            {
+                                width: 15,
+                                align: 'center',
+                            }
+                        )
+
+                        const name = student.name
+                        const lastName = student.last_name
+
+                        let fullName = name + ' ' + lastName
+                        if (fullName.length > 40) {
+                            fullName = fullName.substring(0, 40) + '...'
+                        }
+                        doc.text(
+                            `${(
+                                fullName +
+                                ' - ' +
+                                student.processtypes.name
+                            ).toUpperCase()}`,
+                            38,
+                            top + 7,
+                            {
+                                width: maxWidth * 0.25 - 12,
+                                align: 'left',
+                            }
+                        )
+
+                        let studentStartDate =
+                            student.studentxgroups[0]?.dataValues?.start_date
+                        if (studentStartDate) {
+                            studentStartDate =
+                                'SD: ' +
+                                format(
+                                    parseISO(studentStartDate),
+                                    'MMMM do, yyyy'
+                                )
+                        } else {
+                            studentStartDate = 'SD: '
+                        }
+                        doc.text(
+                            `${studentStartDate}`,
+                            25 + maxWidth * 0.25,
+                            top + 7,
+                            {
+                                width: maxWidth * 0.1 - 5,
+                                align: 'left',
+                            }
+                        )
+                        const absenceStatus = await getAbsenceStatus(
+                            student.id,
+                            from_date,
+                            to_date
+                        )
+
+                        for (let day = 0; day < numberOfDays; day++) {
+                            const attendance = await Attendance.findOne({
+                                where: {
+                                    student_id: student.id,
+                                    shift,
+                                    canceled_at: null,
+                                },
+                                include: [
+                                    {
+                                        model: Studentgroupclass,
+                                        as: 'studentgroupclasses',
+                                        required: true,
+                                        where: {
+                                            canceled_at: null,
+                                            studentgroup_id: studentGroup.id,
+                                            date: format(
+                                                addDays(
+                                                    parseISO(from_date),
+                                                    day
+                                                ),
+                                                'yyyy-MM-dd'
+                                            ),
+                                        },
+                                    },
+                                ],
+                            })
+
                             if (
-                                !attendance.dataValues.studentgroupclasses
+                                attendance &&
+                                attendance.dataValues.studentgroupclasses
                                     .locked_at
                             ) {
-                                status = 'A'
-                            }
+                                let status = attendance.dataValues.status
+                                if (
+                                    !attendance.dataValues.studentgroupclasses
+                                        .locked_at
+                                ) {
+                                    status = 'A'
+                                }
 
-                            let color = getColor(status)
+                                let color = getColor(status)
 
-                            if (status === 'A') {
-                                absensesCount += 1
-                            } else if (status === 'P') {
-                                absensesCount += 0.5
-                            }
+                                if (status === 'A') {
+                                    absensesCount += 1
+                                } else if (status === 'P') {
+                                    absensesCount += 0.5
+                                }
 
-                            doc.rect(
-                                maxWidth * 0.35 + 20 + day * dayWidth,
-                                top,
-                                dayWidth,
-                                height
-                            )
-                                .fillAndStroke(color, '#868686')
-                                .stroke()
-                                .fill('#222')
-                                .fontSize(8)
-                                .text(
-                                    `${status}`,
+                                doc.rect(
                                     maxWidth * 0.35 + 20 + day * dayWidth,
-                                    top + 7,
+                                    top,
+                                    dayWidth,
+                                    height
+                                )
+                                    .fillAndStroke(color, '#868686')
+                                    .stroke()
+                                    .fill('#222')
+                                    .fontSize(8)
+                                    .text(
+                                        `${status}`,
+                                        maxWidth * 0.35 + 20 + day * dayWidth,
+                                        top + 7,
+                                        {
+                                            width: dayWidth,
+                                            align: 'center',
+                                        }
+                                    )
+                                    .fontSize(6)
+                            } else {
+                                doc.rect(
+                                    maxWidth * 0.35 + 20 + day * dayWidth,
+                                    top,
+                                    dayWidth,
+                                    height
+                                )
+                                    .fillAndStroke('#D3D3D3', '#868686')
+                                    .stroke()
+                                    .fill('#222')
+                                    .fontSize(6)
+                            }
+                        }
+
+                        if (
+                            absenceStatus.totals.totalAbsenses > 0 &&
+                            absenceStatus.totals.frequency < 80
+                        ) {
+                            doc.fontSize(6)
+                                .fillColor('#ff0000')
+                                .text(
+                                    absensesCount.toFixed(2),
+                                    maxWidth * 0.95 + 20,
+                                    top + 6,
                                     {
-                                        width: dayWidth,
+                                        width: maxWidth * 0.05,
                                         align: 'center',
                                     }
                                 )
-                                .fontSize(6)
+                                .fillColor('#222222')
                         } else {
-                            doc.rect(
-                                maxWidth * 0.35 + 20 + day * dayWidth,
-                                top,
-                                dayWidth,
-                                height
-                            )
-                                .fillAndStroke('#D3D3D3', '#868686')
-                                .stroke()
-                                .fill('#222')
-                                .fontSize(6)
+                            doc.fontSize(6)
+                                .fillColor('#222')
+                                .text(
+                                    absensesCount.toFixed(2),
+                                    maxWidth * 0.95 + 20,
+                                    top + 6,
+                                    {
+                                        width: maxWidth * 0.05,
+                                        align: 'center',
+                                    }
+                                )
                         }
-                    }
-
-                    if (
-                        absenceStatus.totals.totalAbsenses > 0 &&
-                        absenceStatus.totals.frequency < 80
-                    ) {
-                        doc.fontSize(6)
-                            .fillColor('#ff0000')
-                            .text(
-                                absensesCount.toFixed(2),
-                                maxWidth * 0.95 + 20,
-                                top + 6,
-                                {
-                                    width: maxWidth * 0.05,
-                                    align: 'center',
-                                }
-                            )
-                            .fillColor('#222222')
-                    } else {
-                        doc.fontSize(6)
-                            .fillColor('#222')
-                            .text(
-                                absensesCount.toFixed(2),
-                                maxWidth * 0.95 + 20,
-                                top + 6,
-                                {
-                                    width: maxWidth * 0.05,
-                                    align: 'center',
-                                }
-                            )
                     }
                 }
             }
