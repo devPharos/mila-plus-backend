@@ -432,12 +432,14 @@ class MilaUserController {
     }
 
     async updateMe(req, res, next) {
-        const { userId } = req;
-        const { email, name, password } = req.body;
-        const avatarFile = req.file;
+        const { userId } = req
+        const { email, name, password } = req.body
+        const avatarFile = req.file
 
         try {
-            const userExists = await Milauser.findByPk(userId, { include: [{ model: File, as: 'avatar' }] });
+            const userExists = await Milauser.findByPk(userId, {
+                include: [{ model: File, as: 'avatar' }],
+            })
 
             if (!userExists) {
                 return res.status(400).json({ error: 'user-does-not-exist' })
@@ -460,7 +462,7 @@ class MilaUserController {
             let infoToUpdate = {
                 name,
                 email,
-                updated_by: userId
+                updated_by: userId,
             }
 
             if (password) {
@@ -468,8 +470,8 @@ class MilaUserController {
             }
 
             if (avatarFile) {
-                const fileId = uuidv4();
-                const fileKey = `avatars/${fileId}.png`;
+                const fileId = uuidv4()
+                const fileKey = `avatars/${fileId}.png`
 
                 await File.create({
                     id: fileId,
@@ -478,22 +480,22 @@ class MilaUserController {
                     size: avatarFile.size,
                     company_id: userExists.company_id,
                     created_by: userId,
-                    created_at: new Date()
-                });
+                    created_at: new Date(),
+                })
 
-                const fileRef = ref(storage, fileKey);
-                await uploadBytes(fileRef, avatarFile.buffer);
+                const fileRef = ref(storage, fileKey)
+                await uploadBytes(fileRef, avatarFile.buffer)
 
-                infoToUpdate.avatar_id = fileId;
+                infoToUpdate.avatar_id = fileId
             }
 
-            await userExists.update({ ...infoToUpdate });
+            await userExists.update({ ...infoToUpdate })
 
             return res.status(200).json({
                 name: userExists.name,
                 email: userExists.email,
                 id: userExists.id,
-                avatar: { key: userExists.avatar.key }
+                avatar: { key: userExists?.avatar?.key },
             })
         } catch (err) {
             err.transaction = req?.transaction
