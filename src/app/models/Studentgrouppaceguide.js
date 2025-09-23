@@ -14,6 +14,7 @@ class Studentgrouppaceguide extends Model {
                 day: Sequelize.INTEGER,
                 type: Sequelize.STRING,
                 description: Sequelize.STRING,
+                percentage: Sequelize.FLOAT,
                 status: Sequelize.STRING,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,

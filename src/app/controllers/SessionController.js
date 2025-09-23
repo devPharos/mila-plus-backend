@@ -7,6 +7,7 @@ import Filial from '../models/Filial.js'
 import UserGroup from '../models/UserGroup.js'
 import UserGroupXUser from '../models/UserGroupXUser.js'
 import UserXFilial from '../models/UserXFilial.js'
+import File from '../models/File.js'
 
 const { Op } = Sequelize
 
@@ -55,6 +56,12 @@ class SessionController {
                 ],
                 where: { canceled_at: null },
                 include: [
+                    {
+                        model: File,
+                        as: 'avatar',
+                        required: false,
+                        attributes: ['id', 'key', 'name', 'url'],
+                    },
                     {
                         model: UserXFilial,
                         as: 'filials',

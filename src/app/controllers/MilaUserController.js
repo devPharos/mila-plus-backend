@@ -670,6 +670,12 @@ class MilaUserController {
                             },
                         ],
                     },
+                    {
+                        model: File,
+                        as: 'avatar',
+                        required: false,
+                        attributes: ['id', 'key', 'name', 'url'],
+                    },
                 ],
                 attributes: ['id', 'name', 'email', 'avatar_id'],
             })
