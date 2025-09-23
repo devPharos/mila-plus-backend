@@ -85,7 +85,7 @@ const storage = multer.diskStorage({
 })
 
 const upload = multer({ storage: storage })
-const uploadByBuffer = multer({ storage: multer.memoryStorage() });
+const uploadByBuffer = multer({ storage: multer.memoryStorage() })
 
 // Public File
 routes.get('/get-file/:name', PublicFileController.show)
@@ -215,7 +215,11 @@ routes.delete(
 )
 
 routes.get('/users', MilaUserController.index)
-routes.patch('/users/me', uploadByBuffer.single("avatar"), MilaUserController.updateMe)
+routes.patch(
+    '/users/me',
+    uploadByBuffer.single('avatar'),
+    MilaUserController.updateMe
+)
 routes.get('/users/:user_id', MilaUserController.show)
 
 routes.get('/prospects/:prospect_id', ProspectController.show)
@@ -382,6 +386,11 @@ routes.post(
 routes.post(
     '/reports/classSchedule',
     StudentgroupController.classScheduleReport
+)
+
+routes.post(
+    '/reports/evaluationChart',
+    StudentgroupController.evaluationChartReport
 )
 
 routes.get('/reports/receivables', ReportController.receivables)

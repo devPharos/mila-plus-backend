@@ -3281,6 +3281,352 @@ class StudentgroupController {
             next(err)
         }
     }
+
+    async evaluationChartReport(req, res, next) {
+        try {
+            const { group_id } = req.body
+            if (!group_id) {
+                return res.status(400).json({ error: 'group_id is required' })
+            }
+
+            const name = `evaluation_chart_report_${Date.now()}.xlsx`
+            const path = `${resolve(
+                directory,
+                '..',
+                '..',
+                '..',
+                'public',
+                'uploads'
+            )}/${name}`
+            const wb = new xl.Workbook()
+
+            // Add Worksheets to the workbook
+            const ws = wb.addWorksheet('Evaluation Chart')
+
+            // Create reusable styles
+            const styleHeading = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 14,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+            })
+
+            const styleBold = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                    bold: true,
+                },
+            })
+
+            const styleBoldCenter = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+            })
+
+            const styleHeaderDetails = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                },
+            })
+
+            const styleNumericHeader = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                },
+                alignment: {
+                    horizontal: 'center',
+                },
+            })
+
+            const styleFail = wb.createStyle({
+                font: {
+                    color: '#ff0000',
+                    size: 12,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                },
+            })
+
+            const styleRedo = wb.createStyle({
+                font: {
+                    color: '#ffa500', // Orange color
+                    size: 12,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                },
+            })
+
+            // Fetch group and teacher details
+            const studentGroup = await Studentgroup.findOne({
+                where: {
+                    id: group_id,
+                },
+                attributes: [
+                    'id',
+                    'name',
+                    'start_date',
+                    'end_date',
+                    'morning',
+                    'afternoon',
+                    'evening',
+                ],
+                include: [
+                    {
+                        model: Staff,
+                        as: 'staff',
+                        required: true,
+                        attributes: ['name'],
+                    },
+                ],
+            })
+
+            if (!studentGroup) {
+                return res.status(404).json({ error: 'Group not found' })
+            }
+
+            // Set up worksheet header
+            const shift =
+                (studentGroup.morning ? 'MORNING' : '') +
+                (studentGroup.afternoon
+                    ? (studentGroup.morning ? '/' : '') + 'AFTERNOON'
+                    : '') +
+                (studentGroup.evening
+                    ? (studentGroup.afternoon || studentGroup.morning
+                          ? '/'
+                          : '') + 'EVENING'
+                    : '')
+
+            ws.cell(1, 1, 1, 15, true)
+                .string(`STUDENT'S EVALUATION CHART - ADVANCED`)
+                .style(styleHeading)
+            ws.cell(2, 2).string('GROUP:').style(styleBold)
+            ws.cell(2, 3, 2, 7, true)
+                .string(studentGroup.name || '')
+                .style(styleHeaderDetails)
+            ws.cell(2, 8).string('SHIFT:').style(styleBold)
+            ws.cell(2, 9, 2, 13, true).string(shift).style(styleHeaderDetails)
+            ws.cell(3, 2).string('TEACHER:').style(styleBold)
+            ws.cell(3, 3, 3, 7, true)
+                .string(studentGroup.staff?.name || '')
+                .style(styleHeaderDetails)
+            ws.cell(3, 8).string('SD:').style(styleBold)
+            ws.cell(3, 9, 3, 10, true)
+                .string(
+                    studentGroup.start_date
+                        ? format(
+                              parseISO(studentGroup.start_date),
+                              'MM/dd/yyyy'
+                          )
+                        : ''
+                )
+                .style(styleHeaderDetails)
+            ws.cell(3, 11).string('ED:').style(styleBold)
+            ws.cell(3, 12, 3, 13, true)
+                .string(
+                    studentGroup.end_date
+                        ? format(parseISO(studentGroup.end_date), 'MM/dd/yyyy')
+                        : ''
+                )
+                .style(styleHeaderDetails)
+
+            // Set up column headers
+            ws.cell(5, 1).string('#').style(styleBoldCenter)
+            ws.cell(5, 2, 6, 2, true)
+                .string('STUDENT´S NAME (PRINT NAME)')
+                .style(styleBoldCenter)
+            ws.cell(5, 3).string('PROGRESS TEST 1').style(styleBold)
+            ws.cell(5, 4).string('PROGRESS TEST 2').style(styleBold)
+            ws.cell(5, 5).string('PROGRESS TEST 3').style(styleBold)
+            ws.cell(5, 6).string('MIDTERM WRITTEN TEST').style(styleBold)
+            ws.cell(5, 7).string('MIDTERM ORAL TEST').style(styleBold)
+            ws.cell(5, 8).string('PROGRESS TEST 4').style(styleBold)
+            ws.cell(5, 9).string('PROGRESS TEST 5').style(styleBold)
+            ws.cell(5, 10).string('PROGRESS TEST 6').style(styleBold)
+            ws.cell(5, 11).string('FINAL WRITTEN TEST').style(styleBold)
+            ws.cell(5, 12).string('FINAL ORAL TEST').style(styleBold)
+            ws.cell(5, 13).string('Final Average Grade').style(styleBold)
+            ws.cell(5, 14).string('RESULT').style(styleBold)
+
+            // Set up grading weights
+            ws.cell(6, 3).number(10).style(styleNumericHeader)
+            ws.cell(6, 4).number(10).style(styleNumericHeader)
+            ws.cell(6, 5).number(5).style(styleNumericHeader)
+            ws.cell(6, 6).number(30).style(styleNumericHeader)
+            ws.cell(6, 7).number(45).style(styleNumericHeader)
+            ws.cell(6, 8).number(10).style(styleNumericHeader)
+            ws.cell(6, 9).number(5).style(styleNumericHeader)
+            ws.cell(6, 10).number(10).style(styleNumericHeader)
+            ws.cell(6, 11).number(30).style(styleNumericHeader)
+            ws.cell(6, 12).number(45).style(styleNumericHeader)
+            ws.cell(6, 13).number(100).style(styleNumericHeader)
+
+            // Set column widths
+            ws.column(1).width = 6
+            ws.column(2).width = 40
+            ws.column(3).width = 15
+            ws.column(4).width = 15
+            ws.column(5).width = 15
+            ws.column(6).width = 20
+            ws.column(7).width = 20
+            ws.column(8).width = 15
+            ws.column(9).width = 15
+            ws.column(10).width = 15
+            ws.column(11).width = 20
+            ws.column(12).width = 20
+            ws.column(13).width = 20
+            ws.column(14).width = 15
+
+            ws.row(5).filter()
+            ws.row(6).freeze()
+
+            // Fetch students in the specified group
+            const students = await Student.findAll({
+                include: [
+                    {
+                        model: StudentXGroup,
+                        as: 'studentxgroups',
+                        required: true,
+                        where: {
+                            group_id: group_id,
+                        },
+                    },
+                ],
+                order: [
+                    ['name', 'ASC'],
+                    ['last_name', 'ASC'],
+                ],
+                distinct: true,
+            })
+
+            let row = 7
+            let studentCount = 1
+            for (const student of students) {
+                const grades = await Grade.findAll({
+                    attributes: ['score', 'discarded'],
+                    where: {
+                        student_id: student.id,
+                        canceled_at: null,
+                    },
+                    include: [
+                        {
+                            model: Studentgroupclass,
+                            as: 'studentgroupclasses',
+                            required: true,
+                            where: {
+                                canceled_at: null,
+                                studentgroup_id: studentGroup.id,
+                                locked_at: {
+                                    [Op.not]: null,
+                                },
+                            },
+                            include: [
+                                {
+                                    model: Studentgrouppaceguide,
+                                    as: 'paceguides',
+                                    required: true,
+                                    where: {
+                                        canceled_at: null,
+                                    },
+                                    attributes: ['type', 'description'],
+                                },
+                            ],
+                            order: [['date', 'ASC']],
+                            attributes: ['date', 'shift', 'locked_at'],
+                        },
+                    ],
+                })
+
+                // // Calculate final grade. This logic needs to be adapted to your grading system.
+                // const finalAverage = grades
+                //     ? (grades.progress_test_1 || 0) +
+                //       (grades.progress_test_2 || 0) +
+                //       (grades.progress_test_3 || 0) +
+                //       (grades.midterm_written_test || 0) +
+                //       (grades.midterm_oral_test || 0) +
+                //       (grades.progress_test_4 || 0) +
+                //       (grades.progress_test_5 || 0) +
+                //       (grades.progress_test_6 || 0) +
+                //       (grades.final_written_test || 0) +
+                //       (grades.final_oral_test || 0)
+                //     : 0
+
+                // // Determine result based on final average
+                // let result = 'PASS'
+                // let resultStyle = styleHeaderDetails
+                // if (finalAverage < 50) {
+                //     // Example logic, adjust as needed
+                //     result = 'FAIL'
+                //     resultStyle = styleFail
+                // } else if (finalAverage < 70) {
+                //     result = 'REDO'
+                //     resultStyle = styleRedo
+                // }
+
+                // // Write student data to the worksheet
+                ws.cell(row, 1).string(studentCount.toString())
+                ws.cell(row, 2).string(`${student.name} ${student.last_name}`)
+                let gradeIndex = 0
+                for (let grade of grades) {
+                    ws.cell(row, 3 + gradeIndex).number(grade.score || 0)
+                }
+                // ws.cell(row, 2).number(grades?.progress_test_1 || 0)
+                // ws.cell(row, 3).number(grades?.progress_test_2 || 0)
+                // ws.cell(row, 4).number(grades?.progress_test_3 || 0)
+                // ws.cell(row, 5).number(grades?.midterm_written_test || 0)
+                // ws.cell(row, 6).number(grades?.midterm_oral_test || 0)
+                // ws.cell(row, 7).number(grades?.progress_test_4 || 0)
+                // ws.cell(row, 8).number(grades?.progress_test_5 || 0)
+                // ws.cell(row, 9).number(grades?.progress_test_6 || 0)
+                // ws.cell(row, 10).number(grades?.final_written_test || 0)
+                // ws.cell(row, 11).number(grades?.final_oral_test || 0)
+                // ws.cell(row, 12).number(finalAverage)
+                // ws.cell(row, 13).string(result).style(resultStyle)
+
+                row++
+                studentCount++
+            }
+
+            let ret = null
+            wb.write(path, async (err, stats) => {
+                if (err) {
+                    ret = res.status(400).json({ err, stats })
+                } else {
+                    setTimeout(() => {
+                        fs.unlink(path, (err) => {
+                            if (err) {
+                                console.log(err)
+                            }
+                        })
+                    }, 10000)
+                    return res.json({ path, name })
+                }
+            })
+
+            return ret
+        } catch (err) {
+            err.transaction = req?.transaction
+            next(err)
+        }
+    }
 }
 
 export default new StudentgroupController()
