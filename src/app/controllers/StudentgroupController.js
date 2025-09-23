@@ -3467,17 +3467,17 @@ class StudentgroupController {
             ws.cell(5, 14).string('RESULT').style(styleBold)
 
             // Set up grading weights
-            ws.cell(6, 3).number(10).style(styleNumericHeader)
-            ws.cell(6, 4).number(10).style(styleNumericHeader)
-            ws.cell(6, 5).number(5).style(styleNumericHeader)
-            ws.cell(6, 6).number(30).style(styleNumericHeader)
-            ws.cell(6, 7).number(45).style(styleNumericHeader)
-            ws.cell(6, 8).number(10).style(styleNumericHeader)
-            ws.cell(6, 9).number(5).style(styleNumericHeader)
-            ws.cell(6, 10).number(10).style(styleNumericHeader)
-            ws.cell(6, 11).number(30).style(styleNumericHeader)
-            ws.cell(6, 12).number(45).style(styleNumericHeader)
-            ws.cell(6, 13).number(100).style(styleNumericHeader)
+            ws.cell(6, 3).string('10%').style(styleNumericHeader)
+            ws.cell(6, 4).string('10%').style(styleNumericHeader)
+            ws.cell(6, 5).string('5%').style(styleNumericHeader)
+            ws.cell(6, 6).string('30%').style(styleNumericHeader)
+            ws.cell(6, 7).string('45%').style(styleNumericHeader)
+            ws.cell(6, 8).string('10%').style(styleNumericHeader)
+            ws.cell(6, 9).string('5%').style(styleNumericHeader)
+            ws.cell(6, 10).string('10%').style(styleNumericHeader)
+            ws.cell(6, 11).string('30%').style(styleNumericHeader)
+            ws.cell(6, 12).string('45%').style(styleNumericHeader)
+            ws.cell(6, 13).string('100%').style(styleNumericHeader)
 
             // Set column widths
             ws.column(1).width = 6
@@ -3582,11 +3582,15 @@ class StudentgroupController {
                 // }
 
                 // // Write student data to the worksheet
-                ws.cell(row, 1).string(studentCount.toString())
+                ws.cell(row, 1)
+                    .string(studentCount.toString())
+                    .style(styleNumericHeader)
                 ws.cell(row, 2).string(`${student.name} ${student.last_name}`)
                 let gradeIndex = 0
                 for (let grade of grades) {
-                    ws.cell(row, 3 + gradeIndex).number(grade.score || 0)
+                    ws.cell(row, 3 + gradeIndex)
+                        .number(grade.score || 0)
+                        .style(styleNumericHeader)
                     gradeIndex++
                 }
                 // ws.cell(row, 2).number(grades?.progress_test_1 || 0)
