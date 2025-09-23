@@ -3587,6 +3587,7 @@ class StudentgroupController {
                 let gradeIndex = 0
                 for (let grade of grades) {
                     ws.cell(row, 3 + gradeIndex).number(grade.score || 0)
+                    gradeIndex++
                 }
                 // ws.cell(row, 2).number(grades?.progress_test_1 || 0)
                 // ws.cell(row, 3).number(grades?.progress_test_2 || 0)
