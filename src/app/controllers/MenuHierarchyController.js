@@ -213,6 +213,71 @@ class MenuHierarchyController {
             next(err)
         }
     }
+
+    async store(req, res, next) {
+        try {
+            const { father_id, alias, name } = req.body
+
+            const exist = await MenuHierarchy.findOne({
+                where: {
+                    alias,
+                    father_id,
+                    canceled_at: null,
+                },
+            })
+
+            if (exist) {
+                return res.status(400).json({
+                    error: 'Menu Hierarchy already exists.',
+                })
+            }
+
+            const menuHierarchy = await MenuHierarchy.create(
+                {
+                    father_id,
+                    alias,
+                    name,
+                    created_by: 1,
+                },
+                {
+                    transaction: req?.transaction,
+                }
+            )
+
+            const groups = await UserGroup.findAll({
+                where: {
+                    canceled_at: null,
+                },
+                attributes: ['id', 'name'],
+            })
+
+            for (let group of groups) {
+                const allTrue =
+                    group.dataValues.name === 'Holding Administrator'
+                await MenuHierarchyXGroups.create(
+                    {
+                        group_id: group.id,
+                        menu_hierarchy_id: menuHierarchy.id,
+                        view: allTrue,
+                        edit: allTrue,
+                        create: allTrue,
+                        inactivate: allTrue,
+                        created_by: 1,
+                    },
+                    {
+                        transaction: req?.transaction,
+                    }
+                )
+            }
+
+            await req?.transaction.commit()
+
+            return res.json(menuHierarchy)
+        } catch (err) {
+            err.transaction = req?.transaction
+            next(err)
+        }
+    }
 }
 
 export default new MenuHierarchyController()
