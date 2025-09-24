@@ -213,7 +213,7 @@ export async function getAbsenceStatus(
     totals.frequency =
         (1 - totals.totalAbsenses / totals.attendancesPeriods) * 100
 
-    return { student, attendances, totals, grades }
+    return { student, attendances, totals }
 }
 
 class AbsenseControlController {
