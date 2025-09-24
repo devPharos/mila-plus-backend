@@ -160,13 +160,19 @@ class RotationController {
                 })
             }
 
+            const students = []
+
             for (let studentxgroup of studentGroup.dataValues.studentxgroups) {
                 // console.log(studentxgroup.dataValues.student_id)
                 const student = await Student.findByPk(
                     studentxgroup.dataValues.student_id
                 )
+                if (students.includes(student.dataValues.registration_number)) {
+                    continue
+                }
 
                 if (student) {
+                    students.push(student.dataValues.registration_number)
                     const frequency = await getAbsenceStatus(
                         student.id,
                         studentGroup.dataValues.start_date,
