@@ -93,35 +93,35 @@ export async function getAbsenceStatus(
         distinct: true,
     })
 
-    const grades = await Grade.findAll({
-        where: {
-            student_id: student_id,
-            canceled_at: null,
-        },
-        include: [
-            {
-                model: Studentgroupclass,
-                as: 'studentgroupclasses',
-                required: true,
-                include: [
-                    {
-                        model: Studentgroup,
-                        as: 'studentgroup',
-                        required: true,
-                        attributes: ['id', 'name', 'status'],
-                    },
-                ],
-                where: {
-                    date: {
-                        [Op.between]: [from_date, until_date],
-                    },
-                    canceled_at: null,
-                },
-                attributes: [],
-            },
-        ],
-        attributes: ['score', 'discarded'],
-    })
+    // const grades = await Grade.findAll({
+    //     where: {
+    //         student_id: student_id,
+    //         canceled_at: null,
+    //     },
+    //     include: [
+    //         {
+    //             model: Studentgroupclass,
+    //             as: 'studentgroupclasses',
+    //             required: true,
+    //             include: [
+    //                 {
+    //                     model: Studentgroup,
+    //                     as: 'studentgroup',
+    //                     required: true,
+    //                     attributes: ['id', 'name', 'status'],
+    //                 },
+    //             ],
+    //             where: {
+    //                 date: {
+    //                     [Op.between]: [from_date, until_date],
+    //                 },
+    //                 canceled_at: null,
+    //             },
+    //             attributes: [],
+    //         },
+    //     ],
+    //     attributes: ['score', 'discarded'],
+    // })
 
     let totals = {
         attendances: attendances.length,
@@ -193,17 +193,17 @@ export async function getAbsenceStatus(
         ).attendancePeriods += 1
     }
 
-    for (let grade of grades) {
-        if (grade.discarded) {
-            continue
-        }
-        totals.groups.find(
-            (g) => g.group.id === grade.studentgroupclasses.id
-        ).grades += grade.score
-        totals.groups.find(
-            (g) => g.group.id === grade.studentgroupclasses.id
-        ).gradePeriods += 1
-    }
+    // for (let grade of grades) {
+    //     if (grade.discarded) {
+    //         continue
+    //     }
+    //     totals.groups.find(
+    //         (g) => g.group.id === grade.studentgroupclasses.id
+    //     ).grades += grade.score
+    //     totals.groups.find(
+    //         (g) => g.group.id === grade.studentgroupclasses.id
+    //     ).gradePeriods += 1
+    // }
 
     for (let group of totals.groups) {
         group.frequency =
