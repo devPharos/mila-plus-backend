@@ -9,6 +9,7 @@ import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { format, lastDayOfMonth, parseISO } from 'date-fns'
 import Processtype from '../models/Processtype.js'
+import Grade from '../models/Grade.js'
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
@@ -42,10 +43,6 @@ export async function getAbsenceStatus(
             canceled_at: null,
         },
     })
-
-    const shifts = studentGroupClass
-        ? studentGroupClass.dataValues?.shift?.split('/')
-        : []
 
     const attendances = await Attendance.findAll({
         where: {
@@ -94,6 +91,36 @@ export async function getAbsenceStatus(
             'dso_note',
         ],
         distinct: true,
+    })
+
+    const grades = await Grade.findAll({
+        where: {
+            student_id: student_id,
+            canceled_at: null,
+        },
+        include: [
+            {
+                model: Studentgroupclass,
+                as: 'studentgroupclasses',
+                required: true,
+                include: [
+                    {
+                        model: Studentgroup,
+                        as: 'studentgroup',
+                        required: true,
+                        attributes: ['id', 'name', 'status'],
+                    },
+                ],
+                where: {
+                    date: {
+                        [Op.between]: [from_date, until_date],
+                    },
+                    canceled_at: null,
+                },
+                attributes: [],
+            },
+        ],
+        attributes: ['score', 'discarded'],
     })
 
     let totals = {
@@ -166,6 +193,18 @@ export async function getAbsenceStatus(
         ).attendancePeriods += 1
     }
 
+    for (let grade of grades) {
+        if (grade.discarded) {
+            continue
+        }
+        totals.groups.find(
+            (g) => g.group.id === grade.studentgroupclasses.id
+        ).grades += grade.score
+        totals.groups.find(
+            (g) => g.group.id === grade.studentgroupclasses.id
+        ).gradePeriods += 1
+    }
+
     for (let group of totals.groups) {
         group.frequency =
             (1 - group.totalAbsenses / group.attendancePeriods) * 100
@@ -174,7 +213,7 @@ export async function getAbsenceStatus(
     totals.frequency =
         (1 - totals.totalAbsenses / totals.attendancesPeriods) * 100
 
-    return { student, attendances, totals }
+    return { student, attendances, totals, grades }
 }
 
 class AbsenseControlController {
