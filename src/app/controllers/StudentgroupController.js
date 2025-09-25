@@ -3602,7 +3602,7 @@ class StudentgroupController {
                                 canceled_at: null,
                                 studentgroup_id: studentGroup.id,
                             },
-                            attributes: ['id'],
+                            attributes: ['id', 'locked_at'],
                             include: [
                                 {
                                     model: Grade,
@@ -3643,6 +3643,7 @@ class StudentgroupController {
 
                     let score = 0
                     let discarded = false
+                    let locked = false
                     if (paceguide) {
                         score =
                             paceguide?.dataValues?.studentgroupclass?.dataValues
@@ -3650,18 +3651,21 @@ class StudentgroupController {
                         discarded =
                             paceguide?.dataValues?.studentgroupclass?.dataValues
                                 ?.grades[0]?.dataValues?.discarded || false
-                    }
 
-                    if (score > 0) {
-                        averageGrades[gradeIndex].grade += score
-                        averageGrades[gradeIndex].total++
+                        locked =
+                            paceguide?.dataValues?.studentgroupclass?.dataValues
+                                ?.locked_at === null
+                                ? false
+                                : true
                     }
 
                     ws.cell(row, 3 + gradeIndex)
                         .number(score)
                         .style(discarded ? styleFail : styleNumericHeader)
 
-                    if (!discarded) {
+                    if (!discarded && locked) {
+                        averageGrades[gradeIndex].grade += score
+                        averageGrades[gradeIndex].total++
                         finalAverageGrade +=
                             (score * tests[gradeIndex].percentage) / 100
                     }
