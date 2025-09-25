@@ -3429,7 +3429,7 @@ class StudentgroupController {
                 include: [
                     {
                         model: Studentgroupclass,
-                        as: 'studentgroupclasses',
+                        as: 'studentgroupclass',
                         required: true,
                         where: {
                             canceled_at: null,
