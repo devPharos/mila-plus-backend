@@ -80,7 +80,6 @@ export async function jobPutInClass() {
             ],
             attributes: ['student_id', 'group_id'],
         })
-        console.log('Results:', pendingStudents.length)
 
         for (let pendingStudent of pendingStudents) {
             const reason =
@@ -3298,7 +3297,7 @@ class StudentgroupController {
                 return res.status(400).json({ error: 'group_id is required' })
             }
 
-            const name = `evaluation_chart_report_${Date.now()}.xlsx`
+            const name = `evaluation_chart_report_${Date.now()}`
             const path = `${resolve(
                 directory,
                 '..',
@@ -3356,6 +3355,17 @@ class StudentgroupController {
                 font: {
                     color: '#222222',
                     size: 12,
+                },
+                alignment: {
+                    horizontal: 'center',
+                },
+            })
+
+            const styleNumericHeaderBold = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                    bold: true,
                 },
                 alignment: {
                     horizontal: 'center',
@@ -3441,6 +3451,16 @@ class StudentgroupController {
                 attributes: ['day', 'type', 'description', 'percentage'],
             })
 
+            const tests = []
+            for (const paceguide of studentGroupPaceguides) {
+                const { day, type, description, percentage } = paceguide
+                tests.push({
+                    name: `${type}`,
+                    description,
+                    percentage: percentage,
+                })
+            }
+
             // Set up worksheet header
             const shift =
                 (studentGroup.morning ? 'MORNING' : '') +
@@ -3492,52 +3512,25 @@ class StudentgroupController {
                 .string('STUDENT´S NAME (PRINT NAME)')
                 .style(styleBoldCenter)
 
-            const tests = [
-                {
-                    name: 'Progress Test 1',
-                    percentage: 10,
-                },
-                {
-                    name: 'Progress Test 2',
-                    percentage: 10,
-                },
-                {
-                    name: 'Progress Test 3',
-                    percentage: 5,
-                },
-                {
-                    name: 'Midterm Written Test',
-                    percentage: 30,
-                },
-                {
-                    name: 'Midterm Oral Test',
-                    percentage: 45,
-                },
-                {
-                    name: 'Progress Test 4',
-                    percentage: 10,
-                },
-                {
-                    name: 'Progress Test 5',
-                    percentage: 5,
-                },
-                {
-                    name: 'Progress Test 6',
-                    percentage: 10,
-                },
-                {
-                    name: 'Final Written Test',
-                    percentage: 30,
-                },
-                {
-                    name: 'Final Oral Test',
-                    percentage: 45,
-                },
-            ]
             let testIndex = 0
             for (let test of tests) {
+                let number =
+                    tests.filter(
+                        (find, index) =>
+                            find.name === test.name && index < testIndex
+                    )?.length + 1
+                if (number === 0) {
+                    number = test.find(
+                        (find, index) =>
+                            find.name === test.name && index > testIndex
+                    )
+                        ? 1
+                        : 0
+                }
                 ws.cell(5, 3 + testIndex)
-                    .string(test.name)
+                    .string(
+                        `${test.name} ${number > 0 ? number.toString() : ''}`
+                    )
                     .style(styleBold)
                 ws.cell(6, 3 + testIndex)
                     .string(test.percentage + '%')
@@ -3592,110 +3585,104 @@ class StudentgroupController {
 
             let row = 7
             let studentCount = 1
-            const averageGrades = []
+            const averageGrades = Array(tests.length)
+                .fill(null)
+                .map(() => ({
+                    grade: 0,
+                    total: 0,
+                }))
             for (const student of students) {
-                const grades = await Grade.findAll({
-                    attributes: ['score', 'discarded'],
-                    where: {
-                        student_id: student.id,
-                        canceled_at: null,
-                    },
+                const paceguideTests = await Studentgrouppaceguide.findAll({
                     include: [
                         {
                             model: Studentgroupclass,
-                            as: 'studentgroupclasses',
+                            as: 'studentgroupclass',
                             required: true,
                             where: {
                                 canceled_at: null,
                                 studentgroup_id: studentGroup.id,
-                                locked_at: {
-                                    [Op.not]: null,
-                                },
                             },
+                            attributes: ['id'],
                             include: [
                                 {
-                                    model: Studentgrouppaceguide,
-                                    as: 'paceguides',
-                                    required: true,
+                                    model: Grade,
+                                    as: 'grades',
+                                    required: false,
                                     where: {
+                                        student_id: student.id,
                                         canceled_at: null,
                                     },
-                                    attributes: ['type', 'description'],
                                 },
                             ],
-                            order: [['date', 'ASC']],
-                            attributes: ['date', 'shift', 'locked_at'],
                         },
                     ],
+                    attributes: ['id', 'type', 'description', 'percentage'],
+                    where: {
+                        canceled_at: null,
+                    },
                 })
-
-                // // Calculate final grade. This logic needs to be adapted to your grading system.
-                // const finalAverage = grades
-                //     ? (grades.progress_test_1 || 0) +
-                //       (grades.progress_test_2 || 0) +
-                //       (grades.progress_test_3 || 0) +
-                //       (grades.midterm_written_test || 0) +
-                //       (grades.midterm_oral_test || 0) +
-                //       (grades.progress_test_4 || 0) +
-                //       (grades.progress_test_5 || 0) +
-                //       (grades.progress_test_6 || 0) +
-                //       (grades.final_written_test || 0) +
-                //       (grades.final_oral_test || 0)
-                //     : 0
-
-                // // Determine result based on final average
-                // let result = 'PASS'
-                // let resultStyle = styleHeaderDetails
-                // if (finalAverage < 50) {
-                //     // Example logic, adjust as needed
-                //     result = 'FAIL'
-                //     resultStyle = styleFail
-                // } else if (finalAverage < 70) {
-                //     result = 'REDO'
-                //     resultStyle = styleRedo
-                // }
 
                 // // Write student data to the worksheet
                 ws.cell(row, 1)
                     .string(studentCount.toString())
                     .style(styleNumericHeader)
                 ws.cell(row, 2).string(`${student.name} ${student.last_name}`)
-                let gradeIndex = 0
-                averageGrades.push([])
-                let finalAverageGrade = 0
-                for (let grade of grades) {
-                    // const { score } = grade
-                    let score = Math.random() * 100
-                    score = Math.round(score * 100) / 100
-                    ws.cell(row, 3 + gradeIndex)
-                        .number(score || 0)
-                        .style(styleNumericHeader)
-                    gradeIndex++
-                    averageGrades[studentCount - 1].push(score || 0)
-                    finalAverageGrade +=
-                        (score * tests[gradeIndex - 1].percentage) / 100
-                }
 
-                for (let i = gradeIndex; i < tests.length; i++) {
-                    let score = Math.random() * 100
-                    score = Math.round(score * 100) / 100
-                    ws.cell(row, 3 + i)
-                        .number(score || 0)
-                        .style(styleNumericHeader)
-                    finalAverageGrade += (score * tests[i].percentage) / 100
+                let finalAverageGrade = 0
+                for (
+                    let gradeIndex = 0;
+                    gradeIndex < tests.length;
+                    gradeIndex++
+                ) {
+                    const test = tests[gradeIndex]
+                    const paceguide = paceguideTests.find(
+                        (paceguideTest) =>
+                            paceguideTest.dataValues.description ===
+                            test.description
+                    )
+
+                    let score = 0
+                    let discarded = false
+                    if (paceguide) {
+                        score =
+                            paceguide?.dataValues?.studentgroupclass?.dataValues
+                                ?.grades[0]?.dataValues?.score || 0
+                        discarded =
+                            paceguide?.dataValues?.studentgroupclass?.dataValues
+                                ?.grades[0]?.dataValues?.discarded || false
+                    }
+
+                    if (score > 0) {
+                        averageGrades[gradeIndex].grade += score
+                        averageGrades[gradeIndex].total++
+                    }
+
+                    ws.cell(row, 3 + gradeIndex)
+                        .number(score)
+                        .style(discarded ? styleFail : styleNumericHeader)
+
+                    if (!discarded) {
+                        finalAverageGrade +=
+                            (score * tests[gradeIndex].percentage) / 100
+                    }
                 }
-                ws.cell(row, 13).number(finalAverageGrade / 2)
+                ws.cell(row, 13)
+                    .number(parseInt((finalAverageGrade / 2).toFixed(0)) || 0)
+                    .style(styleNumericHeader)
 
                 row++
                 studentCount++
             }
 
             let averageIndex = 0
-            for (let averageGrade of averageGrades) {
+            for (let test of tests) {
+                const totalGrade = averageGrades[averageIndex].grade
+                const totalStudents = averageGrades[averageIndex].total
                 const average =
-                    averageGrade.reduce((a, b) => a + b, 0) /
-                    averageGrade.length
-                ws.cell(row, 3 + averageIndex).number(average || 0)
+                    totalStudents > 0 ? totalGrade / totalStudents : 0
+                ws.cell(row, 3 + averageIndex)
+                    .number(parseInt(average.toFixed(0)) || 0)
+                    .style(styleNumericHeaderBold)
                 averageIndex++
             }
 
