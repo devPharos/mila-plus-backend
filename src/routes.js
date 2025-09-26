@@ -70,6 +70,8 @@ import MerchantXCostCenterController from './app/controllers/MerchantXCostCenter
 import DSOController from './app/controllers/DSOController.js'
 import ReportController from './app/controllers/ReportController.js'
 import EnrollmentStatController from './app/controllers/EnrollmentStatController.js'
+import RotationController from './app/controllers/RotationController.js'
+
 const routes = new Router()
 
 // Configuração do Multer para armazenamento em disco
@@ -86,6 +88,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage })
 const uploadByBuffer = multer({ storage: multer.memoryStorage() })
+
+// Configuration
+routes.post('/menu-hierarchy', MenuHierarchyController.store)
 
 // Public File
 routes.get('/get-file/:name', PublicFileController.show)
@@ -369,6 +374,8 @@ routes.post(
     '/studentgroups/grades/:studentgroup_id',
     StudentgroupController.storeGrades
 )
+
+routes.get('/rotation/groups/:studentgroup_id', RotationController.showGroup)
 
 routes.get('/agents/:agent_id', AgentController.show)
 routes.post('/agents', AgentController.store)

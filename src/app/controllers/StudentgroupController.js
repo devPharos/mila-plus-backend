@@ -80,7 +80,6 @@ export async function jobPutInClass() {
             ],
             attributes: ['student_id', 'group_id'],
         })
-        console.log('Results:', pendingStudents.length)
 
         for (let pendingStudent of pendingStudents) {
             const reason =
@@ -570,6 +569,7 @@ class StudentgroupController {
                     {
                         model: Staff,
                         as: 'staff',
+                        required: false,
                         attributes: ['name'],
                         required: teacherSearch ? true : false,
                         where: {
@@ -721,7 +721,7 @@ class StudentgroupController {
                             {
                                 model: Student,
                                 as: 'student',
-                                required: false,
+                                required: true,
                                 where: {
                                     canceled_at: null,
                                 },
@@ -1101,6 +1101,7 @@ class StudentgroupController {
                                         day: paceGuide.day,
                                         type: paceGuide.type,
                                         description: paceGuide.description,
+                                        percentage: paceGuide.percentage,
                                         created_by: req.userId,
                                     },
                                     {
@@ -1475,6 +1476,7 @@ class StudentgroupController {
                                 day: paceGuides[0].day,
                                 type: paceGuide.type,
                                 description: paceGuide.description,
+                                percentage: paceGuide.percentage,
                                 created_by: req.userId,
                             },
                             {
@@ -1931,7 +1933,13 @@ class StudentgroupController {
                     ['day', 'ASC'],
                     ['description', 'ASC'],
                 ],
-                attributes: ['id', 'type', 'description', 'status'],
+                attributes: [
+                    'id',
+                    'type',
+                    'description',
+                    'status',
+                    'percentage',
+                ],
             })
 
             const studentGroupProgress = await StudentGroupProgress(
@@ -3289,7 +3297,7 @@ class StudentgroupController {
                 return res.status(400).json({ error: 'group_id is required' })
             }
 
-            const name = `evaluation_chart_report_${Date.now()}.xlsx`
+            const name = `evaluation_chart_report_${Date.now()}`
             const path = `${resolve(
                 directory,
                 '..',
@@ -3353,6 +3361,17 @@ class StudentgroupController {
                 },
             })
 
+            const styleNumericHeaderBold = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                },
+            })
+
             const styleFail = wb.createStyle({
                 font: {
                     color: '#ff0000',
@@ -3403,6 +3422,45 @@ class StudentgroupController {
                 return res.status(404).json({ error: 'Group not found' })
             }
 
+            const studentGroupPaceguides = await Studentgrouppaceguide.findAll({
+                where: {
+                    description: {
+                        [Op.or]: [
+                            {
+                                [Op.iLike]: '%Test%',
+                            },
+                            {
+                                [Op.iLike]: '%View%',
+                            },
+                        ],
+                    },
+                    canceled_at: null,
+                },
+                include: [
+                    {
+                        model: Studentgroupclass,
+                        as: 'studentgroupclass',
+                        required: true,
+                        where: {
+                            canceled_at: null,
+                            studentgroup_id: studentGroup.id,
+                        },
+                    },
+                ],
+                order: [['day', 'ASC']],
+                attributes: ['day', 'type', 'description', 'percentage'],
+            })
+
+            const tests = []
+            for (const paceguide of studentGroupPaceguides) {
+                const { day, type, description, percentage } = paceguide
+                tests.push({
+                    name: `${type}`,
+                    description,
+                    percentage: percentage,
+                })
+            }
+
             // Set up worksheet header
             const shift =
                 (studentGroup.morning ? 'MORNING' : '') +
@@ -3449,34 +3507,40 @@ class StudentgroupController {
                 .style(styleHeaderDetails)
 
             // Set up column headers
-            ws.cell(5, 1).string('#').style(styleBoldCenter)
+            ws.cell(5, 1, 6, 1, true).string('#').style(styleBoldCenter)
             ws.cell(5, 2, 6, 2, true)
                 .string('STUDENT´S NAME (PRINT NAME)')
                 .style(styleBoldCenter)
-            ws.cell(5, 3).string('PROGRESS TEST 1').style(styleBold)
-            ws.cell(5, 4).string('PROGRESS TEST 2').style(styleBold)
-            ws.cell(5, 5).string('PROGRESS TEST 3').style(styleBold)
-            ws.cell(5, 6).string('MIDTERM WRITTEN TEST').style(styleBold)
-            ws.cell(5, 7).string('MIDTERM ORAL TEST').style(styleBold)
-            ws.cell(5, 8).string('PROGRESS TEST 4').style(styleBold)
-            ws.cell(5, 9).string('PROGRESS TEST 5').style(styleBold)
-            ws.cell(5, 10).string('PROGRESS TEST 6').style(styleBold)
-            ws.cell(5, 11).string('FINAL WRITTEN TEST').style(styleBold)
-            ws.cell(5, 12).string('FINAL ORAL TEST').style(styleBold)
+
+            let testIndex = 0
+            for (let test of tests) {
+                let number =
+                    tests.filter(
+                        (find, index) =>
+                            find.name === test.name && index < testIndex
+                    )?.length + 1
+                if (number === 0) {
+                    number = test.find(
+                        (find, index) =>
+                            find.name === test.name && index > testIndex
+                    )
+                        ? 1
+                        : 0
+                }
+                ws.cell(5, 3 + testIndex)
+                    .string(
+                        `${test.name} ${number > 0 ? number.toString() : ''}`
+                    )
+                    .style(styleBold)
+                ws.cell(6, 3 + testIndex)
+                    .string(test.percentage + '%')
+                    .style(styleNumericHeader)
+                testIndex++
+            }
             ws.cell(5, 13).string('Final Average Grade').style(styleBold)
             ws.cell(5, 14).string('RESULT').style(styleBold)
 
             // Set up grading weights
-            ws.cell(6, 3).string('10%').style(styleNumericHeader)
-            ws.cell(6, 4).string('10%').style(styleNumericHeader)
-            ws.cell(6, 5).string('5%').style(styleNumericHeader)
-            ws.cell(6, 6).string('30%').style(styleNumericHeader)
-            ws.cell(6, 7).string('45%').style(styleNumericHeader)
-            ws.cell(6, 8).string('10%').style(styleNumericHeader)
-            ws.cell(6, 9).string('5%').style(styleNumericHeader)
-            ws.cell(6, 10).string('10%').style(styleNumericHeader)
-            ws.cell(6, 11).string('30%').style(styleNumericHeader)
-            ws.cell(6, 12).string('45%').style(styleNumericHeader)
             ws.cell(6, 13).string('100%').style(styleNumericHeader)
 
             // Set column widths
@@ -3497,6 +3561,8 @@ class StudentgroupController {
 
             ws.row(5).filter()
             ws.row(6).freeze()
+
+            ws.column(2).freeze()
 
             // Fetch students in the specified group
             const students = await Student.findAll({
@@ -3519,95 +3585,109 @@ class StudentgroupController {
 
             let row = 7
             let studentCount = 1
+            const averageGrades = Array(tests.length)
+                .fill(null)
+                .map(() => ({
+                    grade: 0,
+                    total: 0,
+                }))
             for (const student of students) {
-                const grades = await Grade.findAll({
-                    attributes: ['score', 'discarded'],
-                    where: {
-                        student_id: student.id,
-                        canceled_at: null,
-                    },
+                const paceguideTests = await Studentgrouppaceguide.findAll({
                     include: [
                         {
                             model: Studentgroupclass,
-                            as: 'studentgroupclasses',
+                            as: 'studentgroupclass',
                             required: true,
                             where: {
                                 canceled_at: null,
                                 studentgroup_id: studentGroup.id,
-                                locked_at: {
-                                    [Op.not]: null,
-                                },
                             },
+                            attributes: ['id', 'locked_at'],
                             include: [
                                 {
-                                    model: Studentgrouppaceguide,
-                                    as: 'paceguides',
-                                    required: true,
+                                    model: Grade,
+                                    as: 'grades',
+                                    required: false,
                                     where: {
+                                        student_id: student.id,
                                         canceled_at: null,
                                     },
-                                    attributes: ['type', 'description'],
                                 },
                             ],
-                            order: [['date', 'ASC']],
-                            attributes: ['date', 'shift', 'locked_at'],
                         },
                     ],
+                    attributes: ['id', 'type', 'description', 'percentage'],
+                    where: {
+                        canceled_at: null,
+                    },
                 })
-
-                // // Calculate final grade. This logic needs to be adapted to your grading system.
-                // const finalAverage = grades
-                //     ? (grades.progress_test_1 || 0) +
-                //       (grades.progress_test_2 || 0) +
-                //       (grades.progress_test_3 || 0) +
-                //       (grades.midterm_written_test || 0) +
-                //       (grades.midterm_oral_test || 0) +
-                //       (grades.progress_test_4 || 0) +
-                //       (grades.progress_test_5 || 0) +
-                //       (grades.progress_test_6 || 0) +
-                //       (grades.final_written_test || 0) +
-                //       (grades.final_oral_test || 0)
-                //     : 0
-
-                // // Determine result based on final average
-                // let result = 'PASS'
-                // let resultStyle = styleHeaderDetails
-                // if (finalAverage < 50) {
-                //     // Example logic, adjust as needed
-                //     result = 'FAIL'
-                //     resultStyle = styleFail
-                // } else if (finalAverage < 70) {
-                //     result = 'REDO'
-                //     resultStyle = styleRedo
-                // }
 
                 // // Write student data to the worksheet
                 ws.cell(row, 1)
                     .string(studentCount.toString())
                     .style(styleNumericHeader)
                 ws.cell(row, 2).string(`${student.name} ${student.last_name}`)
-                let gradeIndex = 0
-                for (let grade of grades) {
-                    ws.cell(row, 3 + gradeIndex)
-                        .number(grade.score || 0)
-                        .style(styleNumericHeader)
+
+                let finalAverageGrade = 0
+                for (
+                    let gradeIndex = 0;
+                    gradeIndex < tests.length;
                     gradeIndex++
+                ) {
+                    const test = tests[gradeIndex]
+                    const paceguide = paceguideTests.find(
+                        (paceguideTest) =>
+                            paceguideTest.dataValues.description ===
+                            test.description
+                    )
+
+                    let score = 0
+                    let discarded = false
+                    let locked = false
+                    if (paceguide) {
+                        score =
+                            paceguide?.dataValues?.studentgroupclass?.dataValues
+                                ?.grades[0]?.dataValues?.score || 0
+                        discarded =
+                            paceguide?.dataValues?.studentgroupclass?.dataValues
+                                ?.grades[0]?.dataValues?.discarded || false
+
+                        locked =
+                            paceguide?.dataValues?.studentgroupclass?.dataValues
+                                ?.locked_at === null
+                                ? false
+                                : true
+                    }
+
+                    ws.cell(row, 3 + gradeIndex)
+                        .number(score)
+                        .style(discarded ? styleFail : styleNumericHeader)
+
+                    if (!discarded && locked) {
+                        averageGrades[gradeIndex].grade += score
+                        averageGrades[gradeIndex].total++
+                        finalAverageGrade +=
+                            (score * tests[gradeIndex].percentage) / 100
+                    }
                 }
-                // ws.cell(row, 2).number(grades?.progress_test_1 || 0)
-                // ws.cell(row, 3).number(grades?.progress_test_2 || 0)
-                // ws.cell(row, 4).number(grades?.progress_test_3 || 0)
-                // ws.cell(row, 5).number(grades?.midterm_written_test || 0)
-                // ws.cell(row, 6).number(grades?.midterm_oral_test || 0)
-                // ws.cell(row, 7).number(grades?.progress_test_4 || 0)
-                // ws.cell(row, 8).number(grades?.progress_test_5 || 0)
-                // ws.cell(row, 9).number(grades?.progress_test_6 || 0)
-                // ws.cell(row, 10).number(grades?.final_written_test || 0)
-                // ws.cell(row, 11).number(grades?.final_oral_test || 0)
-                // ws.cell(row, 12).number(finalAverage)
-                // ws.cell(row, 13).string(result).style(resultStyle)
+                ws.cell(row, 13)
+                    .number(parseInt((finalAverageGrade / 2).toFixed(0)) || 0)
+                    .style(styleNumericHeader)
 
                 row++
                 studentCount++
+            }
+
+            let averageIndex = 0
+            for (let test of tests) {
+                const totalGrade = averageGrades[averageIndex].grade
+                const totalStudents = averageGrades[averageIndex].total
+                const average =
+                    totalStudents > 0 ? totalGrade / totalStudents : 0
+                ws.cell(row, 3 + averageIndex)
+                    .number(parseInt(average.toFixed(0)) || 0)
+                    .style(styleNumericHeaderBold)
+                averageIndex++
             }
 
             let ret = null
