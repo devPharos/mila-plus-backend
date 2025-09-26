@@ -69,6 +69,7 @@ import CostCenterController from './app/controllers/CostCenterController.js'
 import MerchantXCostCenterController from './app/controllers/MerchantXCostCenterController.js'
 import DSOController from './app/controllers/DSOController.js'
 import ReportController from './app/controllers/ReportController.js'
+import EnrollmentStatController from './app/controllers/EnrollmentStatController.js'
 import RotationController from './app/controllers/RotationController.js'
 
 const routes = new Router()
@@ -93,7 +94,8 @@ routes.post('/menu-hierarchy', MenuHierarchyController.store)
 
 // Public File
 routes.get('/get-file/:name', PublicFileController.show)
-
+routes.get('/enrollment-stats/month', EnrollmentStatController.month) 
+routes.get('/enrollment-stats/summary', EnrollmentStatController.summary)
 routes.post('/emergepay/simple-form', EmergepayController.simpleForm)
 routes.post('/emergepay/text-to-pay', EmergepayController.textToPay)
 routes.post(
