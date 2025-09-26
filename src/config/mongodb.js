@@ -1,28 +1,57 @@
-// mongoClient.js
-import { MongoClient } from 'mongodb'
+import { MongoClient } from 'mongodb';
 
-const uri = process.env.MONGODB_URI
-const client = new MongoClient(uri)
-let db
+const uri = process.env.MONGODB_URI; 
+const dbName = process.env.MONGODB_DBNAME || 'MilaPlus';
 
-async function connectToMongo() {
-    try {
-        await client.connect()
-        db = client.db('MilaPlus') // Coloque o nome do seu banco
-        console.log('✅ MongoDB connected.')
-    } catch (e) {
-        console.log("❌ It wasn't possible to connect to MongoDB.")
-        // console.error('Não foi possível conectar ao MongoDB', e)
-        // process.exit(1) // Encerra a aplicação se não conseguir conectar
-    }
+export const isMongoEnabled =
+  typeof uri === 'string' && /^mongodb(\+srv)?:\/\//.test(uri);
+
+let client;
+let db;
+let connecting;
+
+export async function connectToMongo() {
+  if (!isMongoEnabled) {
+    console.warn('Mongo OFF: MONGODB_URI ausente/invalid.');
+    return null;
+  }
+  if (db) return db;
+  if (connecting) return connecting;
+
+  client = new MongoClient(uri, {
+   
+  });
+
+  connecting = client
+    .connect()
+    .then(() => {
+      db = client.db(dbName);
+      console.log('✅ MongoDB connected.');
+      return db;
+    })
+    .catch((err) => {
+      console.error('MongoDB connection failed:', err.message);
+      return null; 
+    })
+    .finally(() => {
+      connecting = null;
+    });
+
+  return connecting;
 }
 
-function getDb() {
-    if (!db) {
-        console.log("❌ MongoDB couldn't be connected.")
-        // throw new Error('Conexão com MongoDB não estabelecida.')
-    }
-    return db
+export function getDb() {
+  if (!db) {
+    console.warn('Mongo DB not initialized. Use connectToMongo() first.');
+    return null;
+  }
+  return db;
 }
 
-export { connectToMongo, getDb }
+export async function closeMongo() {
+  if (client) {
+    await client.close();
+    client = undefined;
+    db = undefined;
+  }
+}
