@@ -13,6 +13,7 @@ class Level extends Model {
                 name: Sequelize.STRING,
                 programcategory_id: Sequelize.UUID,
                 total_hours: Sequelize.INTEGER,
+                previous_level_id: Sequelize.UUID,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
@@ -31,6 +32,11 @@ class Level extends Model {
     static associate(models) {
         this.belongsTo(models.Programcategory, {
             sourceKey: { name: 'programcategory_id' },
+        })
+        this.belongsTo(models.Level, {
+            sourceKey: { name: 'previous_level_id' },
+            foreignKey: { name: 'previous_level_id' },
+            as: 'previous_level',
         })
     }
 }

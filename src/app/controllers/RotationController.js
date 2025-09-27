@@ -1,7 +1,6 @@
 import Sequelize from 'sequelize'
 import Staff from '../models/Staff.js'
 import Filial from '../models/Filial.js'
-import { handleCache } from '../middlewares/indexCacheHandler.js'
 import Studentgroup from '../models/Studentgroup.js'
 import Level from '../models/Level.js'
 import Programcategory from '../models/Programcategory.js'
@@ -10,8 +9,9 @@ import Classroom from '../models/Classroom.js'
 import Workload from '../models/Workload.js'
 import StudentXGroup from '../models/StudentXGroup.js'
 import Student from '../models/Student.js'
-import Studentinactivation from '../models/Studentinactivation.js'
 import { getAbsenceStatus } from './AbsenseControlController.js'
+import { getVacationDays } from './VacationController.js'
+import Studentgroupclass from '../models/Studentgroupclass.js'
 
 const { Op } = Sequelize
 
@@ -178,9 +178,25 @@ class RotationController {
                         studentGroup.dataValues.start_date,
                         studentGroup.dataValues.end_date
                     )
+                    const vacationDays = await getVacationDays(
+                        studentgroup_id,
+                        student.id,
+                        studentGroup.dataValues.start_date,
+                        studentGroup.dataValues.end_date
+                    )
                     studentxgroup.dataValues.frequency = frequency
+                    studentxgroup.dataValues.vacation_days = vacationDays
                 }
             }
+
+            const totalClasses = await Studentgroupclass.count({
+                where: {
+                    studentgroup_id,
+                    canceled_at: null,
+                },
+            })
+
+            studentGroup.dataValues.total_classes = totalClasses
 
             return res.json(studentGroup)
         } catch (err) {
