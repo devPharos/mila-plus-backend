@@ -71,6 +71,8 @@ import DSOController from './app/controllers/DSOController.js'
 import ReportController from './app/controllers/ReportController.js'
 import EnrollmentStatController from './app/controllers/EnrollmentStatController.js'
 import RotationController from './app/controllers/RotationController.js'
+import VacationController from './app/controllers/VacationController.js'
+import MedicalExcuseController from './app/controllers/MedicalExcuseController.js'
 
 const routes = new Router()
 
@@ -94,7 +96,7 @@ routes.post('/menu-hierarchy', MenuHierarchyController.store)
 
 // Public File
 routes.get('/get-file/:name', PublicFileController.show)
-routes.get('/enrollment-stats/month', EnrollmentStatController.month) 
+routes.get('/enrollment-stats/month', EnrollmentStatController.month)
 routes.get('/enrollment-stats/summary', EnrollmentStatController.summary)
 routes.post('/emergepay/simple-form', EmergepayController.simpleForm)
 routes.post('/emergepay/text-to-pay', EmergepayController.textToPay)
@@ -649,24 +651,18 @@ routes.get('/filialdiscounts', FilialDiscountListController.index)
 routes.get('/files', FileController.index)
 
 // vacations
-routes.post('/students/Vacation', StudentController.storeVacation)
-routes.get('/students/Vacation/:student_id', StudentController.showVacation)
-routes.delete(
-    '/students/Vacation/:vacation_id',
-    StudentController.deleteVacation
-)
-routes.post('/vacation/excel', StudentController.excelVacation)
-routes.post('/Medical_Excuse/excel', StudentController.excelMedicalExcuse)
+routes.post('/vacations', VacationController.store)
+routes.get('/vacations/:student_id', VacationController.show)
+routes.delete('/vacations/:vacation_id', VacationController.delete)
+routes.post('/vacations/excel', VacationController.excel)
+routes.post('/Medical_Excuse/excel', MedicalExcuseController.excel)
 
 // medical excuse
-routes.post('/students/Medical_Excuse', StudentController.storeMedicalExcuse)
-routes.get(
-    '/students/Medical_Excuse/:student_id',
-    StudentController.showMedicalExcuse
-)
+routes.post('/Medical_Excuse', MedicalExcuseController.store)
+routes.get('/Medical_Excuse/:student_id', MedicalExcuseController.show)
 routes.delete(
-    '/students/Medical_Excuse/:medical_excuse_id',
-    StudentController.deleteMedicalExcuse
+    '/Medical_Excuse/:medical_excuse_id',
+    MedicalExcuseController.delete
 )
 routes.post('/partners_and_influencers', PartnersAndInfluencersController.store)
 routes.get('/partners_and_influencers', PartnersAndInfluencersController.index)
