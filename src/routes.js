@@ -97,6 +97,7 @@ routes.post('/menu-hierarchy', MenuHierarchyController.store)
 
 // Public File
 routes.get('/get-file/:name', PublicFileController.show)
+routes.get('/enrollment-stats/process-by-month', EnrollmentStatController.processByMonth)
 routes.get('/enrollment-stats/month', EnrollmentStatController.month)
 routes.get('/enrollment-stats/summary', EnrollmentStatController.summary)
 routes.post('/emergepay/simple-form', EmergepayController.simpleForm)
