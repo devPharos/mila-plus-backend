@@ -125,6 +125,107 @@ class GradeController {
             next(err)
         }
     }
+
+    async showTestsByStudentAndGroup(req, res, next) {
+        try {
+            const { student_id, group_id } = req.params
+
+            const paceguides = await Studentgrouppaceguide.findAll({
+                attributes: ['id', 'type', 'description', 'percentage'],
+                where: {
+                    percentage: {
+                        [Op.gt]: 0,
+                    },
+                    studentgroup_id: group_id,
+                    canceled_at: null,
+                },
+                include: [
+                    {
+                        model: Grade,
+                        as: 'grades',
+                        required: false,
+                        attributes: ['id', 'score', 'discarded', 'dso_note'],
+                        where: {
+                            student_id,
+                            canceled_at: null,
+                        },
+                        include: [
+                            {
+                                model: Studentgroupclass,
+                                as: 'studentgroupclasses',
+                                required: true,
+                                where: {
+                                    canceled_at: null,
+                                },
+                                attributes: ['id', 'status'],
+                                include: [
+                                    {
+                                        model: Attendance,
+                                        as: 'attendances',
+                                        required: true,
+                                        where: {
+                                            student_id,
+                                            canceled_at: null,
+                                        },
+                                        attributes: [
+                                            'vacation_id',
+                                            'medical_excuse_id',
+                                        ],
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+                order: [['created_at', 'ASC']],
+            })
+
+            const tests = []
+
+            for (let i = 0; i < paceguides.length; i++) {
+                const paceguide = paceguides[i].dataValues
+                let number =
+                    paceguides.filter(
+                        (test, index) =>
+                            test.type === paceguide.type && index < i
+                    )?.length + 1
+                if (number === 0) {
+                    number = paceguides.find(
+                        (test, index) =>
+                            test.type === paceguide.type && index > i
+                    )
+                        ? 1
+                        : 0
+                }
+
+                const name = `${paceguide.type} ${
+                    number > 0 ? number.toString() : ''
+                }`
+                const { score, discarded, studentgroupclasses } =
+                    paceguide.grades?.[0] || {}
+
+                const { vacation_id, medical_excuse_id } =
+                    studentgroupclasses?.attendances?.[0] || {}
+
+                tests.push({
+                    id: paceguide.id,
+                    name,
+                    type: paceguide.type,
+                    description: paceguide.description,
+                    percentage: paceguide.percentage,
+                    score,
+                    discarded,
+                    vacation: vacation_id ? true : false,
+                    medical_excuse: medical_excuse_id ? true : false,
+                })
+            }
+
+            return res.json(tests)
+        } catch (err) {
+            err.transaction = req?.transaction
+            next(err)
+        }
+    }
 }
 
 export default new GradeController()

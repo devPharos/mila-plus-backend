@@ -70,9 +70,10 @@ import MerchantXCostCenterController from './app/controllers/MerchantXCostCenter
 import DSOController from './app/controllers/DSOController.js'
 import ReportController from './app/controllers/ReportController.js'
 import EnrollmentStatController from './app/controllers/EnrollmentStatController.js'
-import RotationController from './app/controllers/RotationController.js'
 import VacationController from './app/controllers/VacationController.js'
 import MedicalExcuseController from './app/controllers/MedicalExcuseController.js'
+import RotationTwoController from './app/controllers/RotationTwoController.js'
+import RotationOneController from './app/controllers/RotationOneController.js'
 
 const routes = new Router()
 
@@ -377,7 +378,11 @@ routes.post(
     StudentgroupController.storeGrades
 )
 
-routes.get('/rotation/groups/:studentgroup_id', RotationController.showGroup)
+routes.get('/rotation/group/:studentgroup_id', RotationOneController.show)
+
+routes.get('/rotation/listgroups', RotationOneController.listGroups)
+
+routes.get('/rotation2', RotationTwoController.index)
 
 routes.get('/agents/:agent_id', AgentController.show)
 routes.post('/agents', AgentController.store)
@@ -407,6 +412,12 @@ routes.get('/reports/receivables', ReportController.receivables)
 
 routes.get('/grades/:student_id', GradeController.list)
 routes.put('/grades/:student_id', GradeController.update)
+routes.get(
+    '/grades/:student_id/:group_id',
+    GradeController.showTestsByStudentAndGroup
+)
+routes.put('/rotation/students/:student_id', RotationOneController.update)
+routes.post('/rotation', RotationOneController.store)
 
 routes.get('/staffs', StaffController.index)
 routes.get('/staffs/:staff_id', StaffController.show)

@@ -23,6 +23,20 @@ class LevelController {
                 include: [
                     {
                         model: Programcategory,
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                        attributes: ['id', 'name'],
+                    },
+                    {
+                        model: Level,
+                        as: 'previous_level',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                        attributes: ['id', 'name'],
                     },
                 ],
             })
@@ -85,16 +99,21 @@ class LevelController {
                             canceled_at: null,
                         },
                     },
+                    {
+                        model: Level,
+                        as: 'previous_level',
+                        required: false,
+                        where: {
+                            canceled_at: null,
+                        },
+                        attributes: ['id', 'name'],
+                    },
                 ],
                 distinct: true,
                 limit,
                 offset: page ? (page - 1) * limit : 0,
                 order: searchOrder,
             })
-
-            if (req.cacheKey) {
-                handleCache({ cacheKey: req.cacheKey, rows, count })
-            }
 
             return res.json({ totalRows: count, rows })
         } catch (err) {
@@ -105,6 +124,7 @@ class LevelController {
 
     async store(req, res, next) {
         try {
+            const { programcategory, previous_level } = req.body
             const levelExist = await Level.findOne({
                 where: {
                     company_id: 1,
@@ -119,10 +139,34 @@ class LevelController {
                 })
             }
 
+            const programCategory = await Programcategory.findByPk(
+                programcategory.id
+            )
+
+            if (!programCategory) {
+                return res.status(400).json({
+                    error: 'Program Category does not exist.',
+                })
+            }
+
+            let previousLevel = null
+
+            if (previous_level.id) {
+                previousLevel = await Level.findByPk(previous_level.id)
+
+                if (!previousLevel) {
+                    return res.status(400).json({
+                        error: 'Previous Level does not exist.',
+                    })
+                }
+            }
+
             const newlevel = await Level.create(
                 {
                     company_id: 1,
                     ...req.body,
+                    programcategory_id: programcategory.id,
+                    previous_level_id: previousLevel?.id,
                     created_by: req.userId,
                 },
                 {
@@ -141,6 +185,7 @@ class LevelController {
     async update(req, res, next) {
         try {
             const { level_id } = req.params
+            const { programcategory, previous_level } = req.body
             const levelExist = await Level.findByPk(level_id)
 
             if (!levelExist) {
@@ -149,23 +194,33 @@ class LevelController {
                 })
             }
 
-            const workloadExist = await Workload.findOne({
-                where: {
-                    company_id: 1,
-                    level_id,
-                    canceled_at: null,
-                },
-            })
+            const programCategory = await Programcategory.findByPk(
+                programcategory.id
+            )
 
-            if (workloadExist) {
+            if (!programCategory) {
                 return res.status(400).json({
-                    error: 'There are active workloads on this level.',
+                    error: 'Program Category does not exist.',
                 })
+            }
+
+            let previousLevel = null
+
+            if (previous_level.id) {
+                previousLevel = await Level.findByPk(previous_level.id)
+
+                if (!previousLevel) {
+                    return res.status(400).json({
+                        error: 'Previous Level does not exist.',
+                    })
+                }
             }
 
             const level = await levelExist.update(
                 {
                     ...req.body,
+                    programcategory_id: programcategory.id,
+                    previous_level_id: previousLevel?.id,
                     updated_by: req.userId,
                 },
                 {
