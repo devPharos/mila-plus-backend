@@ -11,10 +11,126 @@ import { format, lastDayOfMonth, parseISO } from 'date-fns'
 import Processtype from '../models/Processtype.js'
 import Grade from '../models/Grade.js'
 import Studentgrouppaceguide from '../models/Studentgrouppaceguide.js'
+import { getVacationDays } from './VacationController.js'
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
 const { Op } = Sequelize
+
+export async function getStudentFrequencyOnGroup(
+    student_id = null,
+    studentgroup_id = null
+) {
+    try {
+        let totals = {
+            classes: 0,
+            absenses: 0,
+            frequency: 0,
+            vacation_days: 0,
+        }
+
+        if (!student_id || !studentgroup_id) {
+            return totals
+        }
+
+        const studentGroup = await Studentgroup.findByPk(studentgroup_id)
+
+        if (!studentGroup) {
+            return totals
+        }
+
+        const { start_date, end_date } = studentGroup.dataValues
+        const attendances = await Attendance.findAll({
+            where: {
+                student_id,
+                canceled_at: null,
+                status: {
+                    [Op.ne]: 'T',
+                },
+            },
+            include: [
+                {
+                    model: Studentgroupclass,
+                    as: 'studentgroupclasses',
+                    required: true,
+                    where: {
+                        studentgroup_id,
+                        status: {
+                            [Op.ne]: 'Holiday',
+                        },
+                        date: {
+                            [Op.between]: [start_date, end_date],
+                        },
+                        canceled_at: null,
+                    },
+                    attributes: ['id', 'studentgroup_id', 'date', 'locked_at'],
+                },
+            ],
+            attributes: [
+                'id',
+                'status',
+                'vacation_id',
+                'medical_excuse_id',
+                'first_check',
+                'second_check',
+                'shift',
+                'dso_note',
+            ],
+            distinct: true,
+        })
+
+        totals.classes = attendances.length
+
+        let latesCount = 0
+        for (let attendance of attendances) {
+            const isLocked = attendance.studentgroupclasses.locked_at
+                ? true
+                : false
+
+            if (isLocked) {
+                if (attendance.medical_excuse_id || attendance.vacation_id) {
+                } else if (attendance.status === 'A') {
+                    totals.absenses++
+                } else {
+                    if (attendance.first_check === 'Late') {
+                        ++latesCount
+                        if (latesCount === 3) {
+                            totals.absenses += 0.5
+                            latesCount = 0
+                        }
+                    }
+                    if (attendance.second_check === 'Late') {
+                        ++latesCount
+                        if (latesCount === 3) {
+                            totals.absenses += 0.5
+                            latesCount = 0
+                        }
+                    }
+                    if (
+                        attendance.first_check === 'Absent' ||
+                        attendance.second_check === 'Absent'
+                    ) {
+                        totals.absenses += 0.5
+                    }
+                }
+            }
+        }
+
+        if (totals.classes > 0) {
+            totals.frequency = Math.round(
+                (1 - totals.absenses / totals.classes) * 100
+            )
+        }
+
+        const vacationDays = await getVacationDays(studentgroup_id, student_id)
+
+        totals.vacation_days = vacationDays
+
+        return totals
+    } catch (err) {
+        console.log(err)
+    }
+}
 
 export async function getAbsenceStatus(
     student_id = null,

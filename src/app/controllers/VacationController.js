@@ -1,6 +1,6 @@
 import Sequelize from 'sequelize'
 import Student from '../models/Student.js'
-import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
 import File from '../models/File.js'
 import Vacation from '../models/Vacation.js'
 import VacationFiles from '../models/VacationFiles.js'
@@ -11,67 +11,39 @@ import xl from 'excel4node'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { calculateAttendanceStatus } from './AttendanceController.js'
-import Studentgroup from '../models/Studentgroup.js'
 import MailLog from '../../Mails/MailLog.js'
 
 const { Op } = Sequelize
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
 
-export async function getVacationDays(
-    studentgroup_id,
-    student_id,
-    start_date,
-    end_date
-) {
+export async function getVacationDays(studentgroup_id, student_id) {
     try {
-        const vacations = await Vacation.findAll({
+        const attendancesOnVacation = await Attendance.findAll({
             where: {
                 student_id,
-                [Op.or]: [
-                    {
-                        date_from: {
-                            [Op.between]: [start_date, end_date],
-                        },
-                    },
-                    {
-                        date_to: {
-                            [Op.between]: [start_date, end_date],
-                        },
-                    },
-                ],
+                vacation_id: {
+                    [Op.not]: null,
+                },
                 canceled_at: null,
             },
-        })
-
-        let vacationDays = 0
-
-        for (let vacation of vacations) {
-            const dateFrom =
-                vacation.date_from > start_date
-                    ? vacation.date_from
-                    : start_date
-            const dateTo =
-                vacation.date_to < end_date ? vacation.date_to : end_date
-
-            let date = dateFrom
-            while (date <= dateTo) {
-                date = format(addDays(parseISO(date), 1), 'yyyy-MM-dd')
-                const hasClass = await Studentgroupclass.findOne({
+            include: [
+                {
+                    model: Studentgroupclass,
+                    as: 'studentgroupclasses',
+                    required: true,
                     where: {
                         studentgroup_id,
-                        date: format(date, 'yyyy-MM-dd'),
                         canceled_at: null,
                     },
-                })
+                },
+            ],
+            attributes: ['id', 'vacation_id'],
+        })
 
-                if (hasClass) {
-                    vacationDays++
-                }
-            }
-        }
+        const vacation_days = attendancesOnVacation?.length
 
-        return vacationDays
+        return vacation_days
     } catch (err) {
         const className = 'VacationController'
         const functionName = 'getVacationDays'
