@@ -228,6 +228,7 @@ class RotationOneController {
 
             const studentsXGroup = await StudentXGroup.findAll({
                 where: {
+                    end_date: null,
                     group_id: studentgroup_id,
                     canceled_at: null,
                 },
