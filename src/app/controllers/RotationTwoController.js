@@ -34,14 +34,6 @@ class RotationTwoController {
 
             const filialSearch = verifyFilialSearch(Studentgroup, req)
 
-            console.log({
-                morning,
-                afternoon,
-                evening,
-                level_id,
-                previous: level?.dataValues?.previous_level_id,
-            })
-
             const requiredGroups = await Studentgroup.findAll({
                 where: {
                     ...filialSearch,
