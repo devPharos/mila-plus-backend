@@ -97,7 +97,10 @@ routes.post('/menu-hierarchy', MenuHierarchyController.store)
 
 // Public File
 routes.get('/get-file/:name', PublicFileController.show)
-routes.get('/enrollment-stats/process-by-month', EnrollmentStatController.processByMonth)
+routes.get(
+    '/enrollment-stats/process-by-month',
+    EnrollmentStatController.processByMonth
+)
 routes.get('/enrollment-stats/month', EnrollmentStatController.month)
 routes.get('/enrollment-stats/summary', EnrollmentStatController.summary)
 routes.post('/emergepay/simple-form', EmergepayController.simpleForm)
@@ -384,6 +387,9 @@ routes.get('/rotation/group/:studentgroup_id', RotationOneController.show)
 routes.get('/rotation/listgroups', RotationOneController.listGroups)
 
 routes.get('/rotation2', RotationTwoController.index)
+routes.post('/rotation2', RotationTwoController.store)
+
+routes.get('/shifts', RotationTwoController.distinctShifts)
 
 routes.get('/agents/:agent_id', AgentController.show)
 routes.post('/agents', AgentController.store)

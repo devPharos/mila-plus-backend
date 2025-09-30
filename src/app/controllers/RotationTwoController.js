@@ -13,20 +13,182 @@ import { getStudentFrequencyOnGroup } from './AbsenseControlController.js'
 import { getVacationDays } from './VacationController.js'
 import Studentgroupclass from '../models/Studentgroupclass.js'
 import Rotation from '../models/Rotation.js'
-import Grade from '../models/Grade.js'
-import Studentgrouppaceguide from '../models/Studentgrouppaceguide.js'
+import Vacation from '../models/Vacation.js'
+import MedicalExcuse from '../models/MedicalExcuse.js'
+import { format, subDays } from 'date-fns'
 
 const { Op } = Sequelize
 
 class RotationTwoController {
     async index(req, res, next) {
         try {
+            console.log(0)
+            const {
+                morning = false,
+                afternoon = false,
+                evening = false,
+                level_id = null,
+            } = req.query
+
+            console.log({ morning, afternoon, evening, level_id })
+            const students = await Rotation.findAll({
+                where: {
+                    next_level_id: level_id,
+                    canceled_at: null,
+                },
+                include: [
+                    {
+                        model: Studentgroup,
+                        as: 'studentgroup',
+                        required: true,
+                        where: {
+                            morning: morning,
+                            afternoon: afternoon,
+                            evening: evening,
+                            canceled_at: null,
+                        },
+                        include: [
+                            {
+                                model: Staff,
+                                as: 'staff',
+                                required: true,
+                                where: {
+                                    canceled_at: null,
+                                },
+                                attributes: ['id', 'name', 'last_name'],
+                            },
+                        ],
+                        attributes: [
+                            'id',
+                            'name',
+                            'status',
+                            'rotation_status',
+                            'rotation_date',
+                            'morning',
+                            'afternoon',
+                            'evening',
+                        ],
+                    },
+                    {
+                        model: Student,
+                        as: 'student',
+                        required: true,
+                        where: {
+                            canceled_at: null,
+                        },
+                        attributes: [
+                            'name',
+                            'last_name',
+                            'registration_number',
+                        ],
+                    },
+                ],
+                order: [
+                    ['student', 'name', 'ASC'],
+                    ['student', 'last_name', 'ASC'],
+                ],
+                distinct: true,
+            })
+
             const groups = await Studentgroup.findAll({
                 where: {
+                    morning: morning,
+                    afternoon: afternoon,
+                    evening: evening,
                     rotation_status: 'First Step Done',
                     canceled_at: null,
                 },
                 include: [
+                    {
+                        model: Workload,
+                        as: 'workload',
+                        required: true,
+                        where: {
+                            canceled_at: null,
+                        },
+                        attributes: ['id', 'name'],
+                    },
+                    {
+                        model: Rotation,
+                        as: 'rotations',
+                        required: true,
+                        where: {
+                            next_level_id: level_id,
+                            canceled_at: null,
+                        },
+                        include: [
+                            {
+                                model: Student,
+                                as: 'student',
+                                required: true,
+                                where: {
+                                    status: 'In Class',
+                                    canceled_at: null,
+                                },
+                                attributes: [
+                                    'name',
+                                    'last_name',
+                                    'registration_number',
+                                ],
+                                include: [
+                                    {
+                                        model: Staff,
+                                        as: 'teacher',
+                                        required: true,
+                                        where: {
+                                            canceled_at: null,
+                                        },
+                                        attributes: ['id', 'name', 'last_name'],
+                                    },
+                                    {
+                                        model: Vacation,
+                                        as: 'vacations',
+                                        required: false,
+                                        where: {
+                                            // Hoje
+                                            date_from: {
+                                                [Op.lte]: format(
+                                                    new Date(),
+                                                    'yyyy-MM-dd'
+                                                ),
+                                            },
+                                            date_to: {
+                                                [Op.gte]: format(
+                                                    new Date(),
+                                                    'yyyy-MM-dd'
+                                                ),
+                                            },
+                                            canceled_at: null,
+                                        },
+                                        attributes: ['id'],
+                                    },
+                                    {
+                                        model: MedicalExcuse,
+                                        as: 'medical_excuses',
+                                        required: false,
+                                        where: {
+                                            // Hoje
+                                            date_from: {
+                                                [Op.lte]: format(
+                                                    new Date(),
+                                                    'yyyy-MM-dd'
+                                                ),
+                                            },
+                                            date_to: {
+                                                [Op.gte]: format(
+                                                    new Date(),
+                                                    'yyyy-MM-dd'
+                                                ),
+                                            },
+                                            canceled_at: null,
+                                        },
+                                        attributes: ['id'],
+                                    },
+                                ],
+                            },
+                        ],
+                        attributes: ['id', 'student_id', 'start_date'],
+                    },
                     {
                         model: Level,
                         as: 'level',
@@ -59,11 +221,25 @@ class RotationTwoController {
                 order: [['name', 'ASC']],
             })
 
-            if (!groups) {
-                return res.status(400).json({
-                    error: 'Student Group not found.',
-                })
-            }
+            // const groups = []
+            // for (let student of students) {
+            //     const { studentgroup } = student.dataValues
+            //     if (groups.find((group) => group.id === studentgroup.id)) {
+            //         continue
+            //     }
+            //     groups.push(studentgroup)
+            // }
+
+            // for (let group of groups) {
+            //     group.students = []
+            //     const rotations = students.filter(
+            //         (student) => student.dataValues.studentgroup.id === group.id
+            //     )
+            //     group.students = rotations.map((rotation) => {
+            //         return rotation.dataValues.student
+            //     })
+            // }
+
             return res.json(groups)
         } catch (err) {
             err.transaction = req?.transaction
@@ -71,337 +247,18 @@ class RotationTwoController {
         }
     }
 
-    async show(req, res, next) {
+    async distinctShifts(req, res, next) {
         try {
-            const { studentgroup_id } = req.params
-
-            const studentGroup = await Studentgroup.findByPk(studentgroup_id, {
-                include: [
-                    {
-                        model: Filial,
-                        as: 'filial',
-                        required: true,
-                        where: {
-                            canceled_at: null,
-                        },
-                        attributes: ['id', 'name'],
-                    },
-                    {
-                        model: Level,
-                        as: 'level',
-                        required: true,
-                        where: {
-                            canceled_at: null,
-                        },
-                        include: [
-                            {
-                                model: Programcategory,
-                                required: false,
-                                where: {
-                                    canceled_at: null,
-                                },
-                                attributes: ['id', 'name'],
-                            },
-                        ],
-                        attributes: ['id', 'name'],
-                    },
-                    {
-                        model: Languagemode,
-                        as: 'languagemode',
-                        required: true,
-                        where: {
-                            canceled_at: null,
-                        },
-                        attributes: ['id', 'name'],
-                    },
-                    {
-                        model: Classroom,
-                        as: 'classroom',
-                        required: true,
-                        where: {
-                            canceled_at: null,
-                        },
-                        attributes: [
-                            'id',
-                            'class_number',
-                            'quantity_of_students',
-                        ],
-                    },
-                    {
-                        model: Workload,
-                        as: 'workload',
-                        required: true,
-                        where: {
-                            canceled_at: null,
-                        },
-                        attributes: ['id', 'name'],
-                    },
-                    {
-                        model: Staff,
-                        as: 'staff',
-                        required: true,
-                        where: {
-                            canceled_at: null,
-                        },
-                        attributes: ['id', 'name', 'last_name'],
-                    },
-                ],
-                where: { canceled_at: null },
-                attributes: [
-                    'id',
-                    'name',
-                    'status',
-                    'private',
-                    'level_id',
-                    'languagemode_id',
-                    'classroom_id',
-                    'workload_id',
-                    'staff_id',
-                    'start_date',
-                    'end_date',
-                    'monday',
-                    'tuesday',
-                    'wednesday',
-                    'thursday',
-                    'friday',
-                    'saturday',
-                    'sunday',
-                    'morning',
-                    'afternoon',
-                    'evening',
-                    'content_percentage',
-                    'class_percentage',
-                    'rotation_status',
-                    'rotation_date',
-                ],
-            })
-
-            if (!studentGroup) {
-                return res.status(400).json({
-                    error: 'Student Group not found.',
-                })
-            }
-
-            const studentsXGroup = await StudentXGroup.findAll({
+            // select distinct morning,afternoon,evening from studentgroups where canceled_at is null
+            const shifts = await Studentgroup.findAll({
+                attributes: ['morning', 'afternoon', 'evening'],
                 where: {
-                    group_id: studentgroup_id,
                     canceled_at: null,
                 },
-                include: [
-                    {
-                        model: Student,
-                        as: 'student',
-                        required: true,
-                        where: {
-                            status: 'In Class',
-                            canceled_at: null,
-                        },
-                        attributes: [
-                            'name',
-                            'last_name',
-                            'registration_number',
-                        ],
-                    },
-                ],
-                attributes: ['id', 'student_id', 'start_date', 'end_date'],
-                order: [
-                    ['student', 'name', 'ASC'],
-                    ['student', 'last_name', 'ASC'],
-                ],
                 distinct: true,
+                group: ['morning', 'afternoon', 'evening'],
             })
-
-            const currentLevel = await Level.findByPk(
-                studentGroup.dataValues.level_id,
-                {
-                    attributes: ['id', 'name'],
-                }
-            )
-
-            const nextLevel = await Level.findOne({
-                where: {
-                    previous_level_id: currentLevel.id,
-                    canceled_at: null,
-                },
-                attributes: ['id', 'name'],
-            })
-
-            const students = []
-
-            for (let studentXGroup of studentsXGroup) {
-                const { student_id, start_date } = studentXGroup.dataValues
-                const hasRotation = await Rotation.findOne({
-                    where: {
-                        student_id,
-                        studentgroup_id: studentgroup_id,
-                        canceled_at: null,
-                    },
-                })
-
-                const { name, last_name, registration_number } =
-                    studentXGroup.dataValues.student
-
-                if (hasRotation) {
-                    const {
-                        vacation_days,
-                        frequency,
-                        final_average_score,
-                        result,
-                        reason,
-                        calculated_result,
-                        start_date,
-                        next_studentgroup_id,
-                        next_level_id,
-                    } = hasRotation.dataValues
-
-                    const level = await Level.findByPk(next_level_id)
-
-                    students.push({
-                        studentgroup_id,
-                        student_id,
-                        registration_number,
-                        name: name + ' ' + last_name,
-                        vacation_days,
-                        frequency,
-                        final_average_score,
-                        result,
-                        reason,
-                        calculated_result,
-                        start_date,
-                        next_studentgroup_id,
-                        next_level_id,
-                        next_level_name: level?.name,
-                    })
-                } else {
-                    const studentFrequency = await getStudentFrequencyOnGroup(
-                        student_id,
-                        studentgroup_id
-                    )
-                    const { frequency } = studentFrequency
-
-                    const vacation_days = await getVacationDays(
-                        studentgroup_id,
-                        student_id
-                    )
-
-                    const final_average_score =
-                        await calculateFinalAverageScore(
-                            student_id,
-                            studentgroup_id
-                        )
-
-                    const result = final_average_score >= 80 ? 'PASS' : 'FAIL'
-
-                    const level = result === 'FAIL' ? currentLevel : nextLevel
-
-                    students.push({
-                        studentgroup_id,
-                        student_id,
-                        registration_number,
-                        name: name + ' ' + last_name,
-                        vacation_days,
-                        frequency,
-                        final_average_score,
-                        result,
-                        reason: null,
-                        calculated_result: result,
-                        start_date,
-                        next_studentgroup_id: null,
-                        next_level_id: level?.id,
-                        next_level_name: level?.name,
-                    })
-                }
-            }
-
-            const totalClasses = await Studentgroupclass.count({
-                where: {
-                    studentgroup_id,
-                    canceled_at: null,
-                },
-            })
-
-            studentGroup.dataValues.total_classes = totalClasses
-
-            return res.json({ studentGroup, students })
-        } catch (err) {
-            err.transaction = req?.transaction
-            next(err)
-        }
-    }
-
-    async update(req, res, next) {
-        try {
-            const { student_id } = req.params
-            const rotationData = req.body
-
-            delete rotationData.id
-
-            const student = await Student.findByPk(student_id)
-
-            if (!student) {
-                return res.status(400).json({
-                    error: 'Student not found.',
-                })
-            }
-
-            const studentGroup = await Studentgroup.findByPk(
-                rotationData.studentgroup_id,
-                {
-                    attributes: ['level_id'],
-                }
-            )
-
-            const currentLevel = await Level.findByPk(
-                studentGroup.dataValues.level_id,
-                {
-                    attributes: ['id', 'name'],
-                }
-            )
-
-            const nextLevel = await Level.findOne({
-                where: {
-                    previous_level_id: currentLevel.id,
-                    canceled_at: null,
-                },
-                attributes: ['id', 'name'],
-            })
-
-            const level =
-                rotationData.result === 'FAIL' ? currentLevel : nextLevel
-
-            let rotation = await Rotation.findOne({
-                where: {
-                    student_id,
-                    canceled_at: null,
-                },
-            })
-
-            if (!rotation) {
-                rotation = await Rotation.create(
-                    {
-                        ...rotationData,
-                        next_level_id: level?.id,
-                        created_by: req.userId,
-                    },
-                    {
-                        transaction: req?.transaction,
-                    }
-                )
-            } else {
-                await rotation.update(
-                    {
-                        ...rotationData,
-                        next_level_id: level?.id,
-                        updated_by: req.userId,
-                    },
-                    {
-                        transaction: req?.transaction,
-                    }
-                )
-            }
-            await req?.transaction.commit()
-
-            return res.json(rotation)
+            return res.json(shifts)
         } catch (err) {
             err.transaction = req?.transaction
             next(err)
@@ -410,32 +267,137 @@ class RotationTwoController {
 
     async store(req, res, next) {
         try {
-            const { students } = req.body
+            const {
+                groups,
+                level_id,
+                workload_id,
+                morning,
+                afternoon,
+                evening,
+            } = req.body
+            for (let group of groups) {
+                const { classroom_id, teacher_id, rotations } = group
+                const classroomExists = await Classroom.findByPk(classroom_id)
+                if (!classroomExists) {
+                    return res.status(400).json({
+                        error: 'Classroom does not exist.',
+                    })
+                }
+                const teacherExists = await Staff.findByPk(teacher_id)
+                if (!teacherExists) {
+                    return res.status(400).json({
+                        error: 'Teacher does not exist.',
+                    })
+                }
+                const hasStudent = await Student.findByPk(
+                    rotations[0]?.student_id
+                )
+                if (!hasStudent) {
+                    return res.status(400).json({
+                        error: 'Students does not exist.',
+                    })
+                }
 
-            for (let student of students) {
-                const { studentgroup_id, student_id } = student
-                const rotationExists = await Rotation.findOne({
+                const existingGroup = await Studentgroup.findOne({
                     where: {
-                        studentgroup_id,
-                        student_id,
-                        canceled_at: null,
+                        filial_id: hasStudent.dataValues.filial_id,
+                        morning,
+                        afternoon,
+                        evening,
+                        level_id,
                     },
                 })
-                if (rotationExists) {
-                    await rotationExists.update(
+
+                const start_date = format(new Date(), 'yyyy-MM-dd')
+
+                delete existingGroup.dataValues.id
+                delete existingGroup.dataValues.created_at
+                delete existingGroup.dataValues.updated_at
+                delete existingGroup.dataValues.end_date
+
+                const studentGroup = await Studentgroup.create(
+                    {
+                        ...existingGroup.dataValues,
+                        name: group.name,
+                        status: 'In Formation',
+                        classroom_id,
+                        staff_id: teacher_id,
+                        start_date,
+                        content_percentage: 0,
+                        class_percentage: 0,
+                        rotation_status: 'Not Started',
+                        rotation_date: null,
+                        created_by: req.userId,
+                    },
+                    {
+                        transaction: req?.transaction,
+                    }
+                )
+
+                for (let rotation of rotations) {
+                    const studentExists = await Student.findByPk(
+                        rotation.student_id
+                    )
+                    if (!studentExists) {
+                        return res.status(400).json({
+                            error: 'Student does not exist.',
+                        })
+                    }
+                    const oldStudentXGroup = await StudentXGroup.findOne({
+                        where: {
+                            student_id: rotation.student_id,
+                            group_id: studentExists.dataValues.studentgroup_id,
+                            canceled_at: null,
+                        },
+                    })
+                    if (oldStudentXGroup) {
+                        if (
+                            oldStudentXGroup.dataValues.start_date ===
+                            start_date
+                        ) {
+                            await oldStudentXGroup.destroy({
+                                transaction: req?.transaction,
+                            })
+                        } else {
+                            await oldStudentXGroup.update(
+                                {
+                                    end_date: format(
+                                        subDays(new Date(), 1),
+                                        'yyyy-MM-dd'
+                                    ),
+                                    status: 'Rotated',
+                                    updated_by: req.userId,
+                                },
+                                {
+                                    transaction: req?.transaction,
+                                }
+                            )
+                        }
+                    }
+                    await StudentXGroup.create(
                         {
-                            ...student,
-                            updated_by: req.userId,
+                            company_id: 1,
+                            filial_id: studentExists.dataValues.filial_id,
+                            student_id: rotation.student_id,
+                            group_id: studentGroup.id,
+                            start_date,
+                            end_date: null,
+                            status: 'Active',
+                            created_by: req.userId,
                         },
                         {
                             transaction: req?.transaction,
                         }
                     )
-                } else {
-                    await Rotation.create(
+
+                    await studentExists.update(
                         {
-                            ...student,
-                            created_by: req.userId,
+                            status: 'In Class',
+                            studentgroup_id: studentGroup.id,
+                            teacher_id: teacher_id,
+                            classroom_id: classroom_id,
+                            level_id: level_id,
+                            updated_by: req.userId,
                         },
                         {
                             transaction: req?.transaction,
@@ -444,22 +406,9 @@ class RotationTwoController {
                 }
             }
 
-            await Studentgroup.update(
-                {
-                    rotation_status: 'First Step Done',
-                },
-                {
-                    where: {
-                        id: students[0].studentgroup_id,
-                        canceled_at: null,
-                    },
-                    transaction: req?.transaction,
-                }
-            )
-
             await req?.transaction.commit()
 
-            return res.json({ result: 'Success' })
+            return res.status(200).json(groups)
         } catch (err) {
             err.transaction = req?.transaction
             next(err)

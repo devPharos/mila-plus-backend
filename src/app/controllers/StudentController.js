@@ -306,6 +306,13 @@ class StudentController {
                         where: { canceled_at: null },
                         attributes: ['id', 'name'],
                     },
+                    {
+                        model: Agent,
+                        as: 'agent',
+                        required: false,
+                        where: { canceled_at: null },
+                        attributes: ['id', 'name'],
+                    },
                 ],
                 where: {
                     category: {

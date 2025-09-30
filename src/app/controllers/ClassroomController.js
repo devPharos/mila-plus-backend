@@ -87,9 +87,9 @@ class ClassroomController {
                 order: searchOrder,
             })
 
-            if (req.cacheKey) {
-                handleCache({ cacheKey: req.cacheKey, rows, count })
-            }
+            // if (req.cacheKey) {
+            //     handleCache({ cacheKey: req.cacheKey, rows, count })
+            // }
 
             return res.json({ totalRows: count, rows })
         } catch (err) {

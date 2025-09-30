@@ -725,7 +725,12 @@ class StudentgroupController {
                                 where: {
                                     canceled_at: null,
                                 },
-                                attributes: ['id', 'name', 'last_name'],
+                                attributes: [
+                                    'id',
+                                    'name',
+                                    'last_name',
+                                    'registration_number',
+                                ],
                                 include: [
                                     {
                                         model: Studentinactivation,
