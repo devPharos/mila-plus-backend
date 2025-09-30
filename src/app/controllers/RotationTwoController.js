@@ -15,14 +15,14 @@ import Studentgroupclass from '../models/Studentgroupclass.js'
 import Rotation from '../models/Rotation.js'
 import Vacation from '../models/Vacation.js'
 import MedicalExcuse from '../models/MedicalExcuse.js'
-import { format, subDays } from 'date-fns'
+import { format, parseISO, subDays } from 'date-fns'
+import { verifyFilialSearch } from '../functions/index.js'
 
 const { Op } = Sequelize
 
 class RotationTwoController {
     async index(req, res, next) {
         try {
-            console.log(0)
             const {
                 morning = false,
                 afternoon = false,
@@ -30,68 +30,52 @@ class RotationTwoController {
                 level_id = null,
             } = req.query
 
-            console.log({ morning, afternoon, evening, level_id })
-            const students = await Rotation.findAll({
+            const level = await Level.findByPk(level_id)
+
+            const filialSearch = verifyFilialSearch(Studentgroup, req)
+
+            console.log({
+                morning,
+                afternoon,
+                evening,
+                level_id,
+                previous: level?.dataValues?.previous_level_id,
+            })
+
+            const requiredGroups = await Studentgroup.findAll({
                 where: {
-                    next_level_id: level_id,
+                    ...filialSearch,
+                    morning,
+                    afternoon,
+                    evening,
+                    level_id: {
+                        [Op.in]: [
+                            level_id,
+                            level?.dataValues?.previous_level_id,
+                        ],
+                    },
+                    end_date: {
+                        [Op.lte]: format(parseISO('2025-10-02'), 'yyyy-MM-dd'),
+                    },
                     canceled_at: null,
                 },
                 include: [
                     {
-                        model: Studentgroup,
-                        as: 'studentgroup',
-                        required: true,
-                        where: {
-                            morning: morning,
-                            afternoon: afternoon,
-                            evening: evening,
-                            canceled_at: null,
-                        },
-                        include: [
-                            {
-                                model: Staff,
-                                as: 'staff',
-                                required: true,
-                                where: {
-                                    canceled_at: null,
-                                },
-                                attributes: ['id', 'name', 'last_name'],
-                            },
-                        ],
-                        attributes: [
-                            'id',
-                            'name',
-                            'status',
-                            'rotation_status',
-                            'rotation_date',
-                            'morning',
-                            'afternoon',
-                            'evening',
-                        ],
-                    },
-                    {
-                        model: Student,
-                        as: 'student',
+                        model: Staff,
+                        as: 'staff',
                         required: true,
                         where: {
                             canceled_at: null,
                         },
-                        attributes: [
-                            'name',
-                            'last_name',
-                            'registration_number',
-                        ],
+                        attributes: ['id', 'name', 'last_name'],
                     },
                 ],
-                order: [
-                    ['student', 'name', 'ASC'],
-                    ['student', 'last_name', 'ASC'],
-                ],
-                distinct: true,
+                attributes: ['id', 'name', 'rotation_status'],
             })
 
             const groups = await Studentgroup.findAll({
                 where: {
+                    ...filialSearch,
                     morning: morning,
                     afternoon: afternoon,
                     evening: evening,
@@ -221,26 +205,7 @@ class RotationTwoController {
                 order: [['name', 'ASC']],
             })
 
-            // const groups = []
-            // for (let student of students) {
-            //     const { studentgroup } = student.dataValues
-            //     if (groups.find((group) => group.id === studentgroup.id)) {
-            //         continue
-            //     }
-            //     groups.push(studentgroup)
-            // }
-
-            // for (let group of groups) {
-            //     group.students = []
-            //     const rotations = students.filter(
-            //         (student) => student.dataValues.studentgroup.id === group.id
-            //     )
-            //     group.students = rotations.map((rotation) => {
-            //         return rotation.dataValues.student
-            //     })
-            // }
-
-            return res.json(groups)
+            return res.json({ groups, requiredGroups })
         } catch (err) {
             err.transaction = req?.transaction
             next(err)
@@ -328,6 +293,16 @@ class RotationTwoController {
                         rotation_status: 'Not Started',
                         rotation_date: null,
                         created_by: req.userId,
+                    },
+                    {
+                        transaction: req?.transaction,
+                    }
+                )
+
+                await existingGroup.update(
+                    {
+                        rotation_status: 'Second Step Done',
+                        rotation_date: format(new Date(), 'yyyy-MM-dd'),
                     },
                     {
                         transaction: req?.transaction,
