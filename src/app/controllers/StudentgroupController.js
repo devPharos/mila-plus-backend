@@ -351,6 +351,9 @@ export async function loadGroupProrgess(studentgroup_id = null) {
         where: {
             studentgroup_id,
             canceled_at: null,
+            status: {
+                [Op.ne]: 'Holiday',
+            },
         },
         attributes: ['id', 'locked_at', 'status'],
     })
