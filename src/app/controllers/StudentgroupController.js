@@ -355,7 +355,7 @@ export async function loadGroupProrgess(studentgroup_id = null) {
         attributes: ['id', 'locked_at', 'status'],
     })
 
-    progress.content =
+    progress.class =
         (
             (studentGroupClasses.filter((class_) => class_.locked_at).length /
                 studentGroupClasses.length) *
@@ -381,7 +381,7 @@ export async function loadGroupProrgess(studentgroup_id = null) {
         attributes: ['id', 'status'],
     })
 
-    progress.class =
+    progress.content =
         (
             (studentGroupPaceguides.filter(
                 (paceguide) =>
@@ -1897,7 +1897,7 @@ class StudentgroupController {
                         as: 'attendances',
                         required: true,
                         where: {
-                            studentgroupclass_id: studentgroupclass.id,
+                            studentgroupclass_id: studentgroupclass?.id,
                             canceled_at: null,
                         },
                         attributes: [
