@@ -86,9 +86,9 @@ class Studentgroup extends Model {
             foreignKey: 'group_id',
             as: 'studentxgroups',
         })
-        this.hasOne(models.Rotation, {
+        this.hasMany(models.Rotation, {
             foreignKey: 'studentgroup_id',
-            as: 'rotation',
+            as: 'rotations',
         })
     }
 }

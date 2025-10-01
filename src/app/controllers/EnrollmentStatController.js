@@ -81,7 +81,6 @@ class EnrollmentStatController {
     }
   }
 
-
   async summary(req, res, next) {
     try {
       const currentDate = new Date()
@@ -214,6 +213,65 @@ class EnrollmentStatController {
     }
   }
 
+  async byCountry(req, res, next) {
+    try {
+      const currentDate = new Date()
+
+      const activeStudents = await StudentXGroup.findAll({
+        where: {
+          canceled_at: null,
+          start_date: { [Op.lte]: format(currentDate, 'yyyy-MM-dd') },
+          [Op.or]: [
+            { end_date: { [Op.gte]: format(currentDate, 'yyyy-MM-dd') } },
+            { end_date: null }
+          ]
+        },
+        include: [
+          {
+            model: Student,
+            as: 'student',
+            required: true,
+            where: { status: 'In Class' },
+            attributes: ['id', 'birth_country']
+          }
+        ],
+        attributes: ['student_id']
+      })
+
+      const countryCount = {}
+      const processedStudents = new Set()
+
+      activeStudents.forEach(enrollment => {
+        const studentId = enrollment.student_id
+        if (!processedStudents.has(studentId)) {
+          processedStudents.add(studentId)
+          const student = enrollment.student
+          
+          if (student && student.birth_country) {
+            const country = student.birth_country.trim()
+            if (country) {
+              countryCount[country] = (countryCount[country] || 0) + 1
+            }
+          }
+        }
+      })
+
+      const result = Object.entries(countryCount)
+        .map(([country, count]) => ({
+          country,
+          active_students: count
+        }))
+        .sort((a, b) => b.active_students - a.active_students)
+
+      return res.json({
+        total_countries: result.length,
+        total_active_students: processedStudents.size,
+        countries: result
+      })
+    } catch (err) {
+      next(err)
+    }
+  }
 }
 
 export default new EnrollmentStatController()

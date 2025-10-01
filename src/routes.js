@@ -97,9 +97,14 @@ routes.post('/menu-hierarchy', MenuHierarchyController.store)
 
 // Public File
 routes.get('/get-file/:name', PublicFileController.show)
-routes.get('/enrollment-stats/process-by-month', EnrollmentStatController.processByMonth)
+routes.get(
+    '/enrollment-stats/process-by-month',
+    EnrollmentStatController.processByMonth
+)
 routes.get('/enrollment-stats/month', EnrollmentStatController.month)
 routes.get('/enrollment-stats/summary', EnrollmentStatController.summary)
+routes.get('/enrollment-stats/by-country', EnrollmentStatController.byCountry)
+
 routes.post('/emergepay/simple-form', EmergepayController.simpleForm)
 routes.post('/emergepay/text-to-pay', EmergepayController.textToPay)
 routes.post(
@@ -384,6 +389,9 @@ routes.get('/rotation/group/:studentgroup_id', RotationOneController.show)
 routes.get('/rotation/listgroups', RotationOneController.listGroups)
 
 routes.get('/rotation2', RotationTwoController.index)
+routes.post('/rotation2', RotationTwoController.store)
+
+routes.get('/shifts', RotationTwoController.distinctShifts)
 
 routes.get('/agents/:agent_id', AgentController.show)
 routes.post('/agents', AgentController.store)
@@ -410,6 +418,7 @@ routes.post(
 )
 
 routes.get('/reports/receivables', ReportController.receivables)
+routes.get('/reports/default-rate', ReportController.defaultRate)
 
 routes.get('/grades/:student_id', GradeController.list)
 routes.put('/grades/:student_id', GradeController.update)

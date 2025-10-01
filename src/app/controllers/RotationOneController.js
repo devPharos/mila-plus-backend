@@ -15,6 +15,7 @@ import Studentgroupclass from '../models/Studentgroupclass.js'
 import Rotation from '../models/Rotation.js'
 import Grade from '../models/Grade.js'
 import Studentgrouppaceguide from '../models/Studentgrouppaceguide.js'
+import { verifyFilialSearch } from '../functions/index.js'
 
 const { Op } = Sequelize
 
@@ -78,8 +79,11 @@ class RotationOneController {
         try {
             const { status } = req.query
 
+            const filialSearch = verifyFilialSearch(Studentgroup, req)
+
             const groups = await Studentgroup.findAll({
                 where: {
+                    ...filialSearch,
                     ...(status ? { status } : {}),
                     canceled_at: null,
                 },
@@ -118,6 +122,8 @@ class RotationOneController {
     async show(req, res, next) {
         try {
             const { studentgroup_id } = req.params
+
+            const filialSearch = verifyFilialSearch(Studentgroup, req)
 
             const studentGroup = await Studentgroup.findByPk(studentgroup_id, {
                 include: [
@@ -190,7 +196,7 @@ class RotationOneController {
                         attributes: ['id', 'name', 'last_name'],
                     },
                 ],
-                where: { canceled_at: null },
+                where: { ...filialSearch, canceled_at: null },
                 attributes: [
                     'id',
                     'name',
@@ -228,6 +234,7 @@ class RotationOneController {
 
             const studentsXGroup = await StudentXGroup.findAll({
                 where: {
+                    end_date: null,
                     group_id: studentgroup_id,
                     canceled_at: null,
                 },
