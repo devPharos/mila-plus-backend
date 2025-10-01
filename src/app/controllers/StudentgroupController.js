@@ -337,16 +337,6 @@ export async function loadGroupProrgess(studentgroup_id = null) {
 
     const studentGroup = await Studentgroup.findByPk(studentgroup_id)
 
-    if (
-        studentGroup.dataValues.content_percentage > 0 &&
-        format(studentGroup.dataValues.updated_at, 'yyyy-MM-dd') ===
-            format(new Date(), 'yyyy-MM-dd')
-    ) {
-        progress.content = studentGroup.dataValues.content_percentage
-        progress.class = studentGroup.dataValues.class_percentage
-        return { content: progress.content, class: progress.class }
-    }
-
     const studentGroupClasses = await Studentgroupclass.findAll({
         where: {
             studentgroup_id,
