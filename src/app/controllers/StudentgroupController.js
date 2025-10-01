@@ -1806,7 +1806,7 @@ class StudentgroupController {
                 }
             }
 
-            const studentgroupclass = await Studentgroupclass.findOne({
+            let studentgroupclass = await Studentgroupclass.findOne({
                 where: {
                     ...attendanceFilter,
                     ...filialSearch,
@@ -1876,6 +1876,78 @@ class StudentgroupController {
                 ],
                 order: [['date', 'ASC']],
             })
+
+            if (!studentgroupclass) {
+                studentgroupclass = await Studentgroupclass.findOne({
+                    where: {
+                        ...filialSearch,
+                        studentgroup_id: studentgroup.id,
+                        status: {
+                            [Op.ne]: 'Holiday',
+                        },
+                        canceled_at: null,
+                    },
+                    include: [
+                        {
+                            model: Studentgrouppaceguide,
+                            as: 'paceguides',
+                            required: false,
+                            where: {
+                                studentgroup_id: studentgroup_id,
+                                canceled_at: null,
+                            },
+                            include: [
+                                {
+                                    model: Grade,
+                                    as: 'grades',
+                                    required: false,
+                                    where: {
+                                        canceled_at: null,
+                                    },
+                                },
+                            ],
+                            attributes: [
+                                'id',
+                                'day',
+                                'type',
+                                'description',
+                                'status',
+                            ],
+                            order: [['day', 'ASC']],
+                        },
+                        {
+                            model: Attendance,
+                            as: 'attendances',
+                            required: false,
+                            where: {
+                                canceled_at: null,
+                            },
+                            order: [['id', 'ASC']],
+                        },
+                        {
+                            model: Studentgroup,
+                            as: 'studentgroup',
+                            required: false,
+                            where: {
+                                canceled_at: null,
+                            },
+                            attributes: ['id', 'name'],
+                            include: [
+                                {
+                                    model: Staff,
+                                    as: 'staff',
+                                    required: false,
+                                    where: {
+                                        canceled_at: null,
+                                    },
+                                    attributes: ['id', 'name', 'last_name'],
+                                },
+                            ],
+                        },
+                    ],
+                    order: [['date', 'ASC']],
+                })
+            }
 
             const students = await Student.findAll({
                 where: {
