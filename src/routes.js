@@ -103,6 +103,8 @@ routes.get(
 )
 routes.get('/enrollment-stats/month', EnrollmentStatController.month)
 routes.get('/enrollment-stats/summary', EnrollmentStatController.summary)
+routes.get('/enrollment-stats/by-country', EnrollmentStatController.byCountry)
+
 routes.post('/emergepay/simple-form', EmergepayController.simpleForm)
 routes.post('/emergepay/text-to-pay', EmergepayController.textToPay)
 routes.post(
