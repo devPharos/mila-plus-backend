@@ -419,6 +419,8 @@ routes.post(
 
 routes.get('/reports/receivables', ReportController.receivables)
 routes.get('/reports/default-rate', ReportController.defaultRate)
+routes.get('/reports/default-rate/detail', ReportController.defaultRateDetail)
+routes.get('/reports/default-rate/detail/excel', ReportController.defaultRateDetailExcel)
 
 routes.get('/grades/:student_id', GradeController.list)
 routes.put('/grades/:student_id', GradeController.update)

@@ -1,5 +1,7 @@
 import Receivable from '../models/Receivable.js'
 import Chartofaccount from '../models/Chartofaccount.js'
+import Filial from '../models/Filial.js';
+import Issuer from '../models/Issuer.js';
 import Costcenter from '../models/Costcenter.js'
 import { Op, Sequelize } from 'sequelize'
 import {
@@ -12,7 +14,13 @@ import {
 } from 'date-fns'
 import Settlement from '../models/Settlement.js'
 import { verifyFilialSearch } from '../functions/index.js'
+import { dirname, resolve } from 'path'
+import xl from 'excel4node'
+import fs from 'fs'
+import { fileURLToPath } from 'url'
 
+const filename = fileURLToPath(import.meta.url)
+const directory = dirname(filename)
 class ReportController {
     async receivables(req, res, next) {
         async function getValueByPeriod({
@@ -434,6 +442,335 @@ class ReportController {
             totalBilling: Math.round(totalBilling * 100) / 100,
             defaultRate: Math.round(defaultRate * 100) / 100,
             defaultRateEvolution,
+        })
+    } catch (err) {
+        err.transaction = req?.transaction
+        next(err)
+    }
+    }
+
+    async defaultRateDetail(req, res, next) {
+    try {
+        const {
+            period_from,
+            period_to,
+            period_by = 'Due Date',
+            orderBy = 'due_date',
+            orderASC = 'ASC',
+            limit = 50,
+            page = 1,
+        } = req.query
+
+        if (!period_from || !period_to) {
+            return res.status(400).json({ error: 'Period from and to are required.' })
+        }
+
+        if (
+            !['Due Date', 'Settlement Date', 'Competence Date'].includes(
+                period_by
+            )
+        ) {
+            return res.status(400).json({ error: 'Invalid period by.' })
+        }
+
+        const filialSearch = verifyFilialSearch(Receivable, req)
+        const today = format(new Date(), 'yyyyMMdd')
+
+        const periodFilter =
+            period_by === 'Due Date'
+                ? 'due_date'
+                : period_by === 'Competence Date'
+                    ? 'accrual_date'
+                    : 'due_date'
+
+        const periodOverdueReceivables = await Receivable.findAll({
+            where: {
+                ...filialSearch,
+                status: 'Pending',
+                due_date: {
+                    [Op.between]: [
+                        period_from.replaceAll('-', ''),
+                        period_to.replaceAll('-', ''),
+                    ],
+                    [Op.lt]: today,
+                },
+                canceled_at: null,
+            },
+            attributes: ['total'],
+        })
+
+        const periodOverdue = periodOverdueReceivables.reduce(
+            (acc, r) => acc + r.total,
+            0
+        )
+
+        const periodBillingReceivables = await Receivable.findAll({
+            where: {
+                ...filialSearch,
+                [periodFilter]: {
+                    [Op.between]: [
+                        period_from.replaceAll('-', ''),
+                        period_to.replaceAll('-', ''),
+                    ],
+                },
+                status: {
+                    [Op.ne]: 'Renegotiated',
+                },
+                canceled_at: null,
+            },
+            attributes: ['total'],
+        })
+
+        const periodTotal = periodBillingReceivables.reduce(
+            (acc, r) => acc + r.total,
+            0
+        )
+
+        const periodRate =
+            periodTotal > 0 ? (periodOverdue / periodTotal) * 100 : 0
+
+        const { count, rows } = await Receivable.findAndCountAll({
+            include: [
+                {
+                    model: Filial,
+                    as: 'filial',
+                    required: false,
+                    attributes: ['id', 'name'],
+                    where: { canceled_at: null },
+                },
+                {
+                    model: Issuer,
+                    as: 'issuer',
+                    attributes: ['id', 'name'],
+                    required: false,
+                    where: { canceled_at: null },
+                },
+            ],
+            where: {
+                ...filialSearch,
+                status: 'Pending',
+                due_date: {
+                    [Op.between]: [
+                        period_from.replaceAll('-', ''),
+                        period_to.replaceAll('-', ''),
+                    ],
+                    [Op.lt]: today,
+                },
+                canceled_at: null,
+            },
+            attributes: [
+                'id',
+                'invoice_number',
+                'status',
+                'amount',
+                'discount',
+                'fee',
+                'total',
+                'balance',
+                'due_date',
+            ],
+            distinct: true,
+            limit,
+            offset: page ? (page - 1) * limit : 0,
+            order: [[orderBy, orderASC]],
+        })
+
+        return res.json({
+            period: {
+                from: period_from,
+                to: period_to,
+                rate: Math.round(periodRate * 100) / 100,
+                overdue: Math.round(periodOverdue * 100) / 100,
+                total: Math.round(periodTotal * 100) / 100,
+            },
+            totalRows: count,
+            rows,
+        })
+    } catch (err) {
+        err.transaction = req?.transaction
+        next(err)
+    }
+}
+
+async defaultRateDetailExcel(req, res, next) {
+    try {
+        const {
+            period_from,
+            period_to,
+            period_by = 'Due Date',
+        } = req.query
+
+        if (!period_from || !period_to) {
+            return res.status(400).json({ error: 'Period from and to are required.' })
+        }
+
+        if (
+            !['Due Date', 'Settlement Date', 'Competence Date'].includes(
+                period_by
+            )
+        ) {
+            return res.status(400).json({ error: 'Invalid period by.' })
+        }
+
+        const filialSearch = verifyFilialSearch(Receivable, req)
+        const today = format(new Date(), 'yyyyMMdd')
+
+        const periodFilter =
+            period_by === 'Due Date'
+                ? 'due_date'
+                : period_by === 'Competence Date'
+                    ? 'accrual_date'
+                    : 'due_date'
+
+        const rows = await Receivable.findAll({
+            include: [
+                {
+                    model: Filial,
+                    as: 'filial',
+                    required: false,
+                    attributes: ['id', 'name'],
+                    where: { canceled_at: null },
+                },
+                {
+                    model: Issuer,
+                    as: 'issuer',
+                    attributes: ['id', 'name'],
+                    required: false,
+                    where: { canceled_at: null },
+                },
+            ],
+            where: {
+                ...filialSearch,
+                status: 'Pending',
+                due_date: {
+                    [Op.between]: [
+                        period_from.replaceAll('-', ''),
+                        period_to.replaceAll('-', ''),
+                    ],
+                    [Op.lt]: today,
+                },
+                canceled_at: null,
+            },
+            attributes: [
+                'id',
+                'invoice_number',
+                'status',
+                'amount',
+                'discount',
+                'fee',
+                'total',
+                'balance',
+                'due_date',
+            ],
+            order: [['due_date', 'ASC']],
+        })
+
+        const name = `delinquency_report_${period_from}_to_${period_to}_${Date.now()}.xlsx`
+        const uploadsDir = resolve(
+            directory,
+            '..',
+            '..',
+            '..',
+            'public',
+            'uploads'
+        )
+        const path = `${uploadsDir}/${name}`
+
+        if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true })
+        }
+
+        const wb = new xl.Workbook()
+        const ws = wb.addWorksheet('Delinquency Report')
+
+        const styleBold = wb.createStyle({
+            font: { color: '#222222', size: 12, bold: true },
+        })
+        const styleHeading = wb.createStyle({
+            font: { color: '#222222', size: 14, bold: true },
+            alignment: { horizontal: 'center' },
+        })
+        const styleCurrency = wb.createStyle({
+            numberFormat: '$#,##0.00; ($#,##0.00); -',
+        })
+
+        ws.cell(1, 1, 1, 7, true)
+            .string(`Delinquency Report - ${period_from} to ${period_to}`)
+            .style(styleHeading)
+
+        let col = 1
+        ws.cell(3, col).string('Invoice Number').style(styleBold)
+        ws.column(col).setWidth(20)
+        col++
+
+        ws.cell(3, col).string('Issuer').style(styleBold)
+        ws.column(col).setWidth(35)
+        col++
+
+        ws.cell(3, col).string('Filial').style(styleBold)
+        ws.column(col).setWidth(25)
+        col++
+
+        ws.cell(3, col).string('Due Date').style(styleBold)
+        ws.column(col).setWidth(15)
+        col++
+
+        ws.cell(3, col).string('Amount').style(styleBold)
+        ws.column(col).setWidth(15)
+        col++
+
+        ws.cell(3, col).string('Balance').style(styleBold)
+        ws.column(col).setWidth(15)
+        col++
+
+        ws.cell(3, col).string('Status').style(styleBold)
+        ws.column(col).setWidth(15)
+
+        ws.row(3).freeze()
+
+        rows.forEach((row, index) => {
+            const rowNum = index + 4
+            let dataCol = 1
+
+            ws.cell(rowNum, dataCol++).string(String(row.invoice_number || ''))
+            ws.cell(rowNum, dataCol++).string(row.issuer?.name || '')
+            ws.cell(rowNum, dataCol++).string(row.filial?.name || '')
+
+            if (row.due_date) {
+                const year = row.due_date.substring(0, 4)
+                const month = row.due_date.substring(4, 6)
+                const day = row.due_date.substring(6, 8)
+                ws.cell(rowNum, dataCol++)
+                    .date(new Date(`${year}-${month}-${day}`))
+                    .style({ numberFormat: 'mm/dd/yyyy' })
+            } else {
+                ws.cell(rowNum, dataCol++).string('')
+            }
+
+            ws.cell(rowNum, dataCol++).number(row.total || 0).style(styleCurrency)
+            ws.cell(rowNum, dataCol++).number(row.balance || 0).style(styleCurrency)
+            ws.cell(rowNum, dataCol++).string(row.status || '')
+        })
+
+        wb.write(path, (err) => {
+            if (err) {
+                console.error(err)
+                return res
+                    .status(500)
+                    .json({ error: 'Error generating Excel file.' })
+            }
+            setTimeout(
+                () =>
+                    fs.unlink(path, (err) => {
+                        if (err)
+                            console.error(
+                                'Error deleting temporary file:',
+                                err
+                            )
+                    }),
+                15000
+            )
+            return res.json({ path, name })
         })
     } catch (err) {
         err.transaction = req?.transaction
