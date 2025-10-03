@@ -1771,6 +1771,7 @@ class StudentgroupController {
                             'type',
                             'description',
                             'status',
+                            'percentage',
                         ],
                         order: [['day', 'ASC']],
                     },
@@ -1834,6 +1835,7 @@ class StudentgroupController {
                             'type',
                             'description',
                             'status',
+                            'percentage',
                         ],
                         order: [['day', 'ASC']],
                     },
@@ -2206,41 +2208,43 @@ class StudentgroupController {
                 })
             }
 
-            for (let student of grades.students) {
-                const gradeExists = await Grade.findOne({
-                    where: {
-                        studentgroupclass_id: studentgroupclass_id,
-                        student_id: student.id,
-                        studentgrouppaceguide_id: grades.id,
-                        canceled_at: null,
-                    },
-                })
-                if (gradeExists) {
-                    await gradeExists.update(
+            for (let grade of grades) {
+                for (let student of grade.students) {
+                    const gradeExists = await Grade.findOne({
+                        where: {
+                            studentgroupclass_id: studentgroupclass_id,
+                            student_id: student.id,
+                            studentgrouppaceguide_id: grade.id,
+                            canceled_at: null,
+                        },
+                    })
+                    if (gradeExists) {
+                        await gradeExists.update(
+                            {
+                                score: student.score || 0,
+                                discarded: student.discarded === 'true',
+                                updated_by: req.userId,
+                            },
+                            {
+                                transaction: req?.transaction,
+                            }
+                        )
+                        continue
+                    }
+                    await Grade.create(
                         {
+                            studentgroupclass_id: studentgroupclass_id,
+                            student_id: student.id,
+                            studentgrouppaceguide_id: grade.id,
                             score: student.score || 0,
                             discarded: student.discarded === 'true',
-                            updated_by: req.userId,
+                            created_by: req.userId,
                         },
                         {
                             transaction: req?.transaction,
                         }
                     )
-                    continue
                 }
-                await Grade.create(
-                    {
-                        studentgroupclass_id: studentgroupclass_id,
-                        student_id: student.id,
-                        studentgrouppaceguide_id: grades.id,
-                        score: student.score || 0,
-                        discarded: student.discarded === 'true',
-                        created_by: req.userId,
-                    },
-                    {
-                        transaction: req?.transaction,
-                    }
-                )
             }
 
             await req?.transaction.commit()
