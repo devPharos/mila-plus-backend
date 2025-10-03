@@ -193,11 +193,11 @@ export async function createStudentAttendances({
             },
             date: to_date
                 ? {
-                    [Op.between]: [from_date, to_date],
-                }
+                      [Op.between]: [from_date, to_date],
+                  }
                 : {
-                    [Op.gte]: from_date,
-                },
+                      [Op.gte]: from_date,
+                  },
         },
         distinct: true,
         attributes: ['id', 'shift', 'date'],
@@ -301,15 +301,15 @@ export async function removeStudentAttendances({
         })
         if (
             class_.date >
-            format(lastDayOfMonth(parseISO(from_date)), 'yyyy-MM-dd') ||
+                format(lastDayOfMonth(parseISO(from_date)), 'yyyy-MM-dd') ||
             reason === null
         ) {
             for (let attendance of attendances) {
                 await attendance.destroy(
                     req
                         ? {
-                            transaction: req?.transaction,
-                        }
+                              transaction: req?.transaction,
+                          }
                         : {}
                 )
             }
@@ -321,8 +321,8 @@ export async function removeStudentAttendances({
                     },
                     req
                         ? {
-                            transaction: req?.transaction,
-                        }
+                              transaction: req?.transaction,
+                          }
                         : {}
                 )
             }
@@ -1019,7 +1019,7 @@ class StudentgroupController {
                         if (
                             !hasAcademicFreeDay ||
                             hasAcademicFreeDay.dataValues.date_type ===
-                            'Holiday'
+                                'Holiday'
                         ) {
                             let dayPaceGuides = []
                             if (!hasAcademicFreeDay) {
@@ -1366,7 +1366,7 @@ class StudentgroupController {
                         if (
                             !hasAcademicFreeDay ||
                             hasAcademicFreeDay.dataValues.date_type ===
-                            'Holiday'
+                                'Holiday'
                         ) {
                             let dayPaceGuides = []
                             if (!hasAcademicFreeDay) {
@@ -1374,7 +1374,7 @@ class StudentgroupController {
                                 dayPaceGuides = paceGuides.filter((pace) =>
                                     lastdayWasHoliday
                                         ? pace.day >= considerDay &&
-                                        pace.day <= considerDay + 1
+                                          pace.day <= considerDay + 1
                                         : pace.day === considerDay
                                 )
                                 if (lastdayWasHoliday) {
@@ -2080,26 +2080,26 @@ class StudentgroupController {
                         let secondCheck = 'Absent'
                         if (
                             student[
-                            `first_check_${shift.shift}_${student.id}`
+                                `first_check_${shift.shift}_${student.id}`
                             ] === 'Present'
                         ) {
                             firstCheck = 'Present'
                         } else if (
                             student[
-                            `first_check_${shift.shift}_${student.id}`
+                                `first_check_${shift.shift}_${student.id}`
                             ] === 'Late'
                         ) {
                             firstCheck = 'Late'
                         }
                         if (
                             student[
-                            `second_check_${shift.shift}_${student.id}`
+                                `second_check_${shift.shift}_${student.id}`
                             ] === 'Present'
                         ) {
                             secondCheck = 'Present'
                         } else if (
                             student[
-                            `second_check_${shift.shift}_${student.id}`
+                                `second_check_${shift.shift}_${student.id}`
                             ] === 'Late'
                         ) {
                             secondCheck = 'Late'
@@ -2166,7 +2166,7 @@ class StudentgroupController {
                             paceguide.checked === 'true'
                                 ? studentgroupclass.id
                                 : paceguideExists.dataValues
-                                    .studentgroupclass_id,
+                                      .studentgroupclass_id,
                         status:
                             paceguide.checked === 'true' ? 'Done' : 'Pending',
                         updated_by: req.userId,
@@ -3292,9 +3292,9 @@ class StudentgroupController {
                 ws2.cell(row, 4).string(
                     studentGroup?.start_date
                         ? format(
-                            parseISO(studentGroup.start_date),
-                            'MM/dd/yyyy'
-                        )
+                              parseISO(studentGroup.start_date),
+                              'MM/dd/yyyy'
+                          )
                         : ''
                 )
                 ws2.cell(row, 5).string(
@@ -3323,9 +3323,9 @@ class StudentgroupController {
                 ws2.cell(row, 8).string(
                     student?.studentxgroups[0]?.start_date
                         ? format(
-                            parseISO(student.studentxgroups[0].start_date),
-                            'MM/dd/yyyy'
-                        )
+                              parseISO(student.studentxgroups[0].start_date),
+                              'MM/dd/yyyy'
+                          )
                         : ''
                 )
                 ws2.cell(row, 9).string(student?.registration_number || '')
@@ -3365,7 +3365,7 @@ class StudentgroupController {
         }
     }
 
-  async evaluationChartReport(req, res, next) {
+    async evaluationChartReport(req, res, next) {
         try {
             const { group_id } = req.body
             if (!group_id) {
@@ -3680,8 +3680,8 @@ class StudentgroupController {
                     : '') +
                 (studentGroup.evening
                     ? (studentGroup.afternoon || studentGroup.morning
-                        ? '/'
-                        : '') + 'EVENING'
+                          ? '/'
+                          : '') + 'EVENING'
                     : '')
 
             ws.cell(1, 1, 1, 15, true)
@@ -3702,9 +3702,9 @@ class StudentgroupController {
                 .string(
                     studentGroup.start_date
                         ? format(
-                            parseISO(studentGroup.start_date),
-                            'MM/dd/yyyy'
-                        )
+                              parseISO(studentGroup.start_date),
+                              'MM/dd/yyyy'
+                          )
                         : ''
                 )
                 .style(styleHeaderDetails)
@@ -3747,7 +3747,9 @@ class StudentgroupController {
                     .style(stylePercentageHeader)
                 testIndex++
             }
-            ws.cell(5, 13).string('Final Average Grade').style(styleColumnHeader)
+            ws.cell(5, 13)
+                .string('Final Average Grade')
+                .style(styleColumnHeader)
             ws.cell(5, 14, 6, 14, true).string('RESULT').style(styleBoldCenter)
 
             ws.cell(6, 13).string('100%').style(stylePercentageHeader)
@@ -3833,10 +3835,10 @@ class StudentgroupController {
                 const rowStyle = isEven ? styleEvenRow : styleOddRow
                 const rowStyleName = isEven ? styleEvenRowName : styleOddRowName
 
-                ws.cell(row, 1)
-                    .string(studentCount.toString())
-                    .style(rowStyle)
-                ws.cell(row, 2).string(`${student.name} ${student.last_name}`).style(rowStyleName)
+                ws.cell(row, 1).string(studentCount.toString()).style(rowStyle)
+                ws.cell(row, 2)
+                    .string(`${student.name} ${student.last_name}`)
+                    .style(rowStyleName)
 
                 let finalAverageGrade = 0
                 let gradeIndex = 0
@@ -3885,7 +3887,8 @@ class StudentgroupController {
                     .style(rowStyle)
 
                 const resultText = finalScore >= 70 ? 'PASS' : 'FAIL'
-                const resultStyle = finalScore >= 70 ? stylePassResult : styleFailResult
+                const resultStyle =
+                    finalScore >= 70 ? stylePassResult : styleFailResult
                 ws.cell(row, 4 + gradeIndex)
                     .string(resultText)
                     .style(resultStyle)
@@ -4223,16 +4226,6 @@ class StudentgroupController {
 
     async rotationAnalysis(req, res, next) {
         try {
-            const { shift = null, level = null } = req.body
-
-            const levelData = await Level.findByPk(level)
-
-            if (!levelData) {
-                return res.status(400).json({
-                    error: 'Level does not exist.',
-                })
-            }
-
             const name = `rotation_analysis_${Date.now()}`
             const path = `${resolve(
                 directory,
@@ -4243,9 +4236,6 @@ class StudentgroupController {
                 'uploads'
             )}/${name}`
             const wb = new xl.Workbook()
-
-            // Add Worksheets to the workbook
-            const ws = wb.addWorksheet('Rotation Analysis')
 
             // Create reusable styles
             const styleHeading = wb.createStyle({
@@ -4280,13 +4270,6 @@ class StudentgroupController {
                 },
             })
 
-            const styleHeaderDetails = wb.createStyle({
-                font: {
-                    color: '#222222',
-                    size: 12,
-                },
-            })
-
             const styleHeaderDetailsCenter = wb.createStyle({
                 font: {
                     color: '#222222',
@@ -4297,219 +4280,328 @@ class StudentgroupController {
                 },
             })
 
-            const periods = {}
-            let definedShift = false
-            if (shift.morning || shift.afternoon || shift.evening) {
-                definedShift = true
-                periods.morning = shift.morning
-                periods.afternoon = shift.afternoon
-                periods.evening = shift.evening
-            }
+            const shiftOptions = [
+                {
+                    morning: true,
+                    afternoon: false,
+                    evening: false,
+                },
+                {
+                    morning: true,
+                    afternoon: true,
+                    evening: false,
+                },
+                {
+                    morning: false,
+                    afternoon: true,
+                    evening: false,
+                },
+                {
+                    morning: false,
+                    afternoon: false,
+                    evening: true,
+                },
+            ]
 
-            const rotations = await Rotation.findAll({
-                include: [
-                    {
-                        model: Student,
-                        as: 'student',
-                        required: true,
-                        where: {
-                            canceled_at: null,
-                        },
-                        include: [
-                            {
-                                model: Vacation,
-                                as: 'vacations',
-                                required: false,
-                                where: {
-                                    // Hoje
-                                    date_from: {
-                                        [Op.lte]: format(
-                                            new Date(),
-                                            'yyyy-MM-dd'
-                                        ),
-                                    },
-                                    date_to: {
-                                        [Op.gte]: format(
-                                            new Date(),
-                                            'yyyy-MM-dd'
-                                        ),
-                                    },
-                                    canceled_at: null,
-                                },
-                                attributes: ['id'],
-                            },
-                            {
-                                model: MedicalExcuse,
-                                as: 'medical_excuses',
-                                required: false,
-                                where: {
-                                    // Hoje
-                                    date_from: {
-                                        [Op.lte]: format(
-                                            new Date(),
-                                            'yyyy-MM-dd'
-                                        ),
-                                    },
-                                    date_to: {
-                                        [Op.gte]: format(
-                                            new Date(),
-                                            'yyyy-MM-dd'
-                                        ),
-                                    },
-                                    canceled_at: null,
-                                },
-                                attributes: ['id'],
-                            },
-                        ],
+            for (let shift of shiftOptions) {
+                let shiftName = ''
+                if (shift.morning) {
+                    shiftName = 'Morning'
+                }
+                if (shift.afternoon) {
+                    if (shiftName !== '') {
+                        shiftName += ' & '
+                    }
+                    shiftName += 'Afternoon'
+                }
+                if (shift.evening) {
+                    if (shiftName !== '') {
+                        shiftName += '/'
+                    }
+                    shiftName += 'Evening'
+                }
+                // Add Worksheets to the workbook
+                const ws = wb.addWorksheet(shiftName)
+
+                const levels = await Level.findAll({
+                    where: {
+                        canceled_at: null,
                     },
-                    {
-                        model: Studentgroup,
-                        as: 'studentgroup',
-                        required: true,
-                        where: {
-                            ...periods,
-                            canceled_at: null,
-                            rotation_status: 'First Step Done',
+                    include: [
+                        {
+                            model: Studentgroup,
+                            as: 'studentgroups',
+                            required: false,
+                            where: {
+                                ...shift,
+                                canceled_at: null,
+                                rotation_status: 'First Step Done',
+                            },
+                            attributes: ['level_id'],
                         },
+                    ],
+                    distinct: true,
+                    attributes: ['id', 'name'],
+                    order: [['name', 'ASC']],
+                })
+
+                ws.cell(1, 1, 1, 5, true)
+                    .string(`ROTATION ANALYSIS - ${shiftName}`)
+                    .style(styleHeading)
+
+                let row = 2
+
+                for (let level of levels) {
+                    level.order = 0
+                    if (level.name === 'Basic') {
+                        level.order = 1
+                    } else if (level.name === 'Pre-Intermediate') {
+                        level.order = 2
+                    } else if (level.name === 'Intermediate') {
+                        level.order = 3
+                    } else if (level.name === 'Pre-Advanced') {
+                        level.order = 4
+                    } else if (level.name === 'Advanced') {
+                        level.order = 5
+                    } else if (level.name === 'Proficient') {
+                        level.order = 6
+                    } else if (level.name === 'MBE1') {
+                        level.order = 7
+                    } else if (level.name === 'MBE2') {
+                        level.order = 8
+                    } else {
+                        level.order = 99
+                    }
+                }
+
+                levels.sort((a, b) => a.order - b.order)
+                for (let levelRow of levels) {
+                    const rotations = await Rotation.findAll({
                         include: [
                             {
-                                model: Level,
-                                as: 'level',
+                                model: Student,
+                                as: 'student',
                                 required: true,
                                 where: {
                                     canceled_at: null,
                                 },
+                                include: [
+                                    {
+                                        model: Vacation,
+                                        as: 'vacations',
+                                        required: false,
+                                        where: {
+                                            // Hoje
+                                            date_from: {
+                                                [Op.lte]: format(
+                                                    new Date(),
+                                                    'yyyy-MM-dd'
+                                                ),
+                                            },
+                                            date_to: {
+                                                [Op.gte]: format(
+                                                    new Date(),
+                                                    'yyyy-MM-dd'
+                                                ),
+                                            },
+                                            canceled_at: null,
+                                        },
+                                        attributes: ['id'],
+                                    },
+                                    {
+                                        model: MedicalExcuse,
+                                        as: 'medical_excuses',
+                                        required: false,
+                                        where: {
+                                            // Hoje
+                                            date_from: {
+                                                [Op.lte]: format(
+                                                    new Date(),
+                                                    'yyyy-MM-dd'
+                                                ),
+                                            },
+                                            date_to: {
+                                                [Op.gte]: format(
+                                                    new Date(),
+                                                    'yyyy-MM-dd'
+                                                ),
+                                            },
+                                            canceled_at: null,
+                                        },
+                                        attributes: ['id'],
+                                    },
+                                ],
+                            },
+                            {
+                                model: Studentgroup,
+                                as: 'studentgroup',
+                                required: true,
+                                where: {
+                                    ...shift,
+                                    canceled_at: null,
+                                    rotation_status: 'First Step Done',
+                                },
+                                include: [
+                                    {
+                                        model: Level,
+                                        as: 'level',
+                                        required: true,
+                                        where: {
+                                            canceled_at: null,
+                                        },
+                                        attributes: ['name'],
+                                    },
+                                ],
                                 attributes: ['name'],
+                                order: [['name', 'ASC']],
                             },
                         ],
-                        attributes: ['name'],
-                        order: [['name', 'ASC']],
-                    },
-                ],
-                where: {
-                    next_level_id: levelData.id,
-                    canceled_at: null,
-                },
-                attributes: ['student_id', 'studentgroup_id', 'result'],
-            })
+                        where: {
+                            next_level_id: levelRow.id,
+                            canceled_at: null,
+                        },
+                        attributes: ['student_id', 'studentgroup_id', 'result'],
+                    })
 
-            const groups = []
-            const totals = {
-                students: 0,
-                pass: 0,
-                fail: 0,
-            }
-
-            for (let rotation of rotations) {
-                let group = groups.find(
-                    (group) => group.name === rotation.studentgroup.level.name
-                )
-                if (!group) {
-                    const level = rotation.studentgroup.level.name
-                    groups.push({
-                        order:
-                            level === 'Basic'
-                                ? 1
-                                : level === 'Pre-Intermediate'
-                                ? 2
-                                : level === 'Intermediate'
-                                ? 3
-                                : level === 'Pre-Advanced'
-                                ? 4
-                                : level === 'Advanced'
-                                ? 5
-                                : level === 'Proficient'
-                                ? 6
-                                : level === 'MBE1'
-                                ? 7
-                                : level === 'MBE2'
-                                ? 8
-                                : 99,
-                        name: level,
+                    const groups = []
+                    const totals = {
                         students: 0,
-                        vacation: 0,
-                        medical_excuse: 0,
                         pass: 0,
                         fail: 0,
-                    })
-                    group = groups[groups.length - 1]
+                    }
+
+                    for (let rotation of rotations) {
+                        let group = groups.find(
+                            (group) =>
+                                group.name === rotation.studentgroup.level.name
+                        )
+                        if (!group) {
+                            const level = rotation.studentgroup.level.name
+                            groups.push({
+                                order:
+                                    level === 'Basic'
+                                        ? 1
+                                        : level === 'Pre-Intermediate'
+                                        ? 2
+                                        : level === 'Intermediate'
+                                        ? 3
+                                        : level === 'Pre-Advanced'
+                                        ? 4
+                                        : level === 'Advanced'
+                                        ? 5
+                                        : level === 'Proficient'
+                                        ? 6
+                                        : level === 'MBE1'
+                                        ? 7
+                                        : level === 'MBE2'
+                                        ? 8
+                                        : 99,
+                                name: level,
+                                students: 0,
+                                vacation: 0,
+                                medical_excuse: 0,
+                                pass: 0,
+                                fail: 0,
+                            })
+                            group = groups[groups.length - 1]
+                        }
+                        group.students++
+                        if (rotation.student.vacations.length > 0) {
+                            group.vacation++
+                        }
+                        if (rotation.student.medical_excuses.length > 0) {
+                            group.medical_excuse++
+                        }
+                        if (rotation.result === 'Pass') {
+                            group.pass++
+                        } else {
+                            group.fail++
+                        }
+                    }
+
+                    groups.sort((a, b) => a.order - b.order)
+
+                    ws.cell(row, 1)
+                        .string('Course Level:')
+                        .style({
+                            ...styleBold,
+                            border: {
+                                top: { style: 'thin', color: '#000000' },
+                                bottom: { style: 'thin', color: '#000000' },
+                                left: { style: 'thin', color: '#000000' },
+                                right: { style: 'thin', color: '#000000' },
+                            },
+                            fill: {
+                                type: 'pattern',
+                                patternType: 'solid',
+                                fgColor: '#D9E1F2',
+                            },
+                        })
+                    ws.cell(row, 2, row, 5, true)
+                        .string(levelRow.dataValues.name.toUpperCase())
+                        .style({
+                            ...styleBold,
+                            border: {
+                                top: { style: 'thin', color: '#000000' },
+                                bottom: { style: 'thin', color: '#000000' },
+                                left: { style: 'thin', color: '#000000' },
+                                right: { style: 'thin', color: '#000000' },
+                            },
+                            fill: {
+                                type: 'pattern',
+                                patternType: 'solid',
+                                fgColor: '#D9E1F2',
+                            },
+                        })
+
+                    row++
+                    ws.cell(row, 1).string('Level').style(styleBoldCenter)
+                    ws.cell(row, 2)
+                        .string('Total Students')
+                        .style(styleBoldCenter)
+                    ws.cell(row, 3).string('In Vacation').style(styleBoldCenter)
+                    ws.cell(row, 4)
+                        .string('In Medical Excuse')
+                        .style(styleBoldCenter)
+                    ws.cell(row, 5).string('Active').style(styleBoldCenter)
+
+                    row++
+
+                    for (let group of groups) {
+                        ws.cell(row, 1)
+                            .string(group.name)
+                            .style(styleHeaderDetailsCenter)
+                        ws.cell(row, 2)
+                            .number(group.students)
+                            .style(styleHeaderDetailsCenter)
+                        ws.cell(row, 3)
+                            .number(group.vacation)
+                            .style(styleHeaderDetailsCenter)
+                        ws.cell(row, 4)
+                            .number(group.medical_excuse)
+                            .style(styleHeaderDetailsCenter)
+                        ws.cell(row, 5)
+                            .number(
+                                group.students -
+                                    group.vacation -
+                                    group.medical_excuse
+                            )
+                            .style(styleHeaderDetailsCenter)
+
+                        row++
+                    }
+
+                    row += 2
                 }
-                group.students++
-                if (rotation.student.vacations.length > 0) {
-                    group.vacation++
-                }
-                if (rotation.student.medical_excuses.length > 0) {
-                    group.medical_excuse++
-                }
-                if (rotation.result === 'Pass') {
-                    group.pass++
-                } else {
-                    group.fail++
-                }
+
+                // console.log(rotations)
+
+                ws.column(1).width = 30
+                ws.column(2).width = 18
+                ws.column(3).width = 18
+                ws.column(4).width = 18
+                ws.column(5).width = 18
             }
-
-            groups.sort((a, b) => a.order - b.order)
-
-            ws.cell(1, 1, 1, 5, true)
-                .string(`ROTATION ANALYSIS - ${levelData.dataValues.name}`)
-                .style(styleHeading)
-
-            ws.cell(2, 1).string('Course Level:').style(styleBold)
-            ws.cell(2, 2)
-                .string(levelData.dataValues.name)
-                .style(styleHeaderDetails)
-
-            ws.cell(2, 3).string('Shift:').style(styleBold)
-            let shiftPos = 4
-            if (shift.morning || !definedShift) {
-                ws.cell(2, shiftPos).string('Morning').style(styleHeaderDetails)
-                shiftPos++
-            }
-            if (shift.afternoon || !definedShift) {
-                ws.cell(2, shiftPos)
-                    .string('Afternoon')
-                    .style(styleHeaderDetails)
-                shiftPos++
-            }
-            if (shift.evening || !definedShift) {
-                ws.cell(2, shiftPos).string('Evening').style(styleHeaderDetails)
-                shiftPos++
-            }
-
-            ws.cell(4, 1).string('Level').style(styleBoldCenter)
-            ws.cell(4, 2).string('Total Students').style(styleBoldCenter)
-            ws.cell(4, 3).string('In Vacation').style(styleBoldCenter)
-            ws.cell(4, 4).string('In Medical Excuse').style(styleBoldCenter)
-            ws.cell(4, 5).string('Active').style(styleBoldCenter)
-
-            let row = 5
-            for (let group of groups) {
-                ws.cell(row, 1)
-                    .string(group.name)
-                    .style(styleHeaderDetailsCenter)
-                ws.cell(row, 2)
-                    .number(group.students)
-                    .style(styleHeaderDetailsCenter)
-                ws.cell(row, 3).number(group.vacation).style(styleHeaderDetails)
-                ws.cell(row, 4)
-                    .number(group.medical_excuse)
-                    .style(styleHeaderDetails)
-                ws.cell(row, 5)
-                    .number(
-                        group.students - group.vacation - group.medical_excuse
-                    )
-                    .style(styleHeaderDetails)
-
-                row++
-            }
-
-            // console.log(rotations)
-
-            ws.column(1).width = 30
-            ws.column(2).width = 18
-            ws.column(3).width = 18
-            ws.column(4).width = 18
-            ws.column(5).width = 18
 
             let ret = null
             wb.write(path, async (err, stats) => {
