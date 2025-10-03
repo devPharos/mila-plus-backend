@@ -193,11 +193,11 @@ export async function createStudentAttendances({
             },
             date: to_date
                 ? {
-                      [Op.between]: [from_date, to_date],
-                  }
+                    [Op.between]: [from_date, to_date],
+                }
                 : {
-                      [Op.gte]: from_date,
-                  },
+                    [Op.gte]: from_date,
+                },
         },
         distinct: true,
         attributes: ['id', 'shift', 'date'],
@@ -301,15 +301,15 @@ export async function removeStudentAttendances({
         })
         if (
             class_.date >
-                format(lastDayOfMonth(parseISO(from_date)), 'yyyy-MM-dd') ||
+            format(lastDayOfMonth(parseISO(from_date)), 'yyyy-MM-dd') ||
             reason === null
         ) {
             for (let attendance of attendances) {
                 await attendance.destroy(
                     req
                         ? {
-                              transaction: req?.transaction,
-                          }
+                            transaction: req?.transaction,
+                        }
                         : {}
                 )
             }
@@ -321,8 +321,8 @@ export async function removeStudentAttendances({
                     },
                     req
                         ? {
-                              transaction: req?.transaction,
-                          }
+                            transaction: req?.transaction,
+                        }
                         : {}
                 )
             }
@@ -1019,7 +1019,7 @@ class StudentgroupController {
                         if (
                             !hasAcademicFreeDay ||
                             hasAcademicFreeDay.dataValues.date_type ===
-                                'Holiday'
+                            'Holiday'
                         ) {
                             let dayPaceGuides = []
                             if (!hasAcademicFreeDay) {
@@ -1366,7 +1366,7 @@ class StudentgroupController {
                         if (
                             !hasAcademicFreeDay ||
                             hasAcademicFreeDay.dataValues.date_type ===
-                                'Holiday'
+                            'Holiday'
                         ) {
                             let dayPaceGuides = []
                             if (!hasAcademicFreeDay) {
@@ -1374,7 +1374,7 @@ class StudentgroupController {
                                 dayPaceGuides = paceGuides.filter((pace) =>
                                     lastdayWasHoliday
                                         ? pace.day >= considerDay &&
-                                          pace.day <= considerDay + 1
+                                        pace.day <= considerDay + 1
                                         : pace.day === considerDay
                                 )
                                 if (lastdayWasHoliday) {
@@ -2080,26 +2080,26 @@ class StudentgroupController {
                         let secondCheck = 'Absent'
                         if (
                             student[
-                                `first_check_${shift.shift}_${student.id}`
+                            `first_check_${shift.shift}_${student.id}`
                             ] === 'Present'
                         ) {
                             firstCheck = 'Present'
                         } else if (
                             student[
-                                `first_check_${shift.shift}_${student.id}`
+                            `first_check_${shift.shift}_${student.id}`
                             ] === 'Late'
                         ) {
                             firstCheck = 'Late'
                         }
                         if (
                             student[
-                                `second_check_${shift.shift}_${student.id}`
+                            `second_check_${shift.shift}_${student.id}`
                             ] === 'Present'
                         ) {
                             secondCheck = 'Present'
                         } else if (
                             student[
-                                `second_check_${shift.shift}_${student.id}`
+                            `second_check_${shift.shift}_${student.id}`
                             ] === 'Late'
                         ) {
                             secondCheck = 'Late'
@@ -2166,7 +2166,7 @@ class StudentgroupController {
                             paceguide.checked === 'true'
                                 ? studentgroupclass.id
                                 : paceguideExists.dataValues
-                                      .studentgroupclass_id,
+                                    .studentgroupclass_id,
                         status:
                             paceguide.checked === 'true' ? 'Done' : 'Pending',
                         updated_by: req.userId,
@@ -3292,9 +3292,9 @@ class StudentgroupController {
                 ws2.cell(row, 4).string(
                     studentGroup?.start_date
                         ? format(
-                              parseISO(studentGroup.start_date),
-                              'MM/dd/yyyy'
-                          )
+                            parseISO(studentGroup.start_date),
+                            'MM/dd/yyyy'
+                        )
                         : ''
                 )
                 ws2.cell(row, 5).string(
@@ -3323,9 +3323,9 @@ class StudentgroupController {
                 ws2.cell(row, 8).string(
                     student?.studentxgroups[0]?.start_date
                         ? format(
-                              parseISO(student.studentxgroups[0].start_date),
-                              'MM/dd/yyyy'
-                          )
+                            parseISO(student.studentxgroups[0].start_date),
+                            'MM/dd/yyyy'
+                        )
                         : ''
                 )
                 ws2.cell(row, 9).string(student?.registration_number || '')
@@ -3365,7 +3365,7 @@ class StudentgroupController {
         }
     }
 
-    async evaluationChartReport(req, res, next) {
+  async evaluationChartReport(req, res, next) {
         try {
             const { group_id } = req.body
             if (!group_id) {
@@ -3383,19 +3383,22 @@ class StudentgroupController {
             )}/${name}`
             const wb = new xl.Workbook()
 
-            // Add Worksheets to the workbook
             const ws = wb.addWorksheet('Evaluation Chart')
 
-            // Create reusable styles
             const styleHeading = wb.createStyle({
                 font: {
-                    color: '#222222',
+                    color: '#FFFFFF',
                     size: 14,
                     bold: true,
                 },
                 alignment: {
                     horizontal: 'center',
                     vertical: 'center',
+                },
+                fill: {
+                    type: 'pattern',
+                    patternType: 'solid',
+                    fgColor: '#FF8C42',
                 },
             })
 
@@ -3409,13 +3412,24 @@ class StudentgroupController {
 
             const styleBoldCenter = wb.createStyle({
                 font: {
-                    color: '#222222',
+                    color: '#000000',
                     size: 12,
                     bold: true,
                 },
                 alignment: {
                     horizontal: 'center',
                     vertical: 'center',
+                },
+                fill: {
+                    type: 'pattern',
+                    patternType: 'solid',
+                    fgColor: '#FFA866',
+                },
+                border: {
+                    top: { style: 'thin', color: '#000000' },
+                    bottom: { style: 'thin', color: '#000000' },
+                    left: { style: 'thin', color: '#000000' },
+                    right: { style: 'thin', color: '#000000' },
                 },
             })
 
@@ -3445,6 +3459,60 @@ class StudentgroupController {
                 alignment: {
                     horizontal: 'center',
                 },
+                fill: {
+                    type: 'pattern',
+                    patternType: 'solid',
+                    fgColor: '#D9E1F2',
+                },
+                border: {
+                    top: { style: 'thick', color: '#FF8C42' },
+                    bottom: { style: 'thick', color: '#FF8C42' },
+                },
+            })
+
+            const styleColumnHeader = wb.createStyle({
+                font: {
+                    color: '#000000',
+                    size: 12,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+                fill: {
+                    type: 'pattern',
+                    patternType: 'solid',
+                    fgColor: '#FFA866',
+                },
+                border: {
+                    top: { style: 'thin', color: '#000000' },
+                    bottom: { style: 'thin', color: '#000000' },
+                    left: { style: 'thin', color: '#000000' },
+                    right: { style: 'thin', color: '#000000' },
+                },
+            })
+
+            const stylePercentageHeader = wb.createStyle({
+                font: {
+                    color: '#000000',
+                    size: 11,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+                fill: {
+                    type: 'pattern',
+                    patternType: 'solid',
+                    fgColor: '#FFC499',
+                },
+                border: {
+                    top: { style: 'thin', color: '#000000' },
+                    bottom: { style: 'thin', color: '#000000' },
+                    left: { style: 'thin', color: '#000000' },
+                    right: { style: 'thin', color: '#000000' },
+                },
             })
 
             const styleFail = wb.createStyle({
@@ -3458,9 +3526,41 @@ class StudentgroupController {
                 },
             })
 
+            const styleFailResult = wb.createStyle({
+                font: {
+                    color: '#FFFFFF',
+                    size: 12,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                },
+                fill: {
+                    type: 'pattern',
+                    patternType: 'solid',
+                    fgColor: '#F36A6A',
+                },
+            })
+
+            const stylePassResult = wb.createStyle({
+                font: {
+                    color: '#FFFFFF',
+                    size: 12,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                },
+                fill: {
+                    type: 'pattern',
+                    patternType: 'solid',
+                    fgColor: '#98FB98',
+                },
+            })
+
             const styleRedo = wb.createStyle({
                 font: {
-                    color: '#ffa500', // Orange color
+                    color: '#ffa500',
                     size: 12,
                     bold: true,
                 },
@@ -3469,7 +3569,44 @@ class StudentgroupController {
                 },
             })
 
-            // Fetch group and teacher details
+            const styleOddRow = wb.createStyle({
+                alignment: {
+                    horizontal: 'center',
+                },
+                fill: {
+                    type: 'pattern',
+                    patternType: 'solid',
+                    fgColor: '#FFFFFF',
+                },
+            })
+
+            const styleEvenRow = wb.createStyle({
+                alignment: {
+                    horizontal: 'center',
+                },
+                fill: {
+                    type: 'pattern',
+                    patternType: 'solid',
+                    fgColor: '#F2F2F2',
+                },
+            })
+
+            const styleOddRowName = wb.createStyle({
+                fill: {
+                    type: 'pattern',
+                    patternType: 'solid',
+                    fgColor: '#FFFFFF',
+                },
+            })
+
+            const styleEvenRowName = wb.createStyle({
+                fill: {
+                    type: 'pattern',
+                    patternType: 'solid',
+                    fgColor: '#F2F2F2',
+                },
+            })
+
             const studentGroup = await Studentgroup.findOne({
                 where: {
                     id: group_id,
@@ -3536,7 +3673,6 @@ class StudentgroupController {
                 })
             }
 
-            // Set up worksheet header
             const shift =
                 (studentGroup.morning ? 'MORNING' : '') +
                 (studentGroup.afternoon
@@ -3544,8 +3680,8 @@ class StudentgroupController {
                     : '') +
                 (studentGroup.evening
                     ? (studentGroup.afternoon || studentGroup.morning
-                          ? '/'
-                          : '') + 'EVENING'
+                        ? '/'
+                        : '') + 'EVENING'
                     : '')
 
             ws.cell(1, 1, 1, 15, true)
@@ -3566,9 +3702,9 @@ class StudentgroupController {
                 .string(
                     studentGroup.start_date
                         ? format(
-                              parseISO(studentGroup.start_date),
-                              'MM/dd/yyyy'
-                          )
+                            parseISO(studentGroup.start_date),
+                            'MM/dd/yyyy'
+                        )
                         : ''
                 )
                 .style(styleHeaderDetails)
@@ -3581,7 +3717,6 @@ class StudentgroupController {
                 )
                 .style(styleHeaderDetails)
 
-            // Set up column headers
             ws.cell(5, 1, 6, 1, true).string('#').style(styleBoldCenter)
             ws.cell(5, 2, 6, 2, true)
                 .string('STUDENT´S NAME (PRINT NAME)')
@@ -3606,19 +3741,17 @@ class StudentgroupController {
                     .string(
                         `${test.name} ${number > 0 ? number.toString() : ''}`
                     )
-                    .style(styleBold)
+                    .style(styleColumnHeader)
                 ws.cell(6, 3 + testIndex)
                     .string(test.percentage + '%')
-                    .style(styleNumericHeader)
+                    .style(stylePercentageHeader)
                 testIndex++
             }
-            ws.cell(5, 13).string('Final Average Grade').style(styleBold)
-            ws.cell(5, 14).string('RESULT').style(styleBoldCenter)
+            ws.cell(5, 13).string('Final Average Grade').style(styleColumnHeader)
+            ws.cell(5, 14, 6, 14, true).string('RESULT').style(styleBoldCenter)
 
-            // Set up grading weights
-            ws.cell(6, 13).string('100%').style(styleNumericHeader)
+            ws.cell(6, 13).string('100%').style(stylePercentageHeader)
 
-            // Set column widths
             ws.column(1).width = 6
             ws.column(2).width = 40
             ws.column(3).width = 15
@@ -3639,7 +3772,6 @@ class StudentgroupController {
 
             ws.column(2).freeze()
 
-            // Fetch students in the specified group
             const students = await Student.findAll({
                 include: [
                     {
@@ -3697,20 +3829,23 @@ class StudentgroupController {
                     },
                 })
 
-                // // Write student data to the worksheet
+                const isEven = studentCount % 2 === 0
+                const rowStyle = isEven ? styleEvenRow : styleOddRow
+                const rowStyleName = isEven ? styleEvenRowName : styleOddRowName
+
                 ws.cell(row, 1)
                     .string(studentCount.toString())
-                    .style(styleNumericHeader)
-                ws.cell(row, 2).string(`${student.name} ${student.last_name}`)
+                    .style(rowStyle)
+                ws.cell(row, 2).string(`${student.name} ${student.last_name}`).style(rowStyleName)
 
                 let finalAverageGrade = 0
                 let gradeIndex = 0
                 for (let test of tests) {
-                    const test = tests[gradeIndex]
+                    const currentTest = tests[gradeIndex]
                     const paceguide = paceguideTests.find(
                         (paceguideTest) =>
                             paceguideTest.dataValues.description ===
-                            test.description
+                            currentTest.description
                     )
 
                     let score = 0
@@ -3731,9 +3866,10 @@ class StudentgroupController {
                                 : true
                     }
 
+                    const cellStyle = discarded ? styleFail : rowStyle
                     ws.cell(row, 3 + gradeIndex)
                         .number(score)
-                        .style(discarded ? styleFail : styleNumericHeader)
+                        .style(cellStyle)
 
                     if (!discarded && locked) {
                         averageGrades[gradeIndex].grade += score
@@ -3746,11 +3882,13 @@ class StudentgroupController {
                 const finalScore = parseInt((finalAverageGrade / 2).toFixed(0))
                 ws.cell(row, 3 + gradeIndex)
                     .number(finalScore || 0)
-                    .style(styleNumericHeader)
+                    .style(rowStyle)
 
+                const resultText = finalScore >= 70 ? 'PASS' : 'FAIL'
+                const resultStyle = finalScore >= 70 ? stylePassResult : styleFailResult
                 ws.cell(row, 4 + gradeIndex)
-                    .string(`${finalScore >= 80 ? 'PASS' : 'FAIL'}`)
-                    .style(styleNumericHeader)
+                    .string(resultText)
+                    .style(resultStyle)
 
                 row++
                 studentCount++
