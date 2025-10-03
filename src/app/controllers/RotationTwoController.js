@@ -76,6 +76,11 @@ class RotationTwoController {
                 attributes: ['id', 'name', 'rotation_status'],
             })
 
+            const nextLevels = [level_id]
+            if (level?.dataValues?.name === 'MBE2') {
+                nextLevels.push(level?.dataValues?.previous_level_id)
+            }
+
             const groups = await Studentgroup.findAll({
                 where: {
                     ...filialSearch,
@@ -102,7 +107,9 @@ class RotationTwoController {
                         as: 'rotations',
                         required: true,
                         where: {
-                            next_level_id: level_id,
+                            next_level_id: {
+                                [Op.in]: nextLevels,
+                            },
                             canceled_at: null,
                         },
                         include: [
