@@ -4082,6 +4082,319 @@ class StudentgroupController {
             next(err)
         }
     }
+
+    async rotationAnalysis(req, res, next) {
+        try {
+            const { shift = null, level = null } = req.body
+
+            const levelData = await Level.findByPk(level)
+
+            if (!levelData) {
+                return res.status(400).json({
+                    error: 'Level does not exist.',
+                })
+            }
+
+            const name = `rotation_analysis_${Date.now()}`
+            const path = `${resolve(
+                directory,
+                '..',
+                '..',
+                '..',
+                'public',
+                'uploads'
+            )}/${name}`
+            const wb = new xl.Workbook()
+
+            // Add Worksheets to the workbook
+            const ws = wb.addWorksheet('Rotation Analysis')
+
+            // Create reusable styles
+            const styleHeading = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 14,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+            })
+
+            const styleBold = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                    bold: true,
+                },
+            })
+
+            const styleBoldCenter = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+            })
+
+            const styleHeaderDetails = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                },
+            })
+
+            const styleHeaderDetailsCenter = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                },
+                alignment: {
+                    horizontal: 'center',
+                },
+            })
+
+            const periods = {}
+            let definedShift = false
+            if (shift.morning || shift.afternoon || shift.evening) {
+                definedShift = true
+                periods.morning = shift.morning
+                periods.afternoon = shift.afternoon
+                periods.evening = shift.evening
+            }
+
+            const rotations = await Rotation.findAll({
+                include: [
+                    {
+                        model: Student,
+                        as: 'student',
+                        required: true,
+                        where: {
+                            canceled_at: null,
+                        },
+                        include: [
+                            {
+                                model: Vacation,
+                                as: 'vacations',
+                                required: false,
+                                where: {
+                                    // Hoje
+                                    date_from: {
+                                        [Op.lte]: format(
+                                            new Date(),
+                                            'yyyy-MM-dd'
+                                        ),
+                                    },
+                                    date_to: {
+                                        [Op.gte]: format(
+                                            new Date(),
+                                            'yyyy-MM-dd'
+                                        ),
+                                    },
+                                    canceled_at: null,
+                                },
+                                attributes: ['id'],
+                            },
+                            {
+                                model: MedicalExcuse,
+                                as: 'medical_excuses',
+                                required: false,
+                                where: {
+                                    // Hoje
+                                    date_from: {
+                                        [Op.lte]: format(
+                                            new Date(),
+                                            'yyyy-MM-dd'
+                                        ),
+                                    },
+                                    date_to: {
+                                        [Op.gte]: format(
+                                            new Date(),
+                                            'yyyy-MM-dd'
+                                        ),
+                                    },
+                                    canceled_at: null,
+                                },
+                                attributes: ['id'],
+                            },
+                        ],
+                    },
+                    {
+                        model: Studentgroup,
+                        as: 'studentgroup',
+                        required: true,
+                        where: {
+                            ...periods,
+                            canceled_at: null,
+                            rotation_status: 'First Step Done',
+                        },
+                        include: [
+                            {
+                                model: Level,
+                                as: 'level',
+                                required: true,
+                                where: {
+                                    canceled_at: null,
+                                },
+                                attributes: ['name'],
+                            },
+                        ],
+                        attributes: ['name'],
+                        order: [['name', 'ASC']],
+                    },
+                ],
+                where: {
+                    next_level_id: levelData.id,
+                    canceled_at: null,
+                },
+                attributes: ['student_id', 'studentgroup_id', 'result'],
+            })
+
+            const groups = []
+            const totals = {
+                students: 0,
+                pass: 0,
+                fail: 0,
+            }
+
+            for (let rotation of rotations) {
+                let group = groups.find(
+                    (group) => group.name === rotation.studentgroup.level.name
+                )
+                if (!group) {
+                    const level = rotation.studentgroup.level.name
+                    groups.push({
+                        order:
+                            level === 'Basic'
+                                ? 1
+                                : level === 'Pre-Intermediate'
+                                ? 2
+                                : level === 'Intermediate'
+                                ? 3
+                                : level === 'Pre-Advanced'
+                                ? 4
+                                : level === 'Advanced'
+                                ? 5
+                                : level === 'Proficient'
+                                ? 6
+                                : level === 'MBE1'
+                                ? 7
+                                : level === 'MBE2'
+                                ? 8
+                                : 99,
+                        name: level,
+                        students: 0,
+                        vacation: 0,
+                        medical_excuse: 0,
+                        pass: 0,
+                        fail: 0,
+                    })
+                    group = groups[groups.length - 1]
+                }
+                group.students++
+                if (rotation.student.vacations.length > 0) {
+                    group.vacation++
+                }
+                if (rotation.student.medical_excuses.length > 0) {
+                    group.medical_excuse++
+                }
+                if (rotation.result === 'Pass') {
+                    group.pass++
+                } else {
+                    group.fail++
+                }
+            }
+
+            groups.sort((a, b) => a.order - b.order)
+
+            ws.cell(1, 1, 1, 5, true)
+                .string(`ROTATION ANALYSIS - ${levelData.dataValues.name}`)
+                .style(styleHeading)
+
+            ws.cell(2, 1).string('Course Level:').style(styleBold)
+            ws.cell(2, 2)
+                .string(levelData.dataValues.name)
+                .style(styleHeaderDetails)
+
+            ws.cell(2, 3).string('Shift:').style(styleBold)
+            let shiftPos = 4
+            if (shift.morning || !definedShift) {
+                ws.cell(2, shiftPos).string('Morning').style(styleHeaderDetails)
+                shiftPos++
+            }
+            if (shift.afternoon || !definedShift) {
+                ws.cell(2, shiftPos)
+                    .string('Afternoon')
+                    .style(styleHeaderDetails)
+                shiftPos++
+            }
+            if (shift.evening || !definedShift) {
+                ws.cell(2, shiftPos).string('Evening').style(styleHeaderDetails)
+                shiftPos++
+            }
+
+            ws.cell(4, 1).string('Level').style(styleBoldCenter)
+            ws.cell(4, 2).string('Total Students').style(styleBoldCenter)
+            ws.cell(4, 3).string('In Vacation').style(styleBoldCenter)
+            ws.cell(4, 4).string('In Medical Excuse').style(styleBoldCenter)
+            ws.cell(4, 5).string('Active').style(styleBoldCenter)
+
+            let row = 5
+            for (let group of groups) {
+                ws.cell(row, 1)
+                    .string(group.name)
+                    .style(styleHeaderDetailsCenter)
+                ws.cell(row, 2)
+                    .number(group.students)
+                    .style(styleHeaderDetailsCenter)
+                ws.cell(row, 3).number(group.vacation).style(styleHeaderDetails)
+                ws.cell(row, 4)
+                    .number(group.medical_excuse)
+                    .style(styleHeaderDetails)
+                ws.cell(row, 5)
+                    .number(
+                        group.students - group.vacation - group.medical_excuse
+                    )
+                    .style(styleHeaderDetails)
+
+                row++
+            }
+
+            // console.log(rotations)
+
+            ws.column(1).width = 30
+            ws.column(2).width = 18
+            ws.column(3).width = 18
+            ws.column(4).width = 18
+            ws.column(5).width = 18
+
+            let ret = null
+            wb.write(path, async (err, stats) => {
+                if (err) {
+                    ret = res.status(400).json({ err, stats })
+                } else {
+                    setTimeout(() => {
+                        fs.unlink(path, (err) => {
+                            if (err) {
+                                console.log(err)
+                            }
+                        })
+                    }, 10000)
+                    return res.json({ path, name })
+                }
+            })
+
+            return ret
+        } catch (err) {
+            err.transaction = req?.transaction
+            next(err)
+        }
+    }
 }
 
 export default new StudentgroupController()

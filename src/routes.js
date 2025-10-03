@@ -420,6 +420,10 @@ routes.post(
     '/reports/passAndFailAnalysis',
     StudentgroupController.passAndFailAnalysis
 )
+routes.post(
+    '/reports/rotationAnalysis',
+    StudentgroupController.rotationAnalysis
+)
 
 routes.get('/reports/receivables', ReportController.receivables)
 routes.get('/reports/default-rate', ReportController.defaultRate)
