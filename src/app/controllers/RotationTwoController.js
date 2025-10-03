@@ -71,7 +71,9 @@ class RotationTwoController {
                     morning: morning,
                     afternoon: afternoon,
                     evening: evening,
-                    rotation_status: 'First Step Done',
+                    rotation_status: {
+                        [Op.in]: ['First Step Done', 'Second Step Done'],
+                    },
                     canceled_at: null,
                 },
                 include: [
