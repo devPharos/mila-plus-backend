@@ -381,26 +381,6 @@ class RotationTwoController {
             next(err)
         }
     }
-
-    async passAndFailAnalysis(req, res, next) {
-        try {
-            const { shift, level } = req.body
-
-            const studentgroups = await Studentgroup.findAll({
-                where: {
-                    shift,
-                    level_id: level,
-                    canceled_at: null,
-                    rotation_status: 'First Step Done',
-                },
-                attributes: ['id', 'name', 'staff_id'],
-                order: [['name', 'ASC']],
-            })
-        } catch (err) {
-            err.transaction = req?.transaction
-            next(err)
-        }
-    }
 }
 
 export default new RotationTwoController()

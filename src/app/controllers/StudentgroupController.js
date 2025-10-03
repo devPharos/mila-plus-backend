@@ -48,6 +48,7 @@ import Recurrence from '../models/Recurrence.js'
 import Issuer from '../models/Issuer.js'
 import Enrollment from '../models/Enrollment.js'
 import xl from 'excel4node'
+import Rotation from '../models/Rotation.js'
 
 const filename = fileURLToPath(import.meta.url)
 const directory = dirname(filename)
@@ -3612,7 +3613,7 @@ class StudentgroupController {
                 testIndex++
             }
             ws.cell(5, 13).string('Final Average Grade').style(styleBold)
-            ws.cell(5, 14).string('RESULT').style(styleBold)
+            ws.cell(5, 14).string('RESULT').style(styleBoldCenter)
 
             // Set up grading weights
             ws.cell(6, 13).string('100%').style(styleNumericHeader)
@@ -3703,11 +3704,8 @@ class StudentgroupController {
                 ws.cell(row, 2).string(`${student.name} ${student.last_name}`)
 
                 let finalAverageGrade = 0
-                for (
-                    let gradeIndex = 0;
-                    gradeIndex < tests.length;
-                    gradeIndex++
-                ) {
+                let gradeIndex = 0
+                for (let test of tests) {
                     const test = tests[gradeIndex]
                     const paceguide = paceguideTests.find(
                         (paceguideTest) =>
@@ -3743,9 +3741,15 @@ class StudentgroupController {
                         finalAverageGrade +=
                             (score * tests[gradeIndex].percentage) / 100
                     }
+                    gradeIndex++
                 }
-                ws.cell(row, 13)
-                    .number(parseInt((finalAverageGrade / 2).toFixed(0)) || 0)
+                const finalScore = parseInt((finalAverageGrade / 2).toFixed(0))
+                ws.cell(row, 3 + gradeIndex)
+                    .number(finalScore || 0)
+                    .style(styleNumericHeader)
+
+                ws.cell(row, 4 + gradeIndex)
+                    .string(`${finalScore >= 70 ? 'PASS' : 'FAIL'}`)
                     .style(styleNumericHeader)
 
                 row++
@@ -3763,6 +3767,254 @@ class StudentgroupController {
                     .style(styleNumericHeaderBold)
                 averageIndex++
             }
+
+            let ret = null
+            wb.write(path, async (err, stats) => {
+                if (err) {
+                    ret = res.status(400).json({ err, stats })
+                } else {
+                    setTimeout(() => {
+                        fs.unlink(path, (err) => {
+                            if (err) {
+                                console.log(err)
+                            }
+                        })
+                    }, 10000)
+                    return res.json({ path, name })
+                }
+            })
+
+            return ret
+        } catch (err) {
+            err.transaction = req?.transaction
+            next(err)
+        }
+    }
+
+    async passAndFailAnalysis(req, res, next) {
+        try {
+            const { shift = null, level = null } = req.body
+            console.log({ shift, level })
+
+            const name = `pass_and_fail_analysis_${Date.now()}`
+            const path = `${resolve(
+                directory,
+                '..',
+                '..',
+                '..',
+                'public',
+                'uploads'
+            )}/${name}`
+            const wb = new xl.Workbook()
+
+            // Add Worksheets to the workbook
+            const ws = wb.addWorksheet('Pass and Fail Analysis')
+
+            // Create reusable styles
+            const styleHeading = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 14,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+            })
+
+            const styleBold = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                    bold: true,
+                },
+            })
+
+            const styleBoldCenter = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+            })
+
+            const styleHeaderDetails = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                },
+            })
+
+            const styleHeaderDetailsCenter = wb.createStyle({
+                font: {
+                    color: '#222222',
+                    size: 12,
+                },
+                alignment: {
+                    horizontal: 'center',
+                },
+            })
+
+            ws.cell(1, 1, 1, 15, true)
+                .string(`PASS AND FAIL ANALYSIS`)
+                .style(styleHeading)
+            ws.cell(2, 1).string('Course Level:').style(styleBold)
+            ws.cell(2, 2).string('All').style(styleHeaderDetails)
+            ws.cell(2, 4).string('Course Term:').style(styleBold)
+            ws.cell(2, 5).string('16 weeks').style(styleHeaderDetails)
+            ws.cell(2, 7).string('Duration:').style(styleBold)
+            ws.cell(2, 8).string('16 weeks').style(styleHeaderDetails)
+
+            ws.cell(3, 1).string('Student Active Count:').style(styleBold)
+            ws.cell(3, 2).number(116).style(styleHeaderDetails)
+
+            ws.cell(3, 7).string('Total Pass:').style(styleBold)
+            ws.cell(3, 8).number(90).style(styleHeaderDetails)
+
+            ws.cell(3, 10).string('Total Percent Pass:').style(styleBold)
+            ws.cell(3, 11).string('78%').style(styleHeaderDetails)
+
+            ws.cell(4, 1).string('Course Schedules:').style(styleBold)
+            let shiftPos = 2
+            if (shift.morning) {
+                ws.cell(4, shiftPos).string('Morning').style(styleHeaderDetails)
+                shiftPos++
+            }
+            if (shift.afternoon) {
+                ws.cell(4, shiftPos)
+                    .string('Afternoon')
+                    .style(styleHeaderDetails)
+                shiftPos++
+            }
+            if (shift.evening) {
+                ws.cell(4, shiftPos).string('Evening').style(styleHeaderDetails)
+                shiftPos++
+            }
+
+            ws.cell(4, 7).string('Total Fail:').style(styleBold)
+            ws.cell(4, 8).number(26).style(styleHeaderDetails)
+
+            ws.cell(4, 10).string('Total Percent Fail:').style(styleBold)
+            ws.cell(4, 11).string('22%').style(styleHeaderDetails)
+
+            ws.cell(5, 1)
+                .string('Academic Supervisor Assigned:')
+                .style(styleBold)
+
+            ws.cell(7, 1).string('Courses').style(styleBoldCenter)
+            ws.cell(7, 2).string('Students Registered').style(styleBoldCenter)
+            ws.cell(7, 3).string('Inactive Students').style(styleBoldCenter)
+            ws.cell(7, 4).string('Pass').style(styleBoldCenter)
+            ws.cell(7, 5).string('Fail').style(styleBoldCenter)
+            ws.cell(7, 6).string('Pass %').style(styleBoldCenter)
+            ws.cell(7, 7).string('Fail %').style(styleBoldCenter)
+
+            const rotations = await Rotation.findAll({
+                include: [
+                    {
+                        model: Studentgroup,
+                        as: 'studentgroup',
+                        required: true,
+                        where: {
+                            canceled_at: null,
+                            rotation_status: 'First Step Done',
+                        },
+                        include: [
+                            {
+                                model: Level,
+                                as: 'level',
+                                required: true,
+                                where: {
+                                    id: level,
+                                    canceled_at: null,
+                                },
+                                attributes: ['name'],
+                            },
+                        ],
+                        attributes: ['name'],
+                        order: [['name', 'ASC']],
+                    },
+                ],
+                where: {
+                    canceled_at: null,
+                },
+                attributes: ['student_id', 'studentgroup_id', 'result'],
+            })
+
+            const groups = []
+
+            for (let rotation of rotations) {
+                let group = groups.find(
+                    (group) => group.id === rotation.studentgroup_id
+                )
+                if (!group) {
+                    groups.push({
+                        id: rotation.studentgroup_id,
+                        name: rotation.studentgroup.name,
+                        studentsRegistered: 0,
+                        inactiveStudents: 0,
+                        pass: 0,
+                        fail: 0,
+                        percPass: 0,
+                        percFail: 0,
+                    })
+                    group = groups[groups.length - 1]
+                }
+                group.studentsRegistered++
+                if (rotation.result === 'Pass') {
+                    group.pass++
+                    group.percPass =
+                        (group.pass / group.studentsRegistered) * 100
+                } else {
+                    group.fail++
+                    group.percFail =
+                        (group.fail / group.studentsRegistered) * 100
+                }
+            }
+
+            let row = 8
+            for (let group of groups) {
+                ws.cell(row, 1).string(group.name).style(styleHeaderDetails)
+                ws.cell(row, 2)
+                    .number(group.studentsRegistered)
+                    .style(styleHeaderDetailsCenter)
+                ws.cell(row, 3)
+                    .number(group.inactiveStudents)
+                    .style(styleHeaderDetailsCenter)
+                ws.cell(row, 4)
+                    .number(group.pass)
+                    .style(styleHeaderDetailsCenter)
+                ws.cell(row, 5)
+                    .number(group.fail)
+                    .style(styleHeaderDetailsCenter)
+                ws.cell(row, 6)
+                    .number(group.percPass)
+                    .style(styleHeaderDetailsCenter)
+                ws.cell(row, 7)
+                    .number(group.percFail)
+                    .style(styleHeaderDetailsCenter)
+
+                row++
+            }
+
+            // console.log(rotations)
+
+            ws.column(1).width = 30
+            ws.column(2).width = 18
+            ws.column(3).width = 18
+            ws.column(4).width = 18
+            ws.column(5).width = 18
+            ws.column(6).width = 18
+            ws.column(7).width = 18
+            ws.column(8).width = 18
+            ws.column(9).width = 18
+            ws.column(10).width = 18
+            ws.column(11).width = 18
 
             let ret = null
             wb.write(path, async (err, stats) => {
