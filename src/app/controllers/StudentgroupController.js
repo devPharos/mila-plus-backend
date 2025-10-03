@@ -3859,6 +3859,15 @@ class StudentgroupController {
                 },
             })
 
+            const periods = {}
+            let definedShift = false
+            if (shift.morning || shift.afternoon || shift.evening) {
+                definedShift = true
+                periods.morning = shift.morning
+                periods.afternoon = shift.afternoon
+                periods.evening = shift.evening
+            }
+
             const rotations = await Rotation.findAll({
                 include: [
                     {
@@ -3866,9 +3875,7 @@ class StudentgroupController {
                         as: 'studentgroup',
                         required: true,
                         where: {
-                            morning: shift.morning,
-                            afternoon: shift.afternoon,
-                            evening: shift.evening,
+                            ...periods,
                             canceled_at: null,
                             rotation_status: 'First Step Done',
                         },
@@ -3977,17 +3984,17 @@ class StudentgroupController {
 
             ws.cell(4, 1).string('Course Schedules:').style(styleBold)
             let shiftPos = 2
-            if (shift.morning) {
+            if (shift.morning || !definedShift) {
                 ws.cell(4, shiftPos).string('Morning').style(styleHeaderDetails)
                 shiftPos++
             }
-            if (shift.afternoon) {
+            if (shift.afternoon || !definedShift) {
                 ws.cell(4, shiftPos)
                     .string('Afternoon')
                     .style(styleHeaderDetails)
                 shiftPos++
             }
-            if (shift.evening) {
+            if (shift.evening || !definedShift) {
                 ws.cell(4, shiftPos).string('Evening').style(styleHeaderDetails)
                 shiftPos++
             }
