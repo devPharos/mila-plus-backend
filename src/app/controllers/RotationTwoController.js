@@ -279,6 +279,7 @@ class RotationTwoController {
                     }
                 )
 
+                const existingGroupId = existingGroup.dataValues.id
                 delete existingGroup.dataValues.id
                 delete existingGroup.dataValues.created_at
                 delete existingGroup.dataValues.updated_at
@@ -367,6 +368,27 @@ class RotationTwoController {
                             classroom_id: classroom_id,
                             level_id: level_id,
                             updated_by: req.userId,
+                        },
+                        {
+                            transaction: req?.transaction,
+                        }
+                    )
+                }
+
+                const stillHasStudent = await StudentXGroup.findOne({
+                    where: {
+                        group_id: studentExists.dataValues.studentgroup_id,
+                        status: 'Active',
+                        end_date: null,
+                        canceled_at: null,
+                    },
+                })
+
+                if (!stillHasStudent) {
+                    existingGroup.dataValues.id = existingGroupId
+                    existingGroup.update(
+                        {
+                            status: 'Terminated',
                         },
                         {
                             transaction: req?.transaction,
