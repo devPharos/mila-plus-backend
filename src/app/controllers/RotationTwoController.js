@@ -32,7 +32,21 @@ class RotationTwoController {
 
             const level = await Level.findByPk(level_id)
 
+            const previous_level = await Level.findByPk(
+                level?.dataValues?.previous_level_id
+            )
+
             const filialSearch = verifyFilialSearch(Studentgroup, req)
+
+            const previousLevels = [
+                level_id,
+                level?.dataValues?.previous_level_id,
+            ]
+            if (level?.dataValues?.name === 'MBE2') {
+                previousLevels.push(
+                    previous_level?.dataValues?.previous_level_id
+                )
+            }
 
             const requiredGroups = await Studentgroup.findAll({
                 where: {
@@ -41,10 +55,7 @@ class RotationTwoController {
                     afternoon,
                     evening,
                     level_id: {
-                        [Op.in]: [
-                            level_id,
-                            level?.dataValues?.previous_level_id,
-                        ],
+                        [Op.in]: previousLevels,
                     },
                     end_date: {
                         [Op.lte]: format(parseISO('2025-10-02'), 'yyyy-MM-dd'),
