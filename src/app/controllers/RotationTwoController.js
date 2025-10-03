@@ -267,6 +267,16 @@ class RotationTwoController {
 
                 const start_date = format(new Date(), 'yyyy-MM-dd')
 
+                await existingGroup.update(
+                    {
+                        rotation_status: 'Second Step Done',
+                        rotation_date: format(new Date(), 'yyyy-MM-dd'),
+                    },
+                    {
+                        transaction: req?.transaction,
+                    }
+                )
+
                 delete existingGroup.dataValues.id
                 delete existingGroup.dataValues.created_at
                 delete existingGroup.dataValues.updated_at
@@ -285,16 +295,6 @@ class RotationTwoController {
                         rotation_status: 'Not Started',
                         rotation_date: null,
                         created_by: req.userId,
-                    },
-                    {
-                        transaction: req?.transaction,
-                    }
-                )
-
-                await existingGroup.update(
-                    {
-                        rotation_status: 'Second Step Done',
-                        rotation_date: format(new Date(), 'yyyy-MM-dd'),
                     },
                     {
                         transaction: req?.transaction,
