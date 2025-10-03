@@ -38,6 +38,10 @@ class Level extends Model {
             foreignKey: { name: 'previous_level_id' },
             as: 'previous_level',
         })
+        this.hasMany(models.Studentgroup, {
+            foreignKey: { name: 'level_id' },
+            as: 'studentgroups',
+        })
     }
 }
 
