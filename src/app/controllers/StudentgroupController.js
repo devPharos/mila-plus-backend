@@ -3887,8 +3887,8 @@ class StudentgroupController {
                 const resultText = finalScore >= 70 ? 'PASS' : 'FAIL'
                 const resultStyle = finalScore >= 70 ? stylePassResult : styleFailResult
                 ws.cell(row, 4 + gradeIndex)
-                    .string(`${finalScore >= 70 ? 'PASS' : 'FAIL'}`)
-                    .style(styleNumericHeader)
+                    .string(resultText)
+                    .style(resultStyle)
 
                 row++
                 studentCount++
