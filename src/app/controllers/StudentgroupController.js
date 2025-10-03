@@ -3749,7 +3749,7 @@ class StudentgroupController {
                     .style(styleNumericHeader)
 
                 ws.cell(row, 4 + gradeIndex)
-                    .string(`${finalScore >= 80 ? 'PASS' : 'FAIL'}`)
+                    .string(`${finalScore >= 70 ? 'PASS' : 'FAIL'}`)
                     .style(styleNumericHeader)
 
                 row++
@@ -3794,6 +3794,7 @@ class StudentgroupController {
     async passAndFailAnalysis(req, res, next) {
         try {
             const { shift = null, level = null } = req.body
+            console.log({ shift, level })
 
             const name = `pass_and_fail_analysis_${Date.now()}`
             const path = `${resolve(
@@ -3849,43 +3850,10 @@ class StudentgroupController {
                 },
             })
 
-            const styleNumericHeader = wb.createStyle({
+            const styleHeaderDetailsCenter = wb.createStyle({
                 font: {
                     color: '#222222',
                     size: 12,
-                },
-                alignment: {
-                    horizontal: 'center',
-                },
-            })
-
-            const styleNumericHeaderBold = wb.createStyle({
-                font: {
-                    color: '#222222',
-                    size: 12,
-                    bold: true,
-                },
-                alignment: {
-                    horizontal: 'center',
-                },
-            })
-
-            const styleFail = wb.createStyle({
-                font: {
-                    color: '#ff0000',
-                    size: 12,
-                    bold: true,
-                },
-                alignment: {
-                    horizontal: 'center',
-                },
-            })
-
-            const styleRedo = wb.createStyle({
-                font: {
-                    color: '#ffa500', // Orange color
-                    size: 12,
-                    bold: true,
                 },
                 alignment: {
                     horizontal: 'center',
@@ -3962,24 +3930,81 @@ class StudentgroupController {
                                 as: 'level',
                                 required: true,
                                 where: {
+                                    id: level,
                                     canceled_at: null,
                                 },
                                 attributes: ['name'],
                             },
                         ],
+                        attributes: ['name'],
                         order: [['name', 'ASC']],
                     },
                 ],
                 where: {
                     canceled_at: null,
                 },
-                group: ['studentgroup.level.name'],
-                attributes: ['studentgroup.level.name'],
+                attributes: ['student_id', 'studentgroup_id', 'result'],
             })
 
-            console.log(rotations)
+            const groups = []
 
-            ws.column(1).width = 25
+            for (let rotation of rotations) {
+                let group = groups.find(
+                    (group) => group.id === rotation.studentgroup_id
+                )
+                if (!group) {
+                    groups.push({
+                        id: rotation.studentgroup_id,
+                        name: rotation.studentgroup.name,
+                        studentsRegistered: 0,
+                        inactiveStudents: 0,
+                        pass: 0,
+                        fail: 0,
+                        percPass: 0,
+                        percFail: 0,
+                    })
+                    group = groups[groups.length - 1]
+                }
+                group.studentsRegistered++
+                if (rotation.result === 'Pass') {
+                    group.pass++
+                    group.percPass =
+                        (group.pass / group.studentsRegistered) * 100
+                } else {
+                    group.fail++
+                    group.percFail =
+                        (group.fail / group.studentsRegistered) * 100
+                }
+            }
+
+            let row = 8
+            for (let group of groups) {
+                ws.cell(row, 1).string(group.name).style(styleHeaderDetails)
+                ws.cell(row, 2)
+                    .number(group.studentsRegistered)
+                    .style(styleHeaderDetailsCenter)
+                ws.cell(row, 3)
+                    .number(group.inactiveStudents)
+                    .style(styleHeaderDetailsCenter)
+                ws.cell(row, 4)
+                    .number(group.pass)
+                    .style(styleHeaderDetailsCenter)
+                ws.cell(row, 5)
+                    .number(group.fail)
+                    .style(styleHeaderDetailsCenter)
+                ws.cell(row, 6)
+                    .number(group.percPass)
+                    .style(styleHeaderDetailsCenter)
+                ws.cell(row, 7)
+                    .number(group.percFail)
+                    .style(styleHeaderDetailsCenter)
+
+                row++
+            }
+
+            // console.log(rotations)
+
+            ws.column(1).width = 30
             ws.column(2).width = 18
             ws.column(3).width = 18
             ws.column(4).width = 18

@@ -341,7 +341,7 @@ class RotationOneController {
                             studentgroup_id
                         )
 
-                    const result = final_average_score >= 80 ? 'PASS' : 'FAIL'
+                    const result = final_average_score >= 70 ? 'PASS' : 'FAIL'
 
                     const level = result === 'FAIL' ? currentLevel : nextLevel
 
