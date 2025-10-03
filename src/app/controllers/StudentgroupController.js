@@ -3794,7 +3794,6 @@ class StudentgroupController {
     async passAndFailAnalysis(req, res, next) {
         try {
             const { shift = null, level = null } = req.body
-            console.log({ shift, level })
 
             const name = `pass_and_fail_analysis_${Date.now()}`
             const path = `${resolve(
@@ -3860,6 +3859,99 @@ class StudentgroupController {
                 },
             })
 
+            const rotations = await Rotation.findAll({
+                include: [
+                    {
+                        model: Studentgroup,
+                        as: 'studentgroup',
+                        required: true,
+                        where: {
+                            morning: shift.morning,
+                            afternoon: shift.afternoon,
+                            evening: shift.evening,
+                            canceled_at: null,
+                            rotation_status: 'First Step Done',
+                        },
+                        include: [
+                            {
+                                model: Level,
+                                as: 'level',
+                                required: true,
+                                where: {
+                                    canceled_at: null,
+                                },
+                                attributes: ['name'],
+                            },
+                        ],
+                        attributes: ['name'],
+                        order: [['name', 'ASC']],
+                    },
+                ],
+                where: {
+                    canceled_at: null,
+                },
+                attributes: ['student_id', 'studentgroup_id', 'result'],
+            })
+
+            const groups = []
+            const totals = {
+                students: 0,
+                pass: 0,
+                fail: 0,
+            }
+
+            for (let rotation of rotations) {
+                let group = groups.find(
+                    (group) => group.name === rotation.studentgroup.level.name
+                )
+                if (!group) {
+                    const level = rotation.studentgroup.level.name
+                    groups.push({
+                        order:
+                            level === 'Basic'
+                                ? 1
+                                : level === 'Pre-Intermediate'
+                                ? 2
+                                : level === 'Intermediate'
+                                ? 3
+                                : level === 'Pre-Advanced'
+                                ? 4
+                                : level === 'Advanced'
+                                ? 5
+                                : level === 'Proficient'
+                                ? 6
+                                : level === 'MBE1'
+                                ? 7
+                                : level === 'MBE2'
+                                ? 8
+                                : 99,
+                        name: level,
+                        studentsRegistered: 0,
+                        inactiveStudents: 0,
+                        pass: 0,
+                        fail: 0,
+                        percPass: 0,
+                        percFail: 0,
+                    })
+                    group = groups[groups.length - 1]
+                }
+                group.studentsRegistered++
+                totals.students++
+                if (rotation.result === 'Pass') {
+                    totals.pass++
+                    group.pass++
+                    group.percPass =
+                        (group.pass / group.studentsRegistered) * 100
+                } else {
+                    totals.fail++
+                    group.fail++
+                    group.percFail =
+                        (group.fail / group.studentsRegistered) * 100
+                }
+            }
+
+            groups.sort((a, b) => a.order - b.order)
+
             ws.cell(1, 1, 1, 15, true)
                 .string(`PASS AND FAIL ANALYSIS`)
                 .style(styleHeading)
@@ -3871,13 +3963,17 @@ class StudentgroupController {
             ws.cell(2, 8).string('16 weeks').style(styleHeaderDetails)
 
             ws.cell(3, 1).string('Student Active Count:').style(styleBold)
-            ws.cell(3, 2).number(116).style(styleHeaderDetails)
+            ws.cell(3, 2).number(totals.students).style(styleHeaderDetails)
 
             ws.cell(3, 7).string('Total Pass:').style(styleBold)
-            ws.cell(3, 8).number(90).style(styleHeaderDetails)
+            ws.cell(3, 8).number(totals.pass).style(styleHeaderDetails)
 
             ws.cell(3, 10).string('Total Percent Pass:').style(styleBold)
-            ws.cell(3, 11).string('78%').style(styleHeaderDetails)
+            ws.cell(3, 11)
+                .string(
+                    `${((totals.pass / totals.students) * 100).toFixed(0)} %`
+                )
+                .style(styleHeaderDetails)
 
             ws.cell(4, 1).string('Course Schedules:').style(styleBold)
             let shiftPos = 2
@@ -3897,10 +3993,14 @@ class StudentgroupController {
             }
 
             ws.cell(4, 7).string('Total Fail:').style(styleBold)
-            ws.cell(4, 8).number(26).style(styleHeaderDetails)
+            ws.cell(4, 8).number(totals.fail).style(styleHeaderDetails)
 
             ws.cell(4, 10).string('Total Percent Fail:').style(styleBold)
-            ws.cell(4, 11).string('22%').style(styleHeaderDetails)
+            ws.cell(4, 11)
+                .string(
+                    `${((totals.fail / totals.students) * 100).toFixed(0)} %`
+                )
+                .style(styleHeaderDetails)
 
             ws.cell(5, 1)
                 .string('Academic Supervisor Assigned:')
@@ -3913,69 +4013,6 @@ class StudentgroupController {
             ws.cell(7, 5).string('Fail').style(styleBoldCenter)
             ws.cell(7, 6).string('Pass %').style(styleBoldCenter)
             ws.cell(7, 7).string('Fail %').style(styleBoldCenter)
-
-            const rotations = await Rotation.findAll({
-                include: [
-                    {
-                        model: Studentgroup,
-                        as: 'studentgroup',
-                        required: true,
-                        where: {
-                            canceled_at: null,
-                            rotation_status: 'First Step Done',
-                        },
-                        include: [
-                            {
-                                model: Level,
-                                as: 'level',
-                                required: true,
-                                where: {
-                                    id: level,
-                                    canceled_at: null,
-                                },
-                                attributes: ['name'],
-                            },
-                        ],
-                        attributes: ['name'],
-                        order: [['name', 'ASC']],
-                    },
-                ],
-                where: {
-                    canceled_at: null,
-                },
-                attributes: ['student_id', 'studentgroup_id', 'result'],
-            })
-
-            const groups = []
-
-            for (let rotation of rotations) {
-                let group = groups.find(
-                    (group) => group.id === rotation.studentgroup_id
-                )
-                if (!group) {
-                    groups.push({
-                        id: rotation.studentgroup_id,
-                        name: rotation.studentgroup.name,
-                        studentsRegistered: 0,
-                        inactiveStudents: 0,
-                        pass: 0,
-                        fail: 0,
-                        percPass: 0,
-                        percFail: 0,
-                    })
-                    group = groups[groups.length - 1]
-                }
-                group.studentsRegistered++
-                if (rotation.result === 'Pass') {
-                    group.pass++
-                    group.percPass =
-                        (group.pass / group.studentsRegistered) * 100
-                } else {
-                    group.fail++
-                    group.percFail =
-                        (group.fail / group.studentsRegistered) * 100
-                }
-            }
 
             let row = 8
             for (let group of groups) {
