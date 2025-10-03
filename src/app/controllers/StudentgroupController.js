@@ -3866,6 +3866,9 @@ class StudentgroupController {
                         as: 'studentgroup',
                         required: true,
                         where: {
+                            morning: shift.morning,
+                            afternoon: shift.afternoon,
+                            evening: shift.evening,
                             canceled_at: null,
                             rotation_status: 'First Step Done',
                         },
