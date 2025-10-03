@@ -72,7 +72,7 @@ class RotationTwoController {
                     afternoon: afternoon,
                     evening: evening,
                     rotation_status: {
-                        [Op.in]: ['First Step Done', 'Second Step Done'],
+                        [Op.in]: ['First Step Done'],
                     },
                     canceled_at: null,
                 },
@@ -377,7 +377,7 @@ class RotationTwoController {
 
                 const stillHasStudent = await StudentXGroup.findOne({
                     where: {
-                        group_id: studentExists.dataValues.studentgroup_id,
+                        group_id: existingGroupId,
                         status: 'Active',
                         end_date: null,
                         canceled_at: null,
