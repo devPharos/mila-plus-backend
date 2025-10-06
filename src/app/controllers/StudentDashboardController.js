@@ -376,7 +376,6 @@ class StudentDashboardController {
                         attributes: ['type', 'description'],
                         where: {
                             canceled_at: null,
-                            status: 'Done',
                         },
                         order: [
                             ['description', 'ASC'],
