@@ -87,7 +87,7 @@ class StudentDashboardController {
                                 model: Staff,
                                 as: 'staff',
                                 required: true,
-                                attributes: ['name', 'email'],
+                                attributes: ['name', 'email', 'last_name'],
                             },
                             {
                                 model: Level,
