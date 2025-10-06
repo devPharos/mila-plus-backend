@@ -437,12 +437,11 @@ class StudentDashboardController {
                     if (attendance?.status === 'S')
                         _class.presenceStatus += 'Sick'
 
-                    _class.late = false
                     if (
                         attendance?.first_check === 'Late' ||
                         attendance?.second_check === 'Late'
                     ) {
-                        _class.late = true
+                        _class.presenceStatus += '-Late'
                     }
 
                     _class.groupId = _class.studentgroup_id
