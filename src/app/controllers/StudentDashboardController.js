@@ -152,7 +152,10 @@ class StudentDashboardController {
             // Verifique se o grupo e o professor existem antes de remapear
             if (student.currentGroup && student.currentGroup.staff) {
                 // Crie as novas propriedades
-                student.currentGroup.teacher = student.currentGroup.staff.name
+                student.currentGroup.teacher =
+                    student.currentGroup.staff.name +
+                    ' ' +
+                    student.currentGroup.staff.last_name
                 student.currentGroup.teacher_email =
                     student.currentGroup.staff.email
 
