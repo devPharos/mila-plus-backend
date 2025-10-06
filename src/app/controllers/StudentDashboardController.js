@@ -437,6 +437,7 @@ class StudentDashboardController {
                     if (attendance?.status === 'S')
                         _class.presenceStatus += 'Sick'
 
+                    _class.late = false
                     if (
                         attendance?.first_check === 'Late' ||
                         attendance?.second_check === 'Late'
