@@ -81,8 +81,17 @@ export async function getStudentFrequencyOnGroup(
 
         totals.classes = attendances.length
 
+        let period = ''
+
         let latesCount = 0
         for (let attendance of attendances) {
+            const attendancePeriod = attendance.studentgroupclasses.date
+                .replaceAll('-', '')
+                .substr(0, 6)
+            if (attendancePeriod !== period) {
+                period = attendancePeriod
+                latesCount = 0
+            }
             const isLocked = attendance.studentgroupclasses.locked_at
                 ? true
                 : false
