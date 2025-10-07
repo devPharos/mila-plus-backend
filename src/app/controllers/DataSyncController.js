@@ -256,41 +256,10 @@ class DataSyncController {
                                 values[findValue(headers, 'Native Language')] ||
                                     ''
                             ),
-                            // home_country_phone_ddi:
-                            //     values[
-                            //         findValue(headers, 'HomeCountryPhoneNumber')
-                            //     ],
                             home_country_phone:
                                 values[
                                     findValue(headers, 'HomeCountryPhoneNumber')
                                 ],
-                            home_country_address: capitalizeFirstLetter(
-                                values[findValue(headers, 'Address')].replace(
-                                    '’',
-                                    ''
-                                )
-                            ),
-                            home_country_zip:
-                                values[findValue(headers, 'Zip Code')],
-                            home_country_city: capitalizeFirstLetter(
-                                values[findValue(headers, 'City')].replace(
-                                    '’',
-                                    ''
-                                )
-                            ),
-                            home_country_state: capitalizeFirstLetter(
-                                values[
-                                    findValue(headers, 'State/Province')
-                                ].replace('’', '')
-                            ),
-                            home_country_country: capitalizeFirstLetter(
-                                values[findValue(headers, 'City')].replace(
-                                    '’',
-                                    ''
-                                )
-                            ),
-                            // whatsapp_ddi:
-                            //     values[findValue(headers, 'WhatsAppPhoneNumber')],
                             whatsapp:
                                 values[
                                     findValue(headers, 'WhatsAppPhoneNumber')
@@ -334,14 +303,15 @@ class DataSyncController {
                             ),
                             // level_id: level.id,
                             // class_id: values[findValue(headers, 'Class')],
-                            expected_start_date:
-                                values[
-                                    findValue(headers, 'Expected Start Date')
-                                ],
-                            start_date: transformDate(
+                            registration:
+                                values[findValue(headers, 'Registration')],
+                            expected_start_date: transformDate(
                                 values[
                                     findValue(headers, 'Original Start Date')
                                 ]
+                            ),
+                            start_date: transformDate(
+                                values[findValue(headers, 'StartDate')]
                             ),
                             created_by: 2,
                             created_at: parseISO(

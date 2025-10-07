@@ -76,6 +76,7 @@ class Student extends Model {
                 classroom_id: Sequelize.UUID,
                 teacher_id: Sequelize.UUID,
                 start_date: Sequelize.STRING,
+                inactivation_date: Sequelize.STRING,
                 created_by: Sequelize.INTEGER,
                 created_at: Sequelize.DATE,
                 updated_by: Sequelize.INTEGER,
