@@ -13,23 +13,11 @@ import {
     sendOnDueDateInvoices,
 } from './app/controllers/ReceivableController.js'
 import { mailer } from './config/mailer.js'
-import {
-    adjustStudentXGroups,
-    jobPutInClass,
-    removeStudentAttendances,
-} from './app/controllers/StudentgroupController.js'
-import { connectToMongo } from './config/mongodb.js'
+import { jobPutInClass } from './app/controllers/StudentgroupController.js'
 import transactionHandler from './app/middlewares/transactionHandler.js'
 import errorHandler from './app/middlewares/errorHandler.js'
 import indexCacheHandler from './app/middlewares/indexCacheHandler.js'
 import { adjustUserGroups } from './app/controllers/UserGroupController.js'
-import StudentXGroup from './app/models/StudentXGroup.js'
-import { Op } from 'sequelize'
-import { addDays, format, parseISO } from 'date-fns'
-import Studentgrouppaceguide from './app/models/Studentgrouppaceguide.js'
-import Paceguide from './app/models/Paceguide.js'
-import Studentgroup from './app/models/Studentgroup.js'
-import Studentgroupclass from './app/models/Studentgroupclass.js'
 
 class App {
     constructor() {

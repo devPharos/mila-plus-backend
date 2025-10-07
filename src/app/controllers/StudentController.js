@@ -590,7 +590,7 @@ class StudentController {
                     status: 'Inactive',
                     category: 'Ex-student',
                     inactive_reason: reason,
-
+                    inactivation_date: date,
                     updated_by: req.userId,
                 },
                 {
