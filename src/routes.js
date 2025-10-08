@@ -417,6 +417,11 @@ routes.post(
     StudentgroupController.evaluationChartReport
 )
 routes.post(
+    '/reports/evaluationChartPDF',
+    StudentgroupController.EvaluationChartPDF
+)
+
+routes.post(
     '/reports/passAndFailAnalysis',
     StudentgroupController.passAndFailAnalysis
 )
