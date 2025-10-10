@@ -40,10 +40,17 @@ class EnrollmentStatController {
 
         const studentsCount = await Student.count({
           where: {
-            status: 'In Class',
             start_date: {
               [Op.lte]: format(monthEnd, 'yyyy-MM-dd')
-            }
+            },
+            [Op.or]: [
+              { inactivation_date: null },
+              {
+                inactivation_date: {
+                  [Op.gte]: format(monthEnd, 'yyyy-MM-dd')
+                }
+              }
+            ]
           }
         });
 
@@ -65,10 +72,17 @@ class EnrollmentStatController {
 
       const inClassStudents = await Student.count({
         where: { 
-          status: 'In Class',
           start_date: {
             [Op.lte]: format(currentDate, 'yyyy-MM-dd')
-          }
+          },
+          [Op.or]: [
+            { inactivation_date: null },
+            {
+              inactivation_date: {
+                [Op.gte]: format(currentDate, 'yyyy-MM-dd')
+              }
+            }
+          ]
         }
       })
 
@@ -99,10 +113,17 @@ class EnrollmentStatController {
 
       const activeStudents = await Student.findAll({
         where: {
-          status: 'In Class',
           start_date: {
             [Op.lte]: format(monthEnd, 'yyyy-MM-dd')
-          }
+          },
+          [Op.or]: [
+            { inactivation_date: null },
+            {
+              inactivation_date: {
+                [Op.gte]: format(monthEnd, 'yyyy-MM-dd')
+              }
+            }
+          ]
         },
         attributes: ['id', 'name', 'processsubstatus_id'],
         include: [
@@ -166,10 +187,17 @@ class EnrollmentStatController {
 
       const activeStudents = await Student.findAll({
         where: {
-          status: 'In Class',
           start_date: {
             [Op.lte]: format(currentDate, 'yyyy-MM-dd')
-          }
+          },
+          [Op.or]: [
+            { inactivation_date: null },
+            {
+              inactivation_date: {
+                [Op.gte]: format(currentDate, 'yyyy-MM-dd')
+              }
+            }
+          ]
         },
         attributes: ['id', 'birth_country']
       })
