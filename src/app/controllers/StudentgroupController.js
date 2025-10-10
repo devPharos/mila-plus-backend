@@ -193,11 +193,11 @@ export async function createStudentAttendances({
             },
             date: to_date
                 ? {
-                      [Op.between]: [from_date, to_date],
-                  }
+                    [Op.between]: [from_date, to_date],
+                }
                 : {
-                      [Op.gte]: from_date,
-                  },
+                    [Op.gte]: from_date,
+                },
         },
         distinct: true,
         attributes: ['id', 'shift', 'date'],
@@ -301,15 +301,15 @@ export async function removeStudentAttendances({
         })
         if (
             class_.date >
-                format(lastDayOfMonth(parseISO(from_date)), 'yyyy-MM-dd') ||
+            format(lastDayOfMonth(parseISO(from_date)), 'yyyy-MM-dd') ||
             reason === null
         ) {
             for (let attendance of attendances) {
                 await attendance.destroy(
                     req
                         ? {
-                              transaction: req?.transaction,
-                          }
+                            transaction: req?.transaction,
+                        }
                         : {}
                 )
             }
@@ -321,8 +321,8 @@ export async function removeStudentAttendances({
                     },
                     req
                         ? {
-                              transaction: req?.transaction,
-                          }
+                            transaction: req?.transaction,
+                        }
                         : {}
                 )
             }
@@ -1019,7 +1019,7 @@ class StudentgroupController {
                         if (
                             !hasAcademicFreeDay ||
                             hasAcademicFreeDay.dataValues.date_type ===
-                                'Holiday'
+                            'Holiday'
                         ) {
                             let dayPaceGuides = []
                             if (!hasAcademicFreeDay) {
@@ -1366,7 +1366,7 @@ class StudentgroupController {
                         if (
                             !hasAcademicFreeDay ||
                             hasAcademicFreeDay.dataValues.date_type ===
-                                'Holiday'
+                            'Holiday'
                         ) {
                             let dayPaceGuides = []
                             if (!hasAcademicFreeDay) {
@@ -1374,7 +1374,7 @@ class StudentgroupController {
                                 dayPaceGuides = paceGuides.filter((pace) =>
                                     lastdayWasHoliday
                                         ? pace.day >= considerDay &&
-                                          pace.day <= considerDay + 1
+                                        pace.day <= considerDay + 1
                                         : pace.day === considerDay
                                 )
                                 if (lastdayWasHoliday) {
@@ -2080,26 +2080,26 @@ class StudentgroupController {
                         let secondCheck = 'Absent'
                         if (
                             student[
-                                `first_check_${shift.shift}_${student.id}`
+                            `first_check_${shift.shift}_${student.id}`
                             ] === 'Present'
                         ) {
                             firstCheck = 'Present'
                         } else if (
                             student[
-                                `first_check_${shift.shift}_${student.id}`
+                            `first_check_${shift.shift}_${student.id}`
                             ] === 'Late'
                         ) {
                             firstCheck = 'Late'
                         }
                         if (
                             student[
-                                `second_check_${shift.shift}_${student.id}`
+                            `second_check_${shift.shift}_${student.id}`
                             ] === 'Present'
                         ) {
                             secondCheck = 'Present'
                         } else if (
                             student[
-                                `second_check_${shift.shift}_${student.id}`
+                            `second_check_${shift.shift}_${student.id}`
                             ] === 'Late'
                         ) {
                             secondCheck = 'Late'
@@ -2166,7 +2166,7 @@ class StudentgroupController {
                             paceguide.checked === 'true'
                                 ? studentgroupclass.id
                                 : paceguideExists.dataValues
-                                      .studentgroupclass_id,
+                                    .studentgroupclass_id,
                         status:
                             paceguide.checked === 'true' ? 'Done' : 'Pending',
                         updated_by: req.userId,
@@ -3292,9 +3292,9 @@ class StudentgroupController {
                 ws2.cell(row, 4).string(
                     studentGroup?.start_date
                         ? format(
-                              parseISO(studentGroup.start_date),
-                              'MM/dd/yyyy'
-                          )
+                            parseISO(studentGroup.start_date),
+                            'MM/dd/yyyy'
+                        )
                         : ''
                 )
                 ws2.cell(row, 5).string(
@@ -3323,9 +3323,9 @@ class StudentgroupController {
                 ws2.cell(row, 8).string(
                     student?.studentxgroups[0]?.start_date
                         ? format(
-                              parseISO(student.studentxgroups[0].start_date),
-                              'MM/dd/yyyy'
-                          )
+                            parseISO(student.studentxgroups[0].start_date),
+                            'MM/dd/yyyy'
+                        )
                         : ''
                 )
                 ws2.cell(row, 9).string(student?.registration_number || '')
@@ -3365,6 +3365,565 @@ class StudentgroupController {
         }
     }
 
+
+
+    async EvaluationChartPDF(req, res, next) {
+        try {
+            const { group_id } = req.body
+            if (!group_id) {
+                return res.status(400).json({ error: 'group_id is required' })
+            }
+
+            const studentGroup = await Studentgroup.findOne({
+                where: {
+                    id: group_id,
+                },
+                attributes: [
+                    'id',
+                    'name',
+                    'start_date',
+                    'end_date',
+                    'morning',
+                    'afternoon',
+                    'evening',
+                ],
+                include: [
+                    {
+                        model: Staff,
+                        as: 'staff',
+                        required: true,
+                        attributes: ['name'],
+                    },
+                ],
+            })
+
+            if (!studentGroup) {
+                return res.status(404).json({ error: 'Group not found' })
+            }
+
+            const studentGroupPaceguides = await Studentgrouppaceguide.findAll({
+                where: {
+                    description: {
+                        [Op.or]: [
+                            {
+                                [Op.iLike]: '%Test%',
+                            },
+                            {
+                                [Op.iLike]: '%View%',
+                            },
+                        ],
+                    },
+                    canceled_at: null,
+                },
+                include: [
+                    {
+                        model: Studentgroupclass,
+                        as: 'studentgroupclass',
+                        required: true,
+                        where: {
+                            canceled_at: null,
+                            studentgroup_id: studentGroup.id,
+                        },
+                    },
+                ],
+                order: [['day', 'ASC']],
+                attributes: ['day', 'type', 'description', 'percentage'],
+            })
+
+            const tests = []
+            for (const paceguide of studentGroupPaceguides) {
+                const { day, type, description, percentage } = paceguide
+                tests.push({
+                    name: `${type}`,
+                    description,
+                    percentage: percentage,
+                })
+            }
+
+            const shift =
+                (studentGroup.morning ? 'MORNING' : '') +
+                (studentGroup.afternoon
+                    ? (studentGroup.morning ? '/' : '') + 'AFTERNOON'
+                    : '') +
+                (studentGroup.evening
+                    ? (studentGroup.afternoon || studentGroup.morning
+                        ? '/'
+                        : '') + 'EVENING'
+                    : '')
+
+            const students = await Student.findAll({
+                include: [
+                    {
+                        model: StudentXGroup,
+                        as: 'studentxgroups',
+                        required: true,
+                        where: {
+                            group_id: group_id,
+                        },
+                    },
+                ],
+                order: [
+                    ['name', 'ASC'],
+                    ['last_name', 'ASC'],
+                ],
+                distinct: true,
+            })
+
+            const doc = new PDFDocument({
+                margins: {
+                    top: 30,
+                    bottom: 30,
+                    left: 20,
+                    right: 20,
+                },
+                layout: 'landscape',
+                size: 'A4',
+            })
+
+            const name = `evaluation_chart_${studentGroup.name}_${Date.now()}.pdf`
+            const path = `${resolve(
+                directory,
+                '..',
+                '..',
+                '..',
+                'tmp',
+                'reporting'
+            )}/${name}`
+
+            const file = fs.createWriteStream(path)
+            doc.pipe(file)
+
+            const pageWidth = doc.page.width - 40
+            let yPosition = 30
+
+            doc.fontSize(16)
+                .font('Helvetica-Bold')
+                .fillColor('#FFFFFF')
+                .rect(20, yPosition, pageWidth, 30)
+                .fill('#EE8D39')
+                .fillColor('#FFFFFF')
+                .text("STUDENT'S EVALUATION CHART - ADVANCED", 20, yPosition + 8, {
+                    width: pageWidth,
+                    align: 'center',
+                })
+
+            yPosition += 40
+
+            doc.fontSize(10)
+                .font('Helvetica-Bold')
+                .fillColor('#222222')
+                .text('GROUP:', 30, yPosition)
+                .font('Helvetica')
+                .text(studentGroup.name || '', 80, yPosition)
+
+            doc.font('Helvetica-Bold')
+                .text('SHIFT:', 400, yPosition)
+                .font('Helvetica')
+                .text(shift, 450, yPosition)
+
+            yPosition += 20
+
+            doc.font('Helvetica-Bold')
+                .text('TEACHER:', 30, yPosition)
+                .font('Helvetica')
+                .text(studentGroup.staff?.name || '', 80, yPosition)
+
+            doc.font('Helvetica-Bold')
+                .text('SD:', 400, yPosition)
+                .font('Helvetica')
+                .text(
+                    studentGroup.start_date
+                        ? format(parseISO(studentGroup.start_date), 'MM/dd/yyyy')
+                        : '',
+                    430,
+                    yPosition
+                )
+
+            doc.font('Helvetica-Bold')
+                .text('ED:', 550, yPosition)
+                .font('Helvetica')
+                .text(
+                    studentGroup.end_date
+                        ? format(parseISO(studentGroup.end_date), 'MM/dd/yyyy')
+                        : '',
+                    580,
+                    yPosition
+                )
+
+            yPosition += 30
+
+            const nameColWidth = 180
+            const resultColWidth = 57
+            const finalAvgColWidth = 70
+            const availableWidth = pageWidth - nameColWidth - resultColWidth - finalAvgColWidth
+            const testColumnWidth = availableWidth / tests.length
+
+            const columnWidths = [nameColWidth]
+            for (let i = 0; i < tests.length; i++) {
+                columnWidths.push(testColumnWidth)
+            }
+            columnWidths.push(finalAvgColWidth)
+            columnWidths.push(resultColWidth)
+
+            const groupedTests = []
+            let progressTestCount = 0
+
+            for (let i = 0; i < tests.length; i++) {
+                const test = tests[i]
+
+                if (test.name === 'Progress Test') {
+                    progressTestCount++
+
+                    if (progressTestCount <= 3) {
+                        if (progressTestCount === 1) {
+                            groupedTests.push({
+                                name: 'PROGRESS TEST',
+                                startIndex: i,
+                                tests: []
+                            })
+                        }
+                        groupedTests[groupedTests.length - 1].tests.push({
+                            label: `Test ${progressTestCount}`,
+                            percentage: test.percentage,
+                            originalTest: test
+                        })
+                    } else {
+                        if (progressTestCount === 4) {
+                            groupedTests.push({
+                                name: 'PROGRESS TEST',
+                                startIndex: i,
+                                tests: []
+                            })
+                        }
+                        groupedTests[groupedTests.length - 1].tests.push({
+                            label: `Test ${progressTestCount}`,
+                            percentage: test.percentage,
+                            originalTest: test
+                        })
+                    }
+                } else if (test.name === 'Midterm Written Test' || test.name === 'Midterm Oral Test') {
+                    if (!groupedTests.find(g => g.name === 'MIDTERM')) {
+                        groupedTests.push({
+                            name: 'MIDTERM',
+                            startIndex: i,
+                            tests: []
+                        })
+                    }
+                    const label = test.name === 'Midterm Written Test' ? 'Written Test 1' : 'Oral Test 1'
+                    groupedTests[groupedTests.length - 1].tests.push({
+                        label: label,
+                        percentage: test.percentage,
+                        originalTest: test
+                    })
+                } else if (test.name === 'Final Written Test' || test.name === 'Final Oral Test') {
+                    if (!groupedTests.find(g => g.name === 'FINAL')) {
+                        groupedTests.push({
+                            name: 'FINAL',
+                            startIndex: i,
+                            tests: []
+                        })
+                    }
+                    const label = test.name === 'Final Written Test' ? 'Written Test 1' : 'Oral Test 1'
+                    groupedTests[groupedTests.length - 1].tests.push({
+                        label: label,
+                        percentage: test.percentage,
+                        originalTest: test
+                    })
+                }
+            }
+
+            if (groupedTests.length > 0 && groupedTests[groupedTests.length - 1].name === 'FINAL') {
+                groupedTests[groupedTests.length - 1].tests.push({
+                    label: 'Averege Grade',
+                    percentage: 100,
+                    isFinalAverage: true
+                })
+            }
+
+            let xPosition = 20
+
+            doc.rect(xPosition, yPosition, columnWidths[0], 60)
+                .fill('#EE8D39')
+                .stroke('#000000')
+                .fillColor('#FFFFFF')
+                .fontSize(8)
+                .font('Helvetica-Bold')
+                .text("STUDENT'S NAME\n(PRINT NAME)", xPosition + 2, yPosition + 20, {
+                    width: columnWidths[0] - 4,
+                    align: 'center',
+                })
+
+            xPosition += columnWidths[0]
+
+            for (let group of groupedTests) {
+                let groupWidth = 0
+                for (let test of group.tests) {
+                    if (test.isFinalAverage) {
+                        groupWidth += columnWidths[columnWidths.length - 2]
+                    } else {
+                        const testIndex = tests.findIndex(t => t === test.originalTest)
+                        groupWidth += columnWidths[1 + testIndex]
+                    }
+                }
+
+                doc.rect(xPosition, yPosition, groupWidth, 20)
+                    .fill('#EE8D39')
+                    .stroke('#000000')
+                    .fillColor('#FFFFFF')
+                    .fontSize(9)
+                    .font('Helvetica-Bold')
+                    .text(group.name, xPosition, yPosition + 6, {
+                        width: groupWidth,
+                        align: 'center',
+                    })
+
+                let cellBackgroundColor
+                if (group.name === 'PROGRESS TEST') {
+                    cellBackgroundColor = '#FFAF69'
+                } else if (group.name === 'MIDTERM') {
+                    cellBackgroundColor = '#FFD1AA'
+                } else {
+                    cellBackgroundColor = '#FFD1AA'
+                }
+
+                let testXPosition = xPosition
+                for (let test of group.tests) {
+                    let testWidth
+                    if (test.isFinalAverage) {
+                        testWidth = columnWidths[columnWidths.length - 2]
+                    } else {
+                        const testIndex = tests.findIndex(t => t === test.originalTest)
+                        testWidth = columnWidths[1 + testIndex]
+                    }
+
+                    doc.rect(testXPosition, yPosition + 20, testWidth, 25)
+                        .fill(cellBackgroundColor)
+                        .lineWidth(0.5)
+                        .stroke('#000000')
+                        .fillColor('#000000')
+                        .fontSize(7)
+                        .font('Helvetica-Bold')
+                        .text(test.label, testXPosition + 1, yPosition + 29, {
+                            width: testWidth - 2,
+                            align: 'center',
+                        })
+
+                    doc.rect(testXPosition, yPosition + 45, testWidth, 15)
+                        .fill(cellBackgroundColor)
+                        .lineWidth(2)
+                        .stroke('#000000')
+                        .lineWidth(1)
+                        .fillColor('#000000')
+                        .fontSize(6)
+                        .text(test.percentage + '%', testXPosition + 1, yPosition + 49, {
+                            width: testWidth - 2,
+                            align: 'center',
+                        })
+
+                    testXPosition += testWidth
+                }
+
+                xPosition += groupWidth
+            }
+
+            doc.rect(xPosition, yPosition, columnWidths[columnWidths.length - 1], 60)
+                .fill('#EE8D39')
+                .stroke('#000000')
+                .fillColor('#FFFFFF')
+                .fontSize(8)
+                .font('Helvetica-Bold')
+                .text('RESULT', xPosition, yPosition + 25, {
+                    width: columnWidths[columnWidths.length - 1],
+                    align: 'center',
+                })
+
+            yPosition += 60
+
+            let studentCount = 1
+            const averageGrades = Array(tests.length)
+                .fill(null)
+                .map(() => ({
+                    grade: 0,
+                    total: 0,
+                }))
+
+            for (const student of students) {
+                if (yPosition > 500) {
+                    doc.addPage()
+                    yPosition = 30
+                }
+
+                const paceguideTests = await Studentgrouppaceguide.findAll({
+                    include: [
+                        {
+                            model: Studentgroupclass,
+                            as: 'studentgroupclass',
+                            required: true,
+                            where: {
+                                canceled_at: null,
+                                studentgroup_id: studentGroup.id,
+                            },
+                            attributes: ['id', 'locked_at'],
+                            include: [
+                                {
+                                    model: Grade,
+                                    as: 'grades',
+                                    required: false,
+                                    where: {
+                                        student_id: student.id,
+                                        canceled_at: null,
+                                    },
+                                },
+                            ],
+                        },
+                    ],
+                    attributes: ['id', 'type', 'description', 'percentage'],
+                    where: {
+                        canceled_at: null,
+                    },
+                })
+
+                const isEven = studentCount % 2 === 0
+                const rowColor = isEven ? '#F2F2F2' : '#FFFFFF'
+
+                xPosition = 20
+
+                doc.rect(xPosition, yPosition, columnWidths[0], 20)
+                    .fill(rowColor)
+                    .stroke('#000000')
+                    .fillColor('#000000')
+                    .fontSize(8)
+                    .text(
+                        `${studentCount}. ${student.name} ${student.last_name}`,
+                        xPosition + 5,
+                        yPosition + 7,
+                        {
+                            width: columnWidths[0] - 10,
+                            align: 'left',
+                        }
+                    )
+
+                xPosition += columnWidths[0]
+
+                let finalAverageGrade = 0
+                let gradeIndex = 0
+                for (let test of tests) {
+                    const currentTest = tests[gradeIndex]
+                    const paceguide = paceguideTests.find(
+                        (paceguideTest) =>
+                            paceguideTest.dataValues.description ===
+                            currentTest.description
+                    )
+
+                    let score = 0
+                    let discarded = false
+                    let locked = false
+                    if (paceguide) {
+                        score =
+                            paceguide?.dataValues?.studentgroupclass?.dataValues
+                                ?.grades[0]?.dataValues?.score || 0
+                        discarded =
+                            paceguide?.dataValues?.studentgroupclass?.dataValues
+                                ?.grades[0]?.dataValues?.discarded || false
+
+                        locked =
+                            paceguide?.dataValues?.studentgroupclass?.dataValues
+                                ?.locked_at === null
+                                ? false
+                                : true
+                    }
+
+                    const cellColor = discarded ? '#FFB3B3' : rowColor
+                    const textColor = discarded ? '#ff0000' : '#000000'
+
+                    doc.rect(xPosition, yPosition, columnWidths[1 + gradeIndex], 20)
+                        .fill(cellColor)
+                        .stroke('#000000')
+                        .fillColor(textColor)
+                        .font(discarded ? 'Helvetica-Bold' : 'Helvetica')
+                        .text(score.toString(), xPosition, yPosition + 7, {
+                            width: columnWidths[1 + gradeIndex],
+                            align: 'center',
+                        })
+
+                    if (!discarded && locked) {
+                        averageGrades[gradeIndex].grade += score
+                        averageGrades[gradeIndex].total++
+                        finalAverageGrade +=
+                            (score * tests[gradeIndex].percentage) / 100
+                    }
+
+                    xPosition += columnWidths[1 + gradeIndex]
+                    gradeIndex++
+                }
+
+                const finalScore = parseInt((finalAverageGrade / 2).toFixed(0))
+
+                doc.rect(xPosition, yPosition, columnWidths[columnWidths.length - 2], 20)
+                    .fill(rowColor)
+                    .stroke('#000000')
+                    .fillColor('#000000')
+                    .font('Helvetica')
+                    .text(finalScore.toString(), xPosition, yPosition + 7, {
+                        width: columnWidths[columnWidths.length - 2],
+                        align: 'center',
+                    })
+
+                xPosition += columnWidths[columnWidths.length - 2]
+
+                const resultText = finalScore >= 70 ? 'PASS' : 'FAIL'
+                const resultColor = finalScore >= 70 ? '#98FB98' : '#F36A6A'
+
+                doc.rect(xPosition, yPosition, columnWidths[columnWidths.length - 1], 20)
+                    .fill(resultColor)
+                    .stroke('#000000')
+                    .fillColor('#FFFFFF')
+                    .font('Helvetica-Bold')
+                    .text(resultText, xPosition, yPosition + 7, {
+                        width: columnWidths[columnWidths.length - 1],
+                        align: 'center',
+                    })
+
+                yPosition += 20
+                studentCount++
+            }
+
+            xPosition = 20 + columnWidths[0]
+            let averageIndex = 0
+            for (let test of tests) {
+                const totalGrade = averageGrades[averageIndex].grade
+                const totalStudents = averageGrades[averageIndex].total
+                const average = totalStudents > 0 ? totalGrade / totalStudents : 0
+
+                doc.rect(xPosition, yPosition, columnWidths[1 + averageIndex], 20)
+                    .fill('#D9E1F2')
+                    .stroke('#EE8D39')
+                    .fillColor('#000000')
+                    .font('Helvetica-Bold')
+                    .text(
+                        parseInt(average.toFixed(0)).toString(),
+                        xPosition,
+                        yPosition + 7,
+                        {
+                            width: columnWidths[1 + averageIndex],
+                            align: 'center',
+                        }
+                    )
+
+                xPosition += columnWidths[1 + averageIndex]
+                averageIndex++
+            }
+
+            doc.end()
+
+            file.addListener('finish', () => {
+                return res.download(path, name)
+            })
+        } catch (err) {
+            err.transaction = req?.transaction
+            next(err)
+        }
+    }
     async evaluationChartReport(req, res, next) {
         try {
             const { group_id } = req.body
@@ -3514,6 +4073,52 @@ class StudentgroupController {
                     right: { style: 'thin', color: '#000000' },
                 },
             })
+
+            const styleColumnHeaderWithBorder = wb.createStyle({
+                font: {
+                    color: '#000000',
+                    size: 12,
+                    bold: true,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+                fill: {
+                    type: 'pattern',
+                    patternType: 'solid',
+                    fgColor: '#FFA866',
+                },
+                border: {
+                    top: { style: 'thin', color: '#000000' },
+                    bottom: { style: 'thin', color: '#000000' },
+                    left: { style: 'medium', color: '#000000' },
+                    right: { style: 'medium', color: '#000000' },
+                },
+            })
+
+            const stylePercentageHeaderWithBorder = wb.createStyle({
+                font: {
+                    color: '#000000',
+                    size: 11,
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center',
+                },
+                fill: {
+                    type: 'pattern',
+                    patternType: 'solid',
+                    fgColor: '#FFC499',
+                },
+                border: {
+                    top: { style: 'thin', color: '#000000' },
+                    bottom: { style: 'thin', color: '#000000' },
+                    left: { style: 'medium', color: '#000000' },
+                    right: { style: 'medium', color: '#000000' },
+                },
+            })
+
 
             const styleFail = wb.createStyle({
                 font: {
@@ -3680,8 +4285,8 @@ class StudentgroupController {
                     : '') +
                 (studentGroup.evening
                     ? (studentGroup.afternoon || studentGroup.morning
-                          ? '/'
-                          : '') + 'EVENING'
+                        ? '/'
+                        : '') + 'EVENING'
                     : '')
 
             ws.cell(1, 1, 1, 15, true)
@@ -3702,9 +4307,9 @@ class StudentgroupController {
                 .string(
                     studentGroup.start_date
                         ? format(
-                              parseISO(studentGroup.start_date),
-                              'MM/dd/yyyy'
-                          )
+                            parseISO(studentGroup.start_date),
+                            'MM/dd/yyyy'
+                        )
                         : ''
                 )
                 .style(styleHeaderDetails)
@@ -3741,14 +4346,14 @@ class StudentgroupController {
                     .string(
                         `${test.name} ${number > 0 ? number.toString() : ''}`
                     )
-                    .style(styleColumnHeader)
+                    .style(styleColumnHeaderWithBorder)
                 ws.cell(6, 3 + testIndex)
                     .string(test.percentage + '%')
-                    .style(stylePercentageHeader)
+                    .style(stylePercentageHeaderWithBorder)
                 testIndex++
             }
             ws.cell(5, 13)
-                .string('Final Average Grade')
+                .string('Average Grade')
                 .style(styleColumnHeader)
             ws.cell(5, 14, 6, 14, true).string('RESULT').style(styleBoldCenter)
 
@@ -4059,20 +4664,20 @@ class StudentgroupController {
                             level === 'Basic'
                                 ? 1
                                 : level === 'Pre-Intermediate'
-                                ? 2
-                                : level === 'Intermediate'
-                                ? 3
-                                : level === 'Pre-Advanced'
-                                ? 4
-                                : level === 'Advanced'
-                                ? 5
-                                : level === 'Proficient'
-                                ? 6
-                                : level === 'MBE1'
-                                ? 7
-                                : level === 'MBE2'
-                                ? 8
-                                : 99,
+                                    ? 2
+                                    : level === 'Intermediate'
+                                        ? 3
+                                        : level === 'Pre-Advanced'
+                                            ? 4
+                                            : level === 'Advanced'
+                                                ? 5
+                                                : level === 'Proficient'
+                                                    ? 6
+                                                    : level === 'MBE1'
+                                                        ? 7
+                                                        : level === 'MBE2'
+                                                            ? 8
+                                                            : 99,
                         name: level,
                         studentsRegistered: 0,
                         inactiveStudents: 0,
@@ -4482,20 +5087,20 @@ class StudentgroupController {
                                     level === 'Basic'
                                         ? 1
                                         : level === 'Pre-Intermediate'
-                                        ? 2
-                                        : level === 'Intermediate'
-                                        ? 3
-                                        : level === 'Pre-Advanced'
-                                        ? 4
-                                        : level === 'Advanced'
-                                        ? 5
-                                        : level === 'Proficient'
-                                        ? 6
-                                        : level === 'MBE1'
-                                        ? 7
-                                        : level === 'MBE2'
-                                        ? 8
-                                        : 99,
+                                            ? 2
+                                            : level === 'Intermediate'
+                                                ? 3
+                                                : level === 'Pre-Advanced'
+                                                    ? 4
+                                                    : level === 'Advanced'
+                                                        ? 5
+                                                        : level === 'Proficient'
+                                                            ? 6
+                                                            : level === 'MBE1'
+                                                                ? 7
+                                                                : level === 'MBE2'
+                                                                    ? 8
+                                                                    : 99,
                                 name: level,
                                 students: 0,
                                 vacation: 0,
@@ -4583,8 +5188,8 @@ class StudentgroupController {
                         ws.cell(row, 5)
                             .number(
                                 group.students -
-                                    group.vacation -
-                                    group.medical_excuse
+                                group.vacation -
+                                group.medical_excuse
                             )
                             .style(styleHeaderDetailsCenter)
 

@@ -1,3 +1,5 @@
+
+
 import Receivable from '../models/Receivable.js'
 import Chartofaccount from '../models/Chartofaccount.js'
 import Filial from '../models/Filial.js';
@@ -278,7 +280,7 @@ class ReportController {
         }
     }
 
-    async defaultRate(req, res, next) {
+   async defaultRate(req, res, next) {
     try {
         const currentYear = new Date().getFullYear()
         
@@ -319,11 +321,11 @@ class ReportController {
                 },
                 canceled_at: null,
             },
-            attributes: ['total'],
+            attributes: ['amount', 'discount'],
         })
 
         const totalOverdue = overdueReceivables.reduce(
-            (acc, r) => acc + r.total,
+            (acc, r) => acc + (r.amount - r.discount),
             0
         )
 
@@ -341,11 +343,11 @@ class ReportController {
                 },
                 canceled_at: null,
             },
-            attributes: ['total'],
+            attributes: ['amount', 'discount'],
         })
 
         const totalBilling = billingReceivables.reduce(
-            (acc, r) => acc + r.total,
+            (acc, r) => acc + (r.amount - r.discount),
             0
         )
 
@@ -396,11 +398,11 @@ class ReportController {
                     },
                     canceled_at: null,
                 },
-                attributes: ['total'],
+                attributes: ['amount', 'discount'],
             })
 
             const periodOverdue = periodOverdueReceivables.reduce(
-                (acc, r) => acc + r.total,
+                (acc, r) => acc + (r.amount - r.discount),
                 0
             )
 
@@ -418,11 +420,11 @@ class ReportController {
                     },
                     canceled_at: null,
                 },
-                attributes: ['total'],
+                attributes: ['amount', 'discount'],
             })
 
             const periodTotal = periodBillingReceivables.reduce(
-                (acc, r) => acc + r.total,
+                (acc, r) => acc + (r.amount - r.discount),
                 0
             )
 
@@ -447,7 +449,7 @@ class ReportController {
         err.transaction = req?.transaction
         next(err)
     }
-    }
+}
 
     async defaultRateDetail(req, res, next) {
     try {
@@ -457,8 +459,6 @@ class ReportController {
             period_by = 'Due Date',
             orderBy = 'due_date',
             orderASC = 'ASC',
-            limit = 50,
-            page = 1,
         } = req.query
 
         if (!period_from || !period_to) {
@@ -570,8 +570,6 @@ class ReportController {
                 'due_date',
             ],
             distinct: true,
-            limit,
-            offset: page ? (page - 1) * limit : 0,
             order: [[orderBy, orderASC]],
         })
 

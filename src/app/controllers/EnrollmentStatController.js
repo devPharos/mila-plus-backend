@@ -1,5 +1,4 @@
 import Sequelize from 'sequelize'
-import StudentXGroup from '../models/StudentXGroup.js'
 import Student from '../models/Student.js'
 import Processsubstatus from '../models/Processsubstatus.js'
 import {
@@ -33,46 +32,25 @@ class EnrollmentStatController {
         toDate = endOfMonth(currentDate);
       }
 
-      const enrollments = await StudentXGroup.findAll({
-        where: {
-          canceled_at: null,
-          start_date: { [Op.lte]: format(toDate, 'yyyy-MM-dd') },
-          [Op.or]: [
-            { end_date: { [Op.gte]: format(fromDate, 'yyyy-MM-dd') } },
-            { end_date: null }
-          ]
-        },
-        include: [{
-          model: Student,
-          as: 'student',
-          required: true,
-          where: { status: 'In Class' },
-          attributes: []
-        }],
-        attributes: ['student_id', 'start_date', 'end_date'],
-      });
-
-      const monthlyCount = new Map();
+      const result = [];
 
       for (let cursor = startOfMonth(fromDate); !isAfter(cursor, toDate); cursor = addMonths(cursor, 1)) {
-        const monthStart = cursor;
         const monthEnd = endOfMonth(cursor);
         const monthKey = format(cursor, 'yyyy-MM');
 
-        const activeInMonth = enrollments.filter(e => {
-          const startDate = e.start_date ? parseISO(e.start_date) : new Date('1900-01-01');
-          const endDate = e.end_date ? parseISO(e.end_date) : new Date('2100-12-31');
-          return startDate <= monthEnd && endDate >= monthStart;
+        const studentsCount = await Student.count({
+          where: {
+            status: 'In Class',
+            start_date: {
+              [Op.lte]: format(monthEnd, 'yyyy-MM-dd')
+            }
+          }
         });
 
-        const uniqueStudents = new Set(activeInMonth.map(e => e.student_id));
-        monthlyCount.set(monthKey, uniqueStudents.size);
-      }
-
-      const result = [];
-      for (let cursor = startOfMonth(fromDate); !isAfter(cursor, toDate); cursor = addMonths(cursor, 1)) {
-        const monthKey = format(cursor, 'yyyy-MM');
-        result.push({ month: monthKey, students: monthlyCount.get(monthKey) || 0 });
+        result.push({ 
+          month: monthKey, 
+          students: studentsCount 
+        });
       }
 
       return res.json(result);
@@ -85,25 +63,13 @@ class EnrollmentStatController {
     try {
       const currentDate = new Date()
 
-      const inClassStudents = await StudentXGroup.count({
-        where: {
-          canceled_at: null,
-          start_date: { [Op.lte]: format(currentDate, 'yyyy-MM-dd') },
-          [Op.or]: [
-            { end_date: { [Op.gte]: format(currentDate, 'yyyy-MM-dd') } },
-            { end_date: null }
-          ]
-        },
-        include: [
-          {
-            model: Student,
-            as: 'student',
-            required: true,
-            where: { status: 'In Class' }
+      const inClassStudents = await Student.count({
+        where: { 
+          status: 'In Class',
+          start_date: {
+            [Op.lte]: format(currentDate, 'yyyy-MM-dd')
           }
-        ],
-        distinct: true,
-        col: 'student_id'
+        }
       })
 
       const waitingStudents = await Student.count({
@@ -131,58 +97,39 @@ class EnrollmentStatController {
       const monthStart = startOfMonth(targetDate)
       const monthEnd = endOfMonth(targetDate)
 
-      const activeEnrollments = await StudentXGroup.findAll({
+      const activeStudents = await Student.findAll({
         where: {
-          canceled_at: null,
-          [Op.and]: [
-            { start_date: { [Op.lte]: format(monthEnd, 'yyyy-MM-dd') } },
-            {
-              [Op.or]: [
-                { end_date: { [Op.gte]: format(monthStart, 'yyyy-MM-dd') } },
-                { end_date: null }
-              ]
-            }
-          ]
+          status: 'In Class',
+          start_date: {
+            [Op.lte]: format(monthEnd, 'yyyy-MM-dd')
+          }
         },
+        attributes: ['id', 'name', 'processsubstatus_id'],
         include: [
           {
-            model: Student,
-            as: 'student',
-            required: true,
-            where: { status: 'In Class' },
-            attributes: ['id', 'name', 'processsubstatus_id'],
-            include: [
-              {
-                model: Processsubstatus,
-                as: 'processsubstatuses',
-                attributes: ['id', 'name']
-              }
-            ]
+            model: Processsubstatus,
+            as: 'processsubstatuses',
+            attributes: ['id', 'name']
           }
-        ],
-        attributes: ['student_id']
+        ]
       })
 
       const processStatusCount = {}
-      const processedStudents = new Set()
       let f1Count = 0
       let nonF1Count = 0
 
-      activeEnrollments.forEach(enrollment => {
-        const studentId = enrollment.student_id
-        if (!processedStudents.has(studentId)) {
-          processedStudents.add(studentId)
-          const student = enrollment.student
-          if (student && student.processsubstatus_id) {
-            const statusId = student.processsubstatus_id
-            const statusName = student.processsubstatuses?.name || `Status ID ${statusId}`
-            if (!processStatusCount[statusId]) {
-              processStatusCount[statusId] = { id: statusId, name: statusName, count: 0 }
-            }
-            processStatusCount[statusId].count++
-            if (statusId >= 1 && statusId <= 4) f1Count++
-            else if (statusId >= 5 && statusId <= 6) nonF1Count++
+      activeStudents.forEach(student => {
+        if (student.processsubstatus_id) {
+          const statusId = student.processsubstatus_id
+          const statusName = student.processsubstatuses?.name || `Status ID ${statusId}`
+          
+          if (!processStatusCount[statusId]) {
+            processStatusCount[statusId] = { id: statusId, name: statusName, count: 0 }
           }
+          processStatusCount[statusId].count++
+          
+          if (statusId >= 1 && statusId <= 4) f1Count++
+          else if (statusId >= 5 && statusId <= 6) nonF1Count++
         }
       })
 
@@ -199,7 +146,7 @@ class EnrollmentStatController {
 
       const summary = {
         month: format(monthStart, 'yyyy-MM'),
-        total_active_students: processedStudents.size,
+        total_active_students: activeStudents.length,
         process_types: {
           f1: f1Count,
           non_f1: nonF1Count
@@ -217,41 +164,23 @@ class EnrollmentStatController {
     try {
       const currentDate = new Date()
 
-      const activeStudents = await StudentXGroup.findAll({
+      const activeStudents = await Student.findAll({
         where: {
-          canceled_at: null,
-          start_date: { [Op.lte]: format(currentDate, 'yyyy-MM-dd') },
-          [Op.or]: [
-            { end_date: { [Op.gte]: format(currentDate, 'yyyy-MM-dd') } },
-            { end_date: null }
-          ]
-        },
-        include: [
-          {
-            model: Student,
-            as: 'student',
-            required: true,
-            where: { status: 'In Class' },
-            attributes: ['id', 'birth_country']
+          status: 'In Class',
+          start_date: {
+            [Op.lte]: format(currentDate, 'yyyy-MM-dd')
           }
-        ],
-        attributes: ['student_id']
+        },
+        attributes: ['id', 'birth_country']
       })
 
       const countryCount = {}
-      const processedStudents = new Set()
 
-      activeStudents.forEach(enrollment => {
-        const studentId = enrollment.student_id
-        if (!processedStudents.has(studentId)) {
-          processedStudents.add(studentId)
-          const student = enrollment.student
-          
-          if (student && student.birth_country) {
-            const country = student.birth_country.trim()
-            if (country) {
-              countryCount[country] = (countryCount[country] || 0) + 1
-            }
+      activeStudents.forEach(student => {
+        if (student.birth_country) {
+          const country = student.birth_country.trim()
+          if (country) {
+            countryCount[country] = (countryCount[country] || 0) + 1
           }
         }
       })
@@ -265,7 +194,7 @@ class EnrollmentStatController {
 
       return res.json({
         total_countries: result.length,
-        total_active_students: processedStudents.size,
+        total_active_students: activeStudents.length,
         countries: result
       })
     } catch (err) {
