@@ -40,6 +40,7 @@ class EnrollmentStatController {
 
         const studentsCount = await Student.count({
           where: {
+            canceled_at: null,
             start_date: {
               [Op.lte]: format(monthEnd, 'yyyy-MM-dd')
             },
@@ -71,7 +72,8 @@ class EnrollmentStatController {
       const currentDate = new Date()
 
       const inClassStudents = await Student.count({
-        where: { 
+        where: {
+          canceled_at: null,
           start_date: {
             [Op.lte]: format(currentDate, 'yyyy-MM-dd')
           },
@@ -87,7 +89,10 @@ class EnrollmentStatController {
       })
 
       const waitingStudents = await Student.count({
-        where: { status: 'Waiting' }
+        where: { 
+          canceled_at: null,
+          status: 'Waiting' 
+        }
       })
 
       const totalActive = inClassStudents + waitingStudents
@@ -113,6 +118,7 @@ class EnrollmentStatController {
 
       const activeStudents = await Student.findAll({
         where: {
+          canceled_at: null,
           start_date: {
             [Op.lte]: format(monthEnd, 'yyyy-MM-dd')
           },
@@ -187,6 +193,7 @@ class EnrollmentStatController {
 
       const activeStudents = await Student.findAll({
         where: {
+          canceled_at: null,
           start_date: {
             [Op.lte]: format(currentDate, 'yyyy-MM-dd')
           },
